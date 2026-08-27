@@ -1,0 +1,377 @@
+/* SEED BARI — Premium Hero V3
+   Visual-only layer for the existing banner data and business logic. */
+
+.home-premium-scope .hero-wrap {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 0 !important;
+  border-radius: 2rem !important;
+  background: #f4f1df !important;
+  box-shadow: 0 28px 70px -38px rgba(16, 64, 39, .45) !important;
+}
+
+.home-premium-scope .hero-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255,255,255,.82), transparent 30%),
+    radial-gradient(circle at 92% 12%, rgba(201,162,39,.16), transparent 26%),
+    linear-gradient(135deg, rgba(255,255,255,.48), transparent 42%);
+  z-index: 0;
+}
+
+.home-premium-scope .hero-wrap > div {
+  position: relative;
+  z-index: 1;
+}
+
+.home-premium-scope .hero-inner {
+  position: relative;
+  min-height: clamp(440px, 43vw, 610px) !important;
+  padding: clamp(2rem, 5vw, 5rem) clamp(1.4rem, 6vw, 6rem) !important;
+  gap: clamp(1.5rem, 4vw, 5rem) !important;
+  overflow: hidden;
+}
+
+/* Luxury curved visual divider */
+.home-premium-scope .hero-inner::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -18%;
+  right: 36%;
+  width: 22%;
+  height: 145%;
+  border-radius: 50%;
+  background: #14532d;
+  transform: rotate(12deg);
+  opacity: .96;
+}
+
+.home-premium-scope .hero-inner > div:first-child {
+  position: relative;
+  z-index: 3;
+  padding-top: 2rem;
+}
+
+/* Premium badge */
+.home-premium-scope .hero-inner > div:first-child::before {
+  content: "SEED BARI  •  PREMIUM SEEDS";
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  margin-bottom: 1.25rem;
+  padding: .45rem .85rem;
+  border: 1px solid rgba(201,162,39,.48);
+  border-radius: 999px;
+  background: rgba(20,83,45,.96);
+  color: #f7e7a6;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  box-shadow: 0 12px 28px -18px rgba(20,83,45,.8);
+}
+
+.home-premium-scope .hero-wrap > div:nth-child(2) .hero-inner > div:first-child::before {
+  content: "REFER & EARN  •  SEED BARI";
+}
+
+.home-premium-scope .hero-wrap > div:nth-child(3) .hero-inner > div:first-child::before {
+  content: "WE ARE HERE TO HELP  •  SEED BARI";
+}
+
+.home-premium-scope .hero-title {
+  position: relative;
+  max-width: 660px !important;
+  margin: 0 !important;
+  color: #123b25 !important;
+  font-size: clamp(2.15rem, 4.4vw, 4.7rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.03 !important;
+  letter-spacing: -.045em !important;
+  text-wrap: balance;
+}
+
+.home-premium-scope .hero-subtitle {
+  max-width: 560px !important;
+  margin-top: 1.25rem !important;
+  color: #33463a !important;
+  font-size: clamp(.96rem, 1.35vw, 1.18rem) !important;
+  line-height: 1.75 !important;
+}
+
+.home-premium-scope .hero-btn {
+  display: inline-flex !important;
+  align-items: center;
+  gap: .45rem;
+  min-height: 50px;
+  margin-top: 1.7rem !important;
+  padding: .7rem 1.35rem !important;
+  border: 1px solid rgba(201,162,39,.55) !important;
+  border-radius: 999px !important;
+  background: #14532d !important;
+  color: #fff !important;
+  font-weight: 800 !important;
+  box-shadow: 0 16px 34px -18px rgba(20,83,45,.9), inset 0 1px 0 rgba(255,255,255,.12) !important;
+  transition: transform .22s ease, box-shadow .22s ease, background .22s ease !important;
+}
+
+.home-premium-scope .hero-btn:hover {
+  background: #0b3b20 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 22px 38px -18px rgba(20,83,45,.95), inset 0 1px 0 rgba(255,255,255,.14) !important;
+}
+
+.home-premium-scope .hero-inner > div:nth-child(2) {
+  position: relative;
+  z-index: 2;
+}
+
+.home-premium-scope .hero-inner picture {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  border: 4px solid rgba(255,255,255,.86);
+  border-radius: 1.6rem;
+  box-shadow: 0 28px 60px -30px rgba(0,0,0,.58);
+  transform: rotate(1deg);
+}
+
+.home-premium-scope .hero-inner picture::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(20,83,45,.08), transparent 35%, transparent 70%, rgba(201,162,39,.12));
+}
+
+.home-premium-scope .hero-inner picture::after {
+  content: "PREMIUM QUALITY";
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 2;
+  padding: .6rem .75rem;
+  border: 1px solid rgba(255,255,255,.42);
+  border-radius: .75rem;
+  background: rgba(20,83,45,.9);
+  color: #f7e7a6;
+  font-size: .65rem;
+  font-weight: 900;
+  letter-spacing: .1em;
+  backdrop-filter: blur(10px);
+}
+
+.home-premium-scope .hero-wrap > div:nth-child(2) .hero-inner picture::after {
+  content: "REWARD PROGRAM";
+}
+
+.home-premium-scope .hero-wrap > div:nth-child(3) .hero-inner picture::after {
+  content: "EXPERT SUPPORT";
+}
+
+.home-premium-scope .hero-inner img {
+  display: block;
+  width: 100%;
+  height: clamp(300px, 34vw, 470px) !important;
+  object-fit: cover;
+  border-radius: 1.25rem !important;
+  box-shadow: none !important;
+  transform: scale(1.015);
+}
+
+/* Small premium trust line under the CTA */
+.home-premium-scope .hero-inner > div:first-child::after {
+  content: "✓ মানসম্মত বীজ     ✓ বিশ্বস্ত সেবা     ✓ কৃষকের আস্থা";
+  display: block;
+  margin-top: 1.55rem;
+  color: #52665a;
+  font-size: .78rem;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.home-premium-scope .hero-wrap > div:nth-child(2) .hero-inner > div:first-child::after {
+  content: "✓ বন্ধুদের সাথে শেয়ার করুন     ✓ রিওয়ার্ড পান     ✓ সহজ ও নিরাপদ";
+}
+
+.home-premium-scope .hero-wrap > div:nth-child(3) .hero-inner > div:first-child::after {
+  content: "✓ দ্রুত পরামর্শ     ✓ বিশেষজ্ঞ সহায়তা     ✓ বিশ্বস্ত সেবা";
+}
+
+/* Make the active slide feel alive */
+.home-premium-scope .hero-wrap > div:not(.hidden) .hero-inner > div:first-child {
+  animation: sbPremiumTextIn .65s ease both;
+}
+
+.home-premium-scope .hero-wrap > div:not(.hidden) .hero-inner picture {
+  animation: sbPremiumImageIn .75s cubic-bezier(.2,.75,.2,1) both;
+}
+
+/* Luxury treatment for the referral slide */
+.home-premium-scope .hero-wrap > div:nth-child(2) .hero-inner {
+  background: linear-gradient(135deg, #083b22 0%, #14532d 48%, #0a301d 100%);
+}
+
+.home-premium-scope .hero-wrap > div:nth-child(2) .hero-inner::after {
+  background: #c9a227;
+  opacity: .9;
+  right: 36%;
+}
+
+.home-premium-scope .hero-wrap > div:nth-child(2) .hero-title,
+.home-premium-scope .hero-wrap > div:nth-child(2) .hero-subtitle {
+  color: #fff !important;
+}
+
+.home-premium-scope .hero-wrap > div:nth-child(2) .hero-subtitle,
+.home-premium-scope .hero-wrap > div:nth-child(2) .hero-inner > div:first-child::after {
+  color: rgba(255,255,255,.82) !important;
+}
+
+.home-premium-scope .hero-wrap > div:nth-child(2) .hero-btn {
+  background: #d5ae38 !important;
+  color: #123b25 !important;
+}
+
+/* Contact slide: lighter editorial look */
+.home-premium-scope .hero-wrap > div:nth-child(3) .hero-inner {
+  background: linear-gradient(135deg, #f7f3e6 0%, #edf4e7 58%, #e4eee1 100%);
+}
+
+.home-premium-scope .hero-wrap > div:nth-child(3) .hero-inner::after {
+  background: #1c6a3d;
+  opacity: .88;
+}
+
+/* Dots */
+.home-premium-scope .hero-wrap .absolute.bottom-4 {
+  bottom: 1.15rem !important;
+  z-index: 8;
+  padding: .42rem .62rem !important;
+  border: 1px solid rgba(255,255,255,.45) !important;
+  border-radius: 999px !important;
+  background: rgba(20,83,45,.78) !important;
+  backdrop-filter: blur(12px);
+}
+
+.home-premium-scope .hero-wrap .absolute.bottom-4 button {
+  height: .45rem !important;
+  min-width: .45rem;
+}
+
+@keyframes sbPremiumTextIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sbPremiumImageIn {
+  from { opacity: 0; transform: translateX(18px) scale(.985); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@media (max-width: 767px) {
+  .home-premium-scope .hero-wrap {
+    border-radius: 1.25rem !important;
+  }
+
+  .home-premium-scope .hero-inner {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    padding: .8rem .8rem 1.25rem !important;
+    gap: 0 !important;
+  }
+
+  .home-premium-scope .hero-inner::after {
+    top: 34%;
+    right: -18%;
+    width: 120%;
+    height: 28%;
+    transform: rotate(-4deg);
+    border-radius: 50%;
+    opacity: .95;
+  }
+
+  .home-premium-scope .hero-inner > div:nth-child(2) {
+    order: 1;
+    width: 100%;
+  }
+
+  .home-premium-scope .hero-inner > div:first-child {
+    order: 2;
+    width: 100%;
+    padding: 1.2rem .8rem .35rem !important;
+  }
+
+  .home-premium-scope .hero-inner > div:first-child::before {
+    min-height: 27px;
+    margin-bottom: .8rem;
+    padding: .35rem .65rem;
+    font-size: .58rem;
+    letter-spacing: .055em;
+  }
+
+  .home-premium-scope .hero-title {
+    font-size: clamp(1.75rem, 8.2vw, 2.35rem) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -.04em !important;
+  }
+
+  .home-premium-scope .hero-subtitle {
+    margin-top: .75rem !important;
+    font-size: .9rem !important;
+    line-height: 1.6 !important;
+  }
+
+  .home-premium-scope .hero-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 46px;
+    margin-top: 1rem !important;
+  }
+
+  .home-premium-scope .hero-inner > div:first-child::after {
+    margin-top: .9rem;
+    font-size: .65rem;
+    line-height: 1.8;
+  }
+
+  .home-premium-scope .hero-inner picture {
+    border-width: 3px;
+    border-radius: 1rem;
+    transform: none;
+  }
+
+  .home-premium-scope .hero-inner img {
+    height: 250px !important;
+    border-radius: .8rem !important;
+  }
+
+  .home-premium-scope .hero-inner picture::after {
+    right: .65rem;
+    bottom: .65rem;
+    padding: .45rem .55rem;
+    font-size: .52rem;
+  }
+
+  .home-premium-scope .hero-wrap .absolute.bottom-4 {
+    bottom: .65rem !important;
+  }
+
+  /* Only reduce the excessive header-to-hero gap on mobile. */
+  .home-premium-scope > .section-pad:first-child {
+    margin-top: -70px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-premium-scope .hero-wrap > div:not(.hidden) .hero-inner > div:first-child,
+  .home-premium-scope .hero-wrap > div:not(.hidden) .hero-inner picture {
+    animation: none !important;
+  }
+}

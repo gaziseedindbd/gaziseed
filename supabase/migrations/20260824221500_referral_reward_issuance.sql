@@ -1,0 +1,4 @@
+-- Referral reward issuance is included in the complete referral migration.
+-- This migration is intentionally a no-op so a fresh database cannot fail on
+-- dependent referral tables/functions before the complete schema is created.
+-- See 20260824230000_complete_referral_program.sql.

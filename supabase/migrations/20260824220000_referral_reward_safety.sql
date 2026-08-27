@@ -1,0 +1,4 @@
+-- Referral reward safety is implemented by the complete referral migration that
+-- creates the referral tables before any dependent reward functions.
+-- This migration is intentionally a no-op so a fresh database cannot fail on a
+-- missing referrals table. See 20260824230000_complete_referral_program.sql.

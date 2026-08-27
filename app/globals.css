@@ -1,0 +1,190 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 150 20% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 150 20% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 20% 15%;
+    --primary: 142 50% 28%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 142 30% 95%;
+    --secondary-foreground: 142 50% 20%;
+    --muted: 150 10% 96%;
+    --muted-foreground: 150 10% 40%;
+    --accent: 142 40% 90%;
+    --accent-foreground: 142 50% 20%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 150 10% 90%;
+    --input: 150 10% 88%;
+    --ring: 142 50% 28%;
+    --chart-1: 142 50% 35%;
+    --chart-2: 35 80% 55%;
+    --chart-3: 200 70% 50%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --radius: 0.75rem;
+  }
+  .dark {
+    --background: 150 20% 8%;
+    --foreground: 150 10% 95%;
+    --card: 150 20% 10%;
+    --card-foreground: 150 10% 95%;
+    --popover: 150 20% 10%;
+    --popover-foreground: 150 10% 95%;
+    --primary: 142 50% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 150 20% 15%;
+    --secondary-foreground: 150 10% 95%;
+    --muted: 150 20% 15%;
+    --muted-foreground: 150 10% 65%;
+    --accent: 150 20% 18%;
+    --accent-foreground: 150 10% 95%;
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 150 20% 18%;
+    --input: 150 20% 18%;
+    --ring: 142 50% 45%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; font-feature-settings: "rlig" 1, "calt" 1; padding-top: 110px !important; }
+}
+
+@layer utilities {
+  @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+  .container-custom { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8; }
+  .text-balance { text-wrap: balance; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .scroll-smooth { scroll-behavior: smooth; }
+}
+
+@layer components {
+  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-95 disabled:opacity-50; }
+  .card-product { @apply relative overflow-hidden rounded-2xl border border-border bg-card transition-all hover:shadow-lg; }
+  .section-title { @apply text-2xl font-bold tracking-tight sm:text-3xl; }
+  .input-bangla { @apply w-full rounded-lg border border-input bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary; }
+}
+
+/* THEME 1 — PREMIUM SEED STORE */
+.theme-premium .hero-wrap { @apply rounded-3xl bg-gradient-to-br from-primary/5 via-accent/40 to-secondary/60 border border-border/50; }
+.theme-premium .hero-inner { @apply py-10 sm:py-14 lg:py-20; }
+.theme-premium .hero-title { @apply text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground; }
+.theme-premium .hero-subtitle { @apply mt-4 text-base sm:text-lg text-muted-foreground max-w-lg; }
+.theme-premium .hero-btn { @apply mt-8 inline-flex items-center gap-2 rounded-2xl bg-primary px-8 py-3.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:scale-95; }
+.theme-premium .section-pad { @apply py-10; }
+.theme-premium .section-heading { @apply text-2xl font-bold tracking-tight sm:text-3xl text-foreground; }
+.theme-premium .section-subheading { @apply text-sm text-muted-foreground mt-1; }
+.theme-premium .view-all-link { @apply text-sm font-medium text-primary hover:underline; }
+.theme-premium .cat-card { @apply flex flex-col items-center gap-2 rounded-3xl border border-border/60 bg-card p-3 transition-all hover:shadow-md hover:border-primary/30; }
+.theme-premium .cat-icon-wrap { @apply flex w-full aspect-square items-center justify-center rounded-full bg-accent/60 overflow-hidden transition-transform group-hover:scale-105; }
+.theme-premium .cat-label { @apply text-center text-xs font-medium text-foreground sm:text-sm; }
+.theme-premium .feature-section-bg { @apply bg-secondary/30; }
+.theme-premium .why-card { @apply flex flex-col items-center text-center rounded-3xl p-6 transition-all hover:shadow-md; }
+.theme-premium .why-icon-wrap { @apply mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary; }
+.theme-premium .why-title { @apply mb-1.5 font-semibold text-foreground; }
+.theme-premium .why-desc { @apply text-sm text-muted-foreground; }
+.theme-premium .service-card { @apply rounded-3xl border border-border/60 bg-card p-6 transition-all hover:shadow-md; }
+.theme-premium .service-icon-wrap { @apply mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent text-primary; }
+.theme-premium .testimonial-card { @apply rounded-3xl border border-border/60 bg-card p-6; }
+.theme-premium .testimonial-bg { @apply bg-secondary/20; }
+.theme-premium .blog-card { @apply rounded-3xl border border-border/60 bg-card overflow-hidden transition-all hover:shadow-md; }
+.theme-premium .delivery-bg { @apply bg-primary; }
+.theme-premium .delivery-btn { @apply rounded-2xl bg-primary-foreground px-6 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary-foreground/90; }
+.theme-premium .newsletter-wrap { @apply rounded-3xl p-10 text-center bg-secondary/30 border border-border/50; }
+.theme-premium .product-grid { @apply grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5; }
+.theme-premium .cat-grid { @apply grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4; }
+
+/* THEME 2 — FARM & NATURE */
+.theme-farm .hero-wrap { @apply rounded-[2.5rem] bg-gradient-to-tr from-green-900/10 via-accent to-accent border-2 border-primary/20 overflow-hidden relative; }
+.theme-farm .hero-inner { @apply py-12 sm:py-16 lg:py-24; }
+.theme-farm .hero-title { @apply text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground; }
+.theme-farm .hero-subtitle { @apply mt-4 text-base sm:text-lg text-muted-foreground max-w-lg; }
+.theme-farm .hero-btn { @apply mt-8 inline-flex items-center gap-2 rounded-full bg-primary px-8 py-3.5 text-sm font-semibold text-primary-foreground shadow-md transition-all hover:shadow-lg hover:bg-primary/90 active:scale-95; }
+.theme-farm .section-pad { @apply py-14; }
+.theme-farm .section-heading { @apply text-2xl sm:text-3xl font-bold text-foreground; }
+.theme-farm .section-subheading { @apply text-sm text-muted-foreground mt-1; }
+.theme-farm .view-all-link { @apply text-sm font-medium text-primary hover:underline; }
+.theme-farm .cat-card { @apply flex flex-col items-center gap-2 rounded-[2rem] bg-gradient-to-b from-accent/40 to-card p-4 transition-all hover:shadow-lg hover:-translate-y-1 border border-primary/10; }
+.theme-farm .cat-icon-wrap { @apply flex w-full aspect-square items-center justify-center rounded-full bg-primary/10 overflow-hidden transition-all group-hover:ring-4 group-hover:ring-primary/20; }
+.theme-farm .cat-label { @apply text-center text-xs font-medium text-foreground sm:text-sm; }
+.theme-farm .feature-section-bg { @apply bg-gradient-to-br from-secondary/40 to-accent; }
+.theme-farm .why-card { @apply flex flex-col items-center text-center rounded-[2rem] border border-border bg-card p-6 transition-all hover:shadow-md hover:-translate-y-0.5; }
+.theme-farm .why-icon-wrap { @apply mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary; }
+.theme-farm .why-title { @apply mb-1.5 font-semibold text-foreground; }
+.theme-farm .why-desc { @apply text-sm text-muted-foreground; }
+.theme-farm .service-card { @apply rounded-[2rem] border border-primary/20 bg-gradient-to-b from-card to-accent/20 p-6 transition-all hover:shadow-lg hover:-translate-y-1; }
+.theme-farm .service-icon-wrap { @apply mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary; }
+.theme-farm .testimonial-card { @apply rounded-[2rem] border border-border bg-gradient-to-b from-card to-accent/10 p-6; }
+.theme-farm .testimonial-bg { @apply bg-gradient-to-r from-secondary/30 to-accent/20; }
+.theme-farm .blog-card { @apply rounded-[2rem] border border-primary/20 bg-card overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1; }
+.theme-farm .delivery-bg { @apply bg-gradient-to-r from-primary to-primary; }
+.theme-farm .delivery-btn { @apply rounded-full bg-primary-foreground px-6 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary-foreground/90; }
+.theme-farm .newsletter-wrap { @apply rounded-[2rem] p-10 text-center bg-gradient-to-br from-secondary/40 to-accent border border-primary/20; }
+.theme-farm .product-grid { @apply grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5; }
+.theme-farm .cat-grid { @apply grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4; }
+
+/* THEME 3 — MODERN MARKETPLACE */
+.theme-marketplace .hero-wrap { @apply rounded-2xl bg-gradient-to-tr from-primary via-primary to-accent overflow-hidden; }
+.theme-marketplace .hero-inner { @apply py-10 sm:py-12 lg:py-16; }
+.theme-marketplace .hero-title { @apply text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-primary-foreground; }
+.theme-marketplace .hero-subtitle { @apply mt-4 text-base sm:text-lg text-primary-foreground/80 max-w-lg; }
+.theme-marketplace .hero-btn { @apply mt-8 inline-flex items-center gap-2 rounded-xl bg-primary-foreground px-8 py-3.5 text-sm font-bold text-primary transition-all hover:bg-primary-foreground/90 active:scale-95 shadow-lg; }
+.theme-marketplace .section-pad { @apply py-10; }
+.theme-marketplace .section-heading { @apply text-2xl font-bold tracking-tight sm:text-3xl text-foreground; }
+.theme-marketplace .section-subheading { @apply text-sm text-muted-foreground mt-1; }
+.theme-marketplace .view-all-link { @apply text-sm font-bold text-primary hover:underline; }
+.theme-marketplace .cat-card { @apply flex flex-col items-center gap-2 rounded-xl border-2 border-primary/20 bg-primary/5 p-3 transition-all hover:border-primary hover:bg-primary/10; }
+.theme-marketplace .cat-icon-wrap { @apply flex w-full aspect-square items-center justify-center rounded-full bg-primary/10 overflow-hidden transition-transform group-hover:scale-110; }
+.theme-marketplace .cat-label { @apply text-center text-xs font-bold text-foreground sm:text-sm; }
+.theme-marketplace .feature-section-bg { @apply bg-primary/10; }
+.theme-marketplace .why-card { @apply flex flex-col items-center text-center rounded-xl border border-primary/20 bg-card p-6 transition-all hover:shadow-md hover:border-primary/40; }
+.theme-marketplace .why-icon-wrap { @apply mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary; }
+.theme-marketplace .why-title { @apply mb-1.5 font-bold text-foreground; }
+.theme-marketplace .why-desc { @apply text-sm text-muted-foreground; }
+.theme-marketplace .service-card { @apply rounded-xl border-2 border-primary/20 bg-primary/5 p-6 transition-all hover:shadow-md hover:border-primary/40; }
+.theme-marketplace .service-icon-wrap { @apply mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary; }
+.theme-marketplace .testimonial-card { @apply rounded-xl border border-primary/20 bg-card p-6; }
+.theme-marketplace .testimonial-bg { @apply bg-primary/10; }
+.theme-marketplace .blog-card { @apply rounded-xl border-2 border-primary/20 bg-card overflow-hidden transition-all hover:shadow-md hover:border-primary/40; }
+.theme-marketplace .delivery-bg { @apply bg-gradient-to-r from-primary via-accent to-primary; }
+.theme-marketplace .delivery-btn { @apply rounded-xl bg-primary-foreground px-6 py-3 text-sm font-bold text-primary transition-colors hover:bg-primary-foreground/90; }
+.theme-marketplace .newsletter-wrap { @apply rounded-xl p-10 text-center bg-primary/10 border-2 border-primary/20; }
+.theme-marketplace .product-grid { @apply grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5; }
+.theme-marketplace .cat-grid { @apply grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4; }
+
+.theme-premium .card-product { @apply relative overflow-hidden rounded-3xl border border-border/60 bg-card transition-all hover:shadow-xl hover:-translate-y-0.5; }
+.theme-farm .card-product { @apply relative overflow-hidden rounded-[2rem] border border-primary/20 bg-card transition-all hover:shadow-lg hover:-translate-y-1; }
+.theme-marketplace .card-product { @apply relative overflow-hidden rounded-xl border-2 border-border bg-card transition-all hover:shadow-md hover:border-primary/40; }
+.theme-premium .pc-content { @apply p-4; }
+.theme-farm .pc-content { @apply p-5; }
+.theme-marketplace .pc-content { @apply p-3.5; }
+.theme-premium .pc-name { @apply line-clamp-2 text-sm font-medium text-foreground; }
+.theme-farm .pc-name { @apply line-clamp-2 text-sm font-semibold text-foreground; }
+.theme-marketplace .pc-name { @apply line-clamp-2 text-sm font-bold text-foreground; }
+.theme-premium .pc-price { @apply text-lg font-bold text-primary; }
+.theme-farm .pc-price { @apply text-lg font-bold text-primary; }
+.theme-marketplace .pc-price { @apply text-lg font-extrabold text-primary; }
+.theme-premium .pc-add-btn { @apply flex items-center justify-center gap-1 rounded-xl border border-primary/30 bg-secondary/50 py-2 text-xs font-medium text-primary transition-colors hover:bg-secondary; }
+.theme-farm .pc-add-btn { @apply flex items-center justify-center gap-1 rounded-full border border-primary/30 bg-primary/5 py-2 text-xs font-medium text-primary transition-all hover:bg-primary/10; }
+.theme-marketplace .pc-add-btn { @apply flex items-center justify-center gap-1 rounded-lg border-2 border-primary/30 bg-primary/5 py-2 text-xs font-bold text-primary transition-all hover:bg-primary hover:text-primary-foreground; }
+.theme-premium .pc-buy-btn { @apply flex items-center justify-center gap-1 rounded-xl bg-primary py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90; }
+.theme-farm .pc-buy-btn { @apply flex items-center justify-center gap-1 rounded-full bg-primary py-2 text-xs font-medium text-primary-foreground transition-all hover:bg-primary/90; }
+.theme-marketplace .pc-buy-btn { @apply flex items-center justify-center gap-1 rounded-lg bg-primary py-2 text-xs font-bold text-primary-foreground transition-all hover:bg-primary/90; }
+.theme-premium .pc-discount-badge { @apply absolute left-3 top-3 rounded-full bg-destructive px-2.5 py-1 text-xs font-bold text-destructive-foreground; }
+.theme-farm .pc-discount-badge { @apply absolute left-3 top-3 rounded-full bg-destructive px-2.5 py-1 text-xs font-bold text-destructive-foreground shadow-md; }
+.theme-marketplace .pc-discount-badge { @apply absolute left-2 top-2 rounded-md bg-destructive px-2 py-1 text-xs font-extrabold text-destructive-foreground; }
+.theme-premium .pc-img-wrap { @apply relative aspect-square overflow-hidden bg-secondary/30; }
+.theme-farm .pc-img-wrap { @apply relative aspect-square overflow-hidden bg-accent/20; }
+.theme-marketplace .pc-img-wrap { @apply relative aspect-square overflow-hidden bg-primary/5; }
+.theme-premium .pc-img { @apply h-full w-full object-cover transition-transform duration-500 group-hover:scale-105; }
+.theme-farm .pc-img { @apply h-full w-full object-cover transition-transform duration-500 group-hover:scale-105; }
+.theme-marketplace .pc-img { @apply h-full w-full object-cover transition-transform duration-300 group-hover:scale-110; }
