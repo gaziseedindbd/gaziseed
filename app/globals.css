@@ -21,7 +21,6 @@
   .section-title { @apply text-2xl font-black tracking-tight sm:text-3xl; }
   .input-bangla { @apply w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-4 focus:ring-primary/10; }
 }
-/* SUPER KING SEED homepage visual layer. */
 .theme-premium .hero-wrap, .theme-farm .hero-wrap, .theme-marketplace .hero-wrap { border: 1px solid hsl(var(--primary) / 0.15); border-radius: 2rem; background: linear-gradient(135deg, hsl(var(--primary) / 0.10), hsl(var(--card)), hsl(var(--accent) / 0.10)); box-shadow: 0 1px 2px hsl(var(--foreground) / 0.05); }
 .theme-premium .hero-inner, .theme-farm .hero-inner, .theme-marketplace .hero-inner { @apply py-10 sm:py-14 lg:py-20; }
 .theme-premium .hero-title, .theme-farm .hero-title, .theme-marketplace .hero-title { @apply text-3xl font-black tracking-tight text-foreground sm:text-4xl lg:text-5xl; }
@@ -54,3 +53,11 @@
 .theme-premium .pc-name, .theme-farm .pc-name, .theme-marketplace .pc-name { @apply line-clamp-2 text-sm font-bold text-foreground; }
 .theme-premium .pc-price, .theme-farm .pc-price, .theme-marketplace .pc-price { @apply text-lg font-black text-primary; }
 .theme-premium .pc-add-btn, .theme-farm .pc-add-btn, .theme-marketplace .pc-add-btn { @apply flex items-center justify-center gap-1 rounded-xl border border-primary/25 bg-primary/5 py-2 text-xs font-bold text-primary transition hover:bg-primary hover:text-primary-foreground; }
+
+/* Checkout visual pass: presentation-only styles targeting the existing checkout surface. */
+.min-h-screen[class*="bg-[#f8fafc]"] { background: radial-gradient(circle at 8% 0%, hsl(var(--primary) / 0.08), transparent 30%), radial-gradient(circle at 92% 12%, hsl(var(--accent) / 0.10), transparent 28%), hsl(var(--background)); }
+.min-h-screen[class*="bg-[#f8fafc]"] .rounded-\[32px\] { border-color: hsl(var(--primary) / 0.14); box-shadow: 0 14px 38px hsl(var(--foreground) / 0.055); transition: box-shadow .2s ease, border-color .2s ease; }
+.min-h-screen[class*="bg-[#f8fafc]"] .rounded-\[32px\]:hover { border-color: hsl(var(--primary) / 0.22); box-shadow: 0 18px 44px hsl(var(--foreground) / 0.075); }
+.min-h-screen[class*="bg-[#f8fafc]"] input, .min-h-screen[class*="bg-[#f8fafc]"] textarea, .min-h-screen[class*="bg-[#f8fafc]"] select { transition: border-color .2s ease, box-shadow .2s ease; }
+.min-h-screen[class*="bg-[#f8fafc]"] input:focus, .min-h-screen[class*="bg-[#f8fafc]"] textarea:focus, .min-h-screen[class*="bg-[#f8fafc]"] select:focus { box-shadow: 0 0 0 4px hsl(var(--primary) / 0.10); }
+@media (max-width: 640px) { .min-h-screen[class*="bg-[#f8fafc]"] .rounded-\[32px\] { border-radius: 1.5rem; } }
