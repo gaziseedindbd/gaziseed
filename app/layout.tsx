@@ -25,7 +25,7 @@ const hind = Hind({ subsets: ['latin'], weight: ['300', '400', '500', '600', '70
 export const metadata: Metadata = {
   title: 'SUPER KING SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
   description: 'SUPER KING SEED - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। ক্যাশ অন ডেলিভারি সারাদেশে।',
-  metadataBase: new URL('https://www.superkingseed.com'),
+  metadataBase: new URL('https://www.seedbari.com'),
   openGraph: { title: 'SUPER KING SEED', description: 'বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর', type: 'website' },
 };
 
