@@ -44,7 +44,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
 
         <div className="flex flex-1 flex-col justify-between gap-4 p-4 sm:p-5">
           <div>
-            <div className="mb-2.5 flex items-center gap-2"><span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[10px] font-extrabold text-amber-700"><Star className="h-3 w-3 fill-current" /> 5.0</span><span className="text-[10px] font-semibold text-muted-foreground">{t('জনপ্রিয়', 'Popular')}</span></div>
+            <div className="mb-2.5 flex items-center gap-2"><span className="inline-flex items-center gap-1 rounded-full border border-amber-200/70 bg-gradient-to-r from-amber-50 to-yellow-50 px-2.5 py-1 text-[10px] font-extrabold text-amber-700 shadow-sm"><Star className="h-3 w-3 fill-current" /> 5.0</span><span className="text-[10px] font-semibold text-muted-foreground">{t('জনপ্রিয়', 'Popular')}</span></div>
             <h3 className="line-clamp-2 text-[15px] font-black leading-snug tracking-[-.01em] text-foreground sm:text-base">{name}</h3>
             {lang === 'bn' && product.name_en && product.name_bn && <p className="mt-1 line-clamp-1 text-[11px] font-medium text-muted-foreground">{product.name_en}</p>}
           </div>
