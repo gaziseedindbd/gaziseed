@@ -45,17 +45,17 @@ export function SiteHeader() {
   ];
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-emerald-950/10 bg-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.07)] backdrop-blur-xl">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/70 bg-white/95 shadow-[0_10px_35px_-20px_rgba(15,23,42,.35)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1440px] items-center gap-3 px-3 py-3 sm:px-5 lg:px-7">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5 rounded-2xl px-1 py-1">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5 rounded-2xl px-1 py-1 transition hover:scale-[1.01]">
           {settings?.logo ? <img src={settings.logo} alt={settings.website_name || 'SUPER KING SEED'} className="h-9 w-auto max-w-[150px] object-contain sm:h-10 sm:max-w-[175px]" /> : <span className="text-lg font-black tracking-tight text-emerald-950 sm:text-xl">SUPER KING SEED</span>}
         </Link>
 
         <div className="hidden min-w-0 flex-1 sm:block">
-          <div className="mx-auto flex max-w-2xl items-center rounded-2xl border border-slate-200 bg-slate-50/90 p-1 shadow-inner transition focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10">
-            <Search className="ml-3 h-4 w-4 shrink-0 text-slate-400" />
-            <input type="text" placeholder={t('বীজ, গাছ বা পণ্য খুঁজুন...', 'Search seeds, plants or products...')} className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400" />
-            <button className="rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-800 active:scale-95"><span className="hidden md:inline">{t('খুঁজুন', 'Search')}</span><Search className="h-4 w-4 md:hidden" /></button>
+          <div className="mx-auto flex max-w-2xl items-center rounded-[1.15rem] border border-slate-200/90 bg-white p-1.5 shadow-[0_8px_24px_-18px_rgba(15,23,42,.55)] transition-all focus-within:border-emerald-400 focus-within:shadow-[0_12px_32px_-18px_rgba(5,150,105,.45)] focus-within:ring-4 focus-within:ring-emerald-500/8">
+            <div className="ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Search className="h-4 w-4" /></div>
+            <input type="text" placeholder={t('বীজ, গাছ বা পণ্য খুঁজুন...', 'Search seeds, plants or products...')} className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400" />
+            <button className="rounded-[0.9rem] bg-emerald-800 px-5 py-2.5 text-xs font-extrabold text-white shadow-md shadow-emerald-900/15 transition hover:-translate-y-0.5 hover:bg-emerald-900 hover:shadow-lg active:translate-y-0 active:scale-95"><span className="hidden md:inline">{t('খুঁজুন', 'Search')}</span><Search className="h-4 w-4 md:hidden" /></button>
           </div>
         </div>
 
@@ -64,7 +64,7 @@ export function SiteHeader() {
           <Link href="/track-order" title="অর্ডার ট্র্যাকিং" className="hidden items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:border-emerald-200 hover:text-emerald-700 md:flex"><Truck className="h-4 w-4" />{t('ট্র্যাকিং', 'Tracking')}</Link>
           <Link href="/account" title="আমার অ্যাকাউন্ট" className="rounded-xl p-2 text-slate-700 transition hover:bg-slate-100 hover:text-emerald-700"><User className="h-5 w-5" /></Link>
           <Link href="/cart" title="কার্ট" className="relative rounded-xl p-2 text-slate-700 transition hover:bg-slate-100 hover:text-emerald-700"><ShoppingCart className="h-5 w-5" />{cartCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-white ring-2 ring-white">{cartCount > 99 ? '99+' : cartCount}</span>}</Link>
-          <button type="button" onClick={() => setMobileMenuOpen(v => !v)} aria-label={mobileMenuOpen ? 'মেনু বন্ধ করুন' : 'মেনু খুলুন'} className="rounded-xl p-2 text-slate-700 transition hover:bg-slate-100 sm:hidden">{mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
+          <button type="button" onClick={() => setMobileMenuOpen(v => !v)} aria-label={mobileMenuOpen ? 'মেনু বন্ধ করুন' : 'মেনু খুলুন'} className="rounded-xl p-2 text-slate-700 transition hover:bg-slate-100 hover:text-emerald-700 sm:hidden">{mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
         </div>
       </div>
 
