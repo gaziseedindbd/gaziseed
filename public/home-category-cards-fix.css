@@ -1,0 +1,84 @@
+/* Home category cards: use the category image as the full card visual. Scoped to home only. */
+.home-premium-scope .cat-grid .cat-card {
+  position: relative !important;
+  min-height: 240px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  overflow: hidden !important;
+  border-radius: 1.35rem !important;
+  background: #111 !important;
+}
+
+.home-premium-scope .cat-grid .cat-card .cat-icon-wrap {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: auto !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  z-index: 0 !important;
+}
+
+.home-premium-scope .cat-grid .cat-card .cat-icon-wrap img {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  display: block !important;
+}
+
+.home-premium-scope .cat-grid .cat-card .cat-icon-wrap > svg {
+  width: 100% !important;
+  height: 100% !important;
+  padding: 25% !important;
+}
+
+.home-premium-scope .cat-grid .cat-card::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+  background: linear-gradient(180deg, transparent 34%, rgb(0 0 0 / 0.08) 50%, rgb(0 0 0 / 0.82) 100%) !important;
+}
+
+.home-premium-scope .cat-grid .cat-card::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 2 !important;
+  pointer-events: none !important;
+  background: linear-gradient(135deg, transparent 45%, hsl(var(--primary) / 0.08)) !important;
+}
+
+.home-premium-scope .cat-grid .cat-card .cat-label {
+  position: relative !important;
+  z-index: 3 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 3rem 1rem 1rem !important;
+  color: #fff !important;
+  font-size: clamp(1rem, 1.6vw, 1.2rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+  text-shadow: 0 2px 10px rgb(0 0 0 / 0.65) !important;
+}
+
+.home-premium-scope .cat-grid .cat-card:hover .cat-icon-wrap img {
+  transform: scale(1.045) !important;
+}
+
+@media (max-width: 767px) {
+  .home-premium-scope .cat-grid .cat-card {
+    min-height: 190px !important;
+    border-radius: 1.1rem !important;
+  }
+  .home-premium-scope .cat-grid .cat-card .cat-label {
+    padding: 2.5rem .75rem .8rem !important;
+    font-size: .95rem !important;
+  }
+}
