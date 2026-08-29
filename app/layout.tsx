@@ -38,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href="/home-premium-v3.css" />
         <link rel="stylesheet" href="/home-banner-overlay.css" />
         <link rel="stylesheet" href="/product-detail-premium.css" />
+        <link rel="stylesheet" href="/home-category-cards-fix.css" />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{const theme=localStorage.getItem('admin_theme');if(theme==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}})()` }} />
       </head>
       <body className={hind.variable} suppressHydrationWarning>
