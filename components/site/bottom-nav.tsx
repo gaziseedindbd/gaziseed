@@ -3,15 +3,16 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, Truck, LayoutGrid, PhoneCall, BadgeDollarSign } from 'lucide-react';
+import { Home, ShoppingBag, Truck, LayoutGrid, PhoneCall, BadgeDollarSign } from 'lucide-react';
 
 export function BottomNav() {
   const pathname = usePathname();
 
   const navItems = [
+    { label: 'হোম', href: '/', icon: Home },
     { label: 'সকল প্রোডাক্ট', href: '/all-products', icon: ShoppingBag },
     { label: 'ক্যাটাগরি', href: '/categories', icon: LayoutGrid },
-    { label: 'ট্র্যাকিং', href: '/track-order', icon: Truck },
+    { label: 'ট্র্যাক', href: '/track-order', icon: Truck },
     { label: 'ডেলিভারি চার্জ', href: '/charges', icon: BadgeDollarSign },
     { label: 'যোগাযোগ', href: '/contact', icon: PhoneCall },
   ];
