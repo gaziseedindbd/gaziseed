@@ -1,0 +1,15 @@
+/* Homepage category labels — premium-only visual refinement. Cards/images/layout are intentionally untouched. */
+.home-premium-scope .cat-card .cat-label {
+  color: #14532d !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 0 rgba(255,255,255,.9);
+  transition: color .2s ease, text-shadow .2s ease, transform .2s ease;
+}
+.home-premium-scope .cat-card:nth-child(3n+2) .cat-label { color: #166534 !important; }
+.home-premium-scope .cat-card:nth-child(3n+3) .cat-label { color: #0f766e !important; }
+.home-premium-scope .cat-card:hover .cat-label {
+  color: #064e3b !important;
+  text-shadow: 0 2px 10px rgba(6,78,59,.14);
+  transform: translateY(-1px);
+}
