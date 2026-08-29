@@ -1,0 +1,21 @@
+/* Premium multicolor category names — visual-only, does not alter card/image layout. */
+.home-premium-scope .cat-card .cat-label {
+  position: relative;
+  z-index: 2;
+  font-weight: 900 !important;
+  letter-spacing: -0.02em !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.9), 0 3px 10px rgba(15,23,42,.10) !important;
+  transition: color .2s ease, transform .2s ease, text-shadow .2s ease !important;
+}
+.home-premium-scope .cat-card:nth-child(8n+1) .cat-label { color: #db2777 !important; }
+.home-premium-scope .cat-card:nth-child(8n+2) .cat-label { color: #15803d !important; }
+.home-premium-scope .cat-card:nth-child(8n+3) .cat-label { color: #dc2626 !important; }
+.home-premium-scope .cat-card:nth-child(8n+4) .cat-label { color: #d97706 !important; }
+.home-premium-scope .cat-card:nth-child(8n+5) .cat-label { color: #7e22ce !important; }
+.home-premium-scope .cat-card:nth-child(8n+6) .cat-label { color: #166534 !important; }
+.home-premium-scope .cat-card:nth-child(8n+7) .cat-label { color: #0f766e !important; }
+.home-premium-scope .cat-card:nth-child(8n+8) .cat-label { color: #ea580c !important; }
+.home-premium-scope .cat-card:hover .cat-label {
+  transform: translateY(-1px);
+  text-shadow: 0 2px 12px rgba(15,23,42,.16) !important;
+}
