@@ -141,6 +141,7 @@ export default function Home() {
   return (
     <div className={`${themeClass} home-premium-scope`}>
       <link rel="stylesheet" href="/home-premium-v2.css" />
+      <link rel="stylesheet" href="/home-category-labels-premium-v2.css" />
       <ThemeSwitcher defaultTheme={(settings?.homepage_theme as HomePageTheme) || 'theme1'} />
 
       {isSectionEnabled('hero_slider') && banners.length > 0 && (
