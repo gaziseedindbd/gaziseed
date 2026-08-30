@@ -55,8 +55,11 @@
   }
 }
 
-/* Hide only the unwanted HTML text overlay; the banner artwork remains unchanged. */
+/* Hide the database title/subtitle overlay. Banner artwork itself is untouched. */
 .home-premium-scope .hero-title,
 .home-premium-scope .hero-subtitle {
   display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
