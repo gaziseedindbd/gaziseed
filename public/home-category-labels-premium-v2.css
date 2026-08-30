@@ -64,16 +64,22 @@
   pointer-events: none !important;
 }
 
-/* Cover only the unwanted embedded micro-copy in the current homepage hero artwork. */
+/* Remove the decorative diagonal sheen so it cannot create a stray band across the banner. */
+.home-premium-scope .hero-wrap::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Cover only the tiny unwanted baked-in micro-copy visible in the current hero artwork. */
 .home-premium-scope .hero-inner::after {
   content: "" !important;
   position: absolute !important;
-  z-index: 5 !important;
-  left: 3.5% !important;
+  z-index: 3 !important;
+  left: 3.8% !important;
   top: 19% !important;
-  width: 24% !important;
-  height: 8% !important;
-  background: rgba(250, 251, 247, .985) !important;
+  width: 25% !important;
+  height: 7% !important;
+  background: rgba(250, 249, 242, .985) !important;
   pointer-events: none !important;
 }
 @media (max-width: 767px) {
@@ -81,6 +87,6 @@
     left: 3% !important;
     top: 17% !important;
     width: 38% !important;
-    height: 10% !important;
+    height: 9% !important;
   }
 }
