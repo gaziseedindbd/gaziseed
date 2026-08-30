@@ -54,3 +54,9 @@
     bottom: .75rem !important;
   }
 }
+
+/* Hide only the unwanted HTML text overlay; the banner artwork remains unchanged. */
+.home-premium-scope .hero-title,
+.home-premium-scope .hero-subtitle {
+  display: none !important;
+}
