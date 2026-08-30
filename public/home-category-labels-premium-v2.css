@@ -55,38 +55,11 @@
   }
 }
 
-/* Hide the database title/subtitle overlay. Banner artwork itself is untouched. */
+/* Hide banner database text only; keep CTA and artwork unchanged. */
 .home-premium-scope .hero-title,
 .home-premium-scope .hero-subtitle {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
-}
-
-/* Remove the decorative diagonal sheen so it cannot create a stray band across the banner. */
-.home-premium-scope .hero-wrap::after {
-  display: none !important;
-  content: none !important;
-}
-
-/* Cover only the tiny unwanted baked-in micro-copy visible in the current hero artwork. */
-.home-premium-scope .hero-inner::after {
-  content: "" !important;
-  position: absolute !important;
-  z-index: 3 !important;
-  left: 3.8% !important;
-  top: 19% !important;
-  width: 25% !important;
-  height: 7% !important;
-  background: rgba(250, 249, 242, .985) !important;
-  pointer-events: none !important;
-}
-@media (max-width: 767px) {
-  .home-premium-scope .hero-inner::after {
-    left: 3% !important;
-    top: 17% !important;
-    width: 38% !important;
-    height: 9% !important;
-  }
 }
