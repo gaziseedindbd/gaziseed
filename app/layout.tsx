@@ -27,6 +27,8 @@ export const metadata: Metadata = {
   title: 'SUPER KING SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
   description: 'SUPER KING SEED - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। ক্যাশ অন ডেলিভারি সারাদেশে।',
   metadataBase: new URL('https://www.seedbari.com'),
+  manifest: '/manifest.webmanifest',
+  themeColor: '#047857',
   openGraph: { title: 'SUPER KING SEED', description: 'বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর', type: 'website' },
 };
 
@@ -35,6 +37,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="bn" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="theme-color" content="#047857" />
+        <link rel="apple-touch-icon" href="/seed-bari-logo-png.webp" />
         <link rel="stylesheet" href="/home-premium-v3.css" />
         <link rel="stylesheet" href="/home-banner-overlay.css" />
         <link rel="stylesheet" href="/product-detail-premium.css" />
@@ -42,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href="/home-category-labels-premium.css" />
         <link rel="stylesheet" href="/home-banner-final-fix.css" />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{const theme=localStorage.getItem('admin_theme');if(theme==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}})()` }} />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})})}})()` }} />
       </head>
       <body className={hind.variable} suppressHydrationWarning>
         <FeatureProvider>
