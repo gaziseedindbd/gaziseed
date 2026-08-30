@@ -12,6 +12,10 @@ const homeTextSliderStyles = `
   .home-premium-scope .hero-title{max-width:850px!important;margin:0!important;color:#fff!important;font-size:clamp(2rem,4vw,3.5rem)!important;line-height:1.08!important;letter-spacing:-.035em!important;text-shadow:0 3px 18px rgba(0,0,0,.18)!important;}
   .home-premium-scope .hero-subtitle{max-width:720px!important;margin:.8rem auto 0!important;color:rgba(255,255,255,.94)!important;font-size:clamp(.9rem,1.2vw,1.08rem)!important;line-height:1.55!important;text-shadow:0 2px 10px rgba(0,0,0,.16)!important;}
   .home-premium-scope .hero-btn{margin:1rem auto 0!important;min-height:44px!important;padding:.62rem 1.2rem!important;background:#fff!important;color:#086b4f!important;border-radius:999px!important;box-shadow:0 12px 28px -16px rgba(0,0,0,.45)!important;}
+  /* Desktop only: keep CTA inside the hero at the bottom-right corner. */
+  @media(min-width:768px){
+    .home-premium-scope .hero-inner>div:first-child .hero-btn,.home-premium-scope .hero-wrap>div>div:first-child .hero-btn{position:absolute!important;right:28px!important;bottom:24px!important;margin:0!important;}
+  }
   .home-premium-scope .hero-wrap>div.block::before,.home-premium-scope .hero-wrap>div.block::after{z-index:8!important;}
   @media(max-width:767px){
     .home-premium-scope .hero-wrap{width:100%!important;aspect-ratio:2/1!important;max-height:none!important;border-radius:1rem!important;}
