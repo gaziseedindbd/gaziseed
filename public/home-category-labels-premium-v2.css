@@ -19,3 +19,38 @@
   transform: translateY(-1px);
   text-shadow: 0 2px 12px rgba(15,23,42,.16) !important;
 }
+
+/* Homepage hero CTA — placement-only patch. Keeps the existing banner, copy and controls unchanged. */
+.home-premium-scope .hero-inner > div:first-child,
+.home-premium-scope .hero-wrap > div > div:first-child {
+  left: 0 !important;
+  top: 0 !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  padding-left: clamp(1.25rem, 3.2vw, 3rem) !important;
+  padding-right: clamp(1.25rem, 3.2vw, 3rem) !important;
+}
+.home-premium-scope .hero-btn {
+  position: absolute !important;
+  right: clamp(1rem, 2.5vw, 2rem) !important;
+  bottom: clamp(1rem, 2.5vw, 2rem) !important;
+  margin-top: 0 !important;
+  z-index: 6 !important;
+}
+@media (max-width: 767px) {
+  .home-premium-scope .hero-inner > div:first-child,
+  .home-premium-scope .hero-wrap > div > div:first-child {
+    padding-left: .9rem !important;
+    padding-right: .9rem !important;
+  }
+  .home-premium-scope .hero-btn {
+    right: .75rem !important;
+    bottom: .75rem !important;
+  }
+}
