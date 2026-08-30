@@ -1,0 +1,27 @@
+{
+  "name": "SUPER KING SEED",
+  "short_name": "SUPER KING SEED",
+  "description": "বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর",
+  "lang": "bn",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#047857",
+  "icons": [
+    {
+      "src": "/seed-bari-logo-png.webp",
+      "sizes": "192x192",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "/seed-bari-logo-png.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    }
+  ]
+}
