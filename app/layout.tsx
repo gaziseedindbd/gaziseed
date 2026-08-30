@@ -23,12 +23,19 @@ import BrandNormalizer from '@/components/site/brand-normalizer';
 
 const hind = Hind({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'], variable: '--font-hind', display: 'swap' });
 
+const FAVICON_URL = 'https://i.ibb.co/HTy8TYrM/favicon.jpg';
+
 export const metadata: Metadata = {
   title: 'SUPER KING SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
   description: 'SUPER KING SEED - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। ক্যাশ অন ডেলিভারি সারাদেশে।',
   metadataBase: new URL('https://www.seedbari.com'),
   manifest: '/manifest.webmanifest',
   themeColor: '#047857',
+  icons: {
+    icon: [{ url: FAVICON_URL, type: 'image/jpeg' }],
+    shortcut: [FAVICON_URL],
+    apple: [{ url: FAVICON_URL }],
+  },
   openGraph: { title: 'SUPER KING SEED', description: 'বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর', type: 'website' },
 };
 
@@ -38,8 +45,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
         <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="icon" href={FAVICON_URL} type="image/jpeg" />
+        <link rel="shortcut icon" href={FAVICON_URL} type="image/jpeg" />
         <meta name="theme-color" content="#047857" />
-        <link rel="apple-touch-icon" href="/seed-bari-logo-png.webp" />
+        <link rel="apple-touch-icon" href={FAVICON_URL} />
         <link rel="stylesheet" href="/home-premium-v3.css" />
         <link rel="stylesheet" href="/home-banner-overlay.css" />
         <link rel="stylesheet" href="/product-detail-premium.css" />
