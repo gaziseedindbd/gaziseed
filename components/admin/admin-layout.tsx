@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
-import { Loader2, LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Tag, Star, Wrench, FileText, Mail, Image, Settings, FileBarChart, Menu, X, LogOut, Truck, Megaphone, Layers, BarChart3, Home, ShieldCheck, UserCog, Gift, Bell, Boxes, LifeBuoy, TrendingUp, Sun, Moon } from 'lucide-react';
+import { Loader2, LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Tag, Star, Wrench, FileText, Mail, Image, Settings, FileBarChart, Menu, X, LogOut, Truck, Megaphone, Layers, BarChart3, Home, ShieldCheck, UserCog, Gift, Bell, Boxes, LifeBuoy, TrendingUp, Sun, Moon, Bot } from 'lucide-react';
 import Link from 'next/link';
 import { NotificationCenter } from './notification-center';
 
@@ -41,6 +41,13 @@ const navGroups: NavGroup[] = [
       { href: '/admin/ads-landing', label: 'Ads Landing Pages', icon: Megaphone },
       { href: '/admin/campaigns', label: 'ক্যাম্পেইন ট্র্যাকিং', icon: BarChart3 },
       { href: '/admin/settings?tab=marketing', label: 'মার্কেটিং সেটিংস', icon: Tag },
+    ],
+  },
+  {
+    label: 'AI',
+    items: [
+      { href: '/admin/ai', label: 'AI Center', icon: Bot },
+      { href: '/admin/ai-messenger', label: 'AI Messenger', icon: MessageCircle },
     ],
   },
   {
@@ -101,7 +108,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const isLoginPage = pathname === '/allahmohammad/admin/login786';
 
   useEffect(() => {
-    // সেভ করা থিম লোড করা
     const savedTheme = (localStorage.getItem('admin_theme') as 'light' | 'dark') || 'light';
     setTheme(savedTheme);
     if (savedTheme === 'dark') {
@@ -110,9 +116,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       document.documentElement.classList.remove('dark');
     }
 
-    if (isLoginPage) { 
-      setLoading(false); 
-      return; 
+    if (isLoginPage) {
+      setLoading(false);
+      return;
     }
     checkAdmin();
   }, [isLoginPage, pathname]);
@@ -130,16 +136,16 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   const checkAdmin = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) { 
-      router.push('/'); 
-      return; 
+
+    if (!session) {
+      router.push('/');
+      return;
     }
 
     const { data } = await supabase.rpc('is_admin');
-    if (!data) { 
-      router.push('/'); 
-      return; 
+    if (!data) {
+      router.push('/');
+      return;
     }
 
     setAdminEmail(session.user.email || '');
@@ -153,9 +159,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!isAdmin) return null;
 
-  const handleLogout = async () => { 
-    await supabase.auth.signOut(); 
-    router.push('/'); 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
   };
 
   const isActive = (href: string) => {
@@ -166,7 +172,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-secondary/10 text-foreground">
-      {/* মোবাইল হেডার */}
       <div className="sticky top-0 z-45 flex items-center justify-between border-b border-border bg-background px-4 py-3 lg:hidden">
         <button onClick={() => setSidebarOpen(true)} className="p-1"><Menu className="h-6 w-6" /></button>
         <span className="font-bold text-primary">SEED BARI Admin</span>
@@ -178,7 +183,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* সাইডবার */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 transform overflow-y-auto border-r border-border bg-background transition-transform lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between border-b border-border p-4">
@@ -194,7 +198,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          {/* রোল ব্যাজ */}
           <div className="border-b border-border px-4 py-3">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
