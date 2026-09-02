@@ -1,0 +1,250 @@
+.scope {
+  --forest: #04140c;
+  --forest-2: #082319;
+  --green: #0b6a31;
+  --lime: #b9f36c;
+  --gold: #f4c85a;
+  --cream: #faf7ef;
+  position: relative;
+  isolation: isolate;
+  overflow-x: clip;
+  background: var(--cream);
+}
+
+.scope :global(header) {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  background: linear-gradient(180deg, rgba(3,17,10,.96), rgba(4,20,12,.88));
+  box-shadow: 0 18px 45px -28px rgba(0,0,0,.7);
+  backdrop-filter: blur(18px) saturate(130%);
+}
+.scope :global(header) > div { min-height: 76px; }
+.scope :global(header button) {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(244,200,90,.24);
+  background: linear-gradient(135deg, rgba(244,200,90,.98), rgba(185,243,108,.95));
+  color: #07170d;
+  box-shadow: 0 14px 28px -18px rgba(244,200,90,.8), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.scope :global(header button)::after {
+  content: "";
+  position: absolute;
+  inset: -40% 30%;
+  transform: translateX(-160%) rotate(18deg);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.42), transparent);
+  animation: pro-sweep 4.8s ease-in-out infinite;
+}
+
+.scope :global(.sk-reveal) {
+  animation: pro-hero .85s cubic-bezier(.2,.8,.2,1) both;
+}
+.scope :global(.sk-animate) {
+  opacity: 0;
+  transform: translateY(22px) scale(.985);
+  filter: blur(2px);
+  transition: opacity .65s cubic-bezier(.2,.7,.2,1), transform .65s cubic-bezier(.2,.7,.2,1), filter .65s ease;
+}
+.scope :global(.sk-visible) {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+}
+.scope :global(.sk-delay-1) { transition-delay: .08s; }
+.scope :global(.sk-delay-2) { transition-delay: .16s; }
+.scope :global(.sk-delay-3) { transition-delay: .24s; }
+.scope :global(.sk-float) { animation: pro-float 5.4s ease-in-out infinite; }
+.scope :global(.sk-shimmer) { position: relative; overflow: hidden; }
+.scope :global(.sk-shimmer)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(100deg, transparent 22%, rgba(255,255,255,.46) 45%, transparent 68%);
+  animation: pro-sweep 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.scope :global(section#story) {
+  min-height: min(860px, calc(100svh - 76px));
+  display: flex;
+  align-items: center;
+  position: relative;
+  background:
+    radial-gradient(circle at 74% 24%, rgba(185,243,108,.15), transparent 28%),
+    radial-gradient(circle at 12% 18%, rgba(244,200,90,.10), transparent 24%),
+    linear-gradient(125deg, #04140c 0%, #061b10 48%, #07251a 100%) !important;
+}
+.scope :global(section#story) h1 {
+  text-wrap: balance;
+  font-size: clamp(2.9rem, 6vw, 5.9rem) !important;
+  line-height: .96 !important;
+  letter-spacing: -.055em !important;
+  text-shadow: 0 18px 55px rgba(0,0,0,.38);
+}
+.scope :global(section#story h1 span) { filter: drop-shadow(0 8px 30px rgba(185,243,108,.12)); }
+.scope :global(section#story .sk-animate) {
+  border-color: rgba(255,255,255,.10) !important;
+  background: linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.025)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 18px 40px -30px rgba(0,0,0,.9);
+}
+.scope :global(section#story .sk-float img) {
+  filter: drop-shadow(0 32px 65px rgba(0,0,0,.6));
+  transform: scale(1.02);
+}
+
+.scope :global(aside) { box-shadow: inset -1px 0 rgba(185,243,108,.07); }
+.scope :global(aside button) { position: relative; }
+.scope :global(aside button)::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: 18%;
+  bottom: 18%;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--gold);
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+.scope :global(aside button.bg-lime-300)::after { opacity: 1; }
+
+.scope :global(section#benefits),
+.scope :global(section#cultivation),
+.scope :global(section#testimonials) {
+  position: relative;
+  background:
+    radial-gradient(circle at 12% 15%, rgba(185,243,108,.09), transparent 25%),
+    radial-gradient(circle at 92% 84%, rgba(244,200,90,.08), transparent 25%),
+    var(--cream) !important;
+}
+.scope :global(section#benefits article) {
+  min-height: 235px;
+  overflow: hidden;
+  border-color: rgba(10,53,30,.10) !important;
+  background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(248,246,236,.94)) !important;
+  box-shadow: 0 18px 55px -38px rgba(24,61,40,.45) !important;
+}
+.scope :global(section#benefits article:hover) {
+  transform: translateY(-7px);
+  box-shadow: 0 26px 65px -34px rgba(11,106,49,.25) !important;
+}
+
+.scope :global(section#cultivation > div > div.mt-10) { position: relative; }
+.scope :global(section#cultivation > div > div.mt-10::before) {
+  content: "";
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  top: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(11,106,49,.18), rgba(244,200,90,.5), rgba(11,106,49,.18), transparent);
+}
+.scope :global(section#cultivation > div > div.mt-10 > div) {
+  position: relative;
+  z-index: 2;
+  min-height: 260px;
+  overflow: hidden;
+  background: linear-gradient(150deg, #ffffff, #f6f5eb) !important;
+  border-color: rgba(10,53,30,.09) !important;
+  box-shadow: 0 18px 50px -38px rgba(24,61,40,.48) !important;
+}
+.scope :global(section#cultivation > div > div.mt-10 > div:hover) {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 60px -35px rgba(11,106,49,.26) !important;
+}
+
+.scope :global(section#packages) {
+  position: relative;
+  background:
+    radial-gradient(circle at 8% 20%, rgba(185,243,108,.10), transparent 24%),
+    radial-gradient(circle at 94% 78%, rgba(244,200,90,.10), transparent 24%),
+    linear-gradient(125deg, #04140c 0%, #061b10 48%, #082219 100%) !important;
+}
+.scope :global(section#packages .mt-10 > div:first-child > button) {
+  min-height: 380px;
+  border-radius: 30px !important;
+  border-color: rgba(255,255,255,.10) !important;
+  background: linear-gradient(160deg, rgba(255,255,255,.065), rgba(255,255,255,.022)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 24px 70px -52px rgba(0,0,0,.9) !important;
+}
+.scope :global(section#packages .mt-10 > div:first-child > button:hover) {
+  border-color: rgba(185,243,108,.42) !important;
+  transform: translateY(-5px);
+  box-shadow: 0 28px 80px -46px rgba(185,243,108,.2) !important;
+}
+.scope :global(section#packages .mt-10 > div:first-child > button.border-lime-300) {
+  transform: translateY(-9px) scale(1.015);
+  border-color: var(--gold) !important;
+  background: linear-gradient(155deg, #fffef8 0%, #f6f1df 100%) !important;
+  box-shadow: 0 30px 85px -42px rgba(244,200,90,.5), inset 0 1px 0 rgba(255,255,255,.92) !important;
+}
+.scope :global(section#packages .mt-10 > div:first-child > button.border-lime-300)::before {
+  content: "BEST VALUE";
+  position: absolute;
+  left: 18px;
+  top: 14px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--gold), #ffe2a0);
+  color: #1b291f;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .16em;
+  box-shadow: 0 10px 20px -14px rgba(244,200,90,.8);
+}
+.scope :global(section#packages .mt-10 > div:first-child > button:nth-child(3)) { min-height: 408px; }
+.scope :global(section#packages .mt-10 > div:first-child > button img) { transition: transform .55s cubic-bezier(.2,.8,.2,1), filter .55s ease; }
+.scope :global(section#packages .mt-10 > div:first-child > button:hover img) { transform: scale(1.075) translateY(-2px); filter: drop-shadow(0 18px 20px rgba(11,106,49,.18)); }
+.scope :global(section#packages .mt-10 > div:nth-child(2)) {
+  position: sticky;
+  top: 98px;
+  align-self: start;
+  border: 1px solid rgba(244,200,90,.24) !important;
+  background: linear-gradient(155deg, #fffdf7 0%, #f7f2e4 100%) !important;
+  box-shadow: 0 34px 95px -48px rgba(0,0,0,.82), inset 0 1px 0 rgba(255,255,255,.88) !important;
+}
+.scope :global(section#packages .mt-10 > div:nth-child(2) form button[type="submit"]) {
+  position: relative;
+  overflow: hidden;
+  min-height: 54px;
+  border-radius: 16px !important;
+  background: linear-gradient(100deg, #0a7d35, #0f963f, #0a7d35) !important;
+  box-shadow: 0 16px 30px -18px rgba(11,106,49,.76), inset 0 1px 0 rgba(255,255,255,.15) !important;
+}
+.scope :global(section#packages .mt-10 > div:nth-child(2) input),
+.scope :global(section#packages .mt-10 > div:nth-child(2) textarea),
+.scope :global(section#packages .mt-10 > div:nth-child(2) select) {
+  min-height: 48px;
+  border-color: rgba(10,53,30,.12) !important;
+  background: rgba(255,255,255,.82) !important;
+}
+.scope :global(section#packages .mt-10 > div:nth-child(2) input:focus),
+.scope :global(section#packages .mt-10 > div:nth-child(2) textarea:focus),
+.scope :global(section#packages .mt-10 > div:nth-child(2) select:focus) {
+  border-color: rgba(11,106,49,.4) !important;
+  box-shadow: 0 0 0 4px rgba(11,106,49,.08) !important;
+}
+
+@media (max-width: 1023px) {
+  .scope :global(section#story) { min-height: auto; }
+  .scope :global(section#packages .mt-10 > div:nth-child(2)) { position: relative; top: auto; }
+}
+@media (max-width: 767px) {
+  .scope :global(header) > div { min-height: 64px; }
+  .scope :global(section#story h1) { font-size: clamp(2.5rem, 12vw, 4rem) !important; }
+  .scope :global(section#story .sk-float img) { height: 320px !important; }
+  .scope :global(section#packages .mt-10 > div:first-child > button),
+  .scope :global(section#packages .mt-10 > div:first-child > button:nth-child(3)) { min-height: 340px; }
+  .scope :global(section#packages .mt-10 > div:first-child > button.border-lime-300) { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scope :global(.sk-float), .scope :global(.sk-reveal), .scope :global(.sk-shimmer)::before, .scope :global(header button)::after { animation: none !important; }
+  .scope :global(.sk-animate) { opacity: 1 !important; transform: none !important; filter: none !important; }
+}
+
+@keyframes pro-hero { from { opacity: 0; transform: translateY(22px) scale(.98); filter: blur(5px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
+@keyframes pro-float { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-11px) rotate(.35deg); } }
+@keyframes pro-sweep { 0%,22% { transform: translateX(-160%) rotate(18deg); } 48%,100% { transform: translateX(220%) rotate(18deg); } }
