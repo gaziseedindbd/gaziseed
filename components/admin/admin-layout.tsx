@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
-import { Loader2, LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Tag, Star, Wrench, FileText, Mail, Image, Settings, FileBarChart, Menu, X, LogOut, Truck, Megaphone, Layers, BarChart3, Home, ShieldCheck, UserCog, Gift, Bell, Boxes, LifeBuoy, TrendingUp, Sun, Moon, Bot, MessageCircle } from 'lucide-react';
+import { Loader2, LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Tag, Star, Wrench, FileText, Mail, Image, Settings, FileBarChart, Menu, X, LogOut, Truck, Megaphone, Layers, BarChart3, Home, ShieldCheck, UserCog, Gift, Bell, Boxes, LifeBuoy, TrendingUp, Sun, Moon, Bot, MessageCircle, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { NotificationCenter } from './notification-center';
 
@@ -25,6 +25,7 @@ const navGroups: NavGroup[] = [
   ] },
   { label: 'Ads ও মার্কেটিং', items: [
     { href: '/admin/ads-landing', label: 'Ads Landing Pages', icon: Megaphone },
+    { href: '/admin/animated-landing', label: 'Animated Landing Pages', icon: Sparkles },
     { href: '/admin/campaigns', label: 'ক্যাম্পেইন ট্র্যাকিং', icon: BarChart3 },
     { href: '/admin/settings?tab=marketing', label: 'মার্কেটিং সেটিংস', icon: Tag },
   ] },
