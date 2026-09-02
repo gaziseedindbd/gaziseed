@@ -77,7 +77,7 @@ export default function AdminOrdersPage() {
 
     const { data, error } = await supabase
       .from('order_items')
-      .select('*, products(*)')
+      .select('*')
       .eq('order_id', order.id);
 
     if (error) {
@@ -110,12 +110,8 @@ export default function AdminOrdersPage() {
   const [printMode, setPrintMode] = useState<'invoice' | 'packing'>('invoice');
 
   const getProductDisplayName = (item: any) => {
-    if (item.products?.name_bn) return item.products.name_bn;
-    if (item.products?.name) return item.products.name;
-    if (item.products?.title) return item.products.title;
     if (item.product_name && item.product_name.toLowerCase() !== 'product') return item.product_name;
-    if (item.products?.name_en) return item.products.name_en;
-    return item.product_name || 'বীজ / পণ্য';
+    return 'বীজ / পণ্য';
   };
 
   return (
@@ -318,7 +314,7 @@ export default function AdminOrdersPage() {
                 <div className="space-y-2">
                   {orderItems.map((item) => {
                     const displayName = getProductDisplayName(item);
-                    const displayImage = item.products?.image || item.image;
+                    const displayImage = item.image;
                     
                     return (
                       <div key={item.id} className="flex items-center justify-between rounded-xl bg-secondary/20 p-2.5 sm:p-3 text-xs sm:text-sm gap-2 border border-border/40">
