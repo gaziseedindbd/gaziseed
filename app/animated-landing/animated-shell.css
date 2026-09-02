@@ -1,0 +1,23 @@
+/* Animated Landing Page campaign shell — isolates the destination from the normal storefront chrome. */
+body:has(.animated-pro-scope) {
+  padding-top: 0 !important;
+  overflow-x: hidden;
+}
+
+body:has(.animated-pro-scope) > header,
+body:has(.animated-pro-scope) > footer,
+body:has(.animated-pro-scope) > nav,
+body:has(.animated-pro-scope) > div.fixed.right-3\\.5,
+body:has(.animated-pro-scope) > div[style*="translate-y"] {
+  display: none !important;
+}
+
+body:has(.animated-pro-scope) > div {
+  background: transparent !important;
+}
+
+@media (max-width: 767px) {
+  body:has(.animated-pro-scope) {
+    padding-bottom: 0 !important;
+  }
+}
