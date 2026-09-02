@@ -1,0 +1,155 @@
+.scope :global(main > section#packages + section.bg-lime-100) {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 90 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px !important;
+  background:
+    radial-gradient(circle at 18% 15%, rgba(185,243,108,.18), transparent 28%),
+    radial-gradient(circle at 84% 22%, rgba(244,200,90,.20), transparent 26%),
+    linear-gradient(135deg, #03140b 0%, #062316 48%, #0a2f1e 100%) !important;
+  overflow: auto !important;
+  animation: success-fade .45s ease both;
+}
+
+.scope :global(main > section#packages + section.bg-lime-100)::before {
+  content: "";
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  border: 1px solid rgba(185,243,108,.11);
+  box-shadow: 0 0 0 80px rgba(185,243,108,.025), 0 0 0 160px rgba(244,200,90,.018);
+  animation: success-orbit 12s linear infinite;
+  pointer-events: none;
+}
+
+.scope :global(main > section#packages + section.bg-lime-100)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(115deg, transparent 25%, rgba(255,255,255,.045) 45%, transparent 65%),
+    radial-gradient(circle at 50% 78%, rgba(185,243,108,.10), transparent 22%);
+  background-size: 220% 100%, 100% 100%;
+  animation: success-sheen 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.scope :global(main > section#packages + section.bg-lime-100 > div) {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 620px) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 22px !important;
+  padding: 34px 34px 30px !important;
+  border: 1px solid rgba(244,200,90,.34) !important;
+  border-radius: 32px !important;
+  background: linear-gradient(150deg, rgba(255,255,255,.97), rgba(248,247,238,.95)) !important;
+  box-shadow: 0 40px 100px -38px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.96) !important;
+  backdrop-filter: blur(18px);
+  animation: success-card .72s cubic-bezier(.2,.9,.2,1) both;
+}
+
+.scope :global(main > section#packages + section.bg-lime-100 > div)::before {
+  content: "অর্ডার সফলভাবে গ্রহণ করা হয়েছে";
+  position: absolute;
+  left: 34px;
+  top: -17px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0b6a31, #0e8a42);
+  color: #f7ffd9;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  box-shadow: 0 12px 28px -16px rgba(11,106,49,.8);
+}
+
+.scope :global(main > section#packages + section.bg-lime-100 > div > svg) {
+  flex: 0 0 auto;
+  width: 72px !important;
+  height: 72px !important;
+  padding: 14px;
+  border-radius: 24px;
+  color: #0b6a31 !important;
+  background: linear-gradient(145deg, #e8f8d8, #f5fbeb);
+  border: 1px solid rgba(11,106,49,.14);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 18px 36px -20px rgba(11,106,49,.28);
+  animation: success-check 1s cubic-bezier(.2,.85,.2,1) both;
+}
+
+.scope :global(main > section#packages + section.bg-lime-100 > div > div) {
+  min-width: 0;
+}
+
+.scope :global(main > section#packages + section.bg-lime-100 > div > div)::after {
+  content: "✓ ক্যাশ অন ডেলিভারি   •   ✓ নিরাপদ অর্ডার   •   ✓ আমাদের টিম শিগগিরই যোগাযোগ করবে";
+  display: block;
+  margin-top: 10px;
+  color: #55705e;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.scope :global(main > section#packages + section.bg-lime-100 p) {
+  margin: 0 !important;
+}
+
+.scope :global(main > section#packages + section.bg-lime-100 h3) {
+  font-size: clamp(1.15rem, 2.5vw, 1.55rem) !important;
+  line-height: 1.35 !important;
+  color: #082015 !important;
+}
+
+@keyframes success-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes success-card {
+  from { opacity: 0; transform: translateY(24px) scale(.94); filter: blur(7px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes success-check {
+  0% { opacity: 0; transform: scale(.45) rotate(-18deg); }
+  65% { opacity: 1; transform: scale(1.08) rotate(3deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes success-orbit {
+  from { transform: rotate(0deg) scale(.98); }
+  to { transform: rotate(360deg) scale(1.02); }
+}
+
+@keyframes success-sheen {
+  0%, 18% { background-position: -120% 0, 0 0; }
+  52%, 100% { background-position: 120% 0, 0 0; }
+}
+
+@media (max-width: 640px) {
+  .scope :global(main > section#packages + section.bg-lime-100) { padding: 18px !important; }
+  .scope :global(main > section#packages + section.bg-lime-100 > div) {
+    flex-direction: column !important;
+    text-align: center;
+    padding: 34px 22px 24px !important;
+    border-radius: 28px !important;
+  }
+  .scope :global(main > section#packages + section.bg-lime-100 > div)::before { left: 50%; transform: translateX(-50%); white-space: nowrap; }
+  .scope :global(main > section#packages + section.bg-lime-100 > div > svg) { width: 68px !important; height: 68px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scope :global(main > section#packages + section.bg-lime-100),
+  .scope :global(main > section#packages + section.bg-lime-100 > div),
+  .scope :global(main > section#packages + section.bg-lime-100 > div > svg),
+  .scope :global(main > section#packages + section.bg-lime-100)::before,
+  .scope :global(main > section#packages + section.bg-lime-100)::after {
+    animation: none !important;
+  }
+}
