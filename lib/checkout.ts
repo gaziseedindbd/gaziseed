@@ -1,3 +1,5 @@
+'use server';
+
 import { createClient } from '@/lib/supabase/server';
 
 export type CheckoutItem = { productId: string; variantId?: string | null; quantity: number };
