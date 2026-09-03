@@ -6,8 +6,18 @@ export const FALLBACK_IMAGE = `${SITE_URL}/favicon.svg`;
 
 function absoluteUrl(value?: string | null) {
   if (!value) return FALLBACK_IMAGE;
-  if (/^https?:\/\//i.test(value)) return value;
-  return `${SITE_URL}${value.startsWith('/') ? '' : '/'}${value}`;
+  const url = /^https?:\/\//i.test(value)
+    ? value
+    : `${SITE_URL}${value.startsWith('/') ? '' : '/'}${value}`;
+
+  // Facebook/Meta link previews are more reliable with a JPEG/PNG OG asset.
+  // Site uploads are commonly WebP, so convert only the social-preview request
+  // through a public image proxy. The actual site image URL is left untouched.
+  if (/\.webp(?:$|[?#])/i.test(url)) {
+    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=1200&h=630&fit=contain&cbg=ffffff&output=jpg&q=88`;
+  }
+
+  return url;
 }
 
 export function pageMetadata({
@@ -27,6 +37,7 @@ export function pageMetadata({
   const cleanDescription = (description || 'SUPER KING SEED — বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর।').trim();
   const url = `${SITE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
   const ogImage = absoluteUrl(image);
+  const isJpegPreview = ogImage.startsWith('https://wsrv.nl/');
 
   return {
     title: cleanTitle,
@@ -39,7 +50,13 @@ export function pageMetadata({
       siteName: 'SUPER KING SEED',
       type,
       locale: 'bn_BD',
-      images: [{ url: ogImage, width: 1200, height: 630, alt: cleanTitle }],
+      images: [{
+        url: ogImage,
+        width: 1200,
+        height: 630,
+        alt: cleanTitle,
+        ...(isJpegPreview ? { type: 'image/jpeg' } : {}),
+      }],
     },
     twitter: {
       card: 'summary_large_image',
