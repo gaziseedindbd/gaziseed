@@ -1,7 +1,14 @@
 import type { Metadata } from 'next';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-export const SITE_URL = 'https://www.seedbari.com';
+const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+const vercelSiteUrl = process.env.VERCEL_URL?.trim();
+export const SITE_URL = configuredSiteUrl
+  ? configuredSiteUrl.replace(/\/$/, '')
+  : vercelSiteUrl
+    ? `https://${vercelSiteUrl}`
+    : 'https://www.seedbari.com';
+
 export const FALLBACK_IMAGE = `${SITE_URL}/favicon.svg`;
 
 function absoluteUrl(value?: string | null) {
@@ -10,11 +17,10 @@ function absoluteUrl(value?: string | null) {
     ? value
     : `${SITE_URL}${value.startsWith('/') ? '' : '/'}${value}`;
 
-  // Facebook/Meta link previews are more reliable with a JPEG/PNG OG asset.
-  // Site uploads are commonly WebP, so convert only the social-preview request
-  // through a public image proxy. The actual site image URL is left untouched.
+  // Facebook/Meta previews are more reliable with a JPEG/PNG asset.
+  // Keep the actual site image untouched and transcode WebP only for social crawlers.
   if (/\.webp(?:$|[?#])/i.test(url)) {
-    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=1200&h=630&fit=contain&cbg=ffffff&output=jpg&q=88`;
+    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=1200&h=630&fit=cover&cbg=ffffff&output=jpg&q=88`;
   }
 
   return url;
@@ -42,6 +48,7 @@ export function pageMetadata({
   return {
     title: cleanTitle,
     description: cleanDescription,
+    metadataBase: new URL(SITE_URL),
     alternates: { canonical: url },
     openGraph: {
       title: cleanTitle,
