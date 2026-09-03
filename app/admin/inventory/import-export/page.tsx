@@ -1,0 +1,21 @@
+'use client';
+import { useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+
+function csvEscape(v:any){const s=String(v??'');return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}
+
+export default function InventoryImportExport(){
+ const [country,setCountry]=useState('BD'); const [rows,setRows]=useState<any[]>([]); const [msg,setMsg]=useState(''); const [busy,setBusy]=useState(false);
+ async function exportCsv(){
+  setMsg(''); const s=createClient(); const {data,error}=await s.from('products').select('name_en,name_bn,sku,country,stock,low_stock_threshold,active').eq('country',country).order('name_en').limit(5000);
+  if(error){setMsg(error.message);return} const header=['name_en','name_bn','sku','country','stock','low_stock_threshold','active']; const csv=[header.join(','),...(data||[]).map(r=>header.map(k=>csvEscape(r[k])).join(','))].join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=`gaziseed-inventory-${country}.csv`;a.click();URL.revokeObjectURL(a.href);setMsg(`Exported ${(data||[]).length} products.`)
+ }
+ function parseFile(file:File){setMsg(''); const reader=new FileReader(); reader.onload=()=>{const text=String(reader.result||''); const lines=text.split(/\r?\n/).filter(Boolean); if(!lines.length){setMsg('CSV is empty');return} const parse=(line:string)=>{const out:string[]=[];let cur='',quote=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'&&line[i+1]==='"'){cur+='"';i++;continue}if(c==='"'){quote=!quote;continue}if(c===','&&!quote){out.push(cur);cur=''}else cur+=c}out.push(cur);return out}; const h=parse(lines[0]); const data=lines.slice(1).map(l=>{const v=parse(l);return Object.fromEntries(h.map((k,i)=>[k,v[i]??'']))}); setRows(data);setMsg(`Preview loaded: ${data.length} rows.`)};reader.readAsText(file)}
+ async function apply(){
+  if(!rows.length){setMsg('Upload a CSV first.');return} setBusy(true);setMsg(''); const s=createClient(); let ok=0,fail=0; const errors:string[]=[];
+  for(const r of rows){const sku=String(r.sku||'').trim(); const stock=Number(r.stock); if(!sku||!Number.isFinite(stock)||stock<0){fail++;errors.push(`${sku||'row'}: invalid SKU/stock`);continue} const {data:p,error:e}=await s.from('products').select('id,country').eq('sku',sku).eq('country',country).maybeSingle(); if(e||!p){fail++;errors.push(`${sku}: product not found`);continue} const {error:u}=await s.rpc('admin_set_product_stock_import',{p_product_id:p.id,p_stock:stock,p_reason:'bulk_import'}); if(u){fail++;errors.push(`${sku}: ${u.message}`)}else ok++ }
+  setBusy(false);setMsg(`Import complete: ${ok} updated, ${fail} failed.${errors.length?` ${errors.slice(0,3).join(' | ')}`:''}`);setRows([])
+ }
+ return <main className="p-5 md:p-8"><h1 className="text-3xl font-black">Inventory Import / Export</h1><p className="mt-1 text-gray-500">Bulk stock update by SKU. CSV only; stock cannot be negative.</p><div className="mt-6 flex flex-wrap gap-3"><select value={country} onChange={e=>setCountry(e.target.value)} className="rounded-xl border bg-white px-4 py-3"><option value="BD">Bangladesh</option><option value="IN">India</option></select><button onClick={exportCsv} className="rounded-xl bg-black px-5 py-3 text-white">Export CSV</button><label className="cursor-pointer rounded-xl border bg-white px-5 py-3">Upload CSV<input type="file" accept=".csv,text/csv" className="hidden" onChange={e=>e.target.files?.[0]&&parseFile(e.target.files[0])}/></label>{rows.length>0&&<button disabled={busy} onClick={apply} className="rounded-xl bg-[#1f6b3b] px-5 py-3 font-semibold text-white disabled:opacity-50">{busy?'Importing…':`Apply ${rows.length} rows`}</button>}</div>{msg&&<p className="mt-4 rounded-xl border bg-white p-4">{msg}</p>}{rows.length>0&&<div className="mt-6 overflow-auto rounded-2xl border bg-white"><table className="min-w-full text-sm"><thead><tr className="border-b">{Object.keys(rows[0]).map(k=><th key={k} className="px-4 py-3 text-left">{k}</th>)}</tr></thead><tbody>{rows.slice(0,20).map((r,i)=><tr key={i} className="border-b">{Object.values(r).map((v:any,j)=><td key={j} className="px-4 py-3">{String(v)}</td>)}</tr>)}</tbody></table></div>}</main>
+}
