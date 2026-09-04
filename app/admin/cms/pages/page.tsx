@@ -21,7 +21,7 @@ type PageRow = {
 
 async function requireMasterAdmin() {
   const context = await getCurrentAdminContext();
-  if (!context || context.role !== "master_admin") redirect("/");
+  if (!context || context.profile.role !== "master_admin") redirect("/");
 }
 
 async function savePage(formData: FormData) {
