@@ -29,13 +29,23 @@ export async function getActivePromotionalPopup(country: CountryCode) {
     .maybeSingle();
 }
 
-export async function getActiveLandingPage(country: CountryCode, slug: string) {
+export async function getActiveLandingPage(country: CountryCode, slugOrId: string) {
   const supabase = await createClient();
+  const bySlug = await supabase
+    .from('landing_pages')
+    .select('id,country,title,slug,type,content,animated,active,created_by,created_at,updated_at')
+    .eq('country', country)
+    .eq('slug', slugOrId)
+    .eq('active', true)
+    .maybeSingle();
+
+  if (bySlug.data || bySlug.error) return bySlug;
+
   return supabase
     .from('landing_pages')
     .select('id,country,title,slug,type,content,animated,active,created_by,created_at,updated_at')
     .eq('country', country)
-    .eq('slug', slug)
+    .eq('id', slugOrId)
     .eq('active', true)
     .maybeSingle();
 }
