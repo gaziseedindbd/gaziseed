@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { getActiveProducts } from '@/lib/products';
 import { formatMoney } from '@/lib/country';
@@ -48,8 +49,11 @@ export default async function ShopPage() {
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {products.map((p: any) => {
-              const image = p.product_images?.[0]?.optimized_url || p.product_images?.[0]?.source_url;
-              const displayName = country === 'BD' ? p.name_bn || p.name_en : p.name_en || p.name_bn;
+              const image = p.product_images?.[0];
+              const imageUrl = image?.optimized_url || image?.source_url;
+              const price = Number(p.sale_price ?? p.regular_price ?? 0);
+              const regularPrice = Number(p.regular_price ?? 0);
+              const hasDiscount = regularPrice > price;
 
               return (
                 <Link
@@ -57,25 +61,30 @@ export default async function ShopPage() {
                   key={p.id}
                   className="group overflow-hidden rounded-2xl border bg-white transition hover:-translate-y-1 hover:shadow-lg"
                 >
-                  <div className="flex h-56 items-center justify-center overflow-hidden bg-[#edf5e9]">
-                    {image ? (
-                      <img
-                        src={image}
-                        alt={displayName}
-                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                  <div className="relative flex h-56 items-center justify-center bg-[#edf5e9]">
+                    {imageUrl ? (
+                      <Image
+                        src={imageUrl}
+                        alt={p.name_en || p.name_bn || 'SEED BARI seed product'}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        className="object-contain p-4 transition duration-300 group-hover:scale-105"
                       />
                     ) : (
                       <span className="text-6xl" aria-hidden="true">🌱</span>
                     )}
                   </div>
                   <div className="p-4">
-                    <h2 className="font-bold text-gray-900">{displayName}</h2>
+                    <h2 className="font-bold">{p.name_en || p.name_bn}</h2>
                     <p className="mt-2 line-clamp-2 text-sm text-gray-500">
                       {p.short_description || 'Premium quality seed variety'}
                     </p>
-                    <strong className="mt-4 block text-xl text-[#1f6b3b]">
-                      {formatMoney(Number(p.sale_price ?? p.regular_price ?? 0), country)}
-                    </strong>
+                    <div className="mt-4 flex items-baseline gap-2">
+                      <strong className="text-xl text-[#1f6b3b]">{formatMoney(price, country)}</strong>
+                      {hasDiscount ? (
+                        <span className="text-sm text-gray-400 line-through">{formatMoney(regularPrice, country)}</span>
+                      ) : null}
+                    </div>
                   </div>
                 </Link>
               );
