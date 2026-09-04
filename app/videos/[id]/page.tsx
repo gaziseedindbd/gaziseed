@@ -43,6 +43,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return {
     title: `${data.title} — SEED BARI`,
     description,
+    alternates: { canonical: `/videos/${data.id}` },
     openGraph: {
       title: `${data.title} — SEED BARI`,
       description,
