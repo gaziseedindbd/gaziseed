@@ -7,6 +7,8 @@ import AddToCart from '@/components/AddToCart';
 import { getStoreCountry } from '@/lib/seed-bari/context';
 import type { CountryCode } from '@/lib/seed-bari/domain';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://gaziseed.vercel.app';
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const country: CountryCode = await getStoreCountry('BD');
@@ -32,6 +34,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `${title} | SEED BARI`,
     description,
+    alternates: {
+      canonical: `${SITE_URL}/product/${slug}`,
+    },
     openGraph: {
       title,
       description,
@@ -79,6 +84,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     },
     offers: {
       '@type': 'Offer',
+      url: `${SITE_URL}/product/${p.slug}`,
       priceCurrency: country === 'BD' ? 'BDT' : 'INR',
       price: price.toFixed(2),
       availability:
@@ -89,6 +95,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           : p.stock > 0
             ? 'https://schema.org/InStock'
             : 'https://schema.org/OutOfStock',
+      itemCondition: 'https://schema.org/NewCondition',
     },
   };
 
