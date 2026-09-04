@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getActiveProducts } from '@/lib/products';
 import { formatMoney } from '@/lib/country';
@@ -5,6 +6,26 @@ import { getStoreCountry } from '@/lib/seed-bari/context';
 import { SEED_BARI_BRAND } from '@/lib/seed-bari/config';
 import type { CountryCode } from '@/lib/seed-bari/domain';
 import HomeCms from '@/components/seed-bari/home-cms';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const country: CountryCode = await getStoreCountry('BD');
+
+  if (country === 'IN') {
+    return {
+      title: 'SEED BARI India — Premium Seeds & Agriculture',
+      description: 'Buy genuine seeds and agriculture products in India with INR pricing and convenient delivery from SEED BARI.',
+      keywords: ['SEED BARI India', 'seeds India', 'vegetable seeds India', 'agriculture seeds India', 'buy seeds online India'],
+      alternates: { canonical: '/' },
+    };
+  }
+
+  return {
+    title: 'SEED BARI Bangladesh — Premium Seeds & Agriculture',
+    description: 'কৃষকের জন্য মানসম্মত বীজ ও কৃষি পণ্য কিনুন বাংলাদেশে। SEED BARI থেকে genuine seeds, BDT pricing এবং সুবিধাজনক ডেলিভারি।',
+    keywords: ['SEED BARI Bangladesh', 'বীজ', 'সবজি বীজ', 'কৃষি বীজ', 'অনলাইনে বীজ কিনুন'],
+    alternates: { canonical: '/' },
+  };
+}
 
 export default async function HomePage() {
   const country: CountryCode = await getStoreCountry('BD');
