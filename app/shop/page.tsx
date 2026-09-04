@@ -47,22 +47,39 @@ export default async function ShopPage() {
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {products.map((p: any) => (
-              <Link
-                href={`/product/${p.slug}`}
-                key={p.id}
-                className="overflow-hidden rounded-2xl border bg-white transition hover:-translate-y-1 hover:shadow-lg"
-              >
-                <div className="flex h-48 items-center justify-center bg-[#edf5e9] text-6xl">🌱</div>
-                <div className="p-4">
-                  <h2 className="font-bold">{p.name_en || p.name_bn}</h2>
-                  <p className="mt-2 text-sm text-gray-500">{p.short_description || 'Premium quality seed variety'}</p>
-                  <strong className="mt-4 block text-xl text-[#1f6b3b]">
-                    {formatMoney(Number(p.sale_price ?? p.regular_price ?? 0), country)}
-                  </strong>
-                </div>
-              </Link>
-            ))}
+            {products.map((p: any) => {
+              const image = p.product_images?.[0]?.optimized_url || p.product_images?.[0]?.source_url;
+              const displayName = country === 'BD' ? p.name_bn || p.name_en : p.name_en || p.name_bn;
+
+              return (
+                <Link
+                  href={`/product/${p.slug}`}
+                  key={p.id}
+                  className="group overflow-hidden rounded-2xl border bg-white transition hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <div className="flex h-56 items-center justify-center overflow-hidden bg-[#edf5e9]">
+                    {image ? (
+                      <img
+                        src={image}
+                        alt={displayName}
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <span className="text-6xl" aria-hidden="true">🌱</span>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <h2 className="font-bold text-gray-900">{displayName}</h2>
+                    <p className="mt-2 line-clamp-2 text-sm text-gray-500">
+                      {p.short_description || 'Premium quality seed variety'}
+                    </p>
+                    <strong className="mt-4 block text-xl text-[#1f6b3b]">
+                      {formatMoney(Number(p.sale_price ?? p.regular_price ?? 0), country)}
+                    </strong>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
