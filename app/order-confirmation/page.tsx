@@ -20,15 +20,16 @@ function ConfirmationContent() {
     <main className="flex min-h-screen items-center justify-center bg-[#f7f8f4] p-4">
       <div className="max-w-lg rounded-3xl border bg-white p-10 text-center shadow-xl">
         <div className="text-6xl">✅</div>
-        <h1 className="mt-5 text-3xl font-black">Order Confirmed</h1>
-        <p className="mt-3 text-gray-600">Thank you for ordering from GAZI SEED.</p>
+        <p className="mt-5 font-bold text-[#1f6b3b]">SEED BARI</p>
+        <h1 className="mt-2 text-3xl font-black">Order Confirmed</h1>
+        <p className="mt-3 text-gray-600">Thank you for ordering from SEED BARI.</p>
         <p className="mt-5 text-sm text-gray-500">Order number</p>
         <p className="text-2xl font-black text-[#1f6b3b]">{number || '—'}</p>
         {o?.guest_token && (
           <>
             <p className="mt-5 text-sm text-gray-500">Save this guest tracking token:</p>
             <code className="mt-1 block break-all rounded-xl bg-gray-100 p-3 text-xs">{o.guest_token}</code>
-            <Link href={`/track?token=${o.guest_token}`} className="mt-4 inline-block font-bold text-[#1f6b3b]">
+            <Link href={`/track?token=${encodeURIComponent(o.guest_token)}`} className="mt-4 inline-block font-bold text-[#1f6b3b]">
               Track this order
             </Link>
           </>
