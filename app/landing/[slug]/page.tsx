@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { getActiveLandingPage } from '@/lib/seed-bari/content';
@@ -7,6 +8,58 @@ import type { CountryCode } from '@/lib/seed-bari/domain';
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value : '';
+}
+
+async function getLandingMetadata(slug: string): Promise<{
+  title: string;
+  description: string;
+  id?: string | null;
+  slug: string;
+} | null> {
+  const country: CountryCode = await getStoreCountry('BD');
+  const { data, error } = await getActiveLandingPage(country, slug);
+
+  if (error || !data) return null;
+
+  const content = (data.content ?? {}) as Record<string, unknown>;
+  const description = asText(content.description);
+
+  return {
+    title: data.title,
+    description,
+    id: data.id,
+    slug: data.slug,
+  };
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const data = await getLandingMetadata(slug);
+
+  if (!data) {
+    return {
+      title: 'Campaign — SEED BARI',
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const description = data.description || `Discover this SEED BARI campaign for ${data.title}.`;
+
+  return {
+    title: `${data.title} | SEED BARI`,
+    description,
+    alternates: { canonical: `/landing/${data.slug}` },
+    openGraph: {
+      title: `${data.title} | SEED BARI`,
+      description,
+      type: 'website',
+      url: `/landing/${data.slug}`,
+    },
+  };
 }
 
 export default async function LandingPage({ params }: { params: Promise<{ slug: string }> }) {
