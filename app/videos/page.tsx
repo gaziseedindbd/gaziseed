@@ -1,8 +1,35 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 
 import { getActiveVideos } from '@/lib/seed-bari/content';
 import { getStoreCountry } from '@/lib/seed-bari/context';
 import type { CountryCode } from '@/lib/seed-bari/domain';
+
+const videoSeo: Record<CountryCode, { title: string; description: string }> = {
+  BD: {
+    title: 'SEED BARI Videos Bangladesh | Seed & Cultivation Tips',
+    description: 'Practical seed, farming, and cultivation videos for growers in Bangladesh from SEED BARI.',
+  },
+  IN: {
+    title: 'SEED BARI Videos India | Seed & Cultivation Tips',
+    description: 'Practical seed, farming, and cultivation videos for growers in India from SEED BARI.',
+  },
+};
+
+export async function generateMetadata(): Promise<Metadata> {
+  const country = await getStoreCountry('BD');
+  const seo = videoSeo[country];
+
+  return {
+    title: seo.title,
+    description: seo.description,
+    openGraph: {
+      title: seo.title,
+      description: seo.description,
+      type: 'website',
+    },
+  };
+}
 
 export default async function VideosPage() {
   const country: CountryCode = await getStoreCountry('BD');
