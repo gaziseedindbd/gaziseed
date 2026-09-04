@@ -68,11 +68,22 @@ export async function getPublishedBlogPosts(country: CountryCode, limit = 12) {
   const supabase = await createClient();
   return supabase
     .from('blog_posts')
-    .select('id,country,title_bn,title_en,slug,excerpt,cover_image_url,published,published_at')
+    .select('id,country,title_bn,title_en,slug,excerpt,content_bn,content_en,cover_image_url,published,published_at')
     .or(`country.eq.${country},country.is.null`)
     .eq('published', true)
     .order('published_at', { ascending: false, nullsFirst: false })
     .limit(limit);
+}
+
+export async function getPublishedBlogPost(country: CountryCode, slug: string) {
+  const supabase = await createClient();
+  return supabase
+    .from('blog_posts')
+    .select('id,country,title_bn,title_en,slug,excerpt,content_bn,content_en,cover_image_url,published,published_at')
+    .or(`country.eq.${country},country.is.null`)
+    .eq('slug', slug)
+    .eq('published', true)
+    .maybeSingle();
 }
 
 export async function getActiveGuides(country: CountryCode, limit = 12) {
@@ -86,6 +97,17 @@ export async function getActiveGuides(country: CountryCode, limit = 12) {
     .limit(limit);
 }
 
+export async function getActiveGuide(country: CountryCode, slug: string) {
+  const supabase = await createClient();
+  return supabase
+    .from('guides')
+    .select('id,country,title_bn,title_en,slug,content_bn,content_en,active')
+    .or(`country.eq.${country},country.is.null`)
+    .eq('slug', slug)
+    .eq('active', true)
+    .maybeSingle();
+}
+
 export async function getActiveVideos(country: CountryCode, limit = 12) {
   const supabase = await createClient();
   return supabase
@@ -95,4 +117,15 @@ export async function getActiveVideos(country: CountryCode, limit = 12) {
     .eq('active', true)
     .order('sort_order', { ascending: true })
     .limit(limit);
+}
+
+export async function getActiveVideo(country: CountryCode, id: string) {
+  const supabase = await createClient();
+  return supabase
+    .from('video_gallery')
+    .select('id,country,title,youtube_url,description,active,sort_order')
+    .or(`country.eq.${country},country.is.null`)
+    .eq('id', id)
+    .eq('active', true)
+    .maybeSingle();
 }
