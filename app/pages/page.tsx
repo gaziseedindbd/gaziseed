@@ -1,7 +1,35 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 
 import { getPublishedContentPages } from '@/lib/seed-bari/content';
 import { getStoreCountry } from '@/lib/seed-bari/context';
+import type { CountryCode } from '@/lib/seed-bari/domain';
+
+const pageSeo: Record<CountryCode, { title: string; description: string }> = {
+  BD: {
+    title: 'SEED BARI Information & Policies Bangladesh',
+    description: 'Important information, customer policies, and helpful pages for SEED BARI customers in Bangladesh.',
+  },
+  IN: {
+    title: 'SEED BARI Information & Policies India',
+    description: 'Important information, customer policies, and helpful pages for SEED BARI customers in India.',
+  },
+};
+
+export async function generateMetadata(): Promise<Metadata> {
+  const country = await getStoreCountry('BD');
+  const seo = pageSeo[country];
+
+  return {
+    title: seo.title,
+    description: seo.description,
+    openGraph: {
+      title: seo.title,
+      description: seo.description,
+      type: 'website',
+    },
+  };
+}
 
 export default async function ContentPagesIndex() {
   const country = await getStoreCountry();
