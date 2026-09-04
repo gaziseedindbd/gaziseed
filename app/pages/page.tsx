@@ -23,10 +23,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: seo.title,
     description: seo.description,
+    alternates: { canonical: '/pages' },
     openGraph: {
       title: seo.title,
       description: seo.description,
       type: 'website',
+      url: '/pages',
     },
   };
 }
