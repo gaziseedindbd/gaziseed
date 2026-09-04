@@ -32,9 +32,22 @@ export default async function HomePage() {
   const { data, error } = await getActiveProducts(country);
   const products = (data ?? []).slice(0, 8);
   const marketName = country === 'IN' ? 'India' : 'Bangladesh';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gaziseed.vercel.app';
+
+  const websiteSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SEED_BARI_BRAND.name,
+    url: siteUrl,
+    description:
+      country === 'IN'
+        ? 'Premium seeds and agriculture products for growers in India.'
+        : 'মানসম্মত বীজ ও কৃষি পণ্য বাংলাদেশের কৃষকদের জন্য।',
+  };
 
   return (
     <main className="min-h-screen bg-[#f7f8f4] px-4 py-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       <div className="mx-auto max-w-7xl">
         <section className="rounded-3xl border bg-white p-8 md:p-12">
           <p className="font-bold text-[#1f6b3b]">{SEED_BARI_BRAND.name}</p>
