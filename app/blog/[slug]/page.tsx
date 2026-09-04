@@ -1,11 +1,37 @@
 import { notFound } from 'next/navigation';
 
+import type { Metadata } from 'next';
+
 import { getPublishedBlogPost } from '@/lib/seed-bari/content';
 import { getStoreCountry } from '@/lib/seed-bari/context';
 import type { CountryCode } from '@/lib/seed-bari/domain';
 
 function asHtml(value: string | null | undefined) {
   return value ?? '';
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const country: CountryCode = await getStoreCountry('BD');
+  const { data } = await getPublishedBlogPost(country, slug);
+
+  if (!data) {
+    return { title: 'Blog | SEED BARI' };
+  }
+
+  const title = data.title_en || data.title_bn;
+  const description = data.excerpt || 'Seed growing tips, farming knowledge, and seasonal insights from SEED BARI.';
+
+  return {
+    title: `${title} | SEED BARI`,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+      ...(data.cover_image_url ? { images: [data.cover_image_url] } : {}),
+    },
+  };
 }
 
 export default async function BlogDetailPage({ params }: { params: Promise<{ slug: string }> }) {
