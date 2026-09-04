@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 
 import { getActiveGuides } from '@/lib/seed-bari/content';
 import { getStoreCountry } from '@/lib/seed-bari/context';
@@ -7,6 +8,32 @@ import type { CountryCode } from '@/lib/seed-bari/domain';
 function excerpt(value: string | null | undefined, maxLength = 220) {
   const text = (value ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+}
+
+const guideSeo: Record<CountryCode, { title: string; description: string }> = {
+  BD: {
+    title: 'SEED BARI Guides Bangladesh | Seed Growing & Cultivation Tips',
+    description: 'Practical seed-growing and cultivation guides for growers in Bangladesh from SEED BARI.',
+  },
+  IN: {
+    title: 'SEED BARI Guides India | Seed Growing & Cultivation Tips',
+    description: 'Practical seed-growing and cultivation guides for growers in India from SEED BARI.',
+  },
+};
+
+export async function generateMetadata(): Promise<Metadata> {
+  const country = await getStoreCountry('BD');
+  const seo = guideSeo[country];
+
+  return {
+    title: seo.title,
+    description: seo.description,
+    openGraph: {
+      title: seo.title,
+      description: seo.description,
+      type: 'website',
+    },
+  };
 }
 
 export default async function GuidesPage() {
