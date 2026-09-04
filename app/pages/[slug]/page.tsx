@@ -45,8 +45,8 @@ export default async function ContentPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { page } = await loadPage((await params).slug);
-  const isBangla = (await getStoreCountry()) === 'BD';
+  const { country, page } = await loadPage((await params).slug);
+  const isBangla = country === 'BD';
   const title = isBangla ? page.title_bn : page.title_en;
   const content = isBangla ? page.content_bn : page.content_en;
 
