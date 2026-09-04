@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import './globals.css';
+import { getStoreCountry } from '@/lib/seed-bari/context';
 
 export const metadata: Metadata = {
   title: {
@@ -26,11 +27,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const country = await getStoreCountry('BD');
+  const isBangladesh = country === 'BD';
+
   return (
-    <html lang="en">
+    <html lang={isBangladesh ? 'bn-BD' : 'en-IN'} dir="ltr">
       <body>
         <div className="min-h-screen">{children}</div>
 
