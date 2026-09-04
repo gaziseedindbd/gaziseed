@@ -60,9 +60,23 @@ export default async function VideoDetailPage({ params }: { params: Promise<{ id
   if (error || !data) notFound();
 
   const embedUrl = youtubeEmbedUrl(data.youtube_url);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gaziseed.vercel.app';
+  const videoUrl = `${siteUrl}/videos/${data.id}`;
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'VideoObject',
+    name: data.title,
+    description: data.description?.trim() || `Watch ${data.title} from SEED BARI.`,
+    contentUrl: data.youtube_url,
+    embedUrl: embedUrl || undefined,
+    url: videoUrl,
+    publisher: { '@type': 'Organization', name: 'SEED BARI', url: siteUrl },
+    inLanguage: country === 'BD' ? 'bn-BD' : 'en-IN',
+  };
 
   return (
     <main className="min-h-screen bg-[#f7f8f4] px-4 py-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <div className="mx-auto max-w-5xl">
         <Link href="/videos" className="font-bold text-[#1f6b3b]">← Back to video gallery</Link>
 

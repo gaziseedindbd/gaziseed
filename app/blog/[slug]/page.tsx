@@ -43,9 +43,23 @@ export default async function BlogDetailPage({ params }: { params: Promise<{ slu
 
   const title = data.title_en || data.title_bn;
   const content = data.content_en || data.content_bn || data.excerpt || '';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gaziseed.vercel.app';
+  const articleUrl = `${siteUrl}/blog/${data.slug}`;
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: title,
+    description: data.excerpt || undefined,
+    url: articleUrl,
+    datePublished: data.published_at || undefined,
+    image: data.cover_image_url ? [data.cover_image_url] : undefined,
+    publisher: { '@type': 'Organization', name: 'SEED BARI', url: siteUrl },
+    inLanguage: country === 'BD' ? 'bn-BD' : 'en-IN',
+  };
 
   return (
     <main className="min-h-screen bg-[#f7f8f4] px-4 py-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <article className="mx-auto max-w-4xl overflow-hidden rounded-3xl border bg-white shadow-sm">
         {data.cover_image_url ? (
           <div className="aspect-[16/8] bg-[#edf5e9]">
