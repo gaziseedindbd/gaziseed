@@ -66,8 +66,35 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     .filter((variant: any) => variant.active !== false)
     .sort((a: any, b: any) => String(a.name || '').localeCompare(String(b.name || '')));
 
+  const productSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: p.name_en || p.name_bn || 'SEED BARI Product',
+    sku: p.sku || undefined,
+    description: p.short_description || undefined,
+    image: image ? [image] : undefined,
+    brand: {
+      '@type': 'Brand',
+      name: 'SEED BARI',
+    },
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: country === 'BD' ? 'BDT' : 'INR',
+      price: price.toFixed(2),
+      availability:
+        variants.length > 0
+          ? variants.some((variant: any) => Number(variant.stock ?? 0) > 0)
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock'
+          : p.stock > 0
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock',
+    },
+  };
+
   return (
     <main className="min-h-screen bg-[#f7f8f4] px-4 py-10">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }} />
       <div className="mx-auto grid max-w-6xl gap-8 rounded-3xl border bg-white p-6 md:grid-cols-2 md:p-10">
         <div className="relative flex min-h-96 items-center justify-center overflow-hidden rounded-2xl bg-[#edf5e9]">
           {image ? (
