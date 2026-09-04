@@ -53,11 +53,12 @@ export default async function VideosPage() {
         ) : (
           <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {videos.map((video) => (
-              <a key={video.id} href={video.youtube_url} target="_blank" rel="noreferrer" className="rounded-2xl border bg-white p-5 transition hover:-translate-y-1 hover:shadow-lg">
+              <Link key={video.id} href={`/videos/${video.id}`} className="rounded-2xl border bg-white p-5 transition hover:-translate-y-1 hover:shadow-lg">
                 <div className="flex h-40 items-center justify-center rounded-xl bg-[#edf5e9] text-5xl">▶</div>
                 <h2 className="mt-4 text-lg font-black">{video.title}</h2>
                 {video.description && <p className="mt-2 text-sm leading-6 text-gray-600">{video.description}</p>}
-              </a>
+                <span className="mt-4 inline-block font-bold text-[#1f6b3b]">Watch video →</span>
+              </Link>
             ))}
           </div>
         )}
