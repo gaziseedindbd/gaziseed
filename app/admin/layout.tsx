@@ -1,7 +1,16 @@
+import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { SEED_BARI_BRAND } from '@/lib/seed-bari/config';
+
+export const metadata: Metadata = {
+  title: 'Admin Panel — SEED BARI',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const s = await createClient();
