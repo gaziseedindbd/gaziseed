@@ -2,6 +2,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { formatMoney } from '@/lib/country';
 
 function TrackContent() {
   const q = useSearchParams();
@@ -60,7 +61,7 @@ function TrackContent() {
           <div className="mt-6 rounded-2xl border bg-white p-6">
             <h2 className="text-2xl font-black">Order {data.order?.order_number}</h2>
             <p className="mt-2">Status: <b>{data.order?.status}</b></p>
-            <p>Total: <b>{data.order?.currency_code} {data.order?.total}</b></p>
+            <p>Total: <b>{formatMoney(Number(data.order?.total || 0), data.order?.currency_code === 'INR' ? 'IN' : 'BD')}</b></p>
             <h3 className="mt-6 font-bold">Status History</h3>
             <div className="mt-3 space-y-3">
               {(data.history || []).map((h: any) => (
