@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import './globals.css';
 import { getStoreCountry } from '@/lib/seed-bari/context';
+import CountrySwitcher from '@/components/seed-bari/country-switcher';
 
 export const metadata: Metadata = {
   title: {
@@ -36,6 +37,12 @@ export default async function RootLayout({
   return (
     <html lang={isBangladesh ? 'bn-BD' : 'en-IN'} dir="ltr">
       <body>
+        <div className="border-b bg-white">
+          <div className="mx-auto flex max-w-7xl items-center justify-end px-4 py-2">
+            <CountrySwitcher country={country} />
+          </div>
+        </div>
+
         <div className="min-h-screen">{children}</div>
 
         <footer className="border-t bg-white">
