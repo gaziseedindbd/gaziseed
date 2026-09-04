@@ -64,6 +64,17 @@ export async function getPublishedContentPages(country: CountryCode) {
     .order('slug');
 }
 
+export async function getPublishedContentPage(country: CountryCode, slug: string) {
+  const supabase = await createClient();
+  return supabase
+    .from('content_pages')
+    .select('id,country,page_type,slug,title_bn,title_en,content_bn,content_en,active')
+    .or(`country.eq.${country},country.is.null`)
+    .eq('slug', slug)
+    .eq('active', true)
+    .maybeSingle();
+}
+
 export async function getPublishedBlogPosts(country: CountryCode, limit = 12) {
   const supabase = await createClient();
   return supabase
