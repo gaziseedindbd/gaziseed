@@ -2,11 +2,11 @@ import Link from 'next/link';
 import { getActiveProducts } from '@/lib/products';
 import { formatMoney } from '@/lib/country';
 import { getStoreCountry } from '@/lib/seed-bari/context';
-import { SEED_BARI_BRAND, type CountryCode } from '@/lib/seed-bari/domain';
+import type { CountryCode } from '@/lib/seed-bari/domain';
 
 const catalogCopy: Record<CountryCode, { eyebrow: string; title: string; description: string; emptyTitle: string; emptyText: string; currencyLabel: string }> = {
   BD: {
-    eyebrow: `${SEED_BARI_BRAND} SHOP`,
+    eyebrow: 'SEED BARI SHOP',
     title: 'Every seed you need to grow better',
     description: 'Bangladesh catalog with prices in ৳.',
     emptyTitle: 'Products are coming soon',
@@ -14,7 +14,7 @@ const catalogCopy: Record<CountryCode, { eyebrow: string; title: string; descrip
     currencyLabel: 'BDT',
   },
   IN: {
-    eyebrow: `${SEED_BARI_BRAND} INDIA`,
+    eyebrow: 'SEED BARI INDIA',
     title: 'Quality seeds for every grower',
     description: 'India catalog with prices in ₹.',
     emptyTitle: 'Products are coming soon',
