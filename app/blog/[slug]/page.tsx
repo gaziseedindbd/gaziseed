@@ -46,7 +46,7 @@ export default async function BlogDetailPage({ params }: { params: Promise<{ slu
 
   const title = data.title_en || data.title_bn;
   const content = data.content_en || data.content_bn || data.excerpt || '';
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gaziseed.vercel.app';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gaziseed-gazi-seed.vercel.app';
   const articleUrl = `${siteUrl}/blog/${data.slug}`;
   const structuredData = {
     '@context': 'https://schema.org',

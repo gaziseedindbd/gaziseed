@@ -61,7 +61,7 @@ export default async function VideoDetailPage({ params }: { params: Promise<{ id
   if (error || !data) notFound();
 
   const embedUrl = youtubeEmbedUrl(data.youtube_url);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gaziseed.vercel.app';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gaziseed-gazi-seed.vercel.app';
   const videoUrl = `${siteUrl}/videos/${data.id}`;
   const structuredData = {
     '@context': 'https://schema.org',

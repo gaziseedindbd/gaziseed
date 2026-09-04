@@ -46,7 +46,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ sl
 
   const title = data.title_en || data.title_bn;
   const content = data.content_en || data.content_bn || '';
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gaziseed.vercel.app';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gaziseed-gazi-seed.vercel.app';
   const guideUrl = `${siteUrl}/guides/${data.slug}`;
   const plainTextDescription = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
   const structuredData = {
