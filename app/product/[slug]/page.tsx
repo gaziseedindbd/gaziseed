@@ -111,14 +111,22 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                         {formatMoney(variantPrice, country)} · {variantStock > 0 ? `${variantStock} available` : 'Out of stock'}
                       </p>
                     </div>
-                    <AddToCart productId={p.id} variantId={variant.id} />
+                    {variantStock > 0 ? (
+                      <AddToCart productId={p.id} variantId={variant.id} />
+                    ) : (
+                      <span className="rounded-xl border px-4 py-2 text-sm font-bold text-gray-400">Out of stock</span>
+                    )}
                   </div>
                 );
               })}
             </div>
-          ) : (
+          ) : p.stock > 0 ? (
             <div className="mt-6">
               <AddToCart productId={p.id} />
+            </div>
+          ) : (
+            <div className="mt-6">
+              <span className="inline-block rounded-xl border px-5 py-3 font-bold text-gray-400">Out of stock</span>
             </div>
           )}
 
