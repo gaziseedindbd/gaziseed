@@ -1,4 +1,7 @@
-import type { Product } from '@/lib/supabase/types';
+type ProductPriceFields = {
+  regular_price: number | null;
+  sale_price: number | null;
+};
 
 export type CountryCode = 'BD' | 'IN';
 
@@ -20,16 +23,38 @@ export function formatCountryMoney(amount: number, country: CountryCode): string
   }).format(amount);
 }
 
-export function getProductUnitPrice(product: Pick<Product, 'regular_price' | 'sale_price'>): number {
+export function getProductUnitPrice(product: ProductPriceFields): number {
   const sale = Number(product.sale_price ?? 0);
   const regular = Number(product.regular_price ?? 0);
   return sale > 0 && sale < regular ? sale : regular;
 }
 
-export type CatalogProduct = Pick<
-  Product,
-  'id' | 'name_bn' | 'name_en' | 'slug' | 'sku' | 'regular_price' | 'sale_price' | 'short_description' | 'category_id' | 'featured' | 'bestseller' | 'is_new' | 'seasonal' | 'created_at'
-> & {
-  product_images: Array<{ id: string; optimized_url: string | null; source_url: string | null; sort_order: number }>;
-  product_variants: Array<{ id: string; name: string; price: number; sale_price: number | null; stock: number; sku: string | null; active: boolean }>;
+export type CatalogProduct = ProductPriceFields & {
+  id: string;
+  name_bn: string;
+  name_en: string;
+  slug: string;
+  sku: string;
+  short_description: string | null;
+  category_id: string | null;
+  featured: boolean;
+  bestseller: boolean;
+  is_new: boolean;
+  seasonal: boolean;
+  created_at: string;
+  product_images: Array<{
+    id: string;
+    optimized_url: string | null;
+    source_url: string | null;
+    sort_order: number;
+  }>;
+  product_variants: Array<{
+    id: string;
+    name: string;
+    price: number;
+    sale_price: number | null;
+    stock: number;
+    sku: string | null;
+    active: boolean;
+  }>;
 };
