@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getActiveProducts } from '@/lib/products';
 import { formatMoney } from '@/lib/country';
+import { SEED_BARI_BRAND } from '@/lib/seed-bari/config';
 
 export default async function HomePage() {
   const country = 'BD' as const;
@@ -11,8 +12,8 @@ export default async function HomePage() {
     <main className="min-h-screen bg-[#f7f8f4] px-4 py-10">
       <div className="mx-auto max-w-7xl">
         <section className="rounded-3xl border bg-white p-8 md:p-12">
-          <p className="font-bold text-[#1f6b3b]">GAZI SEED</p>
-          <h1 className="mt-2 text-4xl font-black md:text-6xl">Quality seeds for every grower</h1>
+          <p className="font-bold text-[#1f6b3b]">{SEED_BARI_BRAND.name}</p>
+          <h1 className="mt-2 text-4xl font-black md:text-6xl">{SEED_BARI_BRAND.tagline}</h1>
           <p className="mt-4 max-w-2xl text-gray-600">Shop our Bangladesh catalog and order genuine seed varieties with convenient delivery.</p>
           <Link href="/shop" className="mt-6 inline-block rounded-xl bg-[#1f6b3b] px-6 py-3 font-bold text-white">Shop All Products</Link>
         </section>
@@ -31,7 +32,7 @@ export default async function HomePage() {
           ) : products.length === 0 ? (
             <div className="rounded-2xl border bg-white p-10 text-center">
               <h3 className="text-xl font-bold">Products are coming soon</h3>
-              <p className="mt-2 text-gray-500">Add active products from the GAZI SEED admin panel to publish them here.</p>
+              <p className="mt-2 text-gray-500">Add active products from the SEED BARI admin panel to publish them here.</p>
             </div>
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
