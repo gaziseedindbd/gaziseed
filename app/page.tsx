@@ -4,6 +4,7 @@ import { formatMoney } from '@/lib/country';
 import { getStoreCountry } from '@/lib/seed-bari/context';
 import { SEED_BARI_BRAND } from '@/lib/seed-bari/config';
 import type { CountryCode } from '@/lib/seed-bari/domain';
+import HomeCms from '@/components/seed-bari/home-cms';
 
 export default async function HomePage() {
   const country: CountryCode = await getStoreCountry('BD');
@@ -24,6 +25,8 @@ export default async function HomePage() {
             Shop All Products
           </Link>
         </section>
+
+        <HomeCms country={country} />
 
         <section className="mt-10">
           <div className="mb-6 flex items-end justify-between gap-4">
@@ -47,11 +50,7 @@ export default async function HomePage() {
                 <Link href={`/product/${p.slug}`} key={p.id} className="overflow-hidden rounded-2xl border bg-white transition hover:-translate-y-1 hover:shadow-lg">
                   <div className="flex h-48 items-center justify-center bg-[#edf5e9] text-6xl">
                     {p.product_images?.length ? (
-                      <img
-                        src={p.product_images.slice().sort((a: any, b: any) => a.sort_order - b.sort_order)[0]?.optimized_url || p.product_images[0]?.source_url}
-                        alt={p.name_en || p.name_bn}
-                        className="h-full w-full object-contain"
-                      />
+                      <img src={p.product_images.slice().sort((a: any, b: any) => a.sort_order - b.sort_order)[0]?.optimized_url || p.product_images[0]?.source_url} alt={p.name_en || p.name_bn} className="h-full w-full object-contain" />
                     ) : '🌱'}
                   </div>
                   <div className="p-4">
