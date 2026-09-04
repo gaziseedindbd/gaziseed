@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { getActiveVideo } from '@/lib/seed-bari/content';
@@ -28,6 +29,27 @@ function youtubeEmbedUrl(url: string) {
   }
 
   return null;
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const country: CountryCode = await getStoreCountry('BD');
+  const { data } = await getActiveVideo(country, id);
+
+  if (!data) return { title: 'Video not found — SEED BARI' };
+
+  const description = data.description?.trim() || `Watch ${data.title} from SEED BARI.`;
+
+  return {
+    title: `${data.title} — SEED BARI`,
+    description,
+    openGraph: {
+      title: `${data.title} — SEED BARI`,
+      description,
+      type: 'video.other',
+      url: `/videos/${data.id}`,
+    },
+  };
 }
 
 export default async function VideoDetailPage({ params }: { params: Promise<{ id: string }> }) {
