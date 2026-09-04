@@ -34,6 +34,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${copy.eyebrow} | SEED BARI`,
     description: copy.seoDescription,
+    alternates: {
+      canonical: '/shop',
+    },
     openGraph: {
       title: `${copy.eyebrow} | SEED BARI`,
       description: copy.seoDescription,
