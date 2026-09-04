@@ -18,16 +18,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   const title = data.title_en || data.title_bn;
   const description = (data.content_en || data.content_bn || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+  const market = country === 'IN' ? 'India' : 'Bangladesh';
+  const fullTitle = `${title} | SEED BARI`;
+  const fullDescription = description || `Practical cultivation guide from SEED BARI for ${market}.`;
 
   return {
-    title: `${title} | SEED BARI`,
-    description: description || `Practical cultivation guide from SEED BARI for ${country === 'IN' ? 'India' : 'Bangladesh'}.`,
-    alternates: { canonical: `/guides/${slug}` },
+    title: fullTitle,
+    description: fullDescription,
+    alternates: {
+      canonical: `/guides/${data.slug}`,
+    },
     openGraph: {
-      title: `${title} | SEED BARI`,
-      description: description || `Practical cultivation guide from SEED BARI for ${country === 'IN' ? 'India' : 'Bangladesh'}.`,
+      title: fullTitle,
+      description: fullDescription,
       type: 'article',
-      url: `/guides/${slug}`,
+      url: `/guides/${data.slug}`,
     },
   };
 }
