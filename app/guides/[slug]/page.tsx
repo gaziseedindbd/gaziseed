@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 
 import { getActiveGuide } from '@/lib/seed-bari/content';
 import { getStoreCountry } from '@/lib/seed-bari/context';
@@ -6,6 +7,27 @@ import type { CountryCode } from '@/lib/seed-bari/domain';
 
 function asHtml(value: string | null | undefined) {
   return value ?? '';
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const country: CountryCode = await getStoreCountry('BD');
+  const { data } = await getActiveGuide(country, slug);
+
+  if (!data) return { title: 'SEED BARI Guide' };
+
+  const title = data.title_en || data.title_bn;
+  const description = (data.content_en || data.content_bn || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+
+  return {
+    title: `${title} | SEED BARI`,
+    description: description || `Practical cultivation guide from SEED BARI for ${country === 'IN' ? 'India' : 'Bangladesh'}.`,
+    openGraph: {
+      title: `${title} | SEED BARI`,
+      description: description || `Practical cultivation guide from SEED BARI for ${country === 'IN' ? 'India' : 'Bangladesh'}.`,
+      type: 'article',
+    },
+  };
 }
 
 export default async function GuideDetailPage({ params }: { params: Promise<{ slug: string }> }) {
