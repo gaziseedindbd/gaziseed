@@ -21,14 +21,17 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   const title = data.title_en || data.title_bn;
   const description = data.excerpt || 'Seed growing tips, farming knowledge, and seasonal insights from SEED BARI.';
+  const canonical = `/blog/${data.slug}`;
 
   return {
     title: `${title} | SEED BARI`,
     description,
+    alternates: { canonical },
     openGraph: {
       title,
       description,
       type: 'article',
+      url: canonical,
       ...(data.cover_image_url ? { images: [data.cover_image_url] } : {}),
     },
   };
