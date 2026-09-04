@@ -29,13 +29,21 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const { page } = await loadPage(slug);
+  const { country, page } = await loadPage(slug);
+  const title = country === 'BD' ? page.title_bn : page.title_en;
+  const description = page.title_bn || page.title_en;
 
   return {
-    title: `${page.title_en} — SEED BARI`,
-    description: page.title_bn || page.title_en,
+    title: `${title} — SEED BARI`,
+    description,
     alternates: {
       canonical: `/pages/${page.slug}`,
+    },
+    openGraph: {
+      title: `${title} — SEED BARI`,
+      description,
+      type: 'article',
+      url: `/pages/${page.slug}`,
     },
   };
 }
