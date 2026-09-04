@@ -62,6 +62,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     .sort((a: any, b: any) => a.sort_order - b.sort_order);
   const image = images[0]?.optimized_url || images[0]?.source_url;
   const isBangladesh = country === 'BD';
+  const variants = (p.product_variants ?? [])
+    .filter((variant: any) => variant.active !== false)
+    .sort((a: any, b: any) => String(a.name || '').localeCompare(String(b.name || '')));
 
   return (
     <main className="min-h-screen bg-[#f7f8f4] px-4 py-10">
@@ -92,11 +95,32 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             ) : null}
           </div>
 
-          <p className="mt-2 text-sm">{isBangladesh ? 'Stock' : 'Stock'}: {p.stock > 0 ? `${p.stock} available` : 'Out of stock'}</p>
+          <p className="mt-2 text-sm">Stock: {p.stock > 0 ? `${p.stock} available` : 'Out of stock'}</p>
 
-          <div className="mt-6">
-            <AddToCart productId={p.id} />
-          </div>
+          {variants.length ? (
+            <div className="mt-6 space-y-3">
+              <h2 className="text-lg font-bold">Choose a variant</h2>
+              {variants.map((variant: any) => {
+                const variantPrice = Number(variant.sale_price ?? variant.price ?? 0);
+                const variantStock = Number(variant.stock ?? 0);
+                return (
+                  <div key={variant.id} className="flex items-center justify-between gap-4 rounded-2xl border p-4">
+                    <div>
+                      <p className="font-bold">{variant.name || 'Variant'}</p>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {formatMoney(variantPrice, country)} · {variantStock > 0 ? `${variantStock} available` : 'Out of stock'}
+                      </p>
+                    </div>
+                    <AddToCart productId={p.id} variantId={variant.id} />
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mt-6">
+              <AddToCart productId={p.id} />
+            </div>
+          )}
 
           <div className="prose mt-8 max-w-none">
             <p>{isBangladesh ? p.description_bn || p.description_en : p.description_en || p.description_bn}</p>
