@@ -5,6 +5,7 @@ import {
   getActiveBanners,
   getActiveCampaigns,
   getActiveGuides,
+  getActiveLandingPage,
   getActivePromotionalPopup,
   getActiveVideos,
   getPublishedBlogPosts,
@@ -38,6 +39,16 @@ export default async function HomeCms({ country }: HomeCmsProps) {
   const blogPosts = blogResult.data ?? [];
   const guides = guidesResult.data ?? [];
   const videos = videosResult.data ?? [];
+
+  const campaignLandingPages = Object.fromEntries(
+    campaigns
+      .filter((campaign) => campaign.landing_page_id)
+      .map((campaign) => [campaign.landing_page_id as string, getActiveLandingPage(country, campaign.landing_page_id as string)])
+  );
+  const landingResults = await Promise.all(Object.values(campaignLandingPages));
+  const landingPageSlugs = Object.fromEntries(
+    Object.keys(campaignLandingPages).map((id, index) => [id, landingResults[index]?.data?.slug ?? null])
+  );
 
   return (
     <>
@@ -75,19 +86,26 @@ export default async function HomeCms({ country }: HomeCmsProps) {
             <h2 className="mt-1 text-2xl font-black md:text-3xl">Current SEED BARI campaigns</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {campaigns.slice(0, 6).map((campaign) => (
-              <Link
-                key={campaign.id}
-                href={campaign.landing_page_id ? `/landing/${campaign.campaign_code || campaign.id}` : '/shop'}
-                className="rounded-2xl border p-5 transition hover:-translate-y-0.5 hover:shadow-md"
-              >
-                <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                  {campaign.platform || 'SEED BARI'}
-                </p>
-                <h3 className="mt-2 font-black">{campaign.name}</h3>
-                {campaign.source && <p className="mt-2 text-sm text-gray-600">Campaign: {campaign.source}</p>}
-              </Link>
-            ))}
+            {campaigns.slice(0, 6).map((campaign) => {
+              const landingSlug = campaign.landing_page_id
+                ? landingPageSlugs[campaign.landing_page_id] ?? null
+                : null;
+              const href = landingSlug ? `/landing/${landingSlug}` : '/shop';
+
+              return (
+                <Link
+                  key={campaign.id}
+                  href={href}
+                  className="rounded-2xl border p-5 transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                    {campaign.platform || 'SEED BARI'}
+                  </p>
+                  <h3 className="mt-2 font-black">{campaign.name}</h3>
+                  {campaign.source && <p className="mt-2 text-sm text-gray-600">Campaign: {campaign.source}</p>}
+                </Link>
+              );
+            })}
           </div>
         </section>
       )}
