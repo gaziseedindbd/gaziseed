@@ -1,11 +1,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { getActiveProducts } from '@/lib/products';
 import { formatMoney } from '@/lib/country';
 import { getStoreCountry } from '@/lib/seed-bari/context';
 import type { CountryCode } from '@/lib/seed-bari/domain';
 
-const catalogCopy: Record<CountryCode, { eyebrow: string; title: string; description: string; emptyTitle: string; emptyText: string; currencyLabel: string }> = {
+const catalogCopy: Record<CountryCode, { eyebrow: string; title: string; description: string; emptyTitle: string; emptyText: string; currencyLabel: string; seoDescription: string }> = {
   BD: {
     eyebrow: 'SEED BARI SHOP',
     title: 'Every seed you need to grow better',
@@ -13,6 +14,7 @@ const catalogCopy: Record<CountryCode, { eyebrow: string; title: string; descrip
     emptyTitle: 'Products are coming soon',
     emptyText: 'Add active Bangladesh products from the admin panel to publish them here.',
     currencyLabel: 'BDT',
+    seoDescription: 'Shop quality seeds from SEED BARI for growers in Bangladesh. Browse active varieties and prices in Bangladeshi Taka.',
   },
   IN: {
     eyebrow: 'SEED BARI INDIA',
@@ -21,8 +23,24 @@ const catalogCopy: Record<CountryCode, { eyebrow: string; title: string; descrip
     emptyTitle: 'Products are coming soon',
     emptyText: 'Add active India products from the admin panel to publish them here.',
     currencyLabel: 'INR',
+    seoDescription: 'Shop quality seeds from SEED BARI for growers in India. Browse active varieties and prices in Indian Rupees.',
   },
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  const country = await getStoreCountry('BD');
+  const copy = catalogCopy[country];
+
+  return {
+    title: `${copy.eyebrow} | SEED BARI`,
+    description: copy.seoDescription,
+    openGraph: {
+      title: `${copy.eyebrow} | SEED BARI`,
+      description: copy.seoDescription,
+      type: 'website',
+    },
+  };
+}
 
 export default async function ShopPage() {
   const country = await getStoreCountry('BD');
