@@ -1,8 +1,28 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 
 import { getPublishedBlogPosts } from '@/lib/seed-bari/content';
 import { getStoreCountry } from '@/lib/seed-bari/context';
 import type { CountryCode } from '@/lib/seed-bari/domain';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const country: CountryCode = await getStoreCountry('BD');
+  const market = country === 'IN' ? 'India' : 'Bangladesh';
+  const title = `SEED BARI Blog | Seed Growing Tips & Stories`;
+  const description = `Practical seed growing tips, farming knowledge, and seasonal insights for ${market} from SEED BARI.`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: '/blog' },
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      url: '/blog',
+    },
+  };
+}
 
 export default async function BlogPage() {
   const country: CountryCode = await getStoreCountry('BD');
