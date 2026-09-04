@@ -4,7 +4,10 @@ import './globals.css';
 import { getStoreCountry } from '@/lib/seed-bari/context';
 import CountrySwitcher from '@/components/seed-bari/country-switcher';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://gaziseed.vercel.app';
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: 'SEED BARI — Premium Seeds & Agriculture',
     template: '%s | SEED BARI',
