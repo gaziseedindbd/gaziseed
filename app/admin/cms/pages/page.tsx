@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { getCurrentAdminContext } from "@/lib/seed-bari/admin";
 
 const COUNTRIES = ["BD", "IN"] as const;
@@ -27,7 +27,7 @@ async function requireMasterAdmin() {
 async function savePage(formData: FormData) {
   "use server";
   await requireMasterAdmin();
-  const supabase = await getSupabaseServerClient();
+  const supabase = await createClient();
 
   const id = String(formData.get("id") || "").trim();
   const country = String(formData.get("country") || "").trim() || null;
@@ -74,7 +74,7 @@ async function deletePage(formData: FormData) {
   const id = String(formData.get("id") || "").trim();
   if (!id) throw new Error("Page id is required.");
 
-  const supabase = await getSupabaseServerClient();
+  const supabase = await createClient();
   const { error } = await supabase.from("content_pages").delete().eq("id", id);
   if (error) throw new Error(error.message);
 
@@ -84,7 +84,7 @@ async function deletePage(formData: FormData) {
 
 export default async function ContentPagesAdmin() {
   await requireMasterAdmin();
-  const supabase = await getSupabaseServerClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("content_pages")
