@@ -28,6 +28,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link className="rounded-xl px-4 py-3 hover:bg-[#edf5e9]" href="/admin/categories">Categories</Link>
           <Link className="rounded-xl px-4 py-3 hover:bg-[#edf5e9]" href="/admin/coupons">Coupons</Link>
           <Link className="rounded-xl px-4 py-3 hover:bg-[#edf5e9]" href="/admin/shipping">Shipping</Link>
+          <Link className="rounded-xl px-4 py-3 hover:bg-[#edf5e9]" href="/admin/cms">CMS & Marketing</Link>
           <Link className="rounded-xl px-4 py-3 hover:bg-[#edf5e9]" href="/admin/system-health">System Health</Link>
           {p.role === 'master_admin' && (
             <Link className="rounded-xl border border-[#1f6b3b] bg-[#edf5e9] px-4 py-3 font-black text-[#1f6b3b]" href="/admin/master-admin">Master Admin</Link>
