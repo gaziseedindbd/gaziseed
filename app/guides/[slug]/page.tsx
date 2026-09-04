@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
@@ -61,14 +62,17 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ sl
 
   return (
     <main className="min-h-screen bg-[#f7f8f4] px-4 py-10">
+      <div className="mx-auto max-w-4xl">
+        <Link href="/guides" className="font-bold text-[#1f6b3b]">← Back to guides</Link>
+        <article className="mt-8 overflow-hidden rounded-3xl border bg-white shadow-sm">
+          <div className="p-8 md:p-12">
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#1f6b3b]">SEED BARI GUIDE</p>
+            <h1 className="mt-3 text-4xl font-black leading-tight md:text-6xl">{title}</h1>
+            <div className="prose prose-lg mt-8 max-w-none" dangerouslySetInnerHTML={{ __html: asHtml(content) }} />
+          </div>
+        </article>
+      </div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-      <article className="mx-auto max-w-4xl overflow-hidden rounded-3xl border bg-white shadow-sm">
-        <div className="p-8 md:p-12">
-          <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#1f6b3b]">SEED BARI GUIDE</p>
-          <h1 className="mt-3 text-4xl font-black leading-tight md:text-6xl">{title}</h1>
-          <div className="prose prose-lg mt-8 max-w-none" dangerouslySetInnerHTML={{ __html: asHtml(content) }} />
-        </div>
-      </article>
     </main>
   );
 }
