@@ -15,9 +15,10 @@ export type AddressSelectorProps = {
   value: AddressValue;
   onChange: (v: AddressValue) => void;
   lang?: 'bn' | 'en';
+  countryCode?: 'BD' | 'IN';
 };
 
-export function AddressSelector({ value, onChange, lang = 'bn' }: AddressSelectorProps) {
+export function AddressSelector({ value, onChange, lang = 'bn', countryCode = 'BD' }: AddressSelectorProps) {
   const [division, setDivision] = useState(value.division || '');
   const [district, setDistrict] = useState(value.district || '');
   const [thana, setThana] = useState(value.thana || '');
@@ -28,14 +29,46 @@ export function AddressSelector({ value, onChange, lang = 'bn' }: AddressSelecto
     onChange({ division, district, thana, detail, postalCode });
   }, [division, district, thana, detail, postalCode, onChange]);
 
+  const isIndia = countryCode === 'IN';
   const districts = getDistricts(division);
   const thanas = getThanas(division, district);
 
-  const label = lang === 'en' ? {
-    division: 'Division', district: 'District', thana: 'Police Station', detail: 'Detailed Address', postal: 'Postal Code (optional)',
-  } : {
-    division: 'বিভাগ', district: 'জেলা', thana: 'থানা', detail: 'বিস্তারিত ঠিকানা', postal: 'পোস্ট কোড (ঐচ্ছিক)',
-  };
+  const label = lang === 'en'
+    ? (isIndia
+      ? { division: 'State', district: 'City / District', thana: 'Area / Locality', detail: 'Detailed Address', postal: 'PIN Code *' }
+      : { division: 'Division', district: 'District', thana: 'Police Station', detail: 'Detailed Address', postal: 'Postal Code (optional)' })
+    : (isIndia
+      ? { division: 'রাজ্য', district: 'শহর / জেলা', thana: 'এলাকা / লোকালিটি', detail: 'বিস্তারিত ঠিকানা', postal: 'PIN কোড *' }
+      : { division: 'বিভাগ', district: 'জেলা', thana: 'থানা', detail: 'বিস্তারিত ঠিকানা', postal: 'পোস্ট কোড (ঐচ্ছিক)' });
+
+  if (isIndia) {
+    return (
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div>
+            <label className="mb-1 block text-sm font-medium">{label.division} *</label>
+            <input value={division} onChange={(e) => setDivision(e.target.value)} className="input-bangla" placeholder={lang === 'en' ? 'e.g. West Bengal' : 'যেমন: West Bengal'} required />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">{label.district} *</label>
+            <input value={district} onChange={(e) => setDistrict(e.target.value)} className="input-bangla" placeholder={lang === 'en' ? 'e.g. Kolkata' : 'যেমন: Kolkata'} required />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">{label.thana} *</label>
+            <input value={thana} onChange={(e) => setThana(e.target.value)} className="input-bangla" placeholder={lang === 'en' ? 'Area / locality' : 'এলাকা / লোকালিটি'} required />
+          </div>
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">{label.detail} *</label>
+          <textarea value={detail} onChange={(e) => setDetail(e.target.value)} className="input-bangla min-h-[70px]" placeholder={lang === 'en' ? 'House, street, landmark...' : 'বাড়ি, রাস্তা, ল্যান্ডমার্ক...'} required />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">{label.postal}</label>
+          <input type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={postalCode} onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, '').slice(0, 6))} className="input-bangla" placeholder="700001" required />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
