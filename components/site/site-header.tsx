@@ -48,7 +48,7 @@ export function SiteHeader() {
     <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/70 bg-white/95 shadow-[0_10px_35px_-20px_rgba(15,23,42,.35)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1440px] items-center gap-3 px-3 py-3 sm:px-5 lg:px-7">
         <Link href="/" className="flex shrink-0 items-center gap-2.5 rounded-2xl px-1 py-1 transition hover:scale-[1.01]">
-          {settings?.logo ? <img src={settings.logo} alt={settings.website_name || 'SUPER KING SEED'} className="h-9 w-auto max-w-[150px] object-contain sm:h-10 sm:max-w-[175px]" /> : <span className="text-lg font-black tracking-tight text-emerald-950 sm:text-xl">SUPER KING SEED</span>}
+          {settings?.logo ? <img src={settings.logo} alt={settings.website_name || 'SEED BARI'} className="h-9 w-auto max-w-[150px] object-contain sm:h-10 sm:max-w-[175px]" /> : <span className="text-lg font-black tracking-tight text-emerald-950 sm:text-xl">SEED BARI</span>}
         </Link>
 
         <div className="hidden min-w-0 flex-1 sm:block">
