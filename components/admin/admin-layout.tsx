@@ -52,12 +52,12 @@ const navGroups: NavGroup[] = [
     { href: '/admin/support', label: 'সাপোর্ট / অভিযোগ', icon: LifeBuoy },
     { href: '/admin/reports', label: 'রিপোর্ট', icon: TrendingUp },
   ] },
+  { label: 'অ্যাডমিন', items: [{ href: '/admin/admin-management', label: 'এডমিন ম্যানেজমেন্ট', icon: UserCog, masterOnly: true }] },
   { label: 'সেটিংস', items: [
     { href: '/admin/delivery', label: 'ডেলিভারি', icon: Truck },
     { href: '/admin/settings', label: 'সাধারণ সেটিংস', icon: Settings },
     { href: '/admin/navigation', label: 'নেভিগেশন', icon: Menu },
   ] },
-  { label: 'অ্যাডমিন', items: [{ href: '/admin/admin-management', label: 'এডমিন ম্যানেজমেন্ট', icon: UserCog, masterOnly: true }] },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
