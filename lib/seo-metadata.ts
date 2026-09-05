@@ -7,7 +7,7 @@ export const SITE_URL = configuredSiteUrl
   ? configuredSiteUrl.replace(/\/$/, '')
   : vercelSiteUrl
     ? `https://${vercelSiteUrl}`
-    : 'https://www.seedbari.com';
+    : 'https://www.gaziseed.com';
 
 export const FALLBACK_IMAGE = `${SITE_URL}/favicon.svg`;
 
@@ -26,6 +26,10 @@ function absoluteUrl(value?: string | null) {
   return url;
 }
 
+function normalizeBrand(value: string) {
+  return value.replace(/SUPER KING SEED/gi, 'GAZI SEED');
+}
+
 export function pageMetadata({
   title,
   description,
@@ -39,8 +43,8 @@ export function pageMetadata({
   path: string;
   type?: 'website' | 'article';
 }): Metadata {
-  const cleanTitle = title.trim() || 'SUPER KING SEED';
-  const cleanDescription = (description || 'SUPER KING SEED — বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর।').trim();
+  const cleanTitle = normalizeBrand(title.trim() || 'GAZI SEED');
+  const cleanDescription = normalizeBrand((description || 'GAZI SEED — বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর।').trim());
   const url = `${SITE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
   const ogImage = absoluteUrl(image);
   const isJpegPreview = ogImage.startsWith('https://wsrv.nl/');
@@ -54,7 +58,7 @@ export function pageMetadata({
       title: cleanTitle,
       description: cleanDescription,
       url,
-      siteName: 'SUPER KING SEED',
+      siteName: 'GAZI SEED',
       type,
       locale: 'bn_BD',
       images: [{
