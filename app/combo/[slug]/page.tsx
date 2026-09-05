@@ -41,8 +41,9 @@ export default function ComboLandingPage() {
           .eq('combo_id', comboData.id);
 
         setCombo({ ...comboData, combo_items: itemsData || [] });
-        if (comboData.tier_pricing && Array.isArray(comboData.tier_pricing) && comboData.tier_pricing.length > 0) {
-          setSelectedQty(comboData.tier_pricing[0].qty || 1);
+        if (Array.isArray(comboData.tier_pricing) && comboData.tier_pricing.length > 0) {
+          const firstQty = Number(comboData.tier_pricing[0]?.qty ?? comboData.tier_pricing[0]?.quantity ?? 1);
+          setSelectedQty(firstQty || 1);
         }
       }
       setLoading(false);
@@ -62,13 +63,16 @@ export default function ComboLandingPage() {
     };
   };
 
-  const currentTier = combo?.tier_pricing?.find((t: any) => Number(t.qty) === Number(selectedQty)) ||
-                    combo?.tier_pricing?.[0] || { regular: combo?.regular_total || 500, offer: combo?.combo_price || 300, freeDelivery: true };
+  const getTierQty = (tier: any) => Number(tier?.qty ?? tier?.quantity ?? 1);
+  const getTierFreeDelivery = (tier: any) => tier?.freeDelivery === true || tier?.free_delivery === true;
+
+  const currentTier = combo?.tier_pricing?.find((t: any) => getTierQty(t) === Number(selectedQty)) ||
+                    combo?.tier_pricing?.[0] || { regular: combo?.regular_total || 500, offer: combo?.combo_price || 300, free_delivery: true };
 
   const currentComboPrice = Number(currentTier.offer) || Number(combo?.combo_price) || 300;
   const regularPrice = Number(currentTier.regular) || Number(combo?.regular_total) || 500;
-  
-  const deliveryCharge = currentTier.freeDelivery ? 0 : (currentComboPrice >= 600 ? 0 : currentComboPrice >= 400 ? 50 : currentComboPrice >= 200 ? 70 : 120);
+  const freeDelivery = getTierFreeDelivery(currentTier) || currentComboPrice >= 600;
+  const deliveryCharge = freeDelivery ? 0 : (currentComboPrice >= 400 ? 50 : currentComboPrice >= 200 ? 70 : 120);
   const finalTotal = currentComboPrice + deliveryCharge;
 
   const parseManualList = (data: any) => {
@@ -163,7 +167,7 @@ export default function ComboLandingPage() {
           <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">{currentTier.badge || 'BEST OFFER'}</span>
           <div className="text-3xl md:text-4xl font-black mt-2">মাত্র ৳{currentComboPrice} টাকা</div>
           {savings > 0 && <p className="text-sm font-semibold mt-1 text-slate-800">নিয়মিত মূল্য: <span className="line-through">৳{regularPrice}</span> (সাশ্রয় ৳{savings})</p>}
-          
+          <p className="mt-2 text-xs font-bold text-slate-800">{getTierFreeDelivery(currentTier) ? '🚚 Free Delivery' : '🚚 ডেলিভারি চার্জ প্রযোজ্য'}</p>
           <a href="#order-form" className="mt-4 inline-flex items-center justify-center w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg transition-all text-lg gap-2">
             <ShoppingCart className="h-5 w-5" /> অর্ডার করতে ক্লিক করুন
           </a>
@@ -221,26 +225,34 @@ export default function ComboLandingPage() {
         <div className="bg-[#1b4332] p-5 rounded-2xl border-2 border-amber-400/60 shadow-md text-center">
           <h3 className="text-base font-bold text-amber-400 mb-3">প্যাকেজের সংখ্যা সিলেক্ট করুন:</h3>
           <div className="grid grid-cols-3 gap-3">
-            {combo.tier_pricing?.map((tier: any, idx: number) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setSelectedQty(tier.qty)}
-                className={`py-3 px-2 rounded-xl font-bold border-2 transition-all flex flex-col items-center justify-center relative ${
-                  Number(selectedQty) === Number(tier.qty) 
-                    ? 'bg-amber-500 border-white text-slate-900 shadow-lg scale-105' 
-                    : 'bg-emerald-900/80 border-emerald-700 text-white hover:bg-emerald-800'
-                }`}
-              >
-                {tier.badge && (
-                  <span className="absolute -top-2.5 bg-red-600 text-white text-[9px] px-2 py-0.5 rounded-full font-extrabold uppercase">
-                    {tier.badge}
+            {combo.tier_pricing?.map((tier: any, idx: number) => {
+              const tierQty = getTierQty(tier);
+              const tierFreeDelivery = getTierFreeDelivery(tier);
+              const isSelected = Number(selectedQty) === tierQty;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setSelectedQty(tierQty)}
+                  className={`py-3 px-2 rounded-xl font-bold border-2 transition-all flex flex-col items-center justify-center relative ${
+                    isSelected
+                      ? 'bg-amber-500 border-white text-slate-900 shadow-lg scale-105 ring-2 ring-amber-300'
+                      : 'bg-emerald-900/80 border-emerald-700 text-white hover:bg-emerald-800'
+                  }`}
+                >
+                  {tier.badge && (
+                    <span className="absolute -top-2.5 bg-red-600 text-white text-[9px] px-2 py-0.5 rounded-full font-extrabold uppercase">
+                      {tier.badge}
+                    </span>
+                  )}
+                  <span className="text-sm md:text-base">{tierQty} প্যাকেট</span>
+                  <span className="text-xs font-semibold mt-1">৳{Number(tier.offer) || 0}</span>
+                  <span className={`mt-1 text-[9px] font-extrabold uppercase ${isSelected ? 'text-emerald-950' : 'text-emerald-300'}`}>
+                    {tierFreeDelivery ? 'Free Delivery' : 'Delivery Charge'}
                   </span>
-                )}
-                <span className="text-sm md:text-base">{tier.qty} প্যাকেট</span>
-                <span className="text-xs font-semibold mt-1">৳{tier.offer}</span>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         </div>
 
