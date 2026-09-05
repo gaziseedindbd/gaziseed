@@ -34,19 +34,19 @@ export function SiteHeader() {
 
   const navLinks = [
     { label: t('হোম', 'Home'), href: '/', icon: Home },
-    { label: t('সব ক্যাটাগরি', 'All Categories'), href: '/categories', icon: Grid },
-    { label: t('সব পণ্য', 'All Products'), href: '/all-products', icon: ShoppingBag },
-    { label: t('অফার', 'Offers'), href: '/offers', icon: Tag },
-    { label: t('চাষাবাদ গাইড', 'Growing Guide'), href: '/blog', icon: BookOpen },
-    { label: t('আমাদের সম্পর্কে', 'About Us'), href: '/about', icon: Wrench },
+    { label: t('ক্যাটাগরি', 'Categories'), href: '/categories', icon: Grid },
+    { label: t('সব পণ্য', 'Products'), href: '/all-products', icon: ShoppingBag },
+    { label: t('অফার', 'Offers'), href: '/offers', icon: Tag, badge: 'Hot' },
+    { label: t('চাষাবাদ', 'Guides'), href: '/blog', icon: BookOpen },
+    { label: t('আমাদের', 'About'), href: '/about', icon: Wrench },
     { label: t('যোগাযোগ', 'Contact'), href: '/contact', icon: PhoneCall },
   ];
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 bg-white shadow-[0_12px_40px_-24px_rgba(5,46,22,.45)]">
+    <header className="fixed inset-x-0 top-0 z-50 bg-white/95 shadow-[0_12px_40px_-24px_rgba(5,46,22,.45)] backdrop-blur-md">
       <div className="top-green-bar">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-4 py-1.5 text-[11px] font-semibold text-white sm:px-6">
-          <div className="flex items-center gap-2.5"><SproutMark /> <span>{t('ভালো বীজ, সবুজ ভবিষ্যৎ | SEED BARI', 'Better Seeds, Greener Future | SEED BARI')}</span></div>
+          <div className="flex items-center gap-2.5"><SproutMark /> <span>{t('ভালো বীজ, সবুজ ভবিষ্যৎ | GAZI SEED', 'Better Seeds, Greener Future | GAZI SEED')}</span></div>
           <div className="hidden items-center gap-5 md:flex">
             <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />ঢাকা, বাংলাদেশ</span>
             <span className="inline-flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />+880 1700 123 456</span>
@@ -57,7 +57,7 @@ export function SiteHeader() {
 
       <div className="mx-auto flex max-w-[1440px] items-center gap-4 px-4 py-3 sm:px-6 lg:px-8 lg:py-4">
         <Link href="/" className="flex shrink-0 items-center gap-2.5 rounded-2xl px-1 py-1 transition hover:scale-[1.01]">
-          {settings?.logo ? <img src={settings.logo} alt={settings.website_name || 'SEED BARI'} className="h-10 w-auto max-w-[175px] object-contain sm:h-11 sm:max-w-[195px]" /> : <div className="flex items-center gap-2"><SproutMark large /><div><div className="text-2xl font-black leading-none tracking-tight text-emerald-950">SEED BARI</div><div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">Better Seeds · Better Future</div></div></div>}
+          {settings?.logo ? <img src={settings.logo} alt={settings.website_name || 'GAZI SEED'} className="h-10 w-auto max-w-[175px] object-contain sm:h-11 sm:max-w-[195px]" /> : <div className="flex items-center gap-2"><SproutMark large /><div><div className="text-2xl font-black leading-none tracking-tight text-emerald-950">GAZI SEED</div><div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">Better Seeds · Better Future</div></div></div>}
         </Link>
 
         <div className="hidden min-w-0 flex-1 sm:block">
@@ -76,36 +76,42 @@ export function SiteHeader() {
         </div>
       </div>
 
-      <nav className="hidden border-y border-slate-100/90 bg-white/95 md:block md:backdrop-blur-sm">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-center px-4 sm:px-6 lg:px-8">
-          <div className="flex w-full items-center justify-center gap-1 overflow-x-auto py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {navLinks.map((link, index) => {
+      <nav className="hidden border-t border-slate-100/80 bg-gradient-to-r from-white via-emerald-50/50 to-white py-2.5 md:block">
+        <div className="mx-auto flex max-w-[1040px] items-center justify-center px-4">
+          <div className="flex items-center gap-1.5 rounded-full border border-emerald-100 bg-white/90 p-1.5 shadow-[0_10px_35px_-18px_rgba(5,46,22,.55)] backdrop-blur-sm">
+            {navLinks.map(link => {
               const Icon = link.icon;
-              const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(`${link.href}/`));
+              const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href + '/'));
               return (
-                <React.Fragment key={link.href}>
-                  {index > 0 && <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-slate-200/80" />}
-                  <Link
-                    href={link.href}
-                    aria-current={active ? 'page' : undefined}
-                    className={`group relative flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-bold tracking-[0.01em] transition-all duration-200 ${
-                      active
-                        ? 'bg-emerald-50 text-emerald-800 shadow-sm ring-1 ring-emerald-100'
-                        : 'text-slate-700 hover:bg-slate-50 hover:text-emerald-800'
-                    }`}
-                  >
-                    <Icon className={`h-[17px] w-[17px] transition-transform duration-200 group-hover:scale-110 ${active ? 'text-emerald-700' : 'text-emerald-700/80'}`} />
-                    <span>{link.label}</span>
-                    <span className={`pointer-events-none absolute inset-x-4 -bottom-[1px] h-0.5 rounded-full bg-emerald-600 transition-all duration-200 ${active ? 'opacity-100' : 'opacity-0 group-hover:opacity-60'}`} />
-                  </Link>
-                </React.Fragment>
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`group relative flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold transition-all duration-200 ${active ? 'bg-emerald-800 text-white shadow-md shadow-emerald-900/15' : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-800'}`}
+                >
+                  <Icon className={`h-4 w-4 transition-transform duration-200 group-hover:scale-110 ${active ? 'text-white' : 'text-emerald-700'}`} />
+                  <span>{link.label}</span>
+                  {link.badge && <span className={`absolute -right-1 -top-1 rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide ${active ? 'bg-lime-300 text-emerald-950' : 'bg-amber-400 text-amber-950'}`}>{link.badge}</span>}
+                </Link>
               );
             })}
           </div>
         </div>
       </nav>
 
-      {mobileMenuOpen && <div className="border-t border-slate-100 bg-white shadow-2xl md:hidden"><div className="grid grid-cols-2 gap-2 p-3">{navLinks.map(link => { const Icon = link.icon; const active = pathname === link.href; return <Link key={link.href} href={link.href} className={`flex items-center gap-2 rounded-2xl border p-3 text-sm font-bold ${active ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-100 bg-slate-50 text-slate-700'}`}><Icon className="h-5 w-5 text-emerald-700" />{link.label}</Link>; })}</div></div>}
+      {mobileMenuOpen && (
+        <div className="border-t border-slate-100 bg-white shadow-2xl md:hidden">
+          <div className="p-3">
+            <div className="mb-2 flex items-center gap-2 px-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-400">Menu <span className="h-px flex-1 bg-slate-100" /></div>
+            <div className="grid grid-cols-2 gap-2">
+              {navLinks.map(link => {
+                const Icon = link.icon;
+                const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href + '/'));
+                return <Link key={link.href} href={link.href} className={`flex items-center gap-2 rounded-2xl border p-3 text-sm font-bold transition ${active ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-100 bg-slate-50 text-slate-700 hover:border-emerald-100 hover:bg-emerald-50/50'}`}><Icon className="h-5 w-5 text-emerald-700" />{link.label}</Link>;
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
