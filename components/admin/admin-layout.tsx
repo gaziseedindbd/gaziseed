@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
-import { Loader2, LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Tag, Star, Wrench, FileText, Mail, Image, Settings, FileBarChart, Menu, X, LogOut, Truck, Megaphone, Layers, BarChart3, Home, ShieldCheck, UserCog, Gift, Bell, Boxes, LifeBuoy, TrendingUp, Sun, Moon, Bot, MessageCircle, Sparkles } from 'lucide-react';
+import { Loader2, LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Tag, Star, Wrench, FileText, Image, Settings, FileBarChart, Menu, X, LogOut, Truck, Megaphone, Layers, BarChart3, Home, ShieldCheck, UserCog, Gift, Bell, Boxes, LifeBuoy, TrendingUp, Sun, Moon, Bot, MessageCircle, Sparkles, Globe2, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { NotificationCenter } from './notification-center';
 
 type NavGroup = { label: string; items: { href: string; label: string; icon: any; masterOnly?: boolean }[] };
+
+type Branch = 'BD' | 'IN';
 
 const navGroups: NavGroup[] = [
   { label: '', items: [{ href: '/admin', label: 'ড্যাশবোর্ড', icon: LayoutDashboard }] },
@@ -21,7 +23,7 @@ const navGroups: NavGroup[] = [
     { href: '/admin/categories', label: 'ক্যাটাগরি', icon: FolderTree },
     { href: '/admin/combos', label: 'কম্বো প্যাক', icon: Boxes },
     { href: '/admin/inventory', label: 'ইনভেন্টরি', icon: Layers },
-    { href: '/admin/batches', label: 'ব্যাচ / এক্সপায়রি', icon: Layers },
+    { href: '/admin/batches', label: 'ব্যাচ / এক্সপায়ারি', icon: Layers },
   ] },
   { label: 'Ads ও মার্কেটিং', items: [
     { href: '/admin/ads-landing', label: 'Ads Landing Pages', icon: Megaphone },
@@ -60,6 +62,8 @@ const navGroups: NavGroup[] = [
   ] },
 ];
 
+const BRANCH_KEY = 'gazi_admin_branch';
+
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -67,6 +71,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isMasterAdmin, setIsMasterAdmin] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
+  const [adminCountry, setAdminCountry] = useState<Branch>('BD');
+  const [selectedBranch, setSelectedBranch] = useState<Branch>('BD');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const isLoginPage = pathname === '/allahmohammad/admin/login786';
@@ -95,10 +101,39 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     if (!data) { router.push('/'); return; }
     setAdminEmail(session.user.email || '');
     const { data: masterData } = await supabase.rpc('is_master_admin');
-    setIsMasterAdmin(!!masterData);
+    const master = !!masterData;
+    setIsMasterAdmin(master);
+
+    const { data: adminRow } = await supabase.from('admin_users').select('country_code').eq('user_id', session.user.id).maybeSingle();
+    const ownCountry = adminRow?.country_code === 'IN' ? 'IN' : 'BD';
+    setAdminCountry(ownCountry);
+
+    if (master) {
+      const savedBranch = localStorage.getItem(BRANCH_KEY);
+      setSelectedBranch(savedBranch === 'IN' ? 'IN' : 'BD');
+    } else {
+      setSelectedBranch(ownCountry);
+    }
     setIsAdmin(true);
     setLoading(false);
   };
+
+  const handleBranchChange = (branch: Branch) => {
+    if (!isMasterAdmin) return;
+    setSelectedBranch(branch);
+    localStorage.setItem(BRANCH_KEY, branch);
+    window.dispatchEvent(new CustomEvent('gazi-branch-change', { detail: branch }));
+    router.refresh();
+  };
+
+  useEffect(() => {
+    const syncBranch = () => {
+      const saved = localStorage.getItem(BRANCH_KEY);
+      if (saved === 'BD' || saved === 'IN') setSelectedBranch(saved);
+    };
+    window.addEventListener('gazi-branch-change', syncBranch);
+    return () => window.removeEventListener('gazi-branch-change', syncBranch);
+  }, []);
 
   if (isLoginPage) return <>{children}</>;
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -115,7 +150,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-secondary/10 text-foreground">
       <div className="sticky top-0 z-45 flex items-center justify-between border-b border-border bg-background px-4 py-3 lg:hidden">
         <button onClick={() => setSidebarOpen(true)} className="p-1"><Menu className="h-6 w-6" /></button>
-        <span className="font-bold text-primary">SEED BARI Admin</span>
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-primary">GAZI SEED Admin</span>
+          <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold">{selectedBranch === 'IN' ? '🇮🇳 India' : '🇧🇩 Bangladesh'}</span>
+        </div>
         <div className="flex items-center gap-2">
           <button onClick={toggleTheme} className="rounded-lg border border-border p-2 hover:bg-secondary">{theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}</button>
           <button onClick={handleLogout} className="p-1 text-destructive"><LogOut className="h-5 w-5" /></button>
@@ -124,10 +162,26 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 transform overflow-y-auto border-r border-border bg-background transition-transform lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between border-b border-border p-4">
-            <Link href="/admin" className="flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><span className="text-sm font-bold">G</span></div><span className="font-bold text-primary">SEED BARI</span></Link>
+            <Link href="/admin" className="flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><span className="text-sm font-bold">G</span></div><span className="font-bold text-primary">GAZI SEED</span></Link>
             <div className="flex items-center gap-1"><button onClick={toggleTheme} className="hidden lg:flex rounded-lg border border-border p-2 hover:bg-secondary" title="থিম পরিবর্তন করুন">{theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}</button><button onClick={() => setSidebarOpen(false)} className="lg:hidden"><X className="h-5 w-5" /></button></div>
           </div>
-          <div className="border-b border-border px-4 py-3"><div className="flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">{adminEmail.charAt(0).toUpperCase()}</div><div><p className="text-xs text-muted-foreground truncate max-w-[140px]">{adminEmail}</p><span className={`flex items-center gap-1 text-xs font-semibold ${isMasterAdmin ? 'text-primary' : 'text-muted-foreground'}`}><ShieldCheck className="h-3 w-3" />{isMasterAdmin ? 'MASTER ADMIN' : 'ADMIN'}</span></div></div></div>
+          <div className="border-b border-border px-4 py-3">
+            <div className="flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">{adminEmail.charAt(0).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-xs text-muted-foreground">{adminEmail}</p><span className={`flex items-center gap-1 text-xs font-semibold ${isMasterAdmin ? 'text-primary' : 'text-muted-foreground'}`}><ShieldCheck className="h-3 w-3" />{isMasterAdmin ? 'MASTER ADMIN' : 'ADMIN'}</span></div></div>
+            <div className="mt-3">
+              {isMasterAdmin ? (
+                <div className="relative">
+                  <Globe2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
+                  <select value={selectedBranch} onChange={(e) => handleBranchChange(e.target.value as Branch)} className="w-full appearance-none rounded-xl border border-primary/20 bg-primary/5 py-2 pl-9 pr-9 text-sm font-semibold outline-none focus:border-primary">
+                    <option value="BD">🇧🇩 Bangladesh Branch</option>
+                    <option value="IN">🇮🇳 India Branch</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="flex items-center justify-between rounded-xl border border-border bg-secondary/40 px-3 py-2 text-sm font-semibold"><span>{adminCountry === 'IN' ? '🇮🇳 India Branch' : '🇧🇩 Bangladesh Branch'}</span><span className="text-[10px] text-muted-foreground">LOCKED</span></div>
+              )}
+            </div>
+          </div>
           <nav className="flex-1 overflow-y-auto p-3">{navGroups.map((group, gidx) => { const items = group.items.filter((item) => !item.masterOnly || isMasterAdmin); if (items.length === 0) return null; return <div key={gidx} className="mb-4">{group.label && <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">{group.label}</p>}{items.map((item) => <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)} className={`mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive(item.href) ? 'bg-primary text-primary-foreground' : 'text-foreground/70 hover:bg-secondary'}`}><item.icon className="h-4 w-4" />{item.label}</Link>)}</div>; })}</nav>
           <div className="border-t border-border p-3"><button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10"><LogOut className="h-4 w-4" /> লগআউট</button></div>
         </div>
