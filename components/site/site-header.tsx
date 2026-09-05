@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Grid, ShoppingBag, Tag, Wrench, BookOpen, PhoneCall, Search, User, ShoppingCart, Menu, X, Heart, MapPin, Phone, Facebook, Youtube, Instagram } from 'lucide-react';
+import { Home, Grid, ShoppingBag, Layers, Tag, Wrench, BookOpen, PhoneCall, Search, User, ShoppingCart, Menu, X, Heart, MapPin, Phone, Facebook, Youtube, Instagram } from 'lucide-react';
 import { getSiteSettings } from '@/lib/data';
 import type { SiteSettings } from '@/lib/supabase/types';
 import { useLang } from '@/components/site/language-provider';
@@ -36,6 +36,7 @@ export function SiteHeader() {
     { label: t('হোম', 'Home'), href: '/', icon: Home },
     { label: t('ক্যাটাগরি', 'Categories'), href: '/categories', icon: Grid },
     { label: t('সব পণ্য', 'Products'), href: '/all-products', icon: ShoppingBag },
+    { label: t('কম্বো', 'Combo'), href: '/combos', icon: Layers },
     { label: t('অফার', 'Offers'), href: '/offers', icon: Tag, badge: 'Hot' },
     { label: t('চাষাবাদ', 'Guides'), href: '/blog', icon: BookOpen },
     { label: t('আমাদের', 'About'), href: '/about', icon: Wrench },
