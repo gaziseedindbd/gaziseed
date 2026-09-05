@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Grid, ShoppingBag, Layers, Tag, Wrench, BookOpen, PhoneCall, Search, User, ShoppingCart, Truck, BadgeDollarSign, Menu, X, Heart, MapPin, Phone, Facebook, Youtube, Instagram } from 'lucide-react';
+import { Home, Grid, ShoppingBag, Tag, Wrench, BookOpen, PhoneCall, Search, User, ShoppingCart, Menu, X, Heart, MapPin, Phone, Facebook, Youtube, Instagram } from 'lucide-react';
 import { getSiteSettings } from '@/lib/data';
 import type { SiteSettings } from '@/lib/supabase/types';
 import { useLang } from '@/components/site/language-provider';
@@ -42,6 +42,26 @@ export function SiteHeader() {
     { label: t('যোগাযোগ', 'Contact'), href: '/contact', icon: PhoneCall },
   ];
 
+  const renderNav = (compact = false) => (
+    <div className={`flex items-center rounded-full border border-emerald-100 bg-white/95 backdrop-blur-sm ${compact ? 'gap-0.5 p-1 shadow-[0_8px_24px_-16px_rgba(5,46,22,.45)]' : 'gap-1.5 p-1.5 shadow-[0_10px_35px_-18px_rgba(5,46,22,.55)]'}`}>
+      {navLinks.map(link => {
+        const Icon = link.icon;
+        const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href + '/'));
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`group relative flex shrink-0 items-center rounded-full font-bold transition-all duration-200 ${compact ? 'gap-1.5 px-2.5 py-2 text-[11px]' : 'gap-2 px-4 py-2.5 text-[13px]'} ${active ? 'bg-emerald-800 text-white shadow-md shadow-emerald-900/15' : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-800'}`}
+          >
+            <Icon className={`${compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} transition-transform duration-200 group-hover:scale-110 ${active ? 'text-white' : 'text-emerald-700'}`} />
+            <span>{link.label}</span>
+            {link.badge && <span className={`absolute -right-1 -top-1 rounded-full px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wide ${active ? 'bg-lime-300 text-emerald-950' : 'bg-amber-400 text-amber-950'}`}>{link.badge}</span>}
+          </Link>
+        );
+      })}
+    </div>
+  );
+
   return (
     <header className="fixed inset-x-0 top-0 z-50 bg-white/95 shadow-[0_12px_40px_-24px_rgba(5,46,22,.45)] backdrop-blur-md">
       <div className="top-green-bar">
@@ -55,19 +75,25 @@ export function SiteHeader() {
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-[1440px] items-center gap-4 px-4 py-3 sm:px-6 lg:px-8 lg:py-4">
+      <div className="mx-auto flex max-w-[1440px] items-center gap-3 px-4 py-3 sm:px-6 lg:px-8 lg:py-3.5">
         <Link href="/" className="flex shrink-0 items-center gap-2.5 rounded-2xl px-1 py-1 transition hover:scale-[1.01]">
-          {settings?.logo ? <img src={settings.logo} alt={settings.website_name || 'GAZI SEED'} className="h-10 w-auto max-w-[175px] object-contain sm:h-11 sm:max-w-[195px]" /> : <div className="flex items-center gap-2"><SproutMark large /><div><div className="text-2xl font-black leading-none tracking-tight text-emerald-950">GAZI SEED</div><div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">Better Seeds · Better Future</div></div></div>}
+          {settings?.logo ? <img src={settings.logo} alt={settings.website_name || 'GAZI SEED'} className="h-10 w-auto max-w-[155px] object-contain sm:h-11 sm:max-w-[175px]" /> : <div className="flex items-center gap-2"><SproutMark large /><div><div className="text-xl font-black leading-none tracking-tight text-emerald-950 sm:text-2xl">GAZI SEED</div><div className="mt-1 hidden text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500 sm:block">Better Seeds · Better Future</div></div></div>}
         </Link>
 
-        <div className="hidden min-w-0 flex-1 sm:block">
-          <div className="mx-auto flex max-w-2xl items-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10">
-            <input type="text" placeholder={t('আপনার পছন্দের বীজ খুঁজুন...', 'Search your favorite seeds...')} className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400" />
-            <button className="flex h-11 w-12 items-center justify-center bg-emerald-800 text-white transition hover:bg-emerald-900" aria-label={t('খুঁজুন', 'Search')}><Search className="h-5 w-5" /></button>
+        <div className="hidden min-w-0 max-w-[285px] flex-1 sm:block lg:max-w-[300px] xl:max-w-[255px]">
+          <div className="flex items-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10">
+            <input type="text" placeholder={t('আপনার পছন্দের বীজ খুঁজুন...', 'Search your favorite seeds...')} className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400" />
+            <button className="flex h-10 w-10 shrink-0 items-center justify-center bg-emerald-800 text-white transition hover:bg-emerald-900" aria-label={t('খুঁজুন', 'Search')}><Search className="h-4.5 w-4.5" /></button>
           </div>
         </div>
 
-        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+        <div className="hidden min-w-0 flex-1 xl:block">
+          <div className="flex justify-start pl-1">
+            {renderNav(true)}
+          </div>
+        </div>
+
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
           <button onClick={() => setLang(lang === 'bn' ? 'en' : 'bn')} className="hidden rounded-xl px-2 py-2 text-xs font-extrabold text-emerald-900 hover:bg-emerald-50 sm:block">{lang === 'bn' ? 'EN' : 'বাংলা'}</button>
           <Link href="/wishlist" title={t('প্রিয় তালিকা', 'Wishlist')} className="hidden rounded-xl p-2 text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 sm:block"><Heart className="h-5 w-5" /></Link>
           <Link href="/account" title={t('লগইন / রেজিস্টার', 'Login / Register')} className="hidden items-center gap-1.5 rounded-xl px-2 py-2 text-sm font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 md:flex"><User className="h-5 w-5" /> <span className="hidden lg:inline">{t('লগইন / রেজিস্টার', 'Login / Register')}</span></Link>
@@ -76,25 +102,9 @@ export function SiteHeader() {
         </div>
       </div>
 
-      <nav className="hidden border-t border-slate-100/80 bg-gradient-to-r from-white via-emerald-50/50 to-white py-2.5 md:block">
+      <nav className="hidden border-t border-slate-100/80 bg-gradient-to-r from-white via-emerald-50/50 to-white py-2.5 lg:block xl:hidden">
         <div className="mx-auto flex max-w-[1040px] items-center justify-center px-4">
-          <div className="flex items-center gap-1.5 rounded-full border border-emerald-100 bg-white/90 p-1.5 shadow-[0_10px_35px_-18px_rgba(5,46,22,.55)] backdrop-blur-sm">
-            {navLinks.map(link => {
-              const Icon = link.icon;
-              const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href + '/'));
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`group relative flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-bold transition-all duration-200 ${active ? 'bg-emerald-800 text-white shadow-md shadow-emerald-900/15' : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-800'}`}
-                >
-                  <Icon className={`h-4 w-4 transition-transform duration-200 group-hover:scale-110 ${active ? 'text-white' : 'text-emerald-700'}`} />
-                  <span>{link.label}</span>
-                  {link.badge && <span className={`absolute -right-1 -top-1 rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide ${active ? 'bg-lime-300 text-emerald-950' : 'bg-amber-400 text-amber-950'}`}>{link.badge}</span>}
-                </Link>
-              );
-            })}
-          </div>
+          {renderNav(false)}
         </div>
       </nav>
 
