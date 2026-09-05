@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 
-const OLD_BRAND = 'SEED BARI';
-const NEW_BRAND = 'SUPER KING SEED';
+const LEGACY_BRANDS = ['SUPER KING SEED', 'SEED BARI'];
+const NEW_BRAND = 'GAZI SEED';
 
 export default function BrandNormalizer() {
   useEffect(() => {
@@ -12,10 +12,13 @@ export default function BrandNormalizer() {
       const nodes: Text[] = [];
       let node: Node | null;
       while ((node = walker.nextNode())) {
-        if (node.nodeValue?.includes(OLD_BRAND)) nodes.push(node as Text);
+        const value = node.nodeValue || '';
+        if (LEGACY_BRANDS.some((brand) => value.includes(brand))) nodes.push(node as Text);
       }
       nodes.forEach((textNode) => {
-        textNode.nodeValue = textNode.nodeValue?.replaceAll(OLD_BRAND, NEW_BRAND) ?? textNode.nodeValue;
+        let value = textNode.nodeValue || '';
+        for (const brand of LEGACY_BRANDS) value = value.replaceAll(brand, NEW_BRAND);
+        textNode.nodeValue = value;
       });
     };
 
