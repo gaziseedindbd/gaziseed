@@ -139,6 +139,34 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('gazi-branch-change', syncBranch);
   }, []);
 
+  useEffect(() => {
+    const applyCurrencyToText = (root: Node, symbol: string) => {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const nodes: Text[] = [];
+      let current: Node | null = null;
+      while ((current = walker.nextNode())) {
+        const text = current.nodeValue || '';
+        if (text.includes('৳') || text.includes('₹')) nodes.push(current as Text);
+      }
+      nodes.forEach((node) => {
+        node.nodeValue = (node.nodeValue || '').replace(/[৳₹]/g, symbol);
+      });
+    };
+
+    let applying = false;
+    const syncCurrency = () => {
+      if (applying) return;
+      applying = true;
+      applyCurrencyToText(document.body, selectedBranch === 'IN' ? '₹' : '৳');
+      applying = false;
+    };
+
+    syncCurrency();
+    const observer = new MutationObserver(() => syncCurrency());
+    observer.observe(document.body, { subtree: true, childList: true, characterData: true });
+    return () => observer.disconnect();
+  }, [selectedBranch]);
+
   if (isLoginPage) return <>{children}</>;
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!isAdmin) return null;
