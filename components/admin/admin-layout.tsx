@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
 import { Loader2, LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Tag, Star, Wrench, FileText, Image, Settings, FileBarChart, Menu, X, LogOut, Truck, Megaphone, Layers, BarChart3, Home, ShieldCheck, UserCog, Gift, Bell, Boxes, LifeBuoy, TrendingUp, Sun, Moon, Bot, MessageCircle, Sparkles, Globe2, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { NotificationCenter } from './notification-center';
 
 type NavGroup = { label: string; items: { href: string; label: string; icon: any; masterOnly?: boolean }[] };
-
 type Branch = 'BD' | 'IN';
 
 const navGroups: NavGroup[] = [
@@ -110,7 +109,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
     if (master) {
       const savedBranch = localStorage.getItem(BRANCH_KEY);
-      setSelectedBranch(savedBranch === 'IN' ? 'IN' : 'BD');
+      const branch = savedBranch === 'IN' ? 'IN' : 'BD';
+      setSelectedBranch(branch);
+      if (session.user.user_metadata?.gazi_admin_branch !== branch) {
+        await supabase.auth.updateUser({ data: { gazi_admin_branch: branch } });
+      }
     } else {
       setSelectedBranch(ownCountry);
     }
@@ -118,10 +121,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     setLoading(false);
   };
 
-  const handleBranchChange = (branch: Branch) => {
+  const handleBranchChange = async (branch: Branch) => {
     if (!isMasterAdmin) return;
     setSelectedBranch(branch);
     localStorage.setItem(BRANCH_KEY, branch);
+    await supabase.auth.updateUser({ data: { gazi_admin_branch: branch } });
     window.dispatchEvent(new CustomEvent('gazi-branch-change', { detail: branch }));
     router.refresh();
   };
