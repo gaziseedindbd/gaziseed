@@ -76,9 +76,32 @@ export function SiteHeader() {
         </div>
       </div>
 
-      <nav className="hidden border-t border-slate-100 bg-white md:block">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-center gap-2 overflow-x-auto px-4 py-2">
-          {navLinks.map(link => { const Icon = link.icon; const active = pathname === link.href; return <Link key={link.href} href={link.href} className={`group flex shrink-0 items-center gap-1.5 rounded-lg px-4 py-2 text-[13px] font-bold transition ${active ? 'text-emerald-800' : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-800'}`}><Icon className={`h-4 w-4 ${active ? 'text-emerald-700' : 'text-emerald-700/80'}`} /><span>{link.label}</span></Link>; })}
+      <nav className="hidden border-y border-slate-100/90 bg-white/95 md:block md:backdrop-blur-sm">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-center px-4 sm:px-6 lg:px-8">
+          <div className="flex w-full items-center justify-center gap-1 overflow-x-auto py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {navLinks.map((link, index) => {
+              const Icon = link.icon;
+              const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(`${link.href}/`));
+              return (
+                <React.Fragment key={link.href}>
+                  {index > 0 && <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-slate-200/80" />}
+                  <Link
+                    href={link.href}
+                    aria-current={active ? 'page' : undefined}
+                    className={`group relative flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-bold tracking-[0.01em] transition-all duration-200 ${
+                      active
+                        ? 'bg-emerald-50 text-emerald-800 shadow-sm ring-1 ring-emerald-100'
+                        : 'text-slate-700 hover:bg-slate-50 hover:text-emerald-800'
+                    }`}
+                  >
+                    <Icon className={`h-[17px] w-[17px] transition-transform duration-200 group-hover:scale-110 ${active ? 'text-emerald-700' : 'text-emerald-700/80'}`} />
+                    <span>{link.label}</span>
+                    <span className={`pointer-events-none absolute inset-x-4 -bottom-[1px] h-0.5 rounded-full bg-emerald-600 transition-all duration-200 ${active ? 'opacity-100' : 'opacity-0 group-hover:opacity-60'}`} />
+                  </Link>
+                </React.Fragment>
+              );
+            })}
+          </div>
         </div>
       </nav>
 
