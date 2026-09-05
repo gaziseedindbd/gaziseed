@@ -29,7 +29,7 @@ export async function GET(_request: Request, { params }: { params: { slug: strin
     }
 
     const title = combo.title_bn || combo.title_en || 'Combo Offer';
-    const description = combo.description_bn || combo.description_en || 'SUPER KING SEED';
+    const description = combo.description_bn || combo.description_en || 'GAZI SEED';
     const imageUrl = getImageUrl(combo);
 
     return new ImageResponse(
@@ -81,7 +81,7 @@ export async function GET(_request: Request, { params }: { params: { slug: strin
               {description}
             </div>
             <div style={{ fontSize: 20, marginTop: 12, color: '#fbbf24', fontWeight: 700 }}>
-              SUPER KING SEED
+              GAZI SEED
             </div>
           </div>
         </div>
