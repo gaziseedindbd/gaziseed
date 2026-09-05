@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Grid, ShoppingBag, Layers, Tag, Wrench, BookOpen, PhoneCall, Search, User, ShoppingCart, Truck, BadgeDollarSign, Menu, X } from 'lucide-react';
+import { Home, Grid, ShoppingBag, Layers, Tag, Wrench, BookOpen, PhoneCall, Search, User, ShoppingCart, Truck, BadgeDollarSign, Menu, X, Heart, MapPin, Phone, Facebook, Youtube, Instagram } from 'lucide-react';
 import { getSiteSettings } from '@/lib/data';
 import type { SiteSettings } from '@/lib/supabase/types';
 import { useLang } from '@/components/site/language-provider';
@@ -34,49 +34,61 @@ export function SiteHeader() {
 
   const navLinks = [
     { label: t('হোম', 'Home'), href: '/', icon: Home },
-    { label: t('ক্যাটাগরি', 'Categories'), href: '/categories', icon: Grid },
-    { label: t('সকল প্রোডাক্ট', 'All Products'), href: '/all-products', icon: ShoppingBag },
-    { label: t('কম্বো', 'Combos'), href: '/combos', icon: Layers },
+    { label: t('সব ক্যাটাগরি', 'All Categories'), href: '/categories', icon: Grid },
+    { label: t('সব পণ্য', 'All Products'), href: '/all-products', icon: ShoppingBag },
     { label: t('অফার', 'Offers'), href: '/offers', icon: Tag },
-    { label: t('সার্ভিসসমূহ', 'Services'), href: '/services', icon: Wrench },
-    { label: t('ডেলিভারি চার্জ', 'Delivery Charges'), href: '/charges', icon: BadgeDollarSign },
-    { label: t('ব্লগ', 'Blog'), href: '/blog', icon: BookOpen },
+    { label: t('চাষাবাদ গাইড', 'Growing Guide'), href: '/blog', icon: BookOpen },
+    { label: t('আমাদের সম্পর্কে', 'About Us'), href: '/about', icon: Wrench },
     { label: t('যোগাযোগ', 'Contact'), href: '/contact', icon: PhoneCall },
   ];
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/70 bg-white/95 shadow-[0_10px_35px_-20px_rgba(15,23,42,.35)] backdrop-blur-xl">
-      <div className="mx-auto flex max-w-[1440px] items-center gap-3 px-3 py-3 sm:px-5 lg:px-7">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5 rounded-2xl px-1 py-1 transition hover:scale-[1.01]">
-          {settings?.logo ? <img src={settings.logo} alt={settings.website_name || 'SEED BARI'} className="h-9 w-auto max-w-[150px] object-contain sm:h-10 sm:max-w-[175px]" /> : <span className="text-lg font-black tracking-tight text-emerald-950 sm:text-xl">SEED BARI</span>}
-        </Link>
-
-        <div className="hidden min-w-0 flex-1 sm:block">
-          <div className="mx-auto flex max-w-2xl items-center rounded-[1.15rem] border border-slate-200/90 bg-white p-1.5 shadow-[0_8px_24px_-18px_rgba(15,23,42,.55)] transition-all focus-within:border-emerald-400 focus-within:shadow-[0_12px_32px_-18px_rgba(5,150,105,.45)] focus-within:ring-4 focus-within:ring-emerald-500/8">
-            <div className="ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Search className="h-4 w-4" /></div>
-            <input type="text" placeholder={t('বীজ, গাছ বা পণ্য খুঁজুন...', 'Search seeds, plants or products...')} className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400" />
-            <button className="rounded-[0.9rem] bg-emerald-800 px-5 py-2.5 text-xs font-extrabold text-white shadow-md shadow-emerald-900/15 transition hover:-translate-y-0.5 hover:bg-emerald-900 hover:shadow-lg active:translate-y-0 active:scale-95"><span className="hidden md:inline">{t('খুঁজুন', 'Search')}</span><Search className="h-4 w-4 md:hidden" /></button>
+    <header className="fixed inset-x-0 top-0 z-50 bg-white shadow-[0_12px_40px_-24px_rgba(5,46,22,.45)]">
+      <div className="top-green-bar">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-4 py-1.5 text-[11px] font-semibold text-white sm:px-6">
+          <div className="flex items-center gap-2.5"><SproutMark /> <span>{t('ভালো বীজ, সবুজ ভবিষ্যৎ | SEED BARI', 'Better Seeds, Greener Future | SEED BARI')}</span></div>
+          <div className="hidden items-center gap-5 md:flex">
+            <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />ঢাকা, বাংলাদেশ</span>
+            <span className="inline-flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />+880 1700 123 456</span>
+            <span className="inline-flex items-center gap-2 opacity-90"><Facebook className="h-3.5 w-3.5" /><Youtube className="h-3.5 w-3.5" /><Instagram className="h-3.5 w-3.5" /></span>
           </div>
-        </div>
-
-        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <button onClick={() => setLang(lang === 'bn' ? 'en' : 'bn')} className="rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-[11px] font-extrabold text-emerald-900 transition hover:bg-emerald-100 sm:px-3 sm:text-xs">{lang === 'bn' ? 'EN' : 'বাংলা'}</button>
-          <Link href="/track-order" title="অর্ডার ট্র্যাকিং" className="hidden items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:border-emerald-200 hover:text-emerald-700 md:flex"><Truck className="h-4 w-4" />{t('ট্র্যাকিং', 'Tracking')}</Link>
-          <Link href="/account" title="আমার অ্যাকাউন্ট" className="rounded-xl p-2 text-slate-700 transition hover:bg-slate-100 hover:text-emerald-700"><User className="h-5 w-5" /></Link>
-          <Link href="/cart" title="কার্ট" className="relative rounded-xl p-2 text-slate-700 transition hover:bg-slate-100 hover:text-emerald-700"><ShoppingCart className="h-5 w-5" />{cartCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-white ring-2 ring-white">{cartCount > 99 ? '99+' : cartCount}</span>}</Link>
-          <button type="button" onClick={() => setMobileMenuOpen(v => !v)} aria-label={mobileMenuOpen ? 'মেনু বন্ধ করুন' : 'মেনু খুলুন'} className="rounded-xl p-2 text-slate-700 transition hover:bg-slate-100 hover:text-emerald-700 sm:hidden">{mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
         </div>
       </div>
 
-      <nav className="hidden border-t border-slate-100 bg-slate-50/80 md:block">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-center gap-1 overflow-x-auto px-4 py-1.5">
-          {navLinks.map(link => { const Icon = link.icon; const active = pathname === link.href; return <Link key={link.href} href={link.href} className={`group flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition ${active ? 'bg-emerald-700 text-white shadow-sm' : 'text-slate-600 hover:bg-white hover:text-emerald-700 hover:shadow-sm'}`}><Icon className={`h-4 w-4 ${active ? 'text-white' : 'text-emerald-700'}`} /><span>{link.label}</span></Link>; })}
+      <div className="mx-auto flex max-w-[1440px] items-center gap-4 px-4 py-3 sm:px-6 lg:px-8 lg:py-4">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5 rounded-2xl px-1 py-1 transition hover:scale-[1.01]">
+          {settings?.logo ? <img src={settings.logo} alt={settings.website_name || 'SEED BARI'} className="h-10 w-auto max-w-[175px] object-contain sm:h-11 sm:max-w-[195px]" /> : <div className="flex items-center gap-2"><SproutMark large /><div><div className="text-2xl font-black leading-none tracking-tight text-emerald-950">SEED BARI</div><div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">Better Seeds · Better Future</div></div></div>}
+        </Link>
+
+        <div className="hidden min-w-0 flex-1 sm:block">
+          <div className="mx-auto flex max-w-2xl items-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10">
+            <input type="text" placeholder={t('আপনার পছন্দের বীজ খুঁজুন...', 'Search your favorite seeds...')} className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400" />
+            <button className="flex h-11 w-12 items-center justify-center bg-emerald-800 text-white transition hover:bg-emerald-900" aria-label={t('খুঁজুন', 'Search')}><Search className="h-5 w-5" /></button>
+          </div>
+        </div>
+
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+          <button onClick={() => setLang(lang === 'bn' ? 'en' : 'bn')} className="hidden rounded-xl px-2 py-2 text-xs font-extrabold text-emerald-900 hover:bg-emerald-50 sm:block">{lang === 'bn' ? 'EN' : 'বাংলা'}</button>
+          <Link href="/wishlist" title={t('প্রিয় তালিকা', 'Wishlist')} className="hidden rounded-xl p-2 text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 sm:block"><Heart className="h-5 w-5" /></Link>
+          <Link href="/account" title={t('লগইন / রেজিস্টার', 'Login / Register')} className="hidden items-center gap-1.5 rounded-xl px-2 py-2 text-sm font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 md:flex"><User className="h-5 w-5" /> <span className="hidden lg:inline">{t('লগইন / রেজিস্টার', 'Login / Register')}</span></Link>
+          <Link href="/cart" title={t('কার্ট', 'Cart')} className="relative rounded-xl p-2 text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700"><ShoppingCart className="h-5 w-5" />{cartCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-700 px-1 text-[9px] font-black text-white ring-2 ring-white">{cartCount > 99 ? '99+' : cartCount}</span>}</Link>
+          <button type="button" onClick={() => setMobileMenuOpen(v => !v)} aria-label={mobileMenuOpen ? 'মেনু বন্ধ করুন' : 'মেনু খুলুন'} className="rounded-xl p-2 text-slate-700 transition hover:bg-slate-100 hover:text-emerald-700 md:hidden">{mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
+        </div>
+      </div>
+
+      <nav className="hidden border-t border-slate-100 bg-white md:block">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-center gap-2 overflow-x-auto px-4 py-2">
+          {navLinks.map(link => { const Icon = link.icon; const active = pathname === link.href; return <Link key={link.href} href={link.href} className={`group flex shrink-0 items-center gap-1.5 rounded-lg px-4 py-2 text-[13px] font-bold transition ${active ? 'text-emerald-800' : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-800'}`}><Icon className={`h-4 w-4 ${active ? 'text-emerald-700' : 'text-emerald-700/80'}`} /><span>{link.label}</span></Link>; })}
         </div>
       </nav>
 
-      {mobileMenuOpen && <div className="border-t border-slate-100 bg-white shadow-2xl sm:hidden"><div className="grid grid-cols-2 gap-2 p-3">{navLinks.map(link => { const Icon = link.icon; const active = pathname === link.href; return <Link key={link.href} href={link.href} className={`flex items-center gap-2 rounded-2xl border p-3 text-sm font-bold ${active ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-100 bg-slate-50 text-slate-700'}`}><Icon className="h-5 w-5 text-emerald-700" />{link.label}</Link>; })}</div></div>}
+      {mobileMenuOpen && <div className="border-t border-slate-100 bg-white shadow-2xl md:hidden"><div className="grid grid-cols-2 gap-2 p-3">{navLinks.map(link => { const Icon = link.icon; const active = pathname === link.href; return <Link key={link.href} href={link.href} className={`flex items-center gap-2 rounded-2xl border p-3 text-sm font-bold ${active ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-100 bg-slate-50 text-slate-700'}`}><Icon className="h-5 w-5 text-emerald-700" />{link.label}</Link>; })}</div></div>}
     </header>
   );
+}
+
+function SproutMark({ large = false }: { large?: boolean }) {
+  return <div className={`relative flex ${large ? 'h-10 w-10' : 'h-4 w-4'} items-center justify-center rounded-full text-emerald-700`}><span className="absolute h-2/3 w-1/3 -translate-x-1 rotate-[-38deg] rounded-full bg-emerald-600" /><span className="absolute h-2/3 w-1/3 translate-x-1 rotate-[38deg] rounded-full bg-lime-500" /><span className={`absolute bottom-0 h-1/2 w-0.5 rounded-full bg-emerald-800 ${large ? 'h-5' : ''}`} /></div>;
 }
 
 export default SiteHeader;
