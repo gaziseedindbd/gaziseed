@@ -3,6 +3,7 @@ export const revalidate = 60;
 import './globals.css';
 
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { Hind } from 'next/font/google';
 import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
@@ -41,6 +42,14 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const requestHeaders = headers();
+  const detectedCountry = (
+    requestHeaders.get('x-vercel-ip-country') ||
+    requestHeaders.get('cf-ipcountry') ||
+    'BD'
+  ).toUpperCase();
+  const visitorCountry = detectedCountry === 'IN' ? 'IN' : 'BD';
+
   return (
     <html lang="bn" suppressHydrationWarning>
       <head>
@@ -56,6 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href="/home-category-cards-fix.css" />
         <link rel="stylesheet" href="/home-category-labels-premium.css" />
         <link rel="stylesheet" href="/home-banner-final-fix.css" />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){window.__GAZI_COUNTRY__='${visitorCountry}';})();` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{const theme=localStorage.getItem('admin_theme');if(theme==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}})()` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})}})()` }} />
       </head>
