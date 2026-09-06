@@ -8,6 +8,7 @@ import { getSiteSettings } from '@/lib/data';
 import { getVisitorCountry } from '@/lib/supabase/client';
 import type { SiteSettings } from '@/lib/supabase/types';
 import { useLang } from '@/components/site/language-provider';
+import CountrySelector from '@/components/site/country-selector';
 
 export function SiteHeader() {
   const [cartCount, setCartCount] = useState(0);
@@ -103,6 +104,7 @@ export function SiteHeader() {
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
+          <CountrySelector />
           <button onClick={() => setLang(lang === 'bn' ? 'en' : 'bn')} className="hidden rounded-xl px-2 py-2 text-xs font-extrabold text-emerald-900 hover:bg-emerald-50 sm:block">{lang === 'bn' ? 'EN' : 'বাংলা'}</button>
           <Link href="/wishlist" title={t('প্রিয় তালিকা', 'Wishlist')} className="hidden rounded-xl p-2 text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 sm:block"><Heart className="h-5 w-5" /></Link>
           <Link href="/account" title={t('লগইন / রেজিস্টার', 'Login / Register')} className="hidden items-center gap-1.5 rounded-xl px-2 py-2 text-sm font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 md:flex"><User className="h-5 w-5" /> <span className="hidden lg:inline">{t('লগইন / রেজিস্টার', 'Login / Register')}</span></Link>
@@ -121,6 +123,7 @@ export function SiteHeader() {
         <div className="border-t border-slate-100 bg-white shadow-2xl md:hidden">
           <div className="p-3">
             <div className="mb-2 flex items-center gap-2 px-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-400">Menu <span className="h-px flex-1 bg-slate-100" /></div>
+            <div className="mb-3"><CountrySelector mobile /></div>
             <div className="grid grid-cols-2 gap-2">
               {navLinks.map(link => {
                 const Icon = link.icon;
