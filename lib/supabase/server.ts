@@ -10,12 +10,15 @@ export async function createServerSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || FALLBACK_KEY;
 
+  const manualOverride = cookieStore.get('gazi_country_override')?.value?.toUpperCase();
   const detectedCountry = (
     headerStore.get('x-vercel-ip-country') ||
     headerStore.get('cf-ipcountry') ||
     'BD'
   ).toUpperCase();
-  const visitorCountry = detectedCountry === 'IN' ? 'IN' : 'BD';
+  const visitorCountry = manualOverride === 'IN' || manualOverride === 'BD'
+    ? manualOverride
+    : detectedCountry === 'IN' ? 'IN' : 'BD';
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
