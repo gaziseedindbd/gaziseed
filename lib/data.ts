@@ -1,7 +1,7 @@
 'use client';
 
 import { supabase } from './supabase/client';
-import { formatPrice, formatPriceEn } from './supabase/client';
+import { formatPrice, formatPriceEn, getVisitorCountry } from './supabase/client';
 export { formatPrice, formatPriceEn };
 import type {
   Category, Product, Service, Banner, BlogPost, Testimonial,
@@ -12,10 +12,11 @@ import type {
 } from './supabase/types';
 
 export async function getSiteSettings(): Promise<SiteSettings | null> {
+  const country = getVisitorCountry();
   const { data } = await supabase
     .from('site_settings')
     .select('*')
-    .eq('id', 1)
+    .eq('country_code', country)
     .maybeSingle();
   return data as SiteSettings | null;
 }
