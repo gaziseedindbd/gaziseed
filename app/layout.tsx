@@ -28,8 +28,8 @@ const hind = Hind({ subsets: ['latin'], weight: ['300', '400', '500', '600', '70
 const FAVICON_URL = '/favicon.svg?v=2';
 
 export const metadata: Metadata = {
-  title: 'SEED BARI - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
-  description: 'SEED BARI - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। ক্যাশ অন ডেলিভারি সারাদেশে।',
+  title: 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
+  description: 'GAZI SEED - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। ক্যাশ অন ডেলিভারি সারাদেশে।',
   metadataBase: new URL('https://www.gaziseed.com'),
   manifest: '/manifest.webmanifest',
   themeColor: '#047857',
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     shortcut: [{ url: FAVICON_URL, type: 'image/svg+xml' }],
     apple: [{ url: FAVICON_URL, type: 'image/svg+xml' }],
   },
-  openGraph: { title: 'SEED BARI', description: 'বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর', type: 'website' },
+  openGraph: { title: 'GAZI SEED', description: 'বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর', type: 'website' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
