@@ -10,13 +10,13 @@ const QUERY_TIMEOUT_MS = 8000;
 
 type QueryResult<T = any> = { data: T | null; count?: number | null; error?: any };
 
-async function withTimeout<T>(promise: PromiseLike<T>, fallback: T): Promise<T> {
+async function withTimeout<T>(promise: PromiseLike<T>, fallback: any): Promise<T> {
   return new Promise<T>((resolve) => {
     let settled = false;
     const timer = window.setTimeout(() => {
       if (!settled) {
         settled = true;
-        resolve(fallback);
+        resolve(fallback as T);
       }
     }, QUERY_TIMEOUT_MS);
 
@@ -30,7 +30,7 @@ async function withTimeout<T>(promise: PromiseLike<T>, fallback: T): Promise<T> 
       if (!settled) {
         settled = true;
         window.clearTimeout(timer);
-        resolve(fallback);
+        resolve(fallback as T);
       }
     });
   });
