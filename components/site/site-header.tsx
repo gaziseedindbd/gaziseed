@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Home, Grid, ShoppingBag, Layers, Tag, Wrench, BookOpen, PhoneCall, Search, User, ShoppingCart, Menu, X, Heart, MapPin, Phone, Facebook, Youtube, Instagram } from 'lucide-react';
 import { getSiteSettings } from '@/lib/data';
 import { getVisitorCountry } from '@/lib/supabase/client';
@@ -20,6 +20,7 @@ export function SiteHeader() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { lang, setLang, t } = useLang();
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => { getSiteSettings().then(setSettings); }, []);
   useEffect(() => { setCountry(getVisitorCountry()); }, []);
@@ -37,6 +38,16 @@ export function SiteHeader() {
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [searchOpen]);
+
+  const submitSearch = () => {
+    const query = searchQuery.trim();
+    if (!query) {
+      searchInputRef.current?.focus();
+      return;
+    }
+    setSearchOpen(false);
+    router.push(`/all-products?search=${encodeURIComponent(query)}`);
+  };
 
   const updateCartCount = () => {
     try {
@@ -126,18 +137,18 @@ export function SiteHeader() {
         <>
           <button type="button" aria-label="Close search" onClick={() => setSearchOpen(false)} className="fixed inset-0 top-[92px] z-[-1] bg-emerald-950/5 backdrop-blur-[1px]" />
           <div className="absolute left-1/2 top-full w-[min(92vw,720px)] -translate-x-1/2 px-4 pb-4 pt-3">
-            <div className="overflow-hidden rounded-[22px] border border-emerald-100 bg-white p-2 shadow-[0_24px_60px_-24px_rgba(5,46,22,.45)] ring-1 ring-emerald-900/5">
+            <form onSubmit={(e) => { e.preventDefault(); submitSearch(); }} className="overflow-hidden rounded-[22px] border border-emerald-100 bg-white p-2 shadow-[0_24px_60px_-24px_rgba(5,46,22,.45)] ring-1 ring-emerald-900/5">
               <div className="flex items-center gap-2 rounded-[16px] border-2 border-emerald-100 bg-slate-50/70 px-3 transition focus-within:border-emerald-600 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-600/10">
                 <Search className="h-5 w-5 shrink-0 text-emerald-700" />
-                <input ref={searchInputRef} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} type="search" placeholder={t('বীজ, পণ্য বা ক্যাটাগরি খুঁজুন...', 'Search seeds, products or categories...')} className="min-w-0 flex-1 bg-transparent px-1 py-4 text-base font-semibold text-slate-800 outline-none placeholder:text-slate-400" />
+                <input ref={searchInputRef} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} type="search" placeholder={t('বীজ, পণ্য বা ক্যাটাগরি খুঁজুন...', 'Search seeds, products or categories...')} className="min-w-0 flex-1 bg-transparent px-1 py-4 text-base font-semibold text-slate-800 outline-none placeholder:text-slate-400" />
                 {searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="rounded-full p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700" aria-label="Clear search"><X className="h-4 w-4" /></button>}
-                <button type="button" className="hidden rounded-xl bg-emerald-800 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-900 sm:block">{t('খুঁজুন', 'Search')}</button>
+                <button type="submit" className="rounded-xl bg-emerald-800 px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-900 sm:px-5">{t('খুঁজুন', 'Search')}</button>
               </div>
               <div className="flex items-center justify-between px-3 py-2 text-[11px] font-semibold text-slate-400">
                 <span>{t('পণ্য, বীজ ও ক্যাটাগরি সার্চ করুন', 'Search products, seeds and categories')}</span>
                 <span className="hidden rounded-md border border-slate-200 bg-white px-2 py-1 sm:inline">ESC</span>
               </div>
-            </div>
+            </form>
           </div>
         </>
       )}
