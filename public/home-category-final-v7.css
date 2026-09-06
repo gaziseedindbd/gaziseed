@@ -1,0 +1,70 @@
+/* GAZI SEED — FINAL CATEGORY CARD TYPOGRAPHY / CREATIVE LABELS */
+@media (max-width: 767px) {
+  .home-premium-scope .cat-grid .cat-card { position:relative!important; }
+  .home-premium-scope .cat-grid .cat-label {
+    position:relative!important;
+    display:flex!important;
+    align-items:center!important;
+    min-height:72px!important;
+    height:72px!important;
+    padding:9px 52px 10px 15px!important;
+    overflow:visible!important;
+    background:linear-gradient(180deg,#ffffff 0%,#f7fbf8 100%)!important;
+    color:#0b3f2c!important;
+    font-family:inherit!important;
+    font-size:16px!important;
+    font-weight:900!important;
+    line-height:1.08!important;
+    letter-spacing:-.025em!important;
+    text-align:left!important;
+    white-space:normal!important;
+    text-shadow:none!important;
+    box-sizing:border-box!important;
+    border-top:1px solid #edf4ef!important;
+  }
+  .home-premium-scope .cat-grid .cat-label::before {
+    content:"";
+    position:absolute!important;
+    left:0!important;
+    top:12px!important;
+    width:4px!important;
+    height:30px!important;
+    border-radius:0 99px 99px 0!important;
+    background:linear-gradient(180deg,#7ccf16,#0b8d50)!important;
+  }
+  .home-premium-scope .cat-grid .cat-label::after {
+    content:"↗"!important;
+    position:absolute!important;
+    right:11px!important;
+    top:18px!important;
+    width:30px!important;
+    height:30px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    border-radius:999px!important;
+    background:#e8f6ed!important;
+    color:#087b43!important;
+    font-size:18px!important;
+    font-weight:900!important;
+    line-height:1!important;
+    box-shadow:inset 0 0 0 1px rgba(8,123,67,.08)!important;
+  }
+  .home-premium-scope .cat-grid .cat-card:nth-child(1) .cat-label{color:#a71656!important}
+  .home-premium-scope .cat-grid .cat-card:nth-child(2) .cat-label{color:#0d7045!important}
+  .home-premium-scope .cat-grid .cat-card:nth-child(3) .cat-label{color:#a6312b!important}
+  .home-premium-scope .cat-grid .cat-card:nth-child(4) .cat-label{color:#a85f10!important}
+  .home-premium-scope .cat-grid .cat-card:nth-child(1) .cat-label::before{background:linear-gradient(180deg,#e32776,#9f164c)!important}
+  .home-premium-scope .cat-grid .cat-card:nth-child(2) .cat-label::before{background:linear-gradient(180deg,#8edc1a,#11874c)!important}
+  .home-premium-scope .cat-grid .cat-card:nth-child(3) .cat-label::before{background:linear-gradient(180deg,#f08a24,#b92b27)!important}
+  .home-premium-scope .cat-grid .cat-card:nth-child(4) .cat-label::before{background:linear-gradient(180deg,#f7bd20,#bd7708)!important}
+  .home-premium-scope .cat-grid .cat-card:nth-child(1) .cat-label::after{color:#b1165a!important;background:#fff0f6!important}
+  .home-premium-scope .cat-grid .cat-card:nth-child(3) .cat-label::after{color:#b33b26!important;background:#fff3eb!important}
+  .home-premium-scope .cat-grid .cat-card:nth-child(4) .cat-label::after{color:#a6670b!important;background:#fff7e6!important}
+  .home-premium-scope .cat-grid .cat-card:active{transform:scale(.985)!important}
+}
+@media (max-width:390px) {
+  .home-premium-scope .cat-grid .cat-label{min-height:68px!important;height:68px!important;padding:8px 47px 9px 13px!important;font-size:14px!important}
+  .home-premium-scope .cat-grid .cat-label::before{top:11px!important;height:28px!important}
+  .home-premium-scope .cat-grid .cat-label::after{right:9px!important;top:17px!important;width:28px!important;height:28px!important;font-size:17px!important}
+}
