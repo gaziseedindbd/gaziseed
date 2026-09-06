@@ -5,19 +5,24 @@ import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
+const RESET_PATH = '/allahmohammad/admin/reset-password';
+
 export default function AdminLoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [resetMessage, setResetMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setResetMessage('');
     if (!form.email || !form.password) { setError('ইমেইল ও পাসওয়ার্ড দিন'); return; }
     setLoading(true);
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email: form.email,
         password: form.password,
       });
@@ -38,6 +43,41 @@ export default function AdminLoginPage() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    setError('');
+    setResetMessage('');
+    const email = form.email.trim();
+    if (!email) {
+      setError('পাসওয়ার্ড রিসেট করতে আগে ইমেইল লিখুন');
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const { data: isAdminEmail, error: adminCheckError } = await supabase
+        .from('admin_users')
+        .select('user_id')
+        .eq('email', email)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (adminCheckError) throw adminCheckError;
+      if (!isAdminEmail) {
+        setError('এই ইমেইলের জন্য সক্রিয় অ্যাডমিন অ্যাকাউন্ট পাওয়া যায়নি।');
+        return;
+      }
+
+      const redirectTo = `${window.location.origin}${RESET_PATH}`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+      if (error) throw error;
+
+      setResetMessage('পাসওয়ার্ড রিসেট লিংক আপনার ইমেইলে পাঠানো হয়েছে।');
+    } catch (err: any) {
+      setError(err.message || 'পাসওয়ার্ড রিসেট লিংক পাঠানো যায়নি');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary/10 p-4">
       <div className="w-full max-w-md">
@@ -45,7 +85,7 @@ export default function AdminLoginPage() {
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <span className="text-xl font-bold">G</span>
           </div>
-          <h1 className="text-2xl font-bold">SEED BARI Admin</h1>
+          <h1 className="text-2xl font-bold">GAZI SEED Admin</h1>
           <p className="mt-1 text-sm text-muted-foreground">অ্যাডমিন প্যানেলে লগইন করুন</p>
         </div>
 
@@ -58,7 +98,13 @@ export default function AdminLoginPage() {
             <label className="mb-1 block text-sm font-medium">পাসওয়ার্ড</label>
             <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input-bangla" required />
           </div>
+          <div className="flex items-center justify-end">
+            <button type="button" onClick={handleForgotPassword} disabled={resetLoading} className="text-sm font-medium text-primary underline underline-offset-4 hover:no-underline disabled:opacity-50">
+              {resetLoading ? 'লিংক পাঠানো হচ্ছে...' : 'পাসওয়ার্ড ভুলে গেছেন?'}
+            </button>
+          </div>
           {error && <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+          {resetMessage && <p className="rounded-lg bg-primary/10 p-3 text-sm text-primary">{resetMessage}</p>}
           <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'লগইন করুন'}
           </button>
