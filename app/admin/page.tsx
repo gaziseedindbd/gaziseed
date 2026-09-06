@@ -11,9 +11,15 @@ export default function AdminDashboard() {
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { loadStats(); }, []);
+  useEffect(() => {
+    loadStats();
+    const handleBranchChange = () => loadStats();
+    window.addEventListener('gazi-branch-change', handleBranchChange);
+    return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
+  }, []);
 
   const loadStats = async () => {
+    setLoading(true);
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString();
     const [todayOrdersRes, pendingRes, confirmedRes, productsRes, lowStockRes, recentRes] = await Promise.all([
