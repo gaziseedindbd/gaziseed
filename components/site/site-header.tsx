@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Grid, ShoppingBag, Layers, Tag, Wrench, BookOpen, PhoneCall, Search, User, ShoppingCart, Menu, X, Heart, MapPin, Phone, Facebook, Youtube, Instagram, Sprout } from 'lucide-react';
+import { Home, Grid, ShoppingBag, Layers, Tag, Wrench, BookOpen, PhoneCall, Search, User, ShoppingCart, Menu, X, Heart, MapPin, Phone, Facebook, Youtube, Instagram } from 'lucide-react';
 import { getSiteSettings } from '@/lib/data';
 import { getVisitorCountry } from '@/lib/supabase/client';
 import type { SiteSettings } from '@/lib/supabase/types';
