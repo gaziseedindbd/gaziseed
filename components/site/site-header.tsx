@@ -3,24 +3,26 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Grid, ShoppingBag, Layers, Tag, Wrench, BookOpen, PhoneCall, Search, User, ShoppingCart, Menu, X, Heart, MapPin, Phone, Facebook, Youtube, Instagram } from 'lucide-react';
-import { getSiteSettings } from '@/lib/data';
+import { Home, Grid, ShoppingBag, Layers, Tag, Wrench, BookOpen, PhoneCall, Search, User, ShoppingCart, Menu, X, Heart, MapPin, Phone, Facebook, Youtube, Instagram, Loader2, ArrowUpRight } from 'lucide-react';
+import { getSiteSettings, getProducts } from '@/lib/data';
 import { getVisitorCountry } from '@/lib/supabase/client';
-import type { SiteSettings } from '@/lib/supabase/types';
+import type { SiteSettings, Product } from '@/lib/supabase/types';
 import { useLang } from '@/components/site/language-provider';
 import CountrySelector from '@/components/site/country-selector';
 
 export function SiteHeader() {
+  const router = useRouter();
   const [cartCount, setCartCount] = useState(0);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { lang, setLang, t } = useLang();
   const pathname = usePathname();
-  const router = useRouter();
 
   useEffect(() => { getSiteSettings().then(setSettings); }, []);
   useEffect(() => { setCountry(getVisitorCountry()); }, []);
@@ -39,15 +41,32 @@ export function SiteHeader() {
     };
   }, [searchOpen]);
 
-  const submitSearch = () => {
+  useEffect(() => {
     const query = searchQuery.trim();
-    if (!query) {
-      searchInputRef.current?.focus();
+    if (!searchOpen || !query) {
+      setSearchResults([]);
+      setSearchLoading(false);
       return;
     }
-    setSearchOpen(false);
-    router.push(`/all-products?search=${encodeURIComponent(query)}`);
-  };
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const results = await getProducts({ search: query });
+        if (!cancelled) setSearchResults(results.slice(0, 6));
+      } catch {
+        if (!cancelled) setSearchResults([]);
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    }, 180);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [searchQuery, searchOpen]);
 
   const updateCartCount = () => {
     try {
@@ -62,6 +81,19 @@ export function SiteHeader() {
     window.addEventListener('storage', updateCartCount);
     return () => { window.removeEventListener('cart-updated', updateCartCount); window.removeEventListener('storage', updateCartCount); };
   }, []);
+
+  const submitSearch = () => {
+    const query = searchQuery.trim();
+    if (!query) return;
+    setSearchOpen(false);
+    router.push(`/all-products?search=${encodeURIComponent(query)}`);
+  };
+
+  const openProduct = (slug: string) => {
+    setSearchOpen(false);
+    setSearchQuery('');
+    router.push(`/product/${slug}`);
+  };
 
   const navLinks = [
     { label: t('হোম', 'Home'), href: '/', icon: Home },
@@ -137,18 +169,54 @@ export function SiteHeader() {
         <>
           <button type="button" aria-label="Close search" onClick={() => setSearchOpen(false)} className="fixed inset-0 top-[92px] z-[-1] bg-emerald-950/5 backdrop-blur-[1px]" />
           <div className="absolute left-1/2 top-full w-[min(92vw,720px)] -translate-x-1/2 px-4 pb-4 pt-3">
-            <form onSubmit={(e) => { e.preventDefault(); submitSearch(); }} className="overflow-hidden rounded-[22px] border border-emerald-100 bg-white p-2 shadow-[0_24px_60px_-24px_rgba(5,46,22,.45)] ring-1 ring-emerald-900/5">
+            <div className="overflow-hidden rounded-[22px] border border-emerald-100 bg-white p-2 shadow-[0_24px_60px_-24px_rgba(5,46,22,.45)] ring-1 ring-emerald-900/5">
               <div className="flex items-center gap-2 rounded-[16px] border-2 border-emerald-100 bg-slate-50/70 px-3 transition focus-within:border-emerald-600 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-600/10">
                 <Search className="h-5 w-5 shrink-0 text-emerald-700" />
-                <input ref={searchInputRef} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} type="search" placeholder={t('বীজ, পণ্য বা ক্যাটাগরি খুঁজুন...', 'Search seeds, products or categories...')} className="min-w-0 flex-1 bg-transparent px-1 py-4 text-base font-semibold text-slate-800 outline-none placeholder:text-slate-400" />
+                <input ref={searchInputRef} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submitSearch(); }} type="search" placeholder={t('বীজ, পণ্য বা ক্যাটাগরি খুঁজুন...', 'Search seeds, products or categories...')} className="min-w-0 flex-1 bg-transparent px-1 py-4 text-base font-semibold text-slate-800 outline-none placeholder:text-slate-400" />
+                {searchLoading && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-emerald-700" />}
                 {searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="rounded-full p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700" aria-label="Clear search"><X className="h-4 w-4" /></button>}
-                <button type="submit" className="rounded-xl bg-emerald-800 px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-900 sm:px-5">{t('খুঁজুন', 'Search')}</button>
+                <button type="button" onClick={submitSearch} className="hidden rounded-xl bg-emerald-800 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-900 sm:block">{t('খুঁজুন', 'Search')}</button>
               </div>
-              <div className="flex items-center justify-between px-3 py-2 text-[11px] font-semibold text-slate-400">
-                <span>{t('পণ্য, বীজ ও ক্যাটাগরি সার্চ করুন', 'Search products, seeds and categories')}</span>
-                <span className="hidden rounded-md border border-slate-200 bg-white px-2 py-1 sm:inline">ESC</span>
-              </div>
-            </form>
+
+              {searchQuery.trim() && (
+                <div className="mt-2 overflow-hidden rounded-[18px] border border-slate-100 bg-white">
+                  {searchLoading ? (
+                    <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm font-semibold text-slate-400"><Loader2 className="h-4 w-4 animate-spin text-emerald-700" />{t('খুঁজছি...', 'Searching...')}</div>
+                  ) : searchResults.length > 0 ? (
+                    <div>
+                      <div className="px-4 pb-2 pt-3 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">{t('সম্পর্কিত পণ্য', 'Related products')}</div>
+                      <div className="max-h-[310px] overflow-y-auto p-2">
+                        {searchResults.map((product) => {
+                          const name = lang === 'en' ? (product.name_en || product.name_bn) : (product.name_bn || product.name_en);
+                          const price = product.sale_price && product.sale_price > 0 && product.sale_price < product.regular_price ? product.sale_price : product.regular_price;
+                          return (
+                            <button key={product.id} type="button" onClick={() => openProduct(product.slug)} className="flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition hover:bg-emerald-50/70">
+                              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-emerald-50 bg-emerald-50">
+                                {product.image ? <img src={product.image} alt={name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center text-2xl">🌱</div>}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="truncate text-sm font-black text-slate-800">{name}</div>
+                                {lang === 'bn' && product.name_en && product.name_bn && <div className="mt-0.5 truncate text-[11px] font-medium text-slate-400">{product.name_en}</div>}
+                                <div className="mt-1 text-sm font-black text-emerald-700">{product.country_code === 'IN' ? '₹ ' : '৳ '}{Number(price).toLocaleString(product.country_code === 'IN' ? 'en-IN' : 'bn-BD')}</div>
+                              </div>
+                              <ArrowUpRight className="h-4 w-4 shrink-0 text-emerald-700" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <button type="button" onClick={submitSearch} className="flex w-full items-center justify-center gap-2 border-t border-slate-100 px-4 py-3 text-xs font-black text-emerald-800 hover:bg-emerald-50">{t('সব সার্চ রেজাল্ট দেখুন', 'View all search results')} <ArrowUpRight className="h-3.5 w-3.5" /></button>
+                    </div>
+                  ) : (
+                    <div className="px-4 py-7 text-center">
+                      <div className="text-sm font-bold text-slate-500">{t('কোনো মিল পাওয়া যায়নি', 'No matching products found')}</div>
+                      <button type="button" onClick={submitSearch} className="mt-3 rounded-full bg-emerald-50 px-4 py-2 text-xs font-black text-emerald-800 hover:bg-emerald-100">{t('সব প্রোডাক্টে খুঁজুন', 'Search all products')}</button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!searchQuery.trim() && <div className="flex items-center justify-between px-3 py-2 text-[11px] font-semibold text-slate-400"><span>{t('পণ্য, বীজ ও ক্যাটাগরি সার্চ করুন', 'Search products, seeds and categories')}</span><span className="hidden rounded-md border border-slate-200 bg-white px-2 py-1 sm:inline">ESC</span></div>}
+            </div>
           </div>
         </>
       )}
