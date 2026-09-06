@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Grid, ShoppingBag, Layers, Tag, Wrench, BookOpen, PhoneCall, Search, User, ShoppingCart, Menu, X, Heart, MapPin, Phone, Facebook, Youtube, Instagram } from 'lucide-react';
 import { getSiteSettings } from '@/lib/data';
+import { getVisitorCountry } from '@/lib/supabase/client';
 import type { SiteSettings } from '@/lib/supabase/types';
 import { useLang } from '@/components/site/language-provider';
 
@@ -12,10 +13,12 @@ export function SiteHeader() {
   const [cartCount, setCartCount] = useState(0);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [country, setCountry] = useState<'BD' | 'IN'>('BD');
   const { lang, setLang, t } = useLang();
   const pathname = usePathname();
 
   useEffect(() => { getSiteSettings().then(setSettings); }, []);
+  useEffect(() => { setCountry(getVisitorCountry()); }, []);
   useEffect(() => { setMobileMenuOpen(false); }, [pathname]);
 
   const updateCartCount = () => {
@@ -63,22 +66,27 @@ export function SiteHeader() {
     </div>
   );
 
+  const logoSrc = settings?.logo || settings?.logo_url || '/favicon.svg?v=2';
+  const locationText = settings?.address || (country === 'IN' ? 'ভারত' : 'ঢাকা, বাংলাদেশ');
+  const phoneText = settings?.phone || settings?.whatsapp;
+  const hasSocials = Boolean(settings?.facebook || settings?.facebook_url || settings?.youtube || settings?.youtube_url || settings?.instagram || settings?.instagram_url);
+
   return (
     <header className="fixed inset-x-0 top-0 z-50 bg-white/95 shadow-[0_12px_40px_-24px_rgba(5,46,22,.45)] backdrop-blur-md">
       <div className="top-green-bar">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-4 py-1.5 text-[11px] font-semibold text-white sm:px-6">
           <div className="flex items-center gap-2.5"><SproutMark /> <span>{t('ভালো বীজ, সবুজ ভবিষ্যৎ | GAZI SEED', 'Better Seeds, Greener Future | GAZI SEED')}</span></div>
           <div className="hidden items-center gap-5 md:flex">
-            <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />ঢাকা, বাংলাদেশ</span>
-            <span className="inline-flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />+880 1700 123 456</span>
-            <span className="inline-flex items-center gap-2 opacity-90"><Facebook className="h-3.5 w-3.5" /><Youtube className="h-3.5 w-3.5" /><Instagram className="h-3.5 w-3.5" /></span>
+            <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{locationText}</span>
+            {phoneText && <span className="inline-flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />{phoneText}</span>}
+            {hasSocials && <span className="inline-flex items-center gap-2 opacity-90"><Facebook className="h-3.5 w-3.5" /><Youtube className="h-3.5 w-3.5" /><Instagram className="h-3.5 w-3.5" /></span>}
           </div>
         </div>
       </div>
 
       <div className="mx-auto flex max-w-[1440px] items-center gap-3 px-4 py-3 sm:px-6 lg:px-8 lg:py-3.5">
         <Link href="/" className="flex shrink-0 items-center gap-2.5 rounded-2xl px-1 py-1 transition hover:scale-[1.01]">
-          {settings?.logo ? <img src={settings.logo} alt={settings.website_name || 'GAZI SEED'} className="h-10 w-auto max-w-[155px] object-contain sm:h-11 sm:max-w-[175px]" /> : <div className="flex items-center gap-2"><SproutMark large /><div><div className="text-xl font-black leading-none tracking-tight text-emerald-950 sm:text-2xl">GAZI SEED</div><div className="mt-1 hidden text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500 sm:block">Better Seeds · Better Future</div></div></div>}
+          {settings?.logo || settings?.logo_url ? <img src={logoSrc} alt={settings.website_name || 'GAZI SEED'} className="h-10 w-auto max-w-[155px] object-contain sm:h-11 sm:max-w-[175px]" /> : <div className="flex items-center gap-2"><SproutMark large /><div><div className="text-xl font-black leading-none tracking-tight text-emerald-950 sm:text-2xl">GAZI SEED</div><div className="mt-1 hidden text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500 sm:block">Better Seeds · Better Future</div></div></div>}
         </Link>
 
         <div className="hidden min-w-0 max-w-[285px] flex-1 sm:block lg:max-w-[300px] xl:max-w-[255px]">
