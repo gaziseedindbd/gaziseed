@@ -113,6 +113,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       setSelectedBranch(branch);
       if (session.user.user_metadata?.gazi_admin_branch !== branch) {
         await supabase.auth.updateUser({ data: { gazi_admin_branch: branch } });
+        await supabase.auth.refreshSession();
+      } else {
+        await supabase.auth.refreshSession();
       }
     } else {
       setSelectedBranch(ownCountry);
@@ -125,7 +128,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     if (!isMasterAdmin) return;
     setSelectedBranch(branch);
     localStorage.setItem(BRANCH_KEY, branch);
-    await supabase.auth.updateUser({ data: { gazi_admin_branch: branch } });
+    const { error } = await supabase.auth.updateUser({ data: { gazi_admin_branch: branch } });
+    if (error) {
+      console.error('Branch update failed:', error);
+      return;
+    }
+    await supabase.auth.refreshSession();
     window.dispatchEvent(new CustomEvent('gazi-branch-change', { detail: branch }));
     window.location.reload();
   };
