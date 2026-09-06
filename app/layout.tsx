@@ -3,7 +3,7 @@ export const revalidate = 60;
 import './globals.css';
 
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { Hind } from 'next/font/google';
 import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
@@ -43,12 +43,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const requestHeaders = headers();
+  const cookieOverride = cookies().get('gazi_country_override')?.value?.toUpperCase();
   const detectedCountry = (
     requestHeaders.get('x-vercel-ip-country') ||
     requestHeaders.get('cf-ipcountry') ||
     'BD'
   ).toUpperCase();
-  const visitorCountry = detectedCountry === 'IN' ? 'IN' : 'BD';
+  const visitorCountry = cookieOverride === 'IN' || cookieOverride === 'BD'
+    ? cookieOverride
+    : detectedCountry === 'IN' ? 'IN' : 'BD';
 
   return (
     <html lang="bn" suppressHydrationWarning>
