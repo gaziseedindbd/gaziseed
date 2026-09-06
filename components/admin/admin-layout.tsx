@@ -127,7 +127,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     localStorage.setItem(BRANCH_KEY, branch);
     await supabase.auth.updateUser({ data: { gazi_admin_branch: branch } });
     window.dispatchEvent(new CustomEvent('gazi-branch-change', { detail: branch }));
-    router.refresh();
+    window.location.reload();
   };
 
   useEffect(() => {
