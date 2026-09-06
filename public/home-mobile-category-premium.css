@@ -1,30 +1,32 @@
 /* GAZI SEED — mobile homepage category cards
-   Four cards only, 2 columns, inspired by the approved premium reference. */
+   Four cards only, 2 columns, approved premium visual. */
 
 @media (max-width: 767px) {
   .home-premium-scope .home-category-section {
     padding-top: 28px !important;
-    padding-bottom: 26px !important;
+    padding-bottom: 28px !important;
   }
 
   .home-premium-scope .home-category-section .mb-6 {
-    align-items: flex-start !important;
-    gap: 14px !important;
-    margin-bottom: 20px !important;
+    align-items: center !important;
+    gap: 12px !important;
+    margin-bottom: 22px !important;
   }
 
   .home-premium-scope .home-category-section .section-heading {
-    font-size: 30px !important;
+    font-size: clamp(25px, 7.2vw, 32px) !important;
     line-height: 1.12 !important;
     letter-spacing: -0.045em !important;
+    font-weight: 800 !important;
+    white-space: nowrap !important;
   }
 
   .home-premium-scope .home-category-section .section-heading::before {
     content: "";
     display: inline-block;
-    width: 54px;
+    width: 52px;
     height: 7px;
-    margin: 0 10px 7px 0;
+    margin: 0 11px 7px 0;
     border-radius: 99px;
     background: #f5bd16;
     vertical-align: middle;
@@ -32,85 +34,123 @@
 
   .home-premium-scope .home-category-section .section-subheading {
     margin-top: 8px !important;
-    font-size: 16px !important;
-    line-height: 1.55 !important;
+    font-size: 15px !important;
+    line-height: 1.5 !important;
+    color: #71827a !important;
   }
 
   .home-premium-scope .home-category-section .view-all-link {
     flex: 0 0 auto;
     max-width: 128px;
     padding: 12px 15px !important;
-    border: 1px solid #d9e9e0 !important;
+    border: 1px solid #d6e8df !important;
     border-radius: 999px !important;
-    background: #fff !important;
-    box-shadow: 0 8px 24px -18px rgba(3, 73, 42, .55) !important;
+    background: #ffffff !important;
+    box-shadow: 0 9px 24px -17px rgba(3, 73, 42, .55) !important;
     font-size: 13px !important;
     line-height: 1.35 !important;
+    font-weight: 700 !important;
     text-align: center;
   }
 
   .home-premium-scope .cat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 12px !important;
+    gap: 14px !important;
   }
 
-  /* Home page shows exactly four featured category cards on mobile. */
   .home-premium-scope .cat-grid .cat-card:nth-child(n + 5) {
     display: none !important;
   }
 
+  /* Approved card: pastel surface + text block + botanical/product visual + round arrow. */
   .home-premium-scope .cat-grid .cat-card {
     position: relative !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    justify-content: flex-end !important;
+    display: block !important;
     min-width: 0 !important;
-    height: 198px !important;
-    min-height: 198px !important;
+    height: 218px !important;
+    min-height: 218px !important;
     padding: 0 !important;
     overflow: hidden !important;
-    border: 1px solid rgba(19, 87, 57, .10) !important;
-    border-radius: 24px !important;
-    background: #eef8f1 !important;
-    box-shadow: 0 14px 30px -22px rgba(5, 72, 39, .55) !important;
+    border: 1px solid rgba(18, 105, 72, .10) !important;
+    border-radius: 25px !important;
+    box-shadow: 0 10px 26px -19px rgba(3, 73, 42, .55) !important;
     isolation: isolate;
+    transition: transform .18s ease, box-shadow .18s ease;
   }
 
   .home-premium-scope .cat-grid .cat-card::before {
     content: "";
     position: absolute;
     inset: 0;
-    z-index: -2;
-    background: linear-gradient(180deg, rgba(255,255,255,.72) 0%, rgba(231,246,237,.92) 48%, rgba(24,67,47,.96) 100%);
+    z-index: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.48) 0%, transparent 62%);
+    pointer-events: none;
   }
 
   .home-premium-scope .cat-grid .cat-card::after {
     content: "";
     position: absolute;
-    left: 10px;
-    right: 10px;
-    bottom: 8px;
-    height: 82px;
-    z-index: -1;
+    width: 175px;
+    height: 175px;
+    right: -55px;
+    bottom: -64px;
+    z-index: 0;
     border-radius: 50%;
-    background: radial-gradient(ellipse at center, rgba(13,115,69,.58), rgba(8,54,36,.05) 70%);
-    opacity: .9;
+    background: rgba(255,255,255,.30);
+    pointer-events: none;
   }
 
   .home-premium-scope .cat-grid .cat-icon-wrap {
     position: absolute !important;
-    right: 12px !important;
-    bottom: 8px !important;
-    width: 112px !important;
-    height: 112px !important;
-    min-width: 112px !important;
-    z-index: 1 !important;
-    overflow: hidden !important;
+    right: -4px !important;
+    bottom: -2px !important;
+    width: 145px !important;
+    height: 145px !important;
+    min-width: 145px !important;
+    z-index: 2 !important;
+    overflow: visible !important;
     border-radius: 0 !important;
     background: transparent !important;
     box-shadow: none !important;
-    opacity: .92;
+    opacity: 1 !important;
+  }
+
+  .home-premium-scope .cat-grid .cat-icon-wrap::before {
+    content: "⌁";
+    position: absolute;
+    left: -178px;
+    top: -96px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255,255,255,.72);
+    color: currentColor;
+    font-size: 30px;
+    line-height: 1;
+    z-index: 4;
+  }
+
+  .home-premium-scope .cat-grid .cat-icon-wrap::after {
+    content: "→";
+    position: absolute;
+    left: -177px;
+    bottom: 14px;
+    width: 43px;
+    height: 43px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(21, 166, 111, .95);
+    color: #fff;
+    font-size: 25px;
+    font-weight: 600;
+    line-height: 1;
+    box-shadow: 0 8px 16px -10px rgba(0,0,0,.45);
+    z-index: 5;
   }
 
   .home-premium-scope .cat-grid .cat-icon-wrap img {
@@ -118,52 +158,106 @@
     height: 100% !important;
     border-radius: 0 !important;
     object-fit: contain !important;
-    object-position: center bottom !important;
-    filter: drop-shadow(0 9px 10px rgba(0,0,0,.14));
+    object-position: right bottom !important;
+    filter: drop-shadow(0 10px 10px rgba(0,0,0,.10));
   }
 
   .home-premium-scope .cat-grid .cat-label {
-    position: relative !important;
-    z-index: 3 !important;
-    align-self: flex-start !important;
-    width: calc(100% - 30px) !important;
-    min-height: 58px !important;
-    margin: 12px 15px auto !important;
-    padding: 11px 9px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    border-radius: 18px !important;
-    background: rgba(255,255,255,.94) !important;
-    box-shadow: 0 8px 18px -15px rgba(0,0,0,.55) !important;
-    font-size: 17px !important;
+    position: absolute !important;
+    left: 22px !important;
+    top: 66px !important;
+    z-index: 4 !important;
+    display: block !important;
+    width: 55% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    font-size: 19px !important;
     line-height: 1.18 !important;
     font-weight: 900 !important;
-    text-align: center !important;
-    text-shadow: 0 3px 10px rgba(0,0,0,.16) !important;
+    text-align: left !important;
+    text-shadow: none !important;
   }
 
-  .home-premium-scope .cat-grid .cat-card:nth-child(1) { background: #fff0f5 !important; }
-  .home-premium-scope .cat-grid .cat-card:nth-child(1)::before { background: linear-gradient(180deg,#fff2f7 0%,#fce7ef 50%,#183e30 100%); }
-  .home-premium-scope .cat-grid .cat-card:nth-child(1) .cat-label { color: #c2185b !important; }
+  .home-premium-scope .cat-grid .cat-label::after {
+    display: block;
+    margin-top: 8px;
+    color: #65776f;
+    font-size: 12px;
+    line-height: 1.45;
+    font-weight: 500;
+    max-width: 145px;
+  }
 
-  .home-premium-scope .cat-grid .cat-card:nth-child(2) { background: #edf9f2 !important; }
-  .home-premium-scope .cat-grid .cat-card:nth-child(2)::before { background: linear-gradient(180deg,#f1fbf5 0%,#e2f3e8 50%,#183e30 100%); }
-  .home-premium-scope .cat-grid .cat-card:nth-child(2) .cat-label { color: #176b46 !important; }
+  .home-premium-scope .cat-grid .cat-card:nth-child(1) {
+    color: #d91669 !important;
+    background: linear-gradient(145deg, #fff0f7 0%, #ffe5f0 100%) !important;
+  }
+  .home-premium-scope .cat-grid .cat-card:nth-child(1) .cat-label::after { content: "রঙিন ফুল, সুন্দর পরিবেশ"; }
+  .home-premium-scope .cat-grid .cat-card:nth-child(1) .cat-icon-wrap::after { background: #ec3d8c; }
 
-  .home-premium-scope .cat-grid .cat-card:nth-child(3) { background: #fff0f0 !important; }
-  .home-premium-scope .cat-grid .cat-card:nth-child(3)::before { background: linear-gradient(180deg,#fff2f2 0%,#fce5e5 50%,#183e30 100%); }
-  .home-premium-scope .cat-grid .cat-card:nth-child(3) .cat-label { color: #b21f2d !important; }
+  .home-premium-scope .cat-grid .cat-card:nth-child(2) {
+    color: #176b46 !important;
+    background: linear-gradient(145deg, #f0fbf5 0%, #e0f3e8 100%) !important;
+  }
+  .home-premium-scope .cat-grid .cat-card:nth-child(2) .cat-label::after { content: "সুস্থ জীবন, নিজের বাগান থেকে"; }
+  .home-premium-scope .cat-grid .cat-card:nth-child(2) .cat-icon-wrap::after { background: #35a97e; }
 
-  .home-premium-scope .cat-grid .cat-card:nth-child(4) { background: #fff8e8 !important; }
-  .home-premium-scope .cat-grid .cat-card:nth-child(4)::before { background: linear-gradient(180deg,#fff9ec 0%,#fff1d5 50%,#183e30 100%); }
-  .home-premium-scope .cat-grid .cat-card:nth-child(4) .cat-label { color: #a95d09 !important; }
+  .home-premium-scope .cat-grid .cat-card:nth-child(3) {
+    color: #b31f2b !important;
+    background: linear-gradient(145deg, #fff1f1 0%, #fce5e5 100%) !important;
+  }
+  .home-premium-scope .cat-grid .cat-card:nth-child(3) .cat-label::after { content: "ঝাল স্বাদ, বেশি উৎপাদন"; }
+  .home-premium-scope .cat-grid .cat-card:nth-child(3) .cat-icon-wrap::after { background: #ed5a61; }
 
-  .home-premium-scope .cat-grid .cat-card:active { transform: scale(.985) !important; }
+  .home-premium-scope .cat-grid .cat-card:nth-child(4) {
+    color: #ad650d !important;
+    background: linear-gradient(145deg, #fff9ec 0%, #fff0d2 100%) !important;
+  }
+  .home-premium-scope .cat-grid .cat-card:nth-child(4) .cat-label::after { content: "বড় ফল, বেশি লাভ"; }
+  .home-premium-scope .cat-grid .cat-card:nth-child(4) .cat-icon-wrap::after { background: #f3aa2f; }
+
+  .home-premium-scope .cat-grid .cat-card:nth-child(1) .cat-icon-wrap::before { color: #d91669; }
+  .home-premium-scope .cat-grid .cat-card:nth-child(2) .cat-icon-wrap::before { color: #176b46; }
+  .home-premium-scope .cat-grid .cat-card:nth-child(3) .cat-icon-wrap::before { color: #b31f2b; }
+  .home-premium-scope .cat-grid .cat-card:nth-child(4) .cat-icon-wrap::before { color: #ad650d; }
+
+  .home-premium-scope .cat-grid .cat-card:active {
+    transform: scale(.985) !important;
+    box-shadow: 0 6px 16px -13px rgba(3,73,42,.55) !important;
+  }
 
   @media (max-width: 380px) {
-    .home-premium-scope .cat-grid .cat-card { height: 182px !important; min-height: 182px !important; border-radius: 21px !important; }
-    .home-premium-scope .cat-grid .cat-icon-wrap { width: 98px !important; height: 98px !important; }
-    .home-premium-scope .cat-grid .cat-label { font-size: 15px !important; min-height: 54px !important; }
+    .home-premium-scope .cat-grid { gap: 11px !important; }
+    .home-premium-scope .cat-grid .cat-card {
+      height: 198px !important;
+      min-height: 198px !important;
+      border-radius: 22px !important;
+    }
+    .home-premium-scope .cat-grid .cat-label {
+      left: 18px !important;
+      top: 60px !important;
+      font-size: 17px !important;
+    }
+    .home-premium-scope .cat-grid .cat-icon-wrap {
+      width: 128px !important;
+      height: 128px !important;
+    }
+    .home-premium-scope .cat-grid .cat-icon-wrap::before {
+      left: -150px;
+      top: -83px;
+      width: 39px;
+      height: 39px;
+    }
+    .home-premium-scope .cat-grid .cat-icon-wrap::after {
+      left: -149px;
+      bottom: 12px;
+      width: 39px;
+      height: 39px;
+      font-size: 22px;
+    }
   }
 }
