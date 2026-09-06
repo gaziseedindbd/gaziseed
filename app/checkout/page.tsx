@@ -71,7 +71,9 @@ export default function CheckoutPage() {
   const subtotal = cart.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
   const savingsTotal = originalTotal - subtotal;
   const discountPercent = originalTotal > 0 ? Math.round((savingsTotal / originalTotal) * 100) : 0;
-  const deliveryCharge = subtotal >= 600 ? 0 : subtotal >= 400 ? 50 : subtotal >= 200 ? 70 : 120;
+  const deliveryCharge = country === 'IN'
+    ? subtotal >= 999 ? 0 : subtotal >= 499 ? 60 : 90
+    : subtotal >= 600 ? 0 : subtotal >= 400 ? 50 : subtotal >= 200 ? 70 : 120;
   const couponDiscount = appliedCoupon ? (appliedCoupon.type === 'percentage' ? Math.min(subtotal * (appliedCoupon.value / 100), appliedCoupon.max_discount || Infinity) : appliedCoupon.value) : 0;
   const grandTotal = subtotal - couponDiscount + deliveryCharge;
   const walletCredit = useWallet && walletSummary?.unlocked ? Math.min(walletSummary.max_usable, Math.max(0, grandTotal)) : 0;
