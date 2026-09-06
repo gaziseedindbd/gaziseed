@@ -69,6 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href="/home-category-labels-premium.css" />
         <link rel="stylesheet" href="/home-banner-final-fix.css" />
         <link rel="stylesheet" href="/header-polish.css" />
+        <link rel="stylesheet" href="/home-mobile-category-premium.css" />
         <script dangerouslySetInnerHTML={{ __html: `(function(){window.__GAZI_COUNTRY__='${visitorCountry}';})();` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{const theme=localStorage.getItem('admin_theme');if(theme==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}})()` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})}})()` }} />
