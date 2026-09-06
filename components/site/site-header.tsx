@@ -197,7 +197,7 @@ export function SiteHeader() {
                               <div className="min-w-0 flex-1">
                                 <div className="truncate text-sm font-black text-slate-800">{name}</div>
                                 {lang === 'bn' && product.name_en && product.name_bn && <div className="mt-0.5 truncate text-[11px] font-medium text-slate-400">{product.name_en}</div>}
-                                <div className="mt-1 text-sm font-black text-emerald-700">{product.country_code === 'IN' ? '₹ ' : '৳ '}{Number(price).toLocaleString(product.country_code === 'IN' ? 'en-IN' : 'bn-BD')}</div>
+                                <div className="mt-1 text-sm font-black text-emerald-700">{country === 'IN' ? '₹ ' : '৳ '}{Number(price).toLocaleString(country === 'IN' ? 'en-IN' : 'bn-BD')}</div>
                               </div>
                               <ArrowUpRight className="h-4 w-4 shrink-0 text-emerald-700" />
                             </button>
