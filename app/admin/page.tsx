@@ -6,6 +6,36 @@ import { supabase } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/data';
 import { ShoppingCart, Package, Users, TrendingUp, AlertTriangle, Clock, Sparkles } from 'lucide-react';
 
+const QUERY_TIMEOUT_MS = 8000;
+
+type QueryResult<T = any> = { data: T | null; count?: number | null; error?: any };
+
+async function withTimeout<T>(promise: PromiseLike<T>, fallback: T): Promise<T> {
+  return new Promise<T>((resolve) => {
+    let settled = false;
+    const timer = window.setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        resolve(fallback);
+      }
+    }, QUERY_TIMEOUT_MS);
+
+    Promise.resolve(promise).then((value) => {
+      if (!settled) {
+        settled = true;
+        window.clearTimeout(timer);
+        resolve(value);
+      }
+    }).catch(() => {
+      if (!settled) {
+        settled = true;
+        window.clearTimeout(timer);
+        resolve(fallback);
+      }
+    });
+  });
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState({ todayOrders: 0, todayRevenue: 0, pendingOrders: 0, confirmedOrders: 0, totalProducts: 0, totalCustomers: 0, lowStock: 0 });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
@@ -22,17 +52,33 @@ export default function AdminDashboard() {
     setLoading(true);
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString();
+    const fallback = { data: [], count: 0 };
+
     const [todayOrdersRes, pendingRes, confirmedRes, productsRes, lowStockRes, recentRes] = await Promise.all([
-      supabase.from('orders').select('grand_total, status').gte('created_at', todayStr),
-      supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-      supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'confirmed'),
-      supabase.from('products').select('id', { count: 'exact', head: true }),
-      supabase.from('products').select('name_bn, stock, low_stock_threshold').lt('stock', 10),
-      supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(10),
-    ]);
-    const todayRevenue = (todayOrdersRes.data || []).filter((o: any) => o.status !== 'cancelled').reduce((sum: number, o: any) => sum + Number(o.grand_total), 0);
-    setStats({ todayOrders: todayOrdersRes.data?.length || 0, todayRevenue, pendingOrders: pendingRes.count || 0, confirmedOrders: confirmedRes.count || 0, totalProducts: productsRes.count || 0, totalCustomers: 0, lowStock: (lowStockRes.data || []).filter((p: any) => p.stock <= p.low_stock_threshold).length });
-    setRecentOrders(recentRes.data || []); setLoading(false);
+      withTimeout(supabase.from('orders').select('grand_total, status').gte('created_at', todayStr), fallback),
+      withTimeout(supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'pending'), fallback),
+      withTimeout(supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'confirmed'), fallback),
+      withTimeout(supabase.from('products').select('id', { count: 'exact', head: true }), fallback),
+      withTimeout(supabase.from('products').select('name_bn, stock, low_stock_threshold').lt('stock', 10), fallback),
+      withTimeout(supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(10), fallback),
+    ]) as [QueryResult<any[]>, QueryResult<any[]>, QueryResult<any[]>, QueryResult<any[]>, QueryResult<any[]>, QueryResult<any[]>];
+
+    const todayRows = Array.isArray(todayOrdersRes.data) ? todayOrdersRes.data : [];
+    const lowStockRows = Array.isArray(lowStockRes.data) ? lowStockRes.data : [];
+    const recentRows = Array.isArray(recentRes.data) ? recentRes.data : [];
+    const todayRevenue = todayRows.filter((o: any) => o.status !== 'cancelled').reduce((sum: number, o: any) => sum + Number(o.grand_total || 0), 0);
+
+    setStats({
+      todayOrders: todayRows.length,
+      todayRevenue,
+      pendingOrders: Number(pendingRes.count || 0),
+      confirmedOrders: Number(confirmedRes.count || 0),
+      totalProducts: Number(productsRes.count || 0),
+      totalCustomers: 0,
+      lowStock: lowStockRows.filter((p: any) => Number(p.stock || 0) <= Number(p.low_stock_threshold || 0)).length,
+    });
+    setRecentOrders(recentRows);
+    setLoading(false);
   };
 
   if (loading) return <div className="h-64 animate-pulse rounded-2xl bg-secondary" />;
