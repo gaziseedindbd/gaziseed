@@ -77,10 +77,13 @@ export function SiteHeader() {
       <div className="top-green-bar">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-4 py-1.5 text-[11px] font-semibold text-white sm:px-6">
           <div className="flex items-center gap-2.5"><SproutMark /> <span>{t('ভালো বীজ, সবুজ ভবিষ্যৎ | GAZI SEED', 'Better Seeds, Greener Future | GAZI SEED')}</span></div>
-          <div className="hidden items-center gap-5 md:flex">
-            <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{locationText}</span>
-            {phoneText && <span className="inline-flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />{phoneText}</span>}
-            {hasSocials && <span className="inline-flex items-center gap-2 opacity-90"><Facebook className="h-3.5 w-3.5" /><Youtube className="h-3.5 w-3.5" /><Instagram className="h-3.5 w-3.5" /></span>}
+          <div className="flex items-center gap-3 md:gap-5">
+            <CountrySelector />
+            <div className="hidden items-center gap-5 md:flex">
+              <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{locationText}</span>
+              {phoneText && <span className="inline-flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />{phoneText}</span>}
+              {hasSocials && <span className="inline-flex items-center gap-2 opacity-90"><Facebook className="h-3.5 w-3.5" /><Youtube className="h-3.5 w-3.5" /><Instagram className="h-3.5 w-3.5" /></span>}
+            </div>
           </div>
         </div>
       </div>
@@ -104,7 +107,6 @@ export function SiteHeader() {
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
-          <CountrySelector />
           <button onClick={() => setLang(lang === 'bn' ? 'en' : 'bn')} className="hidden rounded-xl px-2 py-2 text-xs font-extrabold text-emerald-900 hover:bg-emerald-50 sm:block">{lang === 'bn' ? 'EN' : 'বাংলা'}</button>
           <Link href="/wishlist" title={t('প্রিয় তালিকা', 'Wishlist')} className="hidden rounded-xl p-2 text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 sm:block"><Heart className="h-5 w-5" /></Link>
           <Link href="/account" title={t('লগইন / রেজিস্টার', 'Login / Register')} className="hidden items-center gap-1.5 rounded-xl px-2 py-2 text-sm font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 md:flex"><User className="h-5 w-5" /> <span className="hidden lg:inline">{t('লগইন / রেজিস্টার', 'Login / Register')}</span></Link>
