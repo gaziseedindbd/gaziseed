@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Grid, ShoppingBag, Layers, Tag, Wrench, BookOpen, PhoneCall, Search, User, ShoppingCart, Menu, X, Heart, MapPin, Phone, Facebook, Youtube, Instagram } from 'lucide-react';
+import { Home, Grid, ShoppingBag, Layers, Tag, Wrench, BookOpen, PhoneCall, Search, User, ShoppingCart, Menu, X, Heart, MapPin, Phone, Facebook, Youtube, Instagram, Sprout } from 'lucide-react';
 import { getSiteSettings } from '@/lib/data';
 import { getVisitorCountry } from '@/lib/supabase/client';
 import type { SiteSettings } from '@/lib/supabase/types';
@@ -14,13 +14,29 @@ export function SiteHeader() {
   const [cartCount, setCartCount] = useState(0);
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const { lang, setLang, t } = useLang();
   const pathname = usePathname();
 
   useEffect(() => { getSiteSettings().then(setSettings); }, []);
   useEffect(() => { setCountry(getVisitorCountry()); }, []);
-  useEffect(() => { setMobileMenuOpen(false); }, [pathname]);
+  useEffect(() => { setMobileMenuOpen(false); setSearchOpen(false); }, [pathname]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    const timer = window.setTimeout(() => searchInputRef.current?.focus(), 80);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSearchOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [searchOpen]);
 
   const updateCartCount = () => {
     try {
@@ -53,11 +69,7 @@ export function SiteHeader() {
         const Icon = link.icon;
         const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href + '/'));
         return (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={`group relative flex shrink-0 items-center rounded-full font-bold transition-all duration-200 ${compact ? 'gap-1.5 px-2.5 py-2 text-[11px]' : 'gap-2 px-4 py-2.5 text-[13px]'} ${active ? 'bg-emerald-800 text-white shadow-md shadow-emerald-900/15' : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-800'}`}
-          >
+          <Link key={link.href} href={link.href} className={`group relative flex shrink-0 items-center rounded-full font-bold transition-all duration-200 ${compact ? 'gap-1.5 px-2.5 py-2 text-[11px]' : 'gap-2 px-4 py-2.5 text-[13px]'} ${active ? 'bg-emerald-800 text-white shadow-md shadow-emerald-900/15' : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-800'}`}>
             <Icon className={`${compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} transition-transform duration-200 group-hover:scale-110 ${active ? 'text-white' : 'text-emerald-700'}`} />
             <span>{link.label}</span>
             {link.badge && <span className={`absolute -right-1 -top-1 rounded-full px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wide ${active ? 'bg-lime-300 text-emerald-950' : 'bg-amber-400 text-amber-950'}`}>{link.badge}</span>}
@@ -93,20 +105,15 @@ export function SiteHeader() {
           {settings?.logo ? <img src={logoSrc} alt={settings.website_name || 'GAZI SEED'} className="h-10 w-auto max-w-[155px] object-contain sm:h-11 sm:max-w-[175px]" /> : <div className="flex items-center gap-2"><SproutMark large /><div><div className="text-xl font-black leading-none tracking-tight text-emerald-950 sm:text-2xl">GAZI SEED</div><div className="mt-1 hidden text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500 sm:block">Better Seeds · Better Future</div></div></div>}
         </Link>
 
-        <div className="hidden min-w-0 max-w-[285px] flex-1 sm:block lg:max-w-[300px] xl:max-w-[255px]">
-          <div className="flex items-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10">
-            <input type="text" placeholder={t('আপনার পছন্দের বীজ খুঁজুন...', 'Search your favorite seeds...')} className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400" />
-            <button className="flex h-10 w-10 shrink-0 items-center justify-center bg-emerald-800 text-white transition hover:bg-emerald-900" aria-label={t('খুঁজুন', 'Search')}><Search className="h-4.5 w-4.5" /></button>
-          </div>
-        </div>
-
         <div className="hidden min-w-0 flex-1 xl:block">
-          <div className="flex justify-start pl-1">
-            {renderNav(true)}
-          </div>
+          <div className="flex justify-start pl-1">{renderNav(true)}</div>
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
+          <button type="button" onClick={() => setSearchOpen(v => !v)} aria-label={t('অনুসন্ধান খুলুন', 'Open search')} title={t('খুঁজুন', 'Search')} className={`group relative flex items-center justify-center rounded-2xl p-2.5 transition-all ${searchOpen ? 'bg-emerald-800 text-white shadow-md shadow-emerald-900/20' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:shadow-sm'}`}>
+            {searchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5 transition-transform group-hover:scale-110" />}
+            {!searchOpen && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2 ring-white" />}
+          </button>
           <button onClick={() => setLang(lang === 'bn' ? 'en' : 'bn')} className="hidden rounded-xl px-2 py-2 text-xs font-extrabold text-emerald-900 hover:bg-emerald-50 sm:block">{lang === 'bn' ? 'EN' : 'বাংলা'}</button>
           <Link href="/wishlist" title={t('প্রিয় তালিকা', 'Wishlist')} className="hidden rounded-xl p-2 text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 sm:block"><Heart className="h-5 w-5" /></Link>
           <Link href="/account" title={t('লগইন / রেজিস্টার', 'Login / Register')} className="hidden items-center gap-1.5 rounded-xl px-2 py-2 text-sm font-semibold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-700 md:flex"><User className="h-5 w-5" /> <span className="hidden lg:inline">{t('লগইন / রেজিস্টার', 'Login / Register')}</span></Link>
@@ -115,16 +122,35 @@ export function SiteHeader() {
         </div>
       </div>
 
+      {searchOpen && (
+        <>
+          <button type="button" aria-label="Close search" onClick={() => setSearchOpen(false)} className="fixed inset-0 top-[92px] z-[-1] bg-emerald-950/5 backdrop-blur-[1px]" />
+          <div className="absolute left-1/2 top-full w-[min(92vw,720px)] -translate-x-1/2 px-4 pb-4 pt-3">
+            <div className="overflow-hidden rounded-[22px] border border-emerald-100 bg-white p-2 shadow-[0_24px_60px_-24px_rgba(5,46,22,.45)] ring-1 ring-emerald-900/5">
+              <div className="flex items-center gap-2 rounded-[16px] border-2 border-emerald-100 bg-slate-50/70 px-3 transition focus-within:border-emerald-600 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-600/10">
+                <Search className="h-5 w-5 shrink-0 text-emerald-700" />
+                <input ref={searchInputRef} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} type="search" placeholder={t('বীজ, পণ্য বা ক্যাটাগরি খুঁজুন...', 'Search seeds, products or categories...')} className="min-w-0 flex-1 bg-transparent px-1 py-4 text-base font-semibold text-slate-800 outline-none placeholder:text-slate-400" />
+                {searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="rounded-full p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700" aria-label="Clear search"><X className="h-4 w-4" /></button>}
+                <button type="button" className="hidden rounded-xl bg-emerald-800 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-900 sm:block">{t('খুঁজুন', 'Search')}</button>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2 text-[11px] font-semibold text-slate-400">
+                <span>{t('পণ্য, বীজ ও ক্যাটাগরি সার্চ করুন', 'Search products, seeds and categories')}</span>
+                <span className="hidden rounded-md border border-slate-200 bg-white px-2 py-1 sm:inline">ESC</span>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       <nav className="hidden border-t border-slate-100/80 bg-gradient-to-r from-white via-emerald-50/50 to-white py-2.5 lg:block xl:hidden">
-        <div className="mx-auto flex max-w-[1040px] items-center justify-center px-4">
-          {renderNav(false)}
-        </div>
+        <div className="mx-auto flex max-w-[1040px] items-center justify-center px-4">{renderNav(false)}</div>
       </nav>
 
       {mobileMenuOpen && (
         <div className="border-t border-slate-100 bg-white shadow-2xl md:hidden">
           <div className="p-3">
             <div className="mb-2 flex items-center gap-2 px-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-400">Menu <span className="h-px flex-1 bg-slate-100" /></div>
+            <button type="button" onClick={() => { setMobileMenuOpen(false); setSearchOpen(true); }} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-left text-sm font-bold text-emerald-900"><Search className="h-5 w-5 text-emerald-700" />{t('পণ্য ও বীজ খুঁজুন...', 'Search products & seeds...')}</button>
             <div className="mb-3"><CountrySelector mobile /></div>
             <div className="grid grid-cols-2 gap-2">
               {navLinks.map(link => {
