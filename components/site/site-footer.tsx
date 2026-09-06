@@ -47,13 +47,11 @@ export function SiteFooter() {
               )}
               <div>
                 <div className="text-lg font-bold text-primary">{settings?.website_name || fallbackBrand}</div>
-                <div className="text-[10px] text-muted-foreground">{settings?.site_tagline || fallbackTagline}</div>
+                <div className="text-[10px] text-muted-foreground">{fallbackTagline}</div>
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              {isIndia && settings?.announcement_text
-                ? settings.announcement_text
-                : (settings?.site_tagline ? settings.site_tagline : fallbackDescription)}
+              {fallbackDescription}
             </p>
             <div className="mt-4 flex gap-3">
               {settings?.facebook && <a href={settings.facebook} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-secondary p-2 hover:bg-accent" aria-label="Facebook"><Facebook className="h-4 w-4" /></a>}
