@@ -5,62 +5,15 @@ import { getSeasonalProducts } from '@/lib/data';
 import { ProductCard } from '@/components/site/product-card';
 import type { Product } from '@/lib/supabase/types';
 import { useFeatureFlags } from '@/components/site/feature-provider';
+import { CalendarDays, Sprout, SlidersHorizontal } from 'lucide-react';
 
 const months = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
 const growingTypes = ['Rooftop', 'Pot/Container', 'Field'];
 
 export default function SeasonalFinderPage() {
-  const [month, setMonth] = useState(months[new Date().getMonth()]);
-  const [growingType, setGrowingType] = useState('');
-  const [results, setResults] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { ready, enabled } = useFeatureFlags();
-
-  useEffect(() => {
-    if (!ready || !enabled('enable_seasonal_finder')) return;
-    setLoading(true);
-    getSeasonalProducts(month, growingType || undefined).then((data) => {
-      setResults(data);
-      setLoading(false);
-    });
-  }, [month, growingType, ready, enabled]);
-
+  const [month, setMonth] = useState(months[new Date().getMonth()]); const [growingType, setGrowingType] = useState(''); const [results, setResults] = useState<Product[]>([]); const [loading, setLoading] = useState(true); const { ready, enabled } = useFeatureFlags();
+  useEffect(() => { if (!ready || !enabled('enable_seasonal_finder')) return; setLoading(true); getSeasonalProducts(month, growingType || undefined).then((data) => { setResults(data); setLoading(false); }); }, [month, growingType, ready, enabled]);
   if (!ready) return null;
-
-  if (!enabled('enable_seasonal_finder')) {
-    return (
-      <div className="container-custom py-24 text-center">
-        <div className="mx-auto max-w-md rounded-3xl border border-border bg-card p-8">
-          <h1 className="text-lg font-bold text-foreground">এই ফিচারটি বর্তমানে বন্ধ আছে</h1>
-          <p className="mt-2 text-sm text-muted-foreground">মৌসুমি সিড ফাইন্ডার বর্তমানে সক্রিয় নয়।</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="container-custom py-8">
-      <h1 className="mb-6 text-2xl font-bold">মৌসুমি বীজ খুঁজুন</h1>
-
-      <div className="mb-6 flex flex-wrap gap-3">
-        <select value={month} onChange={(e) => setMonth(e.target.value)} className="input-bangla min-w-[160px]">
-          {months.map((m) => <option key={m} value={m}>{m}</option>)}
-        </select>
-        <select value={growingType} onChange={(e) => setGrowingType(e.target.value)} className="input-bangla min-w-[160px]">
-          <option value="">সব ধরন</option>
-          {growingTypes.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
-
-      {loading ? (
-        <div className="h-64 animate-pulse rounded-2xl bg-secondary" />
-      ) : results.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {results.map((p) => <ProductCard key={p.id} product={p} />)}
-        </div>
-      ) : (
-        <p className="p-8 text-center text-muted-foreground">এই মাসে কোন বীজ পাওয়া যায়নি। অন্য মাস বা ধরন নির্বাচন করুন।</p>
-      )}
-    </div>
-  );
+  if (!enabled('enable_seasonal_finder')) return <div className="container-custom py-24 text-center"><div className="mx-auto max-w-md rounded-3xl border border-border bg-card p-8"><h1 className="text-lg font-black">এই ফিচারটি বর্তমানে বন্ধ আছে</h1><p className="mt-2 text-sm text-muted-foreground">মৌসুমি সিড ফাইন্ডার বর্তমানে সক্রিয় নয়।</p></div></div>;
+  return <main className="min-h-screen bg-background"><section className="relative overflow-hidden border-b border-border/60 bg-gradient-to-br from-primary/[0.10] via-background to-accent/[0.08]"><div className="absolute -left-20 -top-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl" /><div className="absolute -right-20 top-0 h-64 w-64 rounded-full bg-amber-400/10 blur-3xl" /><div className="container-custom relative py-10 sm:py-14"><div className="mx-auto max-w-3xl text-center"><span className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-background/80 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-primary shadow-sm"><Sprout className="h-3.5 w-3.5" /> SEASONAL GUIDE</span><h1 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">মৌসুমি বীজ খুঁজুন</h1><p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">মাস ও চাষের ধরন বেছে নিয়ে আপনার জন্য উপযোগী বীজ খুঁজে নিন।</p></div></div></section><section className="container-custom py-9 sm:py-12"><div className="mb-8 rounded-[2rem] border border-border/70 bg-card p-5 shadow-sm sm:p-6"><div className="mb-4 flex items-center gap-2 text-sm font-black"><SlidersHorizontal className="h-4 w-4 text-primary" /> ফিল্টার করুন</div><div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-bold">মাস<select value={month} onChange={(e) => setMonth(e.target.value)} className="input-bangla mt-1.5 h-12 rounded-xl w-full">{months.map((m) => <option key={m} value={m}>{m}</option>)}</select></label><label className="text-sm font-bold">চাষের ধরন<select value={growingType} onChange={(e) => setGrowingType(e.target.value)} className="input-bangla mt-1.5 h-12 rounded-xl w-full"><option value="">সব ধরন</option>{growingTypes.map((t) => <option key={t} value={t}>{t}</option>)}</select></label></div></div><div className="mb-5 flex items-end justify-between"><div><p className="text-xs font-black uppercase tracking-[0.16em] text-primary">RECOMMENDED SEEDS</p><h2 className="mt-1 text-2xl font-black">আপনার জন্য বাছাই করা বীজ</h2></div>{results.length > 0 && <span className="hidden text-sm font-semibold text-muted-foreground sm:block">{results.length}টি ফলাফল</span>}</div>{loading ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-5">{Array.from({ length: 8 }).map((_, i) => <div key={i} className="aspect-[.82] animate-pulse rounded-3xl bg-secondary/70" />)}</div> : results.length > 0 ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-5">{results.map((p) => <ProductCard key={p.id} product={p} />)}</div> : <div className="rounded-[2rem] border border-dashed border-border bg-card p-12 text-center"><CalendarDays className="mx-auto h-10 w-10 text-primary/60" /><h3 className="mt-4 text-lg font-black">এই মাসে কোনো বীজ পাওয়া যায়নি</h3><p className="mt-2 text-sm text-muted-foreground">অন্য মাস বা চাষের ধরন নির্বাচন করে আবার চেষ্টা করুন।</p></div>}</section></main>;
 }

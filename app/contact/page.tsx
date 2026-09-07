@@ -4,118 +4,13 @@ import { useEffect, useState } from 'react';
 import { getSiteSettings } from '@/lib/data';
 import { supabase } from '@/lib/supabase/client';
 import type { SiteSettings } from '@/lib/supabase/types';
-import { Phone, Mail, MapPin, Clock, Send } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, Send, MessageCircle, Sprout, ShieldCheck } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 
 export default function ContactPage() {
-  const [settings, setSettings] = useState<SiteSettings | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '', email: '', message: '' });
-
+  const [settings, setSettings] = useState<SiteSettings | null>(null); const [loading, setLoading] = useState(false); const [form, setForm] = useState({ name: '', phone: '', email: '', message: '' });
   useEffect(() => { getSiteSettings().then(setSettings); }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name || !form.phone || !form.message) { toast('সব প্রয়োজনীয় তথ্য পূরণ করুন', 'error'); return; }
-    setLoading(true);
-    try {
-      const { error } = await supabase.from('contact_messages').insert({
-        name: form.name,
-        phone: form.phone,
-        email: form.email,
-        message: form.message,
-      });
-      if (error) throw error;
-      toast('বার্তা পাঠানো হয়েছে! আমরা শীঘ্রই যোগাযোগ করব।');
-      setForm({ name: '', phone: '', email: '', message: '' });
-    } catch {
-      toast('বার্তা পাঠাতে সমস্যা হয়েছে', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="container-custom py-6">
-      <h1 className="mb-6 text-2xl font-bold sm:text-3xl">যোগাযোগ</h1>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Contact info */}
-        <div className="space-y-4">
-          {settings?.phone && (
-            <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
-              <Phone className="mt-0.5 h-5 w-5 text-primary" />
-              <div>
-                <h3 className="font-medium">ফোন</h3>
-                <a href={`tel:${settings.phone}`} className="text-sm text-muted-foreground hover:text-primary">{settings.phone}</a>
-              </div>
-            </div>
-          )}
-          {settings?.whatsapp && (
-            <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
-              <Phone className="mt-0.5 h-5 w-5 text-green-500" />
-              <div>
-                <h3 className="font-medium">WhatsApp</h3>
-                <a href={`https://wa.me/${settings.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-primary">{settings.whatsapp}</a>
-              </div>
-            </div>
-          )}
-          {settings?.email && (
-            <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
-              <Mail className="mt-0.5 h-5 w-5 text-primary" />
-              <div>
-                <h3 className="font-medium">ইমেইল</h3>
-                <a href={`mailto:${settings.email}`} className="text-sm text-muted-foreground hover:text-primary">{settings.email}</a>
-              </div>
-            </div>
-          )}
-          {settings?.address && (
-            <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
-              <MapPin className="mt-0.5 h-5 w-5 text-primary" />
-              <div>
-                <h3 className="font-medium">ঠিকানা</h3>
-                <p className="text-sm text-muted-foreground">{settings.address}</p>
-              </div>
-            </div>
-          )}
-          {settings?.business_hours && (
-            <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
-              <Clock className="mt-0.5 h-5 w-5 text-primary" />
-              <div>
-                <h3 className="font-medium">ব্যবসায়িক সময়</h3>
-                <p className="text-sm text-muted-foreground">{settings.business_hours}</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Contact form */}
-        <div className="rounded-2xl border border-border bg-card p-6">
-          <h2 className="mb-4 text-lg font-bold">বার্তা পাঠান</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium">নাম *</label>
-              <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-bangla" required />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">মোবাইল নম্বর *</label>
-              <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="input-bangla" required />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">ইমেইল (ঐচ্ছিক)</label>
-              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input-bangla" />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">বার্তা *</label>
-              <textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} className="input-bangla min-h-[120px]" required />
-            </div>
-            <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50">
-              <Send className="h-4 w-4" />
-              {loading ? 'পাঠানো হচ্ছে...' : 'বার্তা পাঠান'}
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
+  const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); if (!form.name || !form.phone || !form.message) { toast('সব প্রয়োজনীয় তথ্য পূরণ করুন', 'error'); return; } setLoading(true); try { const { error } = await supabase.from('contact_messages').insert({ name: form.name, phone: form.phone, email: form.email, message: form.message }); if (error) throw error; toast('বার্তা পাঠানো হয়েছে! আমরা শীঘ্রই যোগাযোগ করব।'); setForm({ name: '', phone: '', email: '', message: '' }); } catch { toast('বার্তা পাঠাতে সমস্যা হয়েছে', 'error'); } finally { setLoading(false); } };
+  const contacts = [{ Icon: Phone, title: 'ফোন', value: settings?.phone, href: settings?.phone ? `tel:${settings.phone}` : undefined }, { Icon: MessageCircle, title: 'WhatsApp', value: settings?.whatsapp, href: settings?.whatsapp ? `https://wa.me/${settings.whatsapp.replace(/[^0-9]/g, '')}` : undefined }, { Icon: Mail, title: 'ইমেইল', value: settings?.email, href: settings?.email ? `mailto:${settings.email}` : undefined }, { Icon: MapPin, title: 'ঠিকানা', value: settings?.address }, { Icon: Clock, title: 'ব্যবসায়িক সময়', value: settings?.business_hours }];
+  return <main className="min-h-screen bg-background"><section className="relative overflow-hidden border-b border-border/60 bg-gradient-to-br from-primary/[0.10] via-background to-accent/[0.08]"><div className="absolute -left-20 -top-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl" /><div className="absolute -right-20 top-0 h-64 w-64 rounded-full bg-amber-400/10 blur-3xl" /><div className="container-custom relative py-11 text-center sm:py-15"><span className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-background/80 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-primary shadow-sm"><Sprout className="h-3.5 w-3.5" /> GAZI SEED • CUSTOMER CARE</span><h1 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">কীভাবে সাহায্য করতে পারি?</h1><p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">পণ্য, অর্ডার, বীজ নির্বাচন বা চাষাবাদ নিয়ে প্রশ্ন থাকলে আমাদের সঙ্গে সরাসরি যোগাযোগ করুন।</p></div></section><section className="container-custom py-9 sm:py-12"><div className="grid gap-7 lg:grid-cols-[.85fr_1.15fr]"><div><div className="mb-5"><p className="text-xs font-black uppercase tracking-[0.16em] text-primary">CONTACT OPTIONS</p><h2 className="mt-1 text-2xl font-black sm:text-3xl">সরাসরি যোগাযোগ</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">আপনার সুবিধামতো যেকোনো মাধ্যমে আমাদের জানান।</p></div><div className="space-y-3">{contacts.filter(c => c.value).map(({ Icon, title, value, href }) => <div key={title} className="flex items-start gap-4 rounded-2xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-md"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="h-5 w-5" /></div><div className="min-w-0"><h3 className="font-black">{title}</h3>{href ? <a href={href} target={href.startsWith('http') ? '_blank' : undefined} rel={href.startsWith('http') ? 'noopener noreferrer' : undefined} className="mt-0.5 block break-words text-sm text-muted-foreground hover:text-primary">{value}</a> : <p className="mt-0.5 text-sm leading-6 text-muted-foreground">{value}</p>}</div></div>)}</div><div className="mt-5 flex items-center gap-2 rounded-2xl border border-primary/10 bg-primary/5 p-4 text-xs font-semibold text-muted-foreground"><ShieldCheck className="h-4 w-4 shrink-0 text-primary" /> আপনার বার্তা আমাদের customer care team-এর কাছে পৌঁছাবে।</div></div><div className="rounded-[2rem] border border-border/70 bg-card p-6 shadow-xl sm:p-8"><div className="mb-6"><p className="text-xs font-black uppercase tracking-[0.16em] text-primary">SEND A MESSAGE</p><h2 className="mt-1 text-2xl font-black">বার্তা পাঠান</h2><p className="mt-1 text-sm text-muted-foreground">আমরা যত দ্রুত সম্ভব আপনার সঙ্গে যোগাযোগ করব।</p></div><form onSubmit={handleSubmit} className="space-y-4"><div className="grid gap-4 sm:grid-cols-2"><div><label className="mb-1.5 block text-sm font-bold">নাম *</label><input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-bangla h-12 rounded-xl" required /></div><div><label className="mb-1.5 block text-sm font-bold">মোবাইল নম্বর *</label><input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="input-bangla h-12 rounded-xl" required /></div></div><div><label className="mb-1.5 block text-sm font-bold">ইমেইল <span className="font-normal text-muted-foreground">(ঐচ্ছিক)</span></label><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input-bangla h-12 rounded-xl" /></div><div><label className="mb-1.5 block text-sm font-bold">বার্তা *</label><textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} className="input-bangla min-h-[140px] rounded-xl" required /></div><button type="submit" disabled={loading} className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary font-black text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-50"><Send className="h-4 w-4" />{loading ? 'পাঠানো হচ্ছে...' : 'বার্তা পাঠান'}</button></form></div></div></section></main>;
 }
