@@ -1,105 +1,294 @@
-/* GAZI SEED — mobile homepage categories: 2 columns, first 4 cards only. */
+/* GAZI SEED — Mobile homepage category cards: clean premium 2x2 redesign.
+   Desktop is intentionally untouched. */
 @media (max-width: 767px) {
+  .home-premium-scope .home-category-section {
+    padding: 22px 0 30px !important;
+    background: linear-gradient(180deg, #f7fcf9 0%, #f0f8f4 100%) !important;
+  }
+
+  .home-premium-scope .home-category-section .container-custom {
+    width: calc(100% - 24px) !important;
+    max-width: none !important;
+    margin: 0 12px !important;
+  }
+
+  /* Compact, clear section header. */
+  .home-premium-scope .home-category-section .mb-6 {
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    margin: 0 0 16px !important;
+  }
+
+  .home-premium-scope .home-category-section .section-heading {
+    margin: 0 !important;
+    color: #073d2b !important;
+    font-size: 25px !important;
+    line-height: 1.15 !important;
+    font-weight: 900 !important;
+    letter-spacing: -0.04em !important;
+    white-space: nowrap !important;
+  }
+
+  .home-premium-scope .home-category-section .section-heading::before {
+    content: "" !important;
+    display: inline-block !important;
+    width: 28px !important;
+    height: 5px !important;
+    margin: 0 8px 5px 0 !important;
+    border-radius: 999px !important;
+    background: linear-gradient(90deg, #d9a81e, #14784d) !important;
+    vertical-align: baseline !important;
+  }
+
+  .home-premium-scope .home-category-section .section-subheading {
+    margin: 4px 0 0 36px !important;
+    color: #71847c !important;
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+    white-space: nowrap !important;
+  }
+
+  .home-premium-scope .home-category-section .view-all-link {
+    flex: 0 0 auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 38px !important;
+    padding: 8px 12px !important;
+    border: 1px solid #bfe0cf !important;
+    border-radius: 999px !important;
+    background: rgba(255,255,255,.94) !important;
+    color: #08734b !important;
+    font-size: 10px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    box-shadow: 0 8px 20px -16px rgba(5,75,43,.55) !important;
+  }
+
+  /* The actual 2x2 mobile grid. */
   .home-premium-scope .home-category-section .cat-grid {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 10px !important;
+    gap: 12px !important;
     width: 100% !important;
-    overflow: visible !important;
-    padding: 6px 0 12px !important;
     margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
   }
 
+  /* Only the first four featured categories appear on the homepage. */
   .home-premium-scope .home-category-section .cat-grid .cat-card,
   .home-premium-scope .home-category-section .cat-grid .cat-card[class*="!hidden"] {
+    position: relative !important;
     display: flex !important;
-    flex: none !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
     width: 100% !important;
-    max-width: none !important;
     min-width: 0 !important;
-    height: 154px !important;
-    min-height: 154px !important;
+    max-width: none !important;
+    height: 208px !important;
+    min-height: 208px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border: 1px solid #d8e8df !important;
+    border-radius: 18px !important;
+    background: #fff !important;
+    box-shadow: 0 9px 24px -17px rgba(4,66,38,.42) !important;
     transform: none !important;
+    isolation: isolate !important;
   }
 
-  /* Mobile shows exactly two cards per row, two rows total. */
+  .home-premium-scope .home-category-section .cat-grid .cat-card:hover {
+    transform: translateY(-2px) !important;
+    border-color: #b9d9c9 !important;
+    box-shadow: 0 14px 30px -18px rgba(4,66,38,.5) !important;
+  }
+
+  /* Never show categories 5+ on the compact homepage grid. */
   .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(n + 5) {
     display: none !important;
   }
 
-  .home-premium-scope .home-category-section .cat-grid .cat-icon-wrap,
-  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2) .cat-icon-wrap {
+  /* Image area — no overlay buttons, no floating elements. */
+  .home-premium-scope .home-category-section .cat-grid .cat-icon-wrap {
+    position: relative !important;
+    inset: auto !important;
+    display: block !important;
     width: 100% !important;
-    height: 112px !important;
-    min-height: 112px !important;
-    flex: 0 0 112px !important;
-    aspect-ratio: auto !important;
-    border-radius: 16px 16px 0 0 !important;
-    outline: none !important;
+    height: 148px !important;
+    min-height: 148px !important;
+    flex: 0 0 148px !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    border-radius: 17px 17px 0 0 !important;
+    background: #edf6f1 !important;
     box-shadow: none !important;
+    outline: none !important;
+    opacity: 1 !important;
+    z-index: 1 !important;
   }
 
-  .home-premium-scope .home-category-section .cat-grid .cat-label,
-  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2) .cat-label {
+  .home-premium-scope .home-category-section .cat-grid .cat-icon-wrap::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 2 !important;
+    pointer-events: none !important;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 65%, rgba(0,45,28,.08) 100%) !important;
+  }
+
+  .home-premium-scope .home-category-section .cat-grid .cat-icon-wrap img {
+    display: block !important;
     width: 100% !important;
-    min-height: 42px !important;
-    height: 42px !important;
-    margin: 0 !important;
-    padding: 7px 30px 7px 9px !important;
-    border-radius: 0 0 16px 16px !important;
-    font-size: 12px !important;
-    line-height: 1.08 !important;
-    white-space: nowrap !important;
-  }
-
-  .home-premium-scope .home-category-section .cat-grid .cat-label::before {
-    top: 9px !important;
-    height: 24px !important;
-    width: 3px !important;
-  }
-
-  .home-premium-scope .home-category-section .cat-grid .cat-label::after {
-    right: 7px !important;
-    top: 7px !important;
-    width: 27px !important;
-    height: 27px !important;
-    font-size: 15px !important;
-  }
-
-  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2) .cat-label {
-    min-height: 42px !important;
-    height: 42px !important;
-    padding: 7px 30px 7px 9px !important;
-    font-size: 12px !important;
-  }
-
-  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2) {
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    border-radius: 0 !important;
+    filter: none !important;
     transform: none !important;
   }
+
+  /* Category title row — simple and premium. */
+  .home-premium-scope .home-category-section .cat-grid .cat-label {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    height: 60px !important;
+    min-height: 60px !important;
+    margin: 0 !important;
+    padding: 8px 42px 8px 16px !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    border-radius: 0 0 17px 17px !important;
+    background: #fff !important;
+    color: #123d2d !important;
+    font-size: 15px !important;
+    line-height: 1.2 !important;
+    font-weight: 900 !important;
+    text-align: left !important;
+    text-shadow: none !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    z-index: 3 !important;
+  }
+
+  /* Small colored seed accent at the left of the title. */
+  .home-premium-scope .home-category-section .cat-grid .cat-label::before {
+    content: "" !important;
+    position: absolute !important;
+    left: 9px !important;
+    top: 50% !important;
+    width: 3px !important;
+    height: 28px !important;
+    border-radius: 999px !important;
+    transform: translateY(-50%) !important;
+    background: #16804f !important;
+  }
+
+  /* Green circular arrow — kept inside the white footer, never over the photo. */
+  .home-premium-scope .home-category-section .cat-grid .cat-label::after {
+    content: "→" !important;
+    position: absolute !important;
+    right: 10px !important;
+    top: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 50% !important;
+    background: #08784d !important;
+    color: #fff !important;
+    font-size: 19px !important;
+    line-height: 1 !important;
+    font-weight: 700 !important;
+    transform: translateY(-50%) !important;
+    box-shadow: 0 5px 12px -8px rgba(0,80,45,.65) !important;
+  }
+
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(1) .cat-label::before { background: #c72870 !important; }
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2) .cat-label::before { background: #36aa55 !important; }
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3) .cat-label::before { background: #e0ad1d !important; }
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(4) .cat-label::before { background: #e26b22 !important; }
 }
 
 @media (max-width: 390px) {
+  .home-premium-scope .home-category-section {
+    padding: 18px 0 26px !important;
+  }
+
+  .home-premium-scope .home-category-section .container-custom {
+    width: calc(100% - 20px) !important;
+    margin: 0 10px !important;
+  }
+
+  .home-premium-scope .home-category-section .mb-6 {
+    gap: 7px !important;
+    margin-bottom: 13px !important;
+  }
+
+  .home-premium-scope .home-category-section .section-heading {
+    font-size: 22px !important;
+  }
+
+  .home-premium-scope .home-category-section .section-heading::before {
+    width: 24px !important;
+    height: 4px !important;
+    margin-right: 6px !important;
+  }
+
+  .home-premium-scope .home-category-section .section-subheading {
+    margin-left: 30px !important;
+    font-size: 10px !important;
+  }
+
+  .home-premium-scope .home-category-section .view-all-link {
+    min-height: 34px !important;
+    padding: 7px 9px !important;
+    font-size: 9px !important;
+  }
+
   .home-premium-scope .home-category-section .cat-grid {
-    gap: 8px !important;
+    gap: 9px !important;
   }
 
   .home-premium-scope .home-category-section .cat-grid .cat-card,
   .home-premium-scope .home-category-section .cat-grid .cat-card[class*="!hidden"] {
-    height: 144px !important;
-    min-height: 144px !important;
+    height: 188px !important;
+    min-height: 188px !important;
+    border-radius: 16px !important;
   }
 
-  .home-premium-scope .home-category-section .cat-grid .cat-icon-wrap,
-  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2) .cat-icon-wrap {
-    height: 103px !important;
-    min-height: 103px !important;
-    flex-basis: 103px !important;
+  .home-premium-scope .home-category-section .cat-grid .cat-icon-wrap {
+    height: 132px !important;
+    min-height: 132px !important;
+    flex-basis: 132px !important;
+    border-radius: 15px 15px 0 0 !important;
   }
 
-  .home-premium-scope .home-category-section .cat-grid .cat-label,
-  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2) .cat-label {
-    height: 41px !important;
-    min-height: 41px !important;
-    font-size: 11px !important;
+  .home-premium-scope .home-category-section .cat-grid .cat-label {
+    height: 56px !important;
+    min-height: 56px !important;
+    padding: 8px 38px 8px 15px !important;
+    font-size: 13px !important;
+  }
+
+  .home-premium-scope .home-category-section .cat-grid .cat-label::before {
+    left: 8px !important;
+    height: 25px !important;
+  }
+
+  .home-premium-scope .home-category-section .cat-grid .cat-label::after {
+    right: 8px !important;
+    width: 31px !important;
+    height: 31px !important;
+    font-size: 17px !important;
   }
 }
