@@ -1,18 +1,54 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { getCart } from '@/lib/cart';
 import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/data';
 import type { CustomerAddress } from '@/lib/supabase/types';
 import { AddressSelector, formatAddressToString, type AddressValue } from '@/components/site/address-selector';
 import { useLang } from '@/components/site/language-provider';
-import { Check, Loader2, Lock, MapPin, Tag, X, Sparkles, ShieldCheck, Truck, User, Phone, ShoppingBag, Banknote, ChevronRight, CreditCard, WalletCards } from 'lucide-react';
-import Link from 'next/link';
+import {
+  Banknote,
+  Check,
+  ChevronRight,
+  Loader2,
+  Lock,
+  MapPin,
+  PackageCheck,
+  Phone,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  Tag,
+  Truck,
+  User,
+  WalletCards,
+  X,
+} from 'lucide-react';
 
-type CartItemWithDiscount = { product_id: string; name: string; slug: string; image: string; unit_price: number; regular_price: number; quantity: number; variant_id?: string; variant_name?: string; bundle_id?: string };
-type WalletSummary = { balance: number; unlocked: boolean; max_usable: number; min_purchase_amount: number; usage_percent: number; enabled: boolean };
+type CartItemWithDiscount = {
+  product_id: string;
+  name: string;
+  slug: string;
+  image: string;
+  unit_price: number;
+  regular_price: number;
+  quantity: number;
+  variant_id?: string;
+  variant_name?: string;
+  bundle_id?: string;
+};
+
+type WalletSummary = {
+  balance: number;
+  unlocked: boolean;
+  max_usable: number;
+  min_purchase_amount: number;
+  usage_percent: number;
+  enabled: boolean;
+};
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -40,99 +76,521 @@ export default function CheckoutPage() {
     setCart(getCart() as CartItemWithDiscount[]);
     const handler = () => setCart(getCart() as CartItemWithDiscount[]);
     window.addEventListener('cart-updated', handler);
+
     supabase.auth.getSession().then(async ({ data }) => {
-      if (data.session?.user) {
-        setUserId(data.session.user.id);
-        const { data: addrs } = await supabase.from('customer_addresses').select('*').eq('user_id', data.session.user.id).eq('country_code', visitorCountry).order('is_default', { ascending: false });
-        setSavedAddresses((addrs || []) as CustomerAddress[]);
-        setWalletLoading(true);
-        const { data: summary, error: walletError } = await supabase.rpc('get_referral_wallet_summary', { p_user_id: data.session.user.id });
-        if (!walletError && summary?.[0]) setWalletSummary({
+      if (!data.session?.user) return;
+      setUserId(data.session.user.id);
+      const { data: addrs } = await supabase
+        .from('customer_addresses')
+        .select('*')
+        .eq('user_id', data.session.user.id)
+        .eq('country_code', visitorCountry)
+        .order('is_default', { ascending: false });
+      setSavedAddresses((addrs || []) as CustomerAddress[]);
+
+      setWalletLoading(true);
+      const { data: summary, error: walletError } = await supabase.rpc('get_referral_wallet_summary', { p_user_id: data.session.user.id });
+      if (!walletError && summary?.[0]) {
+        const nextWallet = {
           balance: Number(summary[0].balance || 0),
           unlocked: Boolean(summary[0].unlocked),
           max_usable: Number(summary[0].max_usable || 0),
           min_purchase_amount: Number(summary[0].min_purchase_amount || 2000),
           usage_percent: Number(summary[0].usage_percent || 15),
           enabled: Boolean(summary[0].enabled),
-        });
-        setWalletLoading(false);
+        };
+        setWalletSummary(nextWallet);
       }
+      setWalletLoading(false);
     });
+
     return () => window.removeEventListener('cart-updated', handler);
   }, []);
 
   const selectSavedAddress = (id: string) => {
     setSelectedAddrId(id);
     const addr = savedAddresses.find((a) => a.id === id);
-    if (addr) setForm({ ...form, name: addr.name, phone: addr.phone });
+    if (addr) {
+      setForm((current) => ({ ...current, name: addr.name, phone: addr.phone }));
+    }
   };
 
   const originalTotal = cart.reduce((sum, item) => sum + (item.regular_price || item.unit_price) * item.quantity, 0);
   const subtotal = cart.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
-  const savingsTotal = originalTotal - subtotal;
+  const savingsTotal = Math.max(0, originalTotal - subtotal);
   const discountPercent = originalTotal > 0 ? Math.round((savingsTotal / originalTotal) * 100) : 0;
   const deliveryCharge = country === 'IN'
     ? subtotal >= 999 ? 0 : subtotal >= 499 ? 60 : 90
     : subtotal >= 600 ? 0 : subtotal >= 400 ? 50 : subtotal >= 200 ? 70 : 120;
-  const couponDiscount = appliedCoupon ? (appliedCoupon.type === 'percentage' ? Math.min(subtotal * (appliedCoupon.value / 100), appliedCoupon.max_discount || Infinity) : appliedCoupon.value) : 0;
-  const grandTotal = subtotal - couponDiscount + deliveryCharge;
-  const walletCredit = useWallet && walletSummary?.unlocked ? Math.min(walletSummary.max_usable, Math.max(0, grandTotal)) : 0;
+  const couponDiscount = appliedCoupon
+    ? appliedCoupon.type === 'percentage'
+      ? Math.min(subtotal * (appliedCoupon.value / 100), appliedCoupon.max_discount || Infinity)
+      : Math.min(Number(appliedCoupon.value || 0), subtotal)
+    : 0;
+  const grandTotal = Math.max(0, subtotal - couponDiscount + deliveryCharge);
+  const walletCredit = useWallet && walletSummary?.unlocked
+    ? Math.min(walletSummary.max_usable, Math.max(0, grandTotal))
+    : 0;
   const payableTotal = Math.max(0, grandTotal - walletCredit);
+  const selectedWalletAmount = walletSummary?.unlocked ? Math.min(walletSummary.max_usable, grandTotal) : 0;
+
+  const deliveryMessage = useMemo(() => {
+    if (country === 'IN') return subtotal >= 999 ? t('ফ্রি ডেলিভারি যোগ হয়েছে', 'Free delivery unlocked') : t('₹৯৯৯+ অর্ডারে ফ্রি ডেলিভারি', 'Free delivery on ₹999+');
+    return subtotal >= 600 ? t('ফ্রি ডেলিভারি যোগ হয়েছে', 'Free delivery unlocked') : t('৳৬০০+ অর্ডারে ফ্রি ডেলিভারি', 'Free delivery on ৳600+');
+  }, [country, subtotal, t]);
 
   const applyCoupon = async () => {
-    if (!couponCode) return;
-    setCouponLoading(true); setCouponError('');
-    const { data, error } = await supabase.from('coupons').select('*').eq('code', couponCode.toUpperCase()).eq('is_active', true).eq('country_code', country).maybeSingle();
-    if (error || !data) { setCouponError(t('কুপন পাওয়া যায়নি', 'Coupon not found')); setAppliedCoupon(null); setCouponLoading(false); return; }
-    if (data.min_order && subtotal < data.min_order) { setCouponError(t(`ন্যূনতম অর্ডার ${country === 'IN' ? '₹' : '৳'}${data.min_order}`, `Minimum order ${country === 'IN' ? '₹' : '৳'}${data.min_order}`)); setAppliedCoupon(null); setCouponLoading(false); return; }
-    if (data.usage_limit && data.usage_count >= data.usage_limit) { setCouponError(t('কুপন সীমা শেষ', 'Coupon limit reached')); setAppliedCoupon(null); setCouponLoading(false); return; }
-    if (data.start_date && new Date(data.start_date) > new Date()) { setCouponError(t('কুপন এখনও কার্যকর নয়', 'Coupon not active yet')); setAppliedCoupon(null); setCouponLoading(false); return; }
-    if (data.expiry_date && new Date(data.expiry_date) < new Date()) { setCouponError(t('কুপন মেয়াদোত্তীর্ণ', 'Coupon expired')); setAppliedCoupon(null); setCouponLoading(false); return; }
-    setAppliedCoupon(data); setCouponLoading(false);
+    const normalizedCode = couponCode.trim().toUpperCase();
+    if (!normalizedCode) return;
+    setCouponLoading(true);
+    setCouponError('');
+    const { data, error } = await supabase
+      .from('coupons')
+      .select('*')
+      .eq('code', normalizedCode)
+      .eq('is_active', true)
+      .eq('country_code', country)
+      .maybeSingle();
+
+    if (error || !data) {
+      setCouponError(t('কুপন পাওয়া যায়নি', 'Coupon not found'));
+      setAppliedCoupon(null);
+      setCouponLoading(false);
+      return;
+    }
+    if (data.min_order && subtotal < data.min_order) {
+      setCouponError(t(`ন্যূনতম অর্ডার ${country === 'IN' ? '₹' : '৳'}${data.min_order}`, `Minimum order ${country === 'IN' ? '₹' : '৳'}${data.min_order}`));
+      setAppliedCoupon(null);
+      setCouponLoading(false);
+      return;
+    }
+    if (data.usage_limit && data.usage_count >= data.usage_limit) {
+      setCouponError(t('কুপন সীমা শেষ', 'Coupon limit reached'));
+      setAppliedCoupon(null);
+      setCouponLoading(false);
+      return;
+    }
+    if (data.start_date && new Date(data.start_date) > new Date()) {
+      setCouponError(t('কুপন এখনও কার্যকর নয়', 'Coupon not active yet'));
+      setAppliedCoupon(null);
+      setCouponLoading(false);
+      return;
+    }
+    if (data.expiry_date && new Date(data.expiry_date) < new Date()) {
+      setCouponError(t('কুপন মেয়াদোত্তীর্ণ', 'Coupon expired'));
+      setAppliedCoupon(null);
+      setCouponLoading(false);
+      return;
+    }
+    setCouponCode(normalizedCode);
+    setAppliedCoupon(data);
+    setCouponLoading(false);
   };
 
-  const removeCoupon = () => { setAppliedCoupon(null); setCouponCode(''); };
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponError('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!form.name.trim()) { setError(t('নাম প্রয়োজন', 'Name is required')); return; }
+
+    if (!form.name.trim()) {
+      setError(t('নাম প্রয়োজন', 'Name is required'));
+      return;
+    }
     const phone = form.phone.replace(/[^0-9]/g, '');
     const phoneValid = country === 'IN' ? /^[6-9][0-9]{9}$/.test(phone) : /^01[0-9]{9}$/.test(phone);
-    if (!phoneValid) { setError(country === 'IN' ? t('সঠিক ১০ সংখ্যার ভারতীয় মোবাইল নম্বর দিন', 'Enter a valid 10-digit Indian mobile number') : t('সঠিক মোবাইল নম্বর দিন', 'Enter a valid phone number')); return; }
-    if (!addrValue.division || !addrValue.district || !addrValue.thana || !addrValue.detail || (country === 'IN' && !/^\d{6}$/.test(addrValue.postalCode || ''))) { setError(country === 'IN' ? t('সম্পূর্ণ ভারতীয় ঠিকানা ও ৬ সংখ্যার PIN কোড দিন', 'Enter a complete Indian address and 6-digit PIN code') : t('সম্পূর্ণ ঠিকানা দিন', 'Enter full address')); return; }
-    if (cart.length === 0) { setError(t('কার্ট খালি', 'Cart is empty')); return; }
+    if (!phoneValid) {
+      setError(country === 'IN' ? t('সঠিক ১০ সংখ্যার ভারতীয় মোবাইল নম্বর দিন', 'Enter a valid 10-digit Indian mobile number') : t('সঠিক মোবাইল নম্বর দিন', 'Enter a valid phone number'));
+      return;
+    }
+    if (!addrValue.division || !addrValue.district || !addrValue.thana || !addrValue.detail || (country === 'IN' && !/^\d{6}$/.test(addrValue.postalCode || ''))) {
+      setError(country === 'IN' ? t('সম্পূর্ণ ভারতীয় ঠিকানা ও ৬ সংখ্যার PIN কোড দিন', 'Enter a complete Indian address and 6-digit PIN code') : t('সম্পূর্ণ ঠিকানা দিন', 'Enter full address'));
+      return;
+    }
+    if (cart.length === 0) {
+      setError(t('কার্ট খালি', 'Cart is empty'));
+      return;
+    }
+
     setLoading(true);
     try {
       const fullAddress = formatAddressToString(addrValue);
-      const items = cart.map((item) => ({ product_id: item.product_id, quantity: item.quantity, variant_id: item.variant_id || null, bundle_id: item.bundle_id || null }));
+      const items = cart.map((item) => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+        variant_id: item.variant_id || null,
+        bundle_id: item.bundle_id || null,
+      }));
       const { data, error: rpcError } = await supabase.rpc('create_order_with_referral_wallet', {
-        p_customer_name: form.name.trim(), p_customer_phone: phone, p_delivery_address: fullAddress, p_items: items,
-        p_coupon_code: appliedCoupon?.code || null, p_delivery_zone_id: null, p_order_source: 'website',
-        p_special_instructions: form.instructions.trim(), p_user_id: userId,
+        p_customer_name: form.name.trim(),
+        p_customer_phone: phone,
+        p_delivery_address: fullAddress,
+        p_items: items,
+        p_coupon_code: appliedCoupon?.code || null,
+        p_delivery_zone_id: null,
+        p_order_source: 'website',
+        p_special_instructions: form.instructions.trim(),
+        p_user_id: userId,
         p_use_referral_wallet: Boolean(useWallet && walletCredit > 0),
       });
+
       if (rpcError) throw rpcError;
-      if (data?.error) { setError(data.error); return; }
+      if (data?.error) {
+        setError(data.error);
+        return;
+      }
       localStorage.removeItem('gazi_cart');
       window.dispatchEvent(new Event('cart-updated'));
       router.push(`/order-success?number=${data.order_number}`);
-    } catch (err) {
+    } catch {
       setError(t('অর্ডার করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।', 'Order failed. Please try again.'));
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (cart.length === 0) return (
-    <div className="container-custom py-24 text-center space-y-4"><div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-secondary text-muted-foreground"><ShoppingBag className="h-10 w-10" /></div><h1 className="text-2xl font-black">{t('কার্ট খালি', 'Cart is empty')}</h1><p className="text-sm text-muted-foreground">{t('অর্ডার করতে প্রথমে কার্টে পণ্য যোগ করুন', 'Add items to cart first')}</p><Link href="/all-products" className="inline-block rounded-2xl bg-primary px-8 py-3.5 text-xs font-black text-primary-foreground shadow-xl shadow-primary/25 hover:scale-105 transition-all">{t('শপিং করুন', 'Shop Now')}</Link></div>
-  );
+  if (cart.length === 0) {
+    return (
+      <main className="min-h-screen bg-background">
+        <div className="container-custom flex min-h-[70vh] items-center justify-center py-20">
+          <div className="w-full max-w-md rounded-[2rem] border border-border/70 bg-card p-8 text-center shadow-xl shadow-black/5 sm:p-10">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 text-primary">
+              <ShoppingBag className="h-10 w-10" />
+            </div>
+            <h1 className="mt-5 text-2xl font-black tracking-tight">{t('কার্ট খালি', 'Cart is empty')}</h1>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">{t('অর্ডার করতে প্রথমে কার্টে পণ্য যোগ করুন', 'Add items to cart first')}</p>
+            <Link
+              href="/all-products"
+              className="mt-6 inline-flex min-h-12 items-center justify-center rounded-2xl bg-primary px-7 text-sm font-black text-primary-foreground shadow-lg shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
+            >
+              {t('শপিং করুন', 'Shop Now')}
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#090d16] text-foreground py-8 sm:py-14"><div className="container-custom max-w-6xl mx-auto px-4">
-      <div className="mb-10 text-center sm:text-left flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-6"><div><div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black tracking-wider uppercase mb-2"><Sparkles className="h-3.5 w-3.5" /> {t('১০০% সুরক্ষিত চেকআউট', '100% Secure Checkout')}</div><h1 className="text-3xl sm:text-4xl font-black tracking-tight">{t('চেকআউট', 'Checkout')}</h1></div><div className="flex items-center justify-center sm:justify-end gap-3 text-xs font-bold text-muted-foreground"><span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">{t('কার্ট', 'Cart')}</span><ChevronRight className="h-3.5 w-3.5 opacity-40" /><span className="flex items-center gap-1 text-primary font-black"><Lock className="h-3.5 w-3.5" /> {t('চেকআউট', 'Checkout')}</span><ChevronRight className="h-3.5 w-3.5 opacity-40" /><span className="opacity-60">{t('কনফার্মেশন', 'Confirmation')}</span></div></div>
-      <form onSubmit={handleSubmit}><div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 sm:gap-10 items-start"><div className="space-y-8">
-        {savedAddresses.length > 0 && <div className="rounded-[32px] border border-border/80 bg-card p-6 shadow-sm backdrop-blur-xl space-y-4"><h3 className="flex items-center gap-2 text-sm font-black text-foreground"><MapPin className="h-4 w-4 text-primary" /> {t('সংরক্ষিত ঠিকানা', 'Saved Addresses')}</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{savedAddresses.map((a) => <button key={a.id} type="button" onClick={() => selectSavedAddress(a.id)} className={`flex items-center justify-between rounded-2xl border-2 p-4 text-left text-xs transition-all cursor-pointer ${selectedAddrId === a.id ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20' : 'border-border/80 bg-background/50 hover:border-border'}`}><div><p className="font-black text-foreground">{a.name} {a.is_default && <span className="text-[10px] text-primary font-bold ml-1">({t('ডিফল্ট', 'Default')})</span>}</p><p className="text-muted-foreground mt-0.5 line-clamp-1">{a.address}</p></div>{selectedAddrId === a.id && <Check className="h-4 w-4 text-primary shrink-0" />}</button>)}</div></div>}
-        <div className="rounded-[32px] border border-border/80 bg-card p-6 sm:p-8 shadow-sm backdrop-blur-xl space-y-6"><div className="flex items-center justify-between border-b border-border/60 pb-4"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary font-black">১</div><div><h2 className="text-lg font-black text-foreground">{t('ডেলিভারি তথ্য', 'Delivery Information')}</h2><p className="text-xs text-muted-foreground">{t('যে ঠিকানায় পণ্যটি পাঠানো হবে', 'Address where the product will be delivered')}</p></div></div><MapPin className="h-5 w-5 text-primary/70" /></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div className="space-y-1.5"><label className="text-xs font-extrabold text-muted-foreground flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-primary" /> {t('আপনার নাম', 'Your Name')} <span className="text-rose-500">*</span></label><input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t('যেমন: মো: আরিফুল ইসলাম', 'e.g., Md. Ariful Islam')} className="w-full rounded-2xl border border-border bg-background px-4 py-3.5 text-sm font-semibold text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15 transition-all" required /></div><div className="space-y-1.5"><label className="text-xs font-extrabold text-muted-foreground flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-primary" /> {t('মোবাইল নম্বর', 'Phone')} <span className="text-rose-500">*</span></label><input type="tel" inputMode="tel" maxLength={country === 'IN' ? 10 : 11} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={country === 'IN' ? '10-digit mobile number' : t('01XXXXXXXXX', '01XXXXXXXXX')} className="w-full rounded-2xl border border-border bg-background px-4 py-3.5 text-sm font-semibold text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15 transition-all" required /></div></div><AddressSelector value={addrValue} onChange={setAddrValue} countryCode={country} /><div className="space-y-1.5"><label className="text-xs font-extrabold text-muted-foreground">{t('অতিরিক্ত নির্দেশনা', 'Special Instructions')}</label><textarea value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} placeholder={t('ডেলিভারি সংক্রান্ত কোনো বিশেষ নির্দেশনা...', 'Any special delivery instructions...')} className="w-full rounded-2xl border border-border bg-background px-4 py-3.5 text-sm font-semibold text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15 transition-all min-h-[90px]" /></div></div>
-        <div className="rounded-[32px] border border-border/80 bg-card p-6 sm:p-8 shadow-sm space-y-4"><div className="flex items-center justify-between"><div><h2 className="text-lg font-black">{t('কুপন', 'Coupon')}</h2><p className="text-xs text-muted-foreground">{t('ডিসকাউন্ট কোড থাকলে এখানে দিন', 'Enter your discount code')}</p></div><Tag className="h-5 w-5 text-primary" /></div><div className="flex gap-3"><input value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder={t('কুপন কোড', 'Coupon code')} className="min-w-0 flex-1 rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold uppercase" /><button type="button" onClick={applyCoupon} disabled={couponLoading} className="rounded-2xl bg-primary px-5 py-3 text-xs font-black text-primary-foreground disabled:opacity-50">{couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('প্রয়োগ', 'Apply')}</button></div>{couponError && <p className="text-xs font-bold text-rose-600">{couponError}</p>}{appliedCoupon && <div className="flex items-center justify-between rounded-2xl bg-emerald-500/10 p-3 text-xs"><span className="font-black text-emerald-700 dark:text-emerald-300">{appliedCoupon.code}</span><button type="button" onClick={removeCoupon} className="text-rose-500 font-bold">{t('সরান', 'Remove')}</button></div>}</div>
-      </div><aside className="lg:sticky lg:top-24 rounded-[32px] border border-border/80 bg-card p-6 sm:p-7 shadow-xl shadow-black/5 space-y-5"><div className="flex items-center justify-between"><div><p className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">{country === 'IN' ? 'India Branch' : 'Bangladesh Branch'}</p><h2 className="text-xl font-black">{t('অর্ডার সামারি', 'Order Summary')}</h2></div><ShieldCheck className="h-6 w-6 text-primary" /></div><div className="space-y-3 border-b border-border pb-4">{cart.map((item) => <div key={`${item.product_id}-${item.variant_id || ''}`} className="flex items-center justify-between gap-3 text-sm"><span className="min-w-0 truncate font-semibold">{item.name} × {item.quantity}</span><span className="font-black whitespace-nowrap">{formatPrice(item.unit_price * item.quantity)}</span></div>)}</div><div className="space-y-2 text-sm"><div className="flex justify-between"><span className="text-muted-foreground">{t('সাবটোটাল', 'Subtotal')}</span><span className="font-bold">{formatPrice(subtotal)}</span></div>{savingsTotal > 0 && <div className="flex justify-between text-emerald-600"><span>{t('আপনার সাশ্রয়', 'You save')}</span><span className="font-bold">-{formatPrice(savingsTotal)}</span></div>}{couponDiscount > 0 && <div className="flex justify-between text-emerald-600"><span>{t('কুপন ডিসকাউন্ট', 'Coupon discount')}</span><span className="font-bold">-{formatPrice(couponDiscount)}</span></div>}<div className="flex justify-between"><span className="text-muted-foreground">{t('ডেলিভারি', 'Delivery')}</span><span className="font-bold">{deliveryCharge === 0 ? t('ফ্রি', 'Free') : formatPrice(deliveryCharge)}</span></div>{walletCredit > 0 && <div className="flex justify-between text-emerald-600"><span>{t('ওয়ালেট ক্রেডিট', 'Wallet credit')}</span><span className="font-bold">-{formatPrice(walletCredit)}</span></div>}<div className="flex justify-between border-t border-border pt-3 text-lg"><span className="font-black">{t('মোট', 'Total')}</span><span className="font-black text-primary">{formatPrice(payableTotal)}</span></div></div>{error && <div className="rounded-2xl bg-rose-500/10 p-3 text-xs font-bold text-rose-600">{error}</div>}<button type="submit" disabled={loading} className="w-full rounded-2xl bg-primary px-5 py-4 text-sm font-black text-primary-foreground shadow-lg shadow-primary/25 hover:scale-[1.01] transition-transform disabled:opacity-60">{loading ? <Loader2 className="mx-auto h-5 w-5 animate-spin" /> : <span className="inline-flex items-center justify-center gap-2">{t('অর্ডার কনফার্ম করুন', 'Confirm Order')} <ChevronRight className="h-4 w-4" /></span>}</button><div className="grid grid-cols-3 gap-2 text-center text-[10px] font-bold text-muted-foreground"><div className="rounded-2xl bg-muted/60 p-3"><Truck className="mx-auto mb-1 h-4 w-4" />{country === 'IN' ? 'India Delivery' : 'দেশজুড়ে ডেলিভারি'}</div><div className="rounded-2xl bg-muted/60 p-3"><Banknote className="mx-auto mb-1 h-4 w-4" />COD</div><div className="rounded-2xl bg-muted/60 p-3"><Lock className="mx-auto mb-1 h-4 w-4" />SSL</div></div></aside></div></form></div></div>
+    <main className="min-h-screen bg-slate-50/90 pb-28 dark:bg-slate-950 sm:pb-14">
+      <div className="container-custom mx-auto max-w-6xl px-4 py-7 sm:py-10 lg:py-14">
+        <div className="mb-8 rounded-[2rem] border border-border/70 bg-card/95 p-5 shadow-sm sm:mb-10 sm:p-7">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/10 px-3.5 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-primary">
+                <Sparkles className="h-3.5 w-3.5" />
+                {t('নিরাপদ চেকআউট', 'Secure checkout')}
+              </div>
+              <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">{t('চেকআউট সম্পন্ন করুন', 'Complete your checkout')}</h1>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
+                {t('ঠিকানা নিশ্চিত করুন, প্রয়োজনে কুপন বা ওয়ালেট ব্যবহার করুন, তারপর অর্ডার কনফার্ম করুন।', 'Confirm your delivery details, apply any coupon or wallet credit, then place your order.')}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground sm:justify-end">
+              <span className="inline-flex items-center gap-1.5 text-primary"><Check className="h-3.5 w-3.5" /> {t('কার্ট', 'Cart')}</span>
+              <ChevronRight className="h-3.5 w-3.5 opacity-40" />
+              <span className="inline-flex items-center gap-1.5 text-foreground"><Lock className="h-3.5 w-3.5 text-primary" /> {t('চেকআউট', 'Checkout')}</span>
+              <ChevronRight className="h-3.5 w-3.5 opacity-40" />
+              <span className="opacity-50">{t('কনফার্মেশন', 'Confirmation')}</span>
+            </div>
+          </div>
+        </div>
+
+        <form id="checkout-form" onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-[minmax(0,1fr)_390px] lg:gap-9">
+            <div className="space-y-6 lg:space-y-7">
+              {savedAddresses.length > 0 && (
+                <section className="rounded-[2rem] border border-border/70 bg-card p-5 shadow-sm sm:p-7">
+                  <div className="mb-4 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">{t('এক ক্লিকে নির্বাচন করুন', 'Quick select')}</p>
+                      <h2 className="mt-1 text-lg font-black">{t('সংরক্ষিত ঠিকানা', 'Saved addresses')}</h2>
+                    </div>
+                    <MapPin className="h-5 w-5 text-primary/70" />
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {savedAddresses.map((address) => {
+                      const selected = selectedAddrId === address.id;
+                      return (
+                        <button
+                          key={address.id}
+                          type="button"
+                          onClick={() => selectSavedAddress(address.id)}
+                          aria-pressed={selected}
+                          className={`flex min-h-20 items-start justify-between gap-3 rounded-2xl border-2 p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${selected ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/80 bg-background hover:border-primary/25 hover:bg-primary/[0.03]'}`}
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-black text-foreground">{address.name}</span>
+                            <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">{address.address}</span>
+                            {address.is_default && <span className="mt-1.5 inline-flex text-[10px] font-black text-primary">{t('ডিফল্ট ঠিকানা', 'Default address')}</span>}
+                          </span>
+                          {selected && <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
+              <section className="rounded-[2rem] border border-border/70 bg-card p-5 shadow-sm sm:p-7">
+                <div className="mb-6 flex items-start justify-between gap-4 border-b border-border/60 pb-5">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-sm font-black text-primary">১</div>
+                    <div>
+                      <h2 className="text-lg font-black">{t('ডেলিভারি তথ্য', 'Delivery information')}</h2>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('যে ঠিকানায় আপনার অর্ডার পৌঁছাবে', 'Where your order will be delivered')}</p>
+                    </div>
+                  </div>
+                  <ShieldCheck className="h-5 w-5 text-primary/70" />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label htmlFor="checkout-name" className="flex items-center gap-1.5 text-xs font-extrabold text-muted-foreground">
+                      <User className="h-3.5 w-3.5 text-primary" /> {t('আপনার নাম', 'Your name')} <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      id="checkout-name"
+                      name="name"
+                      type="text"
+                      autoComplete="name"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      placeholder={t('যেমন: মো: আরিফুল ইসলাম', 'e.g. Md. Ariful Islam')}
+                      className="min-h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="checkout-phone" className="flex items-center gap-1.5 text-xs font-extrabold text-muted-foreground">
+                      <Phone className="h-3.5 w-3.5 text-primary" /> {t('মোবাইল নম্বর', 'Phone number')} <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      id="checkout-phone"
+                      name="phone"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      maxLength={country === 'IN' ? 10 : 11}
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      placeholder={country === 'IN' ? '10-digit mobile number' : '01XXXXXXXXX'}
+                      className="min-h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <AddressSelector value={addrValue} onChange={setAddrValue} countryCode={country} />
+                </div>
+
+                <div className="mt-5 space-y-1.5">
+                  <label htmlFor="checkout-instructions" className="text-xs font-extrabold text-muted-foreground">{t('অতিরিক্ত নির্দেশনা', 'Special instructions')}</label>
+                  <textarea
+                    id="checkout-instructions"
+                    name="instructions"
+                    autoComplete="off"
+                    value={form.instructions}
+                    onChange={(e) => setForm({ ...form, instructions: e.target.value })}
+                    placeholder={t('ডেলিভারি সংক্রান্ত কোনো বিশেষ নির্দেশনা থাকলে লিখুন...', 'Add any special delivery instructions...')}
+                    className="min-h-24 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3.5 text-sm font-semibold text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15"
+                  />
+                </div>
+              </section>
+
+              <section className="rounded-[2rem] border border-border/70 bg-card p-5 shadow-sm sm:p-7">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">SAVE MORE</p>
+                    <h2 className="mt-1 text-lg font-black">{t('কুপন কোড', 'Coupon code')}</h2>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('আপনার ডিসকাউন্ট কোড থাকলে এখানে ব্যবহার করুন।', 'Have a discount code? Apply it here.')}</p>
+                  </div>
+                  <Tag className="h-5 w-5 text-primary/70" />
+                </div>
+
+                <div className="mt-4 flex gap-3">
+                  <label htmlFor="coupon-code" className="sr-only">{t('কুপন কোড', 'Coupon code')}</label>
+                  <input
+                    id="coupon-code"
+                    name="coupon"
+                    type="text"
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyCoupon(); } }}
+                    placeholder={t('কুপন কোড লিখুন', 'Enter coupon code')}
+                    className="min-w-0 min-h-12 flex-1 rounded-2xl border border-border bg-background px-4 text-sm font-bold uppercase tracking-wide text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15"
+                  />
+                  <button
+                    type="button"
+                    onClick={applyCoupon}
+                    disabled={couponLoading || !couponCode.trim()}
+                    className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-2xl bg-primary px-5 text-xs font-black text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('প্রয়োগ', 'Apply')}
+                  </button>
+                </div>
+
+                {couponError && <p role="alert" className="mt-3 text-xs font-bold text-rose-600">{couponError}</p>}
+                {appliedCoupon && (
+                  <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-500/10 px-4 py-3">
+                    <div className="flex min-w-0 items-center gap-2 text-xs">
+                      <Check className="h-4 w-4 shrink-0 text-emerald-600" />
+                      <span className="truncate font-black text-emerald-700 dark:text-emerald-300">{appliedCoupon.code}</span>
+                    </div>
+                    <button type="button" onClick={removeCoupon} className="inline-flex min-h-9 items-center gap-1 rounded-xl px-2 text-[11px] font-black text-rose-600 transition hover:bg-rose-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/40">
+                      <X className="h-3.5 w-3.5" /> {t('সরান', 'Remove')}
+                    </button>
+                  </div>
+                )}
+              </section>
+
+              {walletSummary?.enabled && (
+                <section className="rounded-[2rem] border border-emerald-200/60 bg-gradient-to-br from-emerald-500/[0.08] via-card to-card p-5 shadow-sm sm:p-7 dark:border-emerald-900/60">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <WalletCards className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">WALLET CREDIT</p>
+                        <h2 className="mt-1 text-lg font-black">{t('আপনার রেফারেল ওয়ালেট', 'Your referral wallet')}</h2>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                          {walletLoading ? t('ব্যালেন্স যাচাই করা হচ্ছে...', 'Checking your wallet balance...') : t(`ব্যালেন্স ${formatPrice(walletSummary.balance)} · সর্বোচ্চ ব্যবহার ${formatPrice(walletSummary.max_usable)}`, `Balance ${formatPrice(walletSummary.balance)} · Up to ${formatPrice(walletSummary.max_usable)} usable`)}
+                        </p>
+                      </div>
+                    </div>
+                    {walletSummary.unlocked && <span className="shrink-0 rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-black text-emerald-700 dark:text-emerald-300">{t('ব্যবহারযোগ্য', 'Available')}</span>}
+                  </div>
+
+                  {!walletLoading && walletSummary.unlocked ? (
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={useWallet}
+                      onClick={() => setUseWallet((value) => !value)}
+                      className={`mt-5 flex w-full items-center justify-between gap-4 rounded-2xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${useWallet ? 'border-emerald-500 bg-emerald-500/10' : 'border-border bg-background hover:border-emerald-300'}`}
+                    >
+                      <span>
+                        <span className="block text-sm font-black text-foreground">{t('ওয়ালেট ক্রেডিট ব্যবহার করুন', 'Use wallet credit')}</span>
+                        <span className="mt-1 block text-xs text-muted-foreground">{t(`${formatPrice(selectedWalletAmount)} পর্যন্ত অর্ডারে ব্যবহার করা যাবে`, `Use up to ${formatPrice(selectedWalletAmount)} on this order`)}</span>
+                      </span>
+                      <span className={`relative h-7 w-12 shrink-0 rounded-full p-1 transition-colors ${useWallet ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'}`} aria-hidden="true">
+                        <span className={`block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${useWallet ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </span>
+                    </button>
+                  ) : !walletLoading ? (
+                    <div className="mt-4 rounded-2xl border border-dashed border-border bg-background/70 px-4 py-3 text-xs font-semibold text-muted-foreground">
+                      {t(`৳${walletSummary.min_purchase_amount}+ অর্ডার হলে ওয়ালেট ব্যবহার করা যাবে।`, `Wallet credit unlocks at ${formatPrice(walletSummary.min_purchase_amount)} purchase.`)}
+                    </div>
+                  ) : null}
+                </section>
+              )}
+            </div>
+
+            <aside className="lg:sticky lg:top-24">
+              <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-xl shadow-black/[0.06]">
+                <div className="border-b border-border/60 p-5 sm:p-6">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-primary">{country === 'IN' ? 'INDIA' : 'BANGLADESH'}</p>
+                      <h2 className="mt-1 text-xl font-black">{t('অর্ডার সামারি', 'Order summary')}</h2>
+                    </div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary"><PackageCheck className="h-5 w-5" /></div>
+                  </div>
+                  <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-[11px] font-black text-emerald-700 dark:text-emerald-300">
+                    <Truck className="h-3.5 w-3.5" /> {deliveryMessage}
+                  </div>
+                </div>
+
+                <div className="max-h-72 space-y-3 overflow-y-auto border-b border-border/60 p-5 sm:p-6">
+                  {cart.map((item) => (
+                    <div key={`${item.product_id}-${item.variant_id || ''}-${item.bundle_id || ''}`} className="flex items-center gap-3">
+                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-secondary/50">
+                        <img src={item.image || '/placeholder.svg'} alt="" className="h-full w-full object-cover" />
+                        <span className="absolute right-1 top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[9px] font-black text-background">{item.quantity}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-xs font-black leading-5 text-foreground">{item.name}</p>
+                        {item.variant_name && <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{item.variant_name}</p>}
+                      </div>
+                      <span className="shrink-0 text-xs font-black text-foreground">{formatPrice(item.unit_price * item.quantity)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-2 p-5 sm:p-6">
+                  <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('সাবটোটাল', 'Subtotal')}</span><span className="font-bold">{formatPrice(subtotal)}</span></div>
+                  {savingsTotal > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t(`আপনার সাশ্রয়${discountPercent ? ` (${discountPercent}%)` : ''}`, `You save${discountPercent ? ` (${discountPercent}%)` : ''}`)}</span><span className="font-bold">-{formatPrice(savingsTotal)}</span></div>}
+                  {couponDiscount > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('কুপন ডিসকাউন্ট', 'Coupon discount')}</span><span className="font-bold">-{formatPrice(couponDiscount)}</span></div>}
+                  <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারি', 'Delivery')}</span><span className="font-bold">{deliveryCharge === 0 ? t('ফ্রি', 'Free') : formatPrice(deliveryCharge)}</span></div>
+                  {walletCredit > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('ওয়ালেট ক্রেডিট', 'Wallet credit')}</span><span className="font-bold">-{formatPrice(walletCredit)}</span></div>}
+                  <div className="mt-3 flex items-end justify-between gap-4 border-t border-border pt-4">
+                    <div>
+                      <span className="block text-sm font-black">{t('সর্বমোট', 'Total')}</span>
+                      <span className="mt-0.5 block text-[10px] font-semibold text-muted-foreground">{t('চূড়ান্ত পরিশোধযোগ্য', 'Final payable amount')}</span>
+                    </div>
+                    <span className="text-2xl font-black tracking-tight text-primary">{formatPrice(payableTotal)}</span>
+                  </div>
+
+                  {error && (
+                    <div role="alert" className="rounded-2xl border border-rose-200/80 bg-rose-500/10 px-4 py-3 text-xs font-bold leading-5 text-rose-700 dark:border-rose-900/60 dark:text-rose-300">
+                      {error}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="mt-2 inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-black text-primary-foreground shadow-lg shadow-primary/25 transition hover:-translate-y-0.5 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
+                  </button>
+
+                  <div className="grid grid-cols-3 gap-2 pt-1 text-center">
+                    <div className="rounded-2xl bg-secondary/70 p-3"><Truck className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">{country === 'IN' ? 'India Delivery' : t('দেশজুড়ে', 'Nationwide')}</span></div>
+                    <div className="rounded-2xl bg-secondary/70 p-3"><Banknote className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">COD</span></div>
+                    <div className="rounded-2xl bg-secondary/70 p-3"><Lock className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">SSL</span></div>
+                  </div>
+                </div>
+              </section>
+
+              <div className="mt-4 hidden items-start gap-3 rounded-2xl border border-border/60 bg-card p-4 lg:flex">
+                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                <div>
+                  <p className="text-xs font-black text-foreground">{t('নিরাপদ অর্ডার প্রসেস', 'Secure order processing')}</p>
+                  <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{t('আপনার তথ্য নিরাপদে প্রক্রিয়া করা হয়।', 'Your details are handled securely throughout checkout.')}</p>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </form>
+
+        <div className="fixed inset-x-3 bottom-3 z-40 lg:hidden">
+          <div className="flex items-center gap-3 rounded-[22px] border border-border/80 bg-background/95 p-3 shadow-2xl shadow-black/20 backdrop-blur-xl" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
+            <div className="min-w-0 flex-1 pl-1">
+              <p className="text-[10px] font-bold text-muted-foreground">{t('পরিশোধযোগ্য', 'Payable')}</p>
+              <p className="truncate text-lg font-black text-primary">{formatPrice(payableTotal)}</p>
+            </div>
+            <button
+              type="submit"
+              form="checkout-form"
+              disabled={loading}
+              className="inline-flex min-h-12 shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-primary px-5 text-xs font-black text-primary-foreground shadow-lg shadow-primary/25 transition active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:opacity-60"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{t('অর্ডার করুন', 'Place order')} <ChevronRight className="h-4 w-4" /></>}
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }
