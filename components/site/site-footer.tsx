@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Facebook, Instagram, Youtube, Phone, Mail, MapPin } from 'lucide-react';
+import { Facebook, Instagram, Youtube, Phone, Mail, MapPin, ArrowUpRight, ShieldCheck, Truck } from 'lucide-react';
 import { getSiteSettings, getNavigation } from '@/lib/data';
 import type { SiteSettings, Navigation } from '@/lib/supabase/types';
 import { useLang } from './language-provider';
@@ -14,87 +14,19 @@ export function SiteFooter() {
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
   const { t, tDb } = useLang();
 
-  useEffect(() => {
-    getSiteSettings().then(setSettings);
-    getNavigation().then(setNav);
-    setCountry(getVisitorCountry());
-  }, []);
+  useEffect(() => { getSiteSettings().then(setSettings); getNavigation().then(setNav); setCountry(getVisitorCountry()); }, []);
+  const isIndia = country === 'IN'; const fallbackBrand = 'GAZI SEED'; const fallbackTagline = isIndia ? 'Quality Seeds • Better Farming' : 'বীজ • গাছ • কৃষি পণ্য'; const fallbackDescription = isIndia ? "India's trusted online store for seeds and agro products." : 'বাংলাদেশের বিশ্বস্ত বীজ ও কৃষি পণ্যের অনলাইন স্টোর। সারাদেশে ক্যাশ অন ডেলিভারি।'; const fallbackLocation = isIndia ? 'ভারত' : 'ঢাকা, বাংলাদেশ';
 
-  const isIndia = country === 'IN';
-  const fallbackBrand = 'GAZI SEED';
-  const fallbackTagline = isIndia ? 'Quality Seeds • Better Farming' : 'বীজ • গাছ • কৃষি পণ্য';
-  const fallbackDescription = isIndia
-    ? "India's trusted online store for seeds and agro products."
-    : 'বাংলাদেশের বিশ্বস্ত বীজ ও কৃষি পণ্যের অনলাইন স্টোর। সারাদেশে ক্যাশ অন ডেলিভারি।';
-  const fallbackLocation = isIndia ? 'ভারত' : 'ঢাকা, বাংলাদেশ';
-
-  return (
-    <footer className="border-t border-border bg-secondary/20">
-      <div className="container-custom py-12">
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <div className="mb-3 flex items-center gap-2">
-              {settings?.logo ? (
-                <img
-                  src={settings.logo}
-                  alt={settings.website_name || fallbackBrand}
-                  className="h-10 w-auto max-w-[150px] object-contain"
-                />
-              ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                  <span className="text-xl font-bold">G</span>
-                </div>
-              )}
-              <div>
-                <div className="text-lg font-bold text-primary">{settings?.website_name || fallbackBrand}</div>
-                <div className="text-[10px] text-muted-foreground">{fallbackTagline}</div>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {fallbackDescription}
-            </p>
-            <div className="mt-4 flex gap-3">
-              {settings?.facebook && <a href={settings.facebook} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-secondary p-2 hover:bg-accent" aria-label="Facebook"><Facebook className="h-4 w-4" /></a>}
-              {settings?.instagram && <a href={settings.instagram} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-secondary p-2 hover:bg-accent" aria-label="Instagram"><Instagram className="h-4 w-4" /></a>}
-              {settings?.youtube && <a href={settings.youtube} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-secondary p-2 hover:bg-accent" aria-label="YouTube"><Youtube className="h-4 w-4" /></a>}
-            </div>
-          </div>
-
-          <div>
-            <h3 className="mb-4 font-semibold text-foreground">{t('কুইক লিংক', 'Quick Links')}</h3>
-            <ul className="space-y-2 text-sm">
-              {nav.slice(0, 6).map((item) => (
-                <li key={item.id}><Link href={item.url} className="text-muted-foreground hover:text-primary">{tDb(item.title)}</Link></li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="mb-4 font-semibold text-foreground">{t('কাস্টমার সার্ভিস', 'Customer Service')}</h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/contact" className="text-muted-foreground hover:text-primary">{t('যোগাযোগ', 'Contact')}</Link></li>
-              <li><Link href="/track-order" className="text-muted-foreground hover:text-primary">{t('অর্ডার ট্র্যাকিং', 'Track Order')}</Link></li>
-              <li><Link href="/page/privacy-policy" className="text-muted-foreground hover:text-primary">{t('প্রাইভেসি পলিসি', 'Privacy Policy')}</Link></li>
-              <li><Link href="/page/terms-conditions" className="text-muted-foreground hover:text-primary">{t('শর্তাবলী', 'Terms & Conditions')}</Link></li>
-              <li><Link href="/page/shipping-policy" className="text-muted-foreground hover:text-primary">{t('শিপিং পলিসি', 'Shipping Policy')}</Link></li>
-              <li><Link href="/page/return-refund-policy" className="text-muted-foreground hover:text-primary">{t('রিটার্ন ও রিফান্ড', 'Return & Refund')}</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="mb-4 font-semibold text-foreground">{t('যোগাযোগ', 'Contact')}</h3>
-            <ul className="space-y-3 text-sm">
-              {settings?.phone && <li className="flex items-start gap-2 text-muted-foreground"><Phone className="mt-0.5 h-4 w-4 shrink-0" /><a href={`tel:${settings.phone}`} className="hover:text-primary">{settings.phone}</a></li>}
-              {settings?.email && <li className="flex items-start gap-2 text-muted-foreground"><Mail className="mt-0.5 h-4 w-4 shrink-0" /><a href={`mailto:${settings.email}`} className="hover:text-primary">{settings.email}</a></li>}
-              <li className="flex items-start gap-2 text-muted-foreground"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /><span>{settings?.address || fallbackLocation}</span></li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="mt-8 border-t border-border pt-6 text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} {settings?.website_name || fallbackBrand}. {t('সর্বস্বত্ব সংরক্ষিত।', 'All rights reserved.')}</p>
-        </div>
+  return <footer className="border-t border-primary/10 bg-gradient-to-b from-secondary/20 to-background">
+    <div className="container-custom pt-10 sm:pt-14">
+      <div className="mb-8 grid gap-3 sm:grid-cols-3"><div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-4"><ShieldCheck className="h-5 w-5 shrink-0 text-primary" /><div><p className="text-sm font-bold">{t('নিরাপদ শপিং', 'Secure Shopping')}</p><p className="text-xs text-muted-foreground">{t('বিশ্বস্ত অর্ডার প্রক্রিয়া', 'Trusted ordering')}</p></div></div><div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-4"><Truck className="h-5 w-5 shrink-0 text-primary" /><div><p className="text-sm font-bold">{t('সারাদেশে ডেলিভারি', 'Nationwide Delivery')}</p><p className="text-xs text-muted-foreground">{t('সহজ ও নির্ভরযোগ্য ডেলিভারি', 'Easy, reliable delivery')}</p></div></div><Link href="/track-order" className="flex items-center justify-between gap-3 rounded-2xl border border-primary/15 bg-primary/[0.045] p-4 transition hover:-translate-y-0.5 hover:border-primary/30"><div className="flex items-center gap-3"><MapPin className="h-5 w-5 shrink-0 text-primary" /><div><p className="text-sm font-bold">{t('অর্ডার ট্র্যাক করুন', 'Track Your Order')}</p><p className="text-xs text-muted-foreground">{t('ডেলিভারির অবস্থা দেখুন', 'Check delivery status')}</p></div></div><ArrowUpRight className="h-4 w-4 text-primary" /></Link></div>
+      <div className="grid grid-cols-1 gap-10 border-t border-border/70 py-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div><div className="mb-4 flex items-center gap-2">{settings?.logo ? <img src={settings.logo} alt={settings.website_name || fallbackBrand} className="h-11 w-auto max-w-[155px] object-contain" /> : <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground"><span className="text-xl font-bold">G</span></div>}<div><div className="text-lg font-bold text-primary">{settings?.website_name || fallbackBrand}</div><div className="text-[10px] text-muted-foreground">{fallbackTagline}</div></div></div><p className="max-w-sm text-sm leading-6 text-muted-foreground">{fallbackDescription}</p><div className="mt-5 flex gap-2">{settings?.facebook && <a href={settings.facebook} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-border bg-card p-2.5 transition hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary" aria-label="Facebook"><Facebook className="h-4 w-4" /></a>}{settings?.instagram && <a href={settings.instagram} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-border bg-card p-2.5 transition hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary" aria-label="Instagram"><Instagram className="h-4 w-4" /></a>}{settings?.youtube && <a href={settings.youtube} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-border bg-card p-2.5 transition hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary" aria-label="YouTube"><Youtube className="h-4 w-4" /></a>}</div></div>
+        <div><h3 className="mb-4 text-sm font-black uppercase tracking-wider text-foreground">{t('কুইক লিংক', 'Quick Links')}</h3><ul className="space-y-2.5 text-sm">{nav.slice(0, 6).map(item => <li key={item.id}><Link href={item.url} className="text-muted-foreground transition hover:pl-1 hover:text-primary">{tDb(item.title)}</Link></li>)}</ul></div>
+        <div><h3 className="mb-4 text-sm font-black uppercase tracking-wider text-foreground">{t('কাস্টমার সার্ভিস', 'Customer Service')}</h3><ul className="space-y-2.5 text-sm"><li><Link href="/contact" className="text-muted-foreground transition hover:text-primary">{t('যোগাযোগ', 'Contact')}</Link></li><li><Link href="/track-order" className="text-muted-foreground transition hover:text-primary">{t('অর্ডার ট্র্যাকিং', 'Track Order')}</Link></li><li><Link href="/page/privacy-policy" className="text-muted-foreground transition hover:text-primary">{t('প্রাইভেসি পলিসি', 'Privacy Policy')}</Link></li><li><Link href="/page/terms-conditions" className="text-muted-foreground transition hover:text-primary">{t('শর্তাবলী', 'Terms & Conditions')}</Link></li><li><Link href="/page/shipping-policy" className="text-muted-foreground transition hover:text-primary">{t('শিপিং পলিসি', 'Shipping Policy')}</Link></li><li><Link href="/page/return-refund-policy" className="text-muted-foreground transition hover:text-primary">{t('রিটার্ন ও রিফান্ড', 'Return & Refund')}</Link></li></ul></div>
+        <div><h3 className="mb-4 text-sm font-black uppercase tracking-wider text-foreground">{t('যোগাযোগ', 'Contact')}</h3><ul className="space-y-4 text-sm">{settings?.phone && <li className="flex items-start gap-3 text-muted-foreground"><span className="rounded-xl bg-primary/10 p-2 text-primary"><Phone className="h-4 w-4" /></span><a href={`tel:${settings.phone}`} className="pt-1 hover:text-primary">{settings.phone}</a></li>}{settings?.email && <li className="flex items-start gap-3 text-muted-foreground"><span className="rounded-xl bg-primary/10 p-2 text-primary"><Mail className="h-4 w-4" /></span><a href={`mailto:${settings.email}`} className="break-all pt-1 hover:text-primary">{settings.email}</a></li>}<li className="flex items-start gap-3 text-muted-foreground"><span className="rounded-xl bg-primary/10 p-2 text-primary"><MapPin className="h-4 w-4" /></span><span className="pt-1 leading-6">{settings?.address || fallbackLocation}</span></li></ul></div>
       </div>
-    </footer>
-  );
+      <div className="flex flex-col gap-3 border-t border-border/70 py-6 text-center text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:text-left"><p>© {new Date().getFullYear()} {settings?.website_name || fallbackBrand}. {t('সর্বস্বত্ব সংরক্ষিত।', 'All rights reserved.')}</p><p>{t('কৃষকের জন্য ভালো বীজ, ভালো ফলন।', 'Better seeds for better farming.')}</p></div>
+    </div>
+  </footer>;
 }
