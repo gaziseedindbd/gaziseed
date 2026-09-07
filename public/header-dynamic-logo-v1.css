@@ -1,4 +1,4 @@
-/* GAZI SEED — live Admin logo, larger while staying balanced in the single-row navigation header. */
+/* GAZI SEED — country-aware live Admin logo sizing. */
 header.fixed > div:nth-of-type(2) > a:first-child::before{
   content:none!important;
   display:none!important;
@@ -41,6 +41,13 @@ header.fixed > div:nth-of-type(2) > a:first-child > div:first-child{
   display:none!important;
 }
 
+/* Bangladesh: slightly larger brand treatment. */
+header.fixed[data-country="BD"] > div:nth-of-type(2) > a:first-child > img{
+  width:198px!important;
+  max-width:198px!important;
+  max-height:94px!important;
+}
+
 @media (min-width:1280px){
   header.fixed > div:nth-of-type(2) > a:first-child{
     width:210px!important;
@@ -52,6 +59,12 @@ header.fixed > div:nth-of-type(2) > a:first-child > div:first-child{
   header.fixed > div:nth-of-type(2) > a:first-child > img{
     width:180px!important;
     max-width:180px!important;
+    max-height:94px!important;
+  }
+
+  header.fixed[data-country="BD"] > div:nth-of-type(2) > a:first-child > img{
+    width:198px!important;
+    max-width:198px!important;
     max-height:94px!important;
   }
 }
@@ -69,6 +82,12 @@ header.fixed > div:nth-of-type(2) > a:first-child > div:first-child{
     max-width:165px!important;
     max-height:84px!important;
   }
+
+  header.fixed[data-country="BD"] > div:nth-of-type(2) > a:first-child > img{
+    width:182px!important;
+    max-width:182px!important;
+    max-height:84px!important;
+  }
 }
 
 @media (max-width:767px){
@@ -82,6 +101,12 @@ header.fixed > div:nth-of-type(2) > a:first-child > div:first-child{
   header.fixed > div:nth-of-type(2) > a:first-child > img{
     width:138px!important;
     max-width:138px!important;
+    max-height:70px!important;
+  }
+
+  header.fixed[data-country="BD"] > div:nth-of-type(2) > a:first-child > img{
+    width:142px!important;
+    max-width:142px!important;
     max-height:70px!important;
   }
 }
