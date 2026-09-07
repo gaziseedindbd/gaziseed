@@ -1,0 +1,31 @@
+/* Exact requested GAZI SEED brand hierarchy */
+@media (min-width:768px){
+  header.fixed > div:nth-of-type(2) > a:first-child::after{
+    content:"ভালো বীজ, সবুজ ভবিষ্যৎ"!important;
+    display:block!important;
+    margin-left:49px!important;
+    margin-top:0!important;
+    color:#6c7f76!important;
+    font-family:var(--font-hind),sans-serif!important;
+    font-size:12px!important;
+    font-weight:600!important;
+    line-height:1.2!important;
+    letter-spacing:0!important;
+    white-space:nowrap!important;
+  }
+}
+@media (max-width:767px){
+  header.fixed > div:nth-of-type(2) > a:first-child::after{
+    content:"ভালো বীজ, সবুজ ভবিষ্যৎ"!important;
+    display:block!important;
+    margin-left:43px!important;
+    margin-top:0!important;
+    color:#71817b!important;
+    font-family:var(--font-hind),sans-serif!important;
+    font-size:9px!important;
+    font-weight:600!important;
+    line-height:1.1!important;
+    letter-spacing:0!important;
+    white-space:nowrap!important;
+  }
+}
