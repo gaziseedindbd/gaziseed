@@ -1,4 +1,4 @@
-/* GAZI SEED — final live Admin logo alignment. */
+/* GAZI SEED — final live Admin logo alignment, without tagline. */
 header.fixed > div:nth-of-type(2) > a:first-child::before{
   content:none!important;
   display:none!important;
@@ -12,10 +12,8 @@ header.fixed > div:nth-of-type(2) > a:first-child{
   height:84px!important;
   display:flex!important;
   flex:0 0 190px!important;
-  flex-direction:column!important;
   align-items:center!important;
   justify-content:center!important;
-  gap:2px!important;
   padding:0!important;
   overflow:visible!important;
 }
@@ -33,19 +31,10 @@ header.fixed > div:nth-of-type(2) > a:first-child > img{
   margin:0 auto!important;
 }
 
-/* Keep the Bengali brand line directly under the logo. */
+/* Remove the Bengali tagline completely. */
 header.fixed > div:nth-of-type(2) > a:first-child::after{
-  content:"ভালো বীজ, সবুজ ভবিষ্যৎ"!important;
-  display:block!important;
-  margin:0!important;
-  color:#6c7f76!important;
-  font-family:var(--font-hind),sans-serif!important;
-  font-size:10px!important;
-  font-weight:600!important;
-  line-height:1.05!important;
-  letter-spacing:0!important;
-  white-space:nowrap!important;
-  text-align:center!important;
+  content:none!important;
+  display:none!important;
 }
 
 header.fixed > div:nth-of-type(2) > a:first-child > div:first-child{
@@ -94,10 +83,5 @@ header.fixed > div:nth-of-type(2) > a:first-child > div:first-child{
     width:118px!important;
     max-width:118px!important;
     max-height:58px!important;
-  }
-
-  header.fixed > div:nth-of-type(2) > a:first-child::after{
-    font-size:8px!important;
-    line-height:1!important;
   }
 }
