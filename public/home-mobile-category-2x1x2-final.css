@@ -1,0 +1,75 @@
+/* GAZI SEED — FINAL MOBILE CATEGORY GRID: EXACT 2 / 1 / 2 */
+@media (max-width: 767px) {
+  html body .home-premium-scope .home-category-section .cat-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+  }
+
+  /* Always show the first five category cards on mobile, even if the React
+     item also carries Tailwind's !hidden utility class. */
+  html body .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(1),
+  html body .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2),
+  html body .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(4),
+  html body .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(5) {
+    display: flex !important;
+    grid-column: auto !important;
+    width: 100% !important;
+    justify-self: stretch !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  /* The 3rd card occupies the center position in row 2, with the same
+     width as one normal card — this creates the requested 2 / 1 / 2 layout. */
+  html body .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3) {
+    display: flex !important;
+    grid-column: 1 / -1 !important;
+    width: calc((100% - 10px) / 2) !important;
+    justify-self: center !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  /* Never let a 6th+ category break the mobile 2 / 1 / 2 composition. */
+  html body .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(n+6) {
+    display: none !important;
+  }
+
+  /* Keep the cards compact and consistent. */
+  html body .home-premium-scope .home-category-section .cat-grid .cat-card {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  html body .home-premium-scope .home-category-section .cat-grid .cat-icon-wrap {
+    width: 100% !important;
+    height: clamp(104px, 28vw, 124px) !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+  }
+
+  html body .home-premium-scope .home-category-section .cat-grid .cat-label {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    flex: 0 0 44px !important;
+    overflow: hidden !important;
+  }
+}
+
+@media (max-width: 420px) {
+  html body .home-premium-scope .home-category-section .cat-grid {
+    gap: 8px !important;
+  }
+
+  html body .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3) {
+    width: calc((100% - 8px) / 2) !important;
+  }
+
+  html body .home-premium-scope .home-category-section .cat-grid .cat-icon-wrap {
+    height: 112px !important;
+  }
+}
