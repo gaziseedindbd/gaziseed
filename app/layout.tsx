@@ -76,6 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href="/home-category-atelier-v12.css?v=12" />
         <link rel="stylesheet" href="/home-category-atelier-v13.css?v=13" />
         <link rel="stylesheet" href="/home-category-design2-final.css?v=2" />
+        <link rel="stylesheet" href="/home-mobile-category-grid-fix-v1.css?v=1" />
         <link rel="stylesheet" href="/header-topbar-premium-v1.css?v=1" />
         <link rel="stylesheet" href="/header-brand-bengali-v2.css?v=2" />
         <link rel="stylesheet" href="/header-dynamic-logo-v1.css?v=1" />
