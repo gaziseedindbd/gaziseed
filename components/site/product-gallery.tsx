@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Images, ZoomIn } from 'lucide-react';
 
 interface ProductGalleryProps {
   images: string[];
@@ -21,14 +21,17 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
   const hasMultiple = images.length > 1;
 
   const goTo = useCallback((idx: number) => {
+    if (!images.length) return;
     setActiveIdx(((idx % images.length) + images.length) % images.length);
   }, [images.length]);
 
   const next = useCallback(() => {
+    if (!images.length) return;
     setActiveIdx((prev) => (prev + 1) % images.length);
   }, [images.length]);
 
   const prev = useCallback(() => {
+    if (!images.length) return;
     setActiveIdx((prev) => (prev - 1 + images.length) % images.length);
   }, [images.length]);
 
@@ -38,21 +41,16 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
     resumeTimer.current = setTimeout(() => setIsPaused(false), RESUME_DELAY);
   }, []);
 
-  // Auto-slide every 4 seconds, pause on interaction
   useEffect(() => {
     if (!hasMultiple || isPaused) return;
     const interval = setInterval(next, AUTO_SLIDE_INTERVAL);
     return () => clearInterval(interval);
   }, [hasMultiple, isPaused, next]);
 
-  // Cleanup resume timer
-  useEffect(() => {
-    return () => {
-      if (resumeTimer.current) clearTimeout(resumeTimer.current);
-    };
+  useEffect(() => () => {
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
   }, []);
 
-  // Reset to first image when images change
   useEffect(() => {
     setActiveIdx(0);
   }, [images]);
@@ -74,8 +72,8 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
 
   if (images.length === 0) {
     return (
-      <div>
-        <div className="relative aspect-square overflow-hidden rounded-2xl border border-border bg-secondary/30">
+      <div className="product-gallery-premium">
+        <div className="relative aspect-square overflow-hidden rounded-[1.5rem] border border-primary/10 bg-gradient-to-br from-primary/5 via-white to-accent/10 shadow-inner">
           <div className="flex h-full w-full items-center justify-center text-6xl">🌱</div>
         </div>
       </div>
@@ -83,10 +81,9 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
   }
 
   return (
-    <div>
-      {/* Main image */}
+    <div className="product-gallery-premium">
       <div
-        className="group relative aspect-square overflow-hidden rounded-2xl border border-border bg-secondary/30"
+        className="group relative aspect-square overflow-hidden rounded-[1.5rem] border border-primary/10 bg-gradient-to-br from-primary/[0.035] via-white to-accent/[0.07] shadow-[0_18px_45px_-30px_rgba(15,23,42,.45)] sm:rounded-[1.75rem]"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => {
           if (resumeTimer.current) clearTimeout(resumeTimer.current);
@@ -95,35 +92,41 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(16,185,129,.12),transparent_30%),radial-gradient(circle_at_90%_85%,rgba(245,158,11,.10),transparent_32%)]" />
         {images[activeIdx] && (
           <img
             key={activeIdx}
             src={images[activeIdx]}
             alt={alt}
-            className="h-full w-full object-contain animate-[fadeIn_0.4s_ease-out]"
+            className="relative h-full w-full object-contain p-3 sm:p-5 animate-[fadeIn_0.4s_ease-out] transition-transform duration-700 ease-out group-hover:scale-[1.015]"
             draggable={false}
           />
         )}
 
         {discount > 0 && (
-          <span className="absolute left-3 top-3 rounded-full bg-destructive px-3 py-1 text-sm font-bold text-destructive-foreground">
+          <span className="absolute left-3 top-3 rounded-xl bg-slate-950 px-3 py-1.5 text-xs font-black text-white shadow-lg sm:left-4 sm:top-4 sm:px-3.5 sm:py-2 sm:text-sm">
             -{discount}%
           </span>
         )}
 
-        {/* Arrow controls — only for multiple images */}
+        {hasMultiple && (
+          <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-xl border border-white/80 bg-white/85 px-2.5 py-1.5 text-[10px] font-bold text-slate-700 shadow-md backdrop-blur-md sm:right-4 sm:top-4">
+            <Images className="h-3.5 w-3.5 text-primary" /> {images.length}
+          </span>
+        )}
+
         {hasMultiple && (
           <>
             <button
               onClick={() => { prev(); pauseAndResume(); }}
-              className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-gray-700 shadow-md backdrop-blur-sm transition-all hover:bg-white hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/40 md:opacity-0 md:group-hover:opacity-100"
+              className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/90 text-slate-700 shadow-lg backdrop-blur-md transition-all hover:scale-105 hover:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 md:opacity-0 md:group-hover:opacity-100"
               aria-label="Previous image"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
             <button
               onClick={() => { next(); pauseAndResume(); }}
-              className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-gray-700 shadow-md backdrop-blur-sm transition-all hover:bg-white hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/40 md:opacity-0 md:group-hover:opacity-100"
+              className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/90 text-slate-700 shadow-lg backdrop-blur-md transition-all hover:scale-105 hover:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 md:opacity-0 md:group-hover:opacity-100"
               aria-label="Next image"
             >
               <ChevronRight className="h-5 w-5" />
@@ -131,37 +134,33 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
           </>
         )}
 
-        {/* Dot indicators */}
-        {hasMultiple && (
-          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
-            {images.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => { goTo(idx); pauseAndResume(); }}
-                className={`h-2 rounded-full transition-all ${
-                  idx === activeIdx ? 'w-6 bg-primary' : 'w-2 bg-gray-300 hover:bg-gray-400'
-                }`}
-                aria-label={`Go to image ${idx + 1}`}
-              />
-            ))}
-          </div>
-        )}
+        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5 rounded-full border border-white/70 bg-white/75 px-2 py-1.5 shadow-md backdrop-blur-md">
+          {images.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => { goTo(idx); pauseAndResume(); }}
+              className={`h-1.5 rounded-full transition-all ${idx === activeIdx ? 'w-6 bg-primary' : 'w-1.5 bg-slate-300 hover:bg-slate-400'}`}
+              aria-label={`Go to image ${idx + 1}`}
+            />
+          ))}
+        </div>
+
+        <span className="pointer-events-none absolute bottom-3 left-3 hidden items-center gap-1.5 rounded-xl border border-white/70 bg-white/75 px-2.5 py-1.5 text-[10px] font-semibold text-slate-600 shadow-md backdrop-blur-md sm:flex">
+          <ZoomIn className="h-3.5 w-3.5 text-primary" /> {alt}
+        </span>
       </div>
 
-      {/* Thumbnails — only for multiple images */}
       {hasMultiple && (
-        <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar pb-1">
+        <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar px-0.5 pb-1 sm:mt-4 sm:gap-2.5">
           {images.map((img, idx) => (
             <button
               key={idx}
               onClick={() => { goTo(idx); pauseAndResume(); }}
-              className={`h-20 w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
-                idx === activeIdx
-                  ? 'border-primary ring-2 ring-primary/20'
-                  : 'border-border hover:border-primary/40'
-              }`}
+              className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 bg-white shadow-sm transition-all sm:h-[4.5rem] sm:w-[4.5rem] sm:rounded-2xl ${idx === activeIdx ? 'border-primary ring-4 ring-primary/10 -translate-y-0.5' : 'border-slate-200 hover:border-primary/40 hover:-translate-y-0.5'}`}
+              aria-label={`Select image ${idx + 1}`}
             >
               <img src={img} alt="" className="h-full w-full object-cover" draggable={false} />
+              {idx === activeIdx && <span className="absolute inset-x-1 bottom-1 h-0.5 rounded-full bg-primary" />}
             </button>
           ))}
         </div>
