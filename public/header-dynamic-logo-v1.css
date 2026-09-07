@@ -1,4 +1,4 @@
-/* GAZI SEED — final live Admin logo alignment, without tagline. */
+/* GAZI SEED — live Admin logo fitted to the single-row navigation header. */
 header.fixed > div:nth-of-type(2) > a:first-child::before{
   content:none!important;
   display:none!important;
@@ -7,11 +7,11 @@ header.fixed > div:nth-of-type(2) > a:first-child::before{
 
 header.fixed > div:nth-of-type(2) > a:first-child{
   position:relative!important;
-  width:190px!important;
-  min-width:190px!important;
-  height:84px!important;
+  width:200px!important;
+  min-width:200px!important;
+  height:86px!important;
   display:flex!important;
-  flex:0 0 190px!important;
+  flex:0 0 200px!important;
   align-items:center!important;
   justify-content:center!important;
   padding:0!important;
@@ -20,10 +20,10 @@ header.fixed > div:nth-of-type(2) > a:first-child{
 
 header.fixed > div:nth-of-type(2) > a:first-child > img{
   display:block!important;
-  width:145px!important;
+  width:162px!important;
   height:auto!important;
-  max-width:145px!important;
-  max-height:64px!important;
+  max-width:162px!important;
+  max-height:84px!important;
   min-width:0!important;
   object-fit:contain!important;
   object-position:center!important;
@@ -31,7 +31,7 @@ header.fixed > div:nth-of-type(2) > a:first-child > img{
   margin:0 auto!important;
 }
 
-/* Remove the Bengali tagline completely. */
+/* No extra Bengali tagline under the logo. */
 header.fixed > div:nth-of-type(2) > a:first-child::after{
   content:none!important;
   display:none!important;
@@ -43,31 +43,31 @@ header.fixed > div:nth-of-type(2) > a:first-child > div:first-child{
 
 @media (min-width:1280px){
   header.fixed > div:nth-of-type(2) > a:first-child{
-    width:190px!important;
-    min-width:190px!important;
-    flex-basis:190px!important;
-    height:84px!important;
+    width:200px!important;
+    min-width:200px!important;
+    flex-basis:200px!important;
+    height:86px!important;
   }
 
   header.fixed > div:nth-of-type(2) > a:first-child > img{
-    width:145px!important;
-    max-width:145px!important;
-    max-height:64px!important;
+    width:162px!important;
+    max-width:162px!important;
+    max-height:84px!important;
   }
 }
 
 @media (max-width:1279px) and (min-width:768px){
   header.fixed > div:nth-of-type(2) > a:first-child{
-    width:175px!important;
-    min-width:175px!important;
-    flex-basis:175px!important;
-    height:76px!important;
+    width:180px!important;
+    min-width:180px!important;
+    flex-basis:180px!important;
+    height:80px!important;
   }
 
   header.fixed > div:nth-of-type(2) > a:first-child > img{
-    width:135px!important;
-    max-width:135px!important;
-    max-height:59px!important;
+    width:150px!important;
+    max-width:150px!important;
+    max-height:78px!important;
   }
 }
 
@@ -80,8 +80,8 @@ header.fixed > div:nth-of-type(2) > a:first-child > div:first-child{
   }
 
   header.fixed > div:nth-of-type(2) > a:first-child > img{
-    width:118px!important;
-    max-width:118px!important;
-    max-height:58px!important;
+    width:130px!important;
+    max-width:130px!important;
+    max-height:68px!important;
   }
 }
