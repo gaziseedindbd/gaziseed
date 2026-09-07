@@ -73,7 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href="/home-category-final-v6.css?v=6" />
         <link rel="stylesheet" href="/home-category-final-v7.css?v=7" />
         <link rel="stylesheet" href="/home-category-master-v10.css?v=10" />
-        <link rel="stylesheet" href="/home-category-master-v11.css?v=11" />
+        <link rel="stylesheet" href="/home-category-atelier-v12.css?v=12" />
         <script dangerouslySetInnerHTML={{ __html: `(function(){window.__GAZI_COUNTRY__='${visitorCountry}';})();` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{const theme=localStorage.getItem('admin_theme');if(theme==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}})()` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})}})()` }} />
