@@ -1,4 +1,4 @@
-/* GAZI SEED — premium top bar + brand lockup polish */
+/* GAZI SEED — top green bar: exact brand hierarchy requested */
 
 header.fixed .top-green-bar{
   background:
@@ -10,7 +10,7 @@ header.fixed .top-green-bar{
 }
 
 header.fixed .top-green-bar > div{
-  min-height:42px!important;
+  min-height:48px!important;
   padding-top:6px!important;
   padding-bottom:6px!important;
 }
@@ -18,19 +18,46 @@ header.fixed .top-green-bar > div{
 header.fixed .top-green-bar > div > div:first-child{
   gap:10px!important;
   min-width:0!important;
+  align-items:center!important;
 }
 
+/* This is the exact left-side element from SiteHeader: show GAZI SEED first, Bengali slogan below. */
 header.fixed .top-green-bar > div > div:first-child > span:last-child{
+  position:relative!important;
   display:block!important;
-  max-width:min(52vw,620px)!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
-  white-space:nowrap!important;
-  color:#fffdf3!important;
-  font-size:12px!important;
-  font-weight:800!important;
-  letter-spacing:.01em!important;
-  text-shadow:0 1px 10px rgba(0,0,0,.12)!important;
+  width:auto!important;
+  max-width:min(54vw,620px)!important;
+  min-width:170px!important;
+  height:34px!important;
+  overflow:visible!important;
+  white-space:normal!important;
+  font-size:0!important;
+  line-height:1!important;
+  color:transparent!important;
+}
+
+header.fixed .top-green-bar > div > div:first-child > span:last-child::before{
+  content:"GAZI SEED"!important;
+  display:block!important;
+  color:#ffffff!important;
+  font-size:15px!important;
+  font-weight:900!important;
+  line-height:1.05!important;
+  letter-spacing:.035em!important;
+  text-shadow:0 1px 12px rgba(0,0,0,.16)!important;
+}
+
+header.fixed .top-green-bar > div > div:first-child > span:last-child::after{
+  content:"ভালো বীজ, সবুজ ভবিষ্যৎ"!important;
+  display:block!important;
+  margin-top:4px!important;
+  color:rgba(255,255,255,.88)!important;
+  font-family:var(--font-hind),sans-serif!important;
+  font-size:11px!important;
+  font-weight:600!important;
+  line-height:1.05!important;
+  letter-spacing:0!important;
+  text-shadow:0 1px 8px rgba(0,0,0,.12)!important;
 }
 
 header.fixed .top-green-bar > div > div:first-child svg,
@@ -44,30 +71,10 @@ header.fixed .top-green-bar [class*="country"]{
   filter:drop-shadow(0 6px 14px rgba(0,0,0,.13));
 }
 
-/* Brand lockup: keep logo intact and add a refined tagline beneath it. */
+/* Keep the main header logo/tagline styling independent from the top bar. */
 @media (min-width:768px){
-  header.fixed > div:nth-of-type(2) > a:first-child{
-    position:relative!important;
-    display:grid!important;
-    grid-template-columns:auto 1fr!important;
-    grid-template-rows:auto auto!important;
-    column-gap:10px!important;
-    row-gap:1px!important;
-    align-items:center!important;
-    padding:2px 12px 3px 4px!important;
-    min-width:205px!important;
-    border-radius:18px!important;
-  }
-  header.fixed > div:nth-of-type(2) > a:first-child > img,
-  header.fixed > div:nth-of-type(2) > a:first-child > div:first-child{
-    grid-column:1 / -1!important;
-    grid-row:1!important;
-    justify-self:start!important;
-  }
   header.fixed > div:nth-of-type(2) > a:first-child::after{
     content:"BETTER SEEDS  ·  BETTER FUTURE"!important;
-    grid-column:1 / -1!important;
-    grid-row:2!important;
     display:block!important;
     margin-left:49px!important;
     color:#7b8b84!important;
@@ -75,33 +82,24 @@ header.fixed .top-green-bar [class*="country"]{
     letter-spacing:.16em!important;
     white-space:nowrap!important;
   }
-  header.fixed > div:nth-of-type(2) > a:first-child:hover::after{
-    color:#0b7550!important;
-  }
 }
 
 @media (max-width:767px){
   header.fixed .top-green-bar > div{
-    min-height:38px!important;
+    min-height:44px!important;
     padding-top:5px!important;
     padding-bottom:5px!important;
   }
   header.fixed .top-green-bar > div > div:first-child > span:last-child{
-    max-width:42vw!important;
-    font-size:10px!important;
+    min-width:145px!important;
+    max-width:48vw!important;
+    height:31px!important;
   }
-  header.fixed > div:nth-of-type(2) > a:first-child{
-    position:relative!important;
-    padding:2px 4px 3px!important;
+  header.fixed .top-green-bar > div > div:first-child > span:last-child::before{
+    font-size:12px!important;
   }
-  header.fixed > div:nth-of-type(2) > a:first-child::after{
-    content:"BETTER SEEDS  ·  BETTER FUTURE"!important;
-    display:block!important;
-    margin-top:-1px!important;
-    margin-left:44px!important;
-    color:#7a8781!important;
-    font:700 6.5px/1 Arial,sans-serif!important;
-    letter-spacing:.12em!important;
-    white-space:nowrap!important;
+  header.fixed .top-green-bar > div > div:first-child > span:last-child::after{
+    margin-top:3px!important;
+    font-size:8px!important;
   }
 }
