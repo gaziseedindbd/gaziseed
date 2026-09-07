@@ -53,13 +53,12 @@
   .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(4) .cat-label::before{content:""!important;position:absolute!important;left:8px!important;top:50%!important;width:3px!important;height:24px!important;transform:translateY(-50%)!important;border-radius:99px!important;background:linear-gradient(180deg,#8bd21d,#18a65f)!important}
   .home-premium-scope .home-category-section .cat-grid .cat-label::after{content:none!important}
 
-  /* MOBILE HOME CATEGORY — EXACT 2 / 1 / 2 ARRANGEMENT */
-  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3){
-    grid-column:1 / -1!important;
-    width:calc((100% - 10px)/2)!important;
-    justify-self:center!important;
-  }
-  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(5){display:flex!important}
+  /* EXACT MOBILE 2 / 1 / 2 */
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(1),
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2),
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(4),
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(5){display:flex!important;grid-column:auto!important;width:100%!important;justify-self:stretch!important}
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3){display:flex!important;grid-column:1 / -1!important;width:calc((100% - 10px)/2)!important;justify-self:center!important}
   .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(n+6){display:none!important}
 }
 @media(max-width:420px){
@@ -71,16 +70,20 @@
 }
 @media(prefers-reduced-motion:reduce){.home-premium-scope .cat-card,.home-premium-scope .view-all-link{transition:none!important}}
 
-/* FINAL MOBILE 2-1-2 ENFORCEMENT */
+/* MOBILE HEIGHT OPTIMIZATION — keeps all 5 cards compact without changing desktop */
 @media(max-width:767px){
-  .home-premium-scope .home-category-section .cat-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-flow:row!important;align-items:stretch!important}
-  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(1),
-  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2),
-  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(4),
-  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(5){display:flex!important;grid-column:auto!important;width:100%!important;justify-self:stretch!important}
-  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3){display:flex!important;grid-column:1 / -1!important;width:calc((100% - 10px)/2)!important;justify-self:center!important}
-  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(n+6){display:none!important}
+  .home-premium-scope .home-category-section .cat-grid .cat-icon-wrap,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2) .cat-icon-wrap,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3) .cat-icon-wrap,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(4) .cat-icon-wrap{height:clamp(104px,28vw,124px)!important;aspect-ratio:auto!important}
+  .home-premium-scope .home-category-section .cat-grid .cat-label,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2) .cat-label,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3) .cat-label,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(4) .cat-label{height:44px!important;min-height:44px!important;max-height:44px!important;flex-basis:44px!important}
 }
 @media(max-width:420px){
-  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3){width:calc((100% - 8px)/2)!important}
+  .home-premium-scope .home-category-section .cat-grid .cat-icon-wrap,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2) .cat-icon-wrap,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3) .cat-icon-wrap,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(4) .cat-icon-wrap{height:112px!important}
 }
