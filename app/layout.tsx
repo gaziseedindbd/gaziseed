@@ -20,7 +20,7 @@ import { MarketingTracker } from '@/components/site/marketing-tracker';
 import { FeatureProvider } from '@/components/site/feature-provider';
 import { ReferralTracker } from '@/components/site/referral-tracker';
 import HomeFloatingReviews from '@/components/site/home-floating-reviews';
-import BrandNormalizer from '@/components/site/brand-normalizer';
+import { BrandNormalizer } from '@/components/site/brand-normalizer';
 import PageShare from '@/components/site/page-share';
 
 const hind = Hind({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'], variable: '--font-hind', display: 'swap' });
@@ -77,6 +77,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href="/home-category-atelier-v13.css?v=13" />
         <link rel="stylesheet" href="/home-category-design2-final.css?v=2" />
         <link rel="stylesheet" href="/header-topbar-premium-v1.css?v=1" />
+        <link rel="stylesheet" href="/header-brand-bengali-v2.css?v=2" />
         <script dangerouslySetInnerHTML={{ __html: `(function(){window.__GAZI_COUNTRY__='${visitorCountry}';})();` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{const theme=localStorage.getItem('admin_theme');if(theme==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')} }catch(e){}})()` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})}})()` }} />
