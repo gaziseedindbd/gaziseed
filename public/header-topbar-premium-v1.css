@@ -1,0 +1,107 @@
+/* GAZI SEED — premium top bar + brand lockup polish */
+
+header.fixed .top-green-bar{
+  background:
+    radial-gradient(circle at 14% 50%,rgba(214,180,74,.13),transparent 24%),
+    radial-gradient(circle at 82% 15%,rgba(255,255,255,.08),transparent 26%),
+    linear-gradient(100deg,#04542f 0%,#087542 48%,#05663a 100%)!important;
+  border-bottom:1px solid rgba(255,255,255,.12)!important;
+  box-shadow:inset 0 -1px 0 rgba(0,0,0,.08),0 3px 14px -12px rgba(2,53,31,.45)!important;
+}
+
+header.fixed .top-green-bar > div{
+  min-height:42px!important;
+  padding-top:6px!important;
+  padding-bottom:6px!important;
+}
+
+header.fixed .top-green-bar > div > div:first-child{
+  gap:10px!important;
+  min-width:0!important;
+}
+
+header.fixed .top-green-bar > div > div:first-child > span:last-child{
+  display:block!important;
+  max-width:min(52vw,620px)!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  color:#fffdf3!important;
+  font-size:12px!important;
+  font-weight:800!important;
+  letter-spacing:.01em!important;
+  text-shadow:0 1px 10px rgba(0,0,0,.12)!important;
+}
+
+header.fixed .top-green-bar > div > div:first-child svg,
+header.fixed .top-green-bar > div > div:first-child .lucide{
+  color:#d9ef7a!important;
+  filter:drop-shadow(0 2px 8px rgba(0,0,0,.12))!important;
+}
+
+header.fixed .top-green-bar .CountrySelector,
+header.fixed .top-green-bar [class*="country"]{
+  filter:drop-shadow(0 6px 14px rgba(0,0,0,.13));
+}
+
+/* Brand lockup: keep logo intact and add a refined tagline beneath it. */
+@media (min-width:768px){
+  header.fixed > div:nth-of-type(2) > a:first-child{
+    position:relative!important;
+    display:grid!important;
+    grid-template-columns:auto 1fr!important;
+    grid-template-rows:auto auto!important;
+    column-gap:10px!important;
+    row-gap:1px!important;
+    align-items:center!important;
+    padding:2px 12px 3px 4px!important;
+    min-width:205px!important;
+    border-radius:18px!important;
+  }
+  header.fixed > div:nth-of-type(2) > a:first-child > img,
+  header.fixed > div:nth-of-type(2) > a:first-child > div:first-child{
+    grid-column:1 / -1!important;
+    grid-row:1!important;
+    justify-self:start!important;
+  }
+  header.fixed > div:nth-of-type(2) > a:first-child::after{
+    content:"BETTER SEEDS  ·  BETTER FUTURE"!important;
+    grid-column:1 / -1!important;
+    grid-row:2!important;
+    display:block!important;
+    margin-left:49px!important;
+    color:#7b8b84!important;
+    font:700 8px/1.1 Arial,sans-serif!important;
+    letter-spacing:.16em!important;
+    white-space:nowrap!important;
+  }
+  header.fixed > div:nth-of-type(2) > a:first-child:hover::after{
+    color:#0b7550!important;
+  }
+}
+
+@media (max-width:767px){
+  header.fixed .top-green-bar > div{
+    min-height:38px!important;
+    padding-top:5px!important;
+    padding-bottom:5px!important;
+  }
+  header.fixed .top-green-bar > div > div:first-child > span:last-child{
+    max-width:42vw!important;
+    font-size:10px!important;
+  }
+  header.fixed > div:nth-of-type(2) > a:first-child{
+    position:relative!important;
+    padding:2px 4px 3px!important;
+  }
+  header.fixed > div:nth-of-type(2) > a:first-child::after{
+    content:"BETTER SEEDS  ·  BETTER FUTURE"!important;
+    display:block!important;
+    margin-top:-1px!important;
+    margin-left:44px!important;
+    color:#7a8781!important;
+    font:700 6.5px/1 Arial,sans-serif!important;
+    letter-spacing:.12em!important;
+    white-space:nowrap!important;
+  }
+}
