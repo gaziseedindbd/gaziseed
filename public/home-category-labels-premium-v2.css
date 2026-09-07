@@ -52,11 +52,21 @@
   .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3) .cat-label::before,
   .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(4) .cat-label::before{content:""!important;position:absolute!important;left:8px!important;top:50%!important;width:3px!important;height:24px!important;transform:translateY(-50%)!important;border-radius:99px!important;background:linear-gradient(180deg,#8bd21d,#18a65f)!important}
   .home-premium-scope .home-category-section .cat-grid .cat-label::after{content:none!important}
+
+  /* MOBILE HOME CATEGORY — EXACT 2 / 1 / 2 ARRANGEMENT */
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3){
+    grid-column:1 / -1!important;
+    width:calc((100% - 10px)/2)!important;
+    justify-self:center!important;
+  }
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(5){display:flex!important}
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(n+6){display:none!important}
 }
 @media(max-width:420px){
   .home-premium-scope .home-category-section .cat-grid{gap:8px!important}
   .home-premium-scope .home-category-section .cat-grid .cat-card{border-radius:14px!important}
   .home-premium-scope .home-category-section .cat-grid .cat-icon-wrap{aspect-ratio:1.34/1!important}
   .home-premium-scope .home-category-section .cat-grid .cat-label,.home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2) .cat-label,.home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3) .cat-label,.home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(4) .cat-label{height:47px!important;min-height:47px!important;max-height:47px!important;font-size:12.5px!important;padding-right:32px!important}
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3){width:calc((100% - 8px)/2)!important}
 }
 @media(prefers-reduced-motion:reduce){.home-premium-scope .cat-card,.home-premium-scope .view-all-link{transition:none!important}}
