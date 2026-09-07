@@ -5,13 +5,44 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, ArrowRight, PackageCheck, ShieldCheck } from 'lucide-react';
 
+function OrderJourney({ current }: { current: 'cart' | 'checkout' | 'confirmation' | 'tracking' }) {
+  const steps = [
+    ['cart', 'কার্ট'],
+    ['checkout', 'চেকআউট'],
+    ['confirmation', 'কনফার্মেশন'],
+    ['tracking', 'ট্র্যাকিং'],
+  ] as const;
+
+  return (
+    <div className="mx-auto mb-7 grid max-w-2xl grid-cols-4 gap-2 sm:gap-3" aria-label="Order journey">
+      {steps.map(([key, label], index) => {
+        const currentIndex = steps.findIndex(([value]) => value === current);
+        const active = index <= currentIndex;
+        return (
+          <div key={key} className="flex items-center gap-2">
+            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black ${active ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-secondary text-muted-foreground'}`}>
+              {index + 1}
+            </div>
+            <div className={`hidden text-left text-[11px] font-bold sm:block ${active ? 'text-foreground' : 'text-muted-foreground'}`}>{label}</div>
+            {index < steps.length - 1 && <div className={`hidden h-px flex-1 sm:block ${index < currentIndex ? 'bg-primary/50' : 'bg-border'}`} />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function OrderSuccessInner() {
   const searchParams = useSearchParams();
   const orderNumber = searchParams.get('number');
 
   return (
-    <main className="min-h-[70vh] bg-gradient-to-b from-primary/[0.04] via-background to-background px-4 py-10 sm:py-16">
+    <main className="min-h-[70vh] bg-gradient-to-b from-primary/[0.04] via-background to-background px-4 py-8 sm:py-12">
       <div className="mx-auto max-w-3xl">
+        <div className="mb-2 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary sm:text-xs">
+          <span>GAZI SEED</span><span className="h-1 w-1 rounded-full bg-primary/50" /><span>Order Journey</span>
+        </div>
+        <OrderJourney current="confirmation" />
         <div className="overflow-hidden rounded-[2rem] border border-primary/10 bg-card shadow-[0_24px_70px_-30px_hsl(var(--primary)/0.35)]">
           <div className="relative px-5 pb-8 pt-10 text-center sm:px-10 sm:pb-10 sm:pt-14">
             <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
@@ -50,10 +81,10 @@ function OrderSuccessInner() {
             </div>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Link href="/track-order" className="btn-primary inline-flex min-h-12 items-center justify-center gap-2 px-6 text-sm font-semibold">
+              <Link href="/track-order" className="btn-primary inline-flex min-h-12 items-center justify-center gap-2 px-6 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2">
                 অর্ডার ট্র্যাক করুন <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link href="/all-products" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-background px-6 text-sm font-semibold text-foreground transition hover:border-primary/30 hover:bg-primary/[0.04]">
+              <Link href="/all-products" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-background px-6 text-sm font-semibold text-foreground transition hover:border-primary/30 hover:bg-primary/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2">
                 আরও শপিং করুন
               </Link>
             </div>
