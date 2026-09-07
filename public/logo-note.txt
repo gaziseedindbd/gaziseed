@@ -1,0 +1,1 @@
+This asset uses the stable vector website logo for the GAZI SEED header. The original uploaded artwork is preserved in conversation context; the website fallback is intentionally vector-based for reliable rendering.
