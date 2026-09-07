@@ -20,7 +20,7 @@ import { MarketingTracker } from '@/components/site/marketing-tracker';
 import { FeatureProvider } from '@/components/site/feature-provider';
 import { ReferralTracker } from '@/components/site/referral-tracker';
 import HomeFloatingReviews from '@/components/site/home-floating-reviews';
-import { BrandNormalizer } from '@/components/site/brand-normalizer';
+import BrandNormalizer from '@/components/site/brand-normalizer';
 import PageShare from '@/components/site/page-share';
 
 const hind = Hind({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'], variable: '--font-hind', display: 'swap' });
