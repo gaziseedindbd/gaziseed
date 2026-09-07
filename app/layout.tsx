@@ -62,26 +62,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="shortcut icon" href={FAVICON_URL} type="image/svg+xml" />
         <meta name="theme-color" content="#047857" />
         <link rel="apple-touch-icon" href={FAVICON_URL} />
-        <link rel="stylesheet" href="/home-premium-v3.css" />
-        <link rel="stylesheet" href="/home-banner-overlay.css" />
-        <link rel="stylesheet" href="/product-detail-premium.css" />
-        <link rel="stylesheet" href="/home-category-cards-fix.css" />
-        <link rel="stylesheet" href="/home-category-labels-premium.css" />
-        <link rel="stylesheet" href="/home-banner-final-fix.css" />
-        <link rel="stylesheet" href="/header-polish.css" />
-        <link rel="stylesheet" href="/home-mobile-category-premium.css" />
-        <link rel="stylesheet" href="/home-category-final-v6.css?v=6" />
-        <link rel="stylesheet" href="/home-category-final-v7.css?v=7" />
-        <link rel="stylesheet" href="/home-category-master-v10.css?v=10" />
-        <link rel="stylesheet" href="/home-category-atelier-v12.css?v=12" />
-        <link rel="stylesheet" href="/home-category-atelier-v13.css?v=13" />
-        <link rel="stylesheet" href="/home-category-design2-final.css?v=2" />
-        <link rel="stylesheet" href="/home-mobile-category-grid-fix-v1.css?v=1" />
-        <link rel="stylesheet" href="/header-topbar-premium-v1.css?v=1" />
-        <link rel="stylesheet" href="/header-brand-bengali-v2.css?v=2" />
-        <link rel="stylesheet" href="/header-dynamic-logo-v1.css?v=1" />
-        <link rel="stylesheet" href="/home-mobile-category-sample-v1.css?v=1" />
-        <link rel="stylesheet" href="/home-mobile-category-2x1x2-final.css?v=1" />
         <script dangerouslySetInnerHTML={{ __html: `(function(){window.__GAZI_COUNTRY__='${visitorCountry}';})();` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{const theme=localStorage.getItem('admin_theme');if(theme==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')} }catch(e){}})()` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})}})()` }} />
