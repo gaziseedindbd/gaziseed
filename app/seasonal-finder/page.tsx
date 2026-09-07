@@ -43,6 +43,7 @@ export default function SeasonalFinderPage() {
   const [results, setResults] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const { ready, enabled } = useFeatureFlags();
 
   const selectedGrowingType = growingTypes.find((type) => type.value === growingType);
@@ -72,7 +73,7 @@ export default function SeasonalFinderPage() {
     return () => {
       cancelled = true;
     };
-  }, [month, growingType, ready, enabled]);
+  }, [month, growingType, ready, enabled, retryKey]);
 
   if (!ready) return null;
 
@@ -274,7 +275,7 @@ export default function SeasonalFinderPage() {
               </p>
               <button
                 type="button"
-                onClick={() => setMonth((value) => value)}
+                onClick={() => setRetryKey((value) => value + 1)}
                 className="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-black text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2"
               >
                 আবার চেষ্টা করুন
