@@ -20,9 +20,19 @@ export default function AdminSettingsPage() {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const watermarkInputRef = useRef<HTMLInputElement>(null);
 
+  const getSelectedBranch = (): 'BD' | 'IN' => {
+    if (typeof window === 'undefined') return 'BD';
+    try {
+      return localStorage.getItem('gazi_admin_branch') === 'IN' ? 'IN' : 'BD';
+    } catch {
+      return 'BD';
+    }
+  };
+
   useEffect(() => {
+    const branch = getSelectedBranch();
     Promise.all([
-      supabase.from('site_settings').select('*').eq('id', 1).maybeSingle(),
+      supabase.from('site_settings').select('*').eq('country_code', branch).maybeSingle(),
       supabase.from('marketing_settings').select('*').eq('id', 1).maybeSingle(),
       supabase.from('ai_settings').select('*').eq('id', 1).maybeSingle(),
       supabase.from('referral_settings').select('*').eq('id', 1).maybeSingle(),
@@ -68,10 +78,12 @@ export default function AdminSettingsPage() {
 
   const saveSite = async () => {
     setSaving(true);
+    const branch = getSelectedBranch();
     const { error } = await supabase.from('site_settings').update({
       ...siteForm,
+      country_code: branch,
       watermark_logo_url: siteForm.watermark_logo_url || null,
-    }).eq('id', 1);
+    }).eq('country_code', branch);
     setSaving(false);
     if (error) { toast('সেভ ব্যর্থ', 'error'); return; }
     toast('সেটিংস সেভ হয়েছে');
