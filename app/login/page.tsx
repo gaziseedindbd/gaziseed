@@ -1,107 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, KeyRound, X } from 'lucide-react';
+import { Loader2, KeyRound, X, Sprout, ShieldCheck } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
-  const [showForgot, setShowForgot] = useState(false);
-  const [contactInfo, setContactInfo] = useState<{ phone: string; whatsapp: string; email: string } | null>(null);
-
-  useEffect(() => {
-    supabase.from('site_settings').select('phone, whatsapp, email').eq('id', 1).maybeSingle().then(({ data }) => {
-      if (data) setContactInfo({ phone: data.phone, whatsapp: data.whatsapp, email: data.email });
-    });
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    if (!form.email || !form.password) { setError('ইমেইল ও পাসওয়ার্ড দিন'); return; }
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: form.email,
-        password: form.password,
-      });
-      if (error) throw error;
-
-      toast('লগইন সফল হয়েছে');
-      router.push('/account');
-    } catch (err: any) {
-      setError(err.message || 'লগইন ব্যর্থ হয়েছে');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="container-custom py-12">
-      <div className="mx-auto max-w-md">
-        <h1 className="mb-6 text-center text-2xl font-bold">লগইন</h1>
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-border bg-card p-6">
-          <div>
-            <label className="mb-1 block text-sm font-medium">ইমেইল</label>
-            <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input-bangla" required />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">পাসওয়ার্ড</label>
-            <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input-bangla" required />
-          </div>
-          {error && <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
-          <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'লগইন করুন'}
-          </button>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">অ্যাকাউন্ট নেই? <Link href="/register" className="font-medium text-primary hover:underline">নতুন অ্যাকাউন্ট তৈরি করুন</Link></span>
-            <button type="button" onClick={() => setShowForgot(true)} className="flex items-center gap-1 font-medium text-primary hover:underline">
-              <KeyRound className="h-3.5 w-3.5" /> পাসওয়ার্ড ভুলে গেছেন?
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {showForgot && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowForgot(false)} />
-          <div className="relative z-10 w-full max-w-md rounded-2xl bg-background p-6 shadow-xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-lg font-bold"><KeyRound className="h-5 w-5" /> পাসওয়ার্ড ভুলে গেছেন?</h3>
-              <button onClick={() => setShowForgot(false)}><X className="h-5 w-5" /></button>
-            </div>
-            <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
-              <p>পাসওয়ার্ড ভুলে গেলে Customer Care-এর সাথে যোগাযোগ করুন।</p>
-              <p>Temporary Password-এর জন্য আমাদের Customer Care-এ যোগাযোগ করুন:</p>
-              {contactInfo && (
-                <div className="rounded-xl border border-border bg-card p-4 space-y-1.5">
-                  {contactInfo.phone && (
-                    <p className="flex items-center gap-2 font-medium text-foreground">
-                      <span className="text-primary">ফোন:</span> {contactInfo.phone}
-                    </p>
-                  )}
-                  {contactInfo.whatsapp && (
-                    <p className="flex items-center gap-2 font-medium text-foreground">
-                      <span className="text-primary">WhatsApp:</span> {contactInfo.whatsapp}
-                    </p>
-                  )}
-                  {contactInfo.email && (
-                    <p className="flex items-center gap-2 font-medium text-foreground">
-                      <span className="text-primary">ইমেইল:</span> {contactInfo.email}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  const router = useRouter(); const [loading, setLoading] = useState(false); const [form, setForm] = useState({ email: '', password: '' }); const [error, setError] = useState(''); const [showForgot, setShowForgot] = useState(false); const [contactInfo, setContactInfo] = useState<{ phone: string; whatsapp: string; email: string } | null>(null);
+  useEffect(() => { supabase.from('site_settings').select('phone, whatsapp, email').eq('id', 1).maybeSingle().then(({ data }) => { if (data) setContactInfo({ phone: data.phone, whatsapp: data.whatsapp, email: data.email }); }); }, []);
+  const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); setError(''); if (!form.email || !form.password) { setError('ইমেইল ও পাসওয়ার্ড দিন'); return; } setLoading(true); try { const { error } = await supabase.auth.signInWithPassword({ email: form.email, password: form.password }); if (error) throw error; toast('লগইন সফল হয়েছে'); router.push('/account'); } catch (err: any) { setError(err.message || 'লগইন ব্যর্থ হয়েছে'); } finally { setLoading(false); } };
+  return <main className="min-h-[calc(100vh-160px)] bg-gradient-to-br from-primary/[0.08] via-background to-accent/[0.08] px-4 py-10 sm:py-16"><div className="mx-auto grid max-w-5xl overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-2xl lg:grid-cols-[.9fr_1.1fr]"><div className="hidden bg-primary p-10 text-primary-foreground lg:flex lg:flex-col lg:justify-between"><div><div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15"><Sprout className="h-6 w-6" /></div><p className="mt-7 text-xs font-black uppercase tracking-[0.18em] opacity-70">GAZI SEED</p><h2 className="mt-2 text-4xl font-black leading-tight">আপনার বাগান ও চাষের সঙ্গী</h2><p className="mt-4 text-sm leading-7 opacity-80">আপনার অর্ডার, wishlist এবং account details এক জায়গা থেকে পরিচালনা করুন।</p></div><div className="flex items-center gap-2 text-xs font-semibold opacity-80"><ShieldCheck className="h-4 w-4" /> নিরাপদ customer account</div></div><div className="p-6 sm:p-10"><div className="mx-auto max-w-md"><div className="mb-7 lg:hidden text-center"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Sprout className="h-6 w-6" /></div><p className="mt-3 text-xs font-black uppercase tracking-[0.18em] text-primary">GAZI SEED</p></div><h1 className="text-center text-3xl font-black tracking-tight">স্বাগতম</h1><p className="mt-2 text-center text-sm text-muted-foreground">আপনার GAZI SEED account-এ লগইন করুন</p><form onSubmit={handleSubmit} className="mt-8 space-y-5"><div><label className="mb-1.5 block text-sm font-bold">ইমেইল</label><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input-bangla h-12 rounded-xl" required /></div><div><label className="mb-1.5 block text-sm font-bold">পাসওয়ার্ড</label><input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input-bangla h-12 rounded-xl" required /></div>{error && <p className="rounded-xl bg-destructive/10 p-3 text-sm font-medium text-destructive">{error}</p>}<button type="submit" disabled={loading} className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary font-black text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-50">{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'লগইন করুন'}</button><div className="flex flex-col gap-3 text-center text-sm"><Link href="/register" className="font-bold text-primary hover:underline">নতুন অ্যাকাউন্ট তৈরি করুন</Link><button type="button" onClick={() => setShowForgot(true)} className="inline-flex items-center justify-center gap-1 font-semibold text-muted-foreground hover:text-primary"><KeyRound className="h-3.5 w-3.5" /> পাসওয়ার্ড ভুলে গেছেন?</button></div></form></div></div></div>{showForgot && <div className="fixed inset-0 z-50 flex items-center justify-center p-4"><div className="absolute inset-0 bg-black/50" onClick={() => setShowForgot(false)} /><div className="relative z-10 w-full max-w-md rounded-3xl bg-background p-6 shadow-2xl"><div className="mb-4 flex items-center justify-between"><h3 className="flex items-center gap-2 font-black"><KeyRound className="h-5 w-5 text-primary" /> পাসওয়ার্ড সহায়তা</h3><button onClick={() => setShowForgot(false)} aria-label="Close"><X className="h-5 w-5" /></button></div><p className="text-sm leading-6 text-muted-foreground">Temporary Password-এর জন্য Customer Care-এর সাথে যোগাযোগ করুন।</p>{contactInfo && <div className="mt-4 rounded-2xl border border-border bg-card p-4 space-y-1.5 text-sm">{contactInfo.phone && <p><b className="text-primary">ফোন:</b> {contactInfo.phone}</p>}{contactInfo.whatsapp && <p><b className="text-primary">WhatsApp:</b> {contactInfo.whatsapp}</p>}{contactInfo.email && <p><b className="text-primary">ইমেইল:</b> {contactInfo.email}</p>}</div>}</div></div>}</main>;
 }
