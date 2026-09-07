@@ -50,3 +50,173 @@
   .home-premium-scope .cat-label{font-size:.92rem!important;min-height:3.95rem!important;padding:1rem 2.5rem 1rem 1.3rem!important}
 }
 @media(prefers-reduced-motion:reduce){.home-premium-scope .cat-card,.home-premium-scope .view-all-link{transition:none!important}}
+
+/* GAZI SEED — final mobile category layout fix.
+   This block intentionally comes last because home.tsx loads this stylesheet after
+   the global Design-2 category styles. It owns only the mobile category cards. */
+@media(max-width:767px){
+  .home-premium-scope .home-category-section .cat-grid{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    grid-auto-rows:auto!important;
+    align-items:stretch!important;
+    gap:10px!important;
+    width:100%!important;
+    max-width:100%!important;
+    margin:0!important;
+    padding:4px 0 10px!important;
+    overflow:visible!important;
+  }
+
+  /* Home preview = exactly four cards: 2 columns × 2 rows. */
+  .home-premium-scope .home-category-section .cat-grid .cat-card,
+  .home-premium-scope .home-category-section .cat-grid .cat-card[class*="!hidden"]{
+    display:flex!important;
+    position:relative!important;
+    flex:none!important;
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    height:auto!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+    align-self:stretch!important;
+    transform:none!important;
+    border-radius:16px!important;
+    border:1px solid rgba(15,91,62,.16)!important;
+    background:#fff!important;
+    box-shadow:0 10px 24px -18px rgba(3,65,43,.55)!important;
+  }
+
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(n+5){
+    display:none!important;
+  }
+
+  /* Remove the large Design-2 central-card treatment on mobile. */
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3),
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3):hover{
+    transform:none!important;
+    z-index:auto!important;
+  }
+
+  .home-premium-scope .home-category-section .cat-grid .cat-icon-wrap,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2) .cat-icon-wrap,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3) .cat-icon-wrap,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(4) .cat-icon-wrap{
+    position:relative!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    flex:0 0 auto!important;
+    aspect-ratio:1/0.82!important;
+    overflow:hidden!important;
+    border:0!important;
+    border-radius:0!important;
+    outline:none!important;
+    background:#edf7f1!important;
+    box-shadow:none!important;
+  }
+
+  .home-premium-scope .home-category-section .cat-grid .cat-icon-wrap img,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2) .cat-icon-wrap img,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3) .cat-icon-wrap img,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(4) .cat-icon-wrap img{
+    display:block!important;
+    width:100%!important;
+    height:100%!important;
+    object-fit:cover!important;
+    object-position:center!important;
+    border-radius:0!important;
+  }
+
+  /* Keep the premium corner arrow compact and inside each card. */
+  .home-premium-scope .home-category-section .cat-grid .cat-card::before{
+    content:""!important;
+    top:8px!important;
+    right:8px!important;
+    width:30px!important;
+    height:30px!important;
+    z-index:8!important;
+    border-radius:50%!important;
+    background:rgba(7,99,68,.94)!important;
+    box-shadow:0 5px 13px -7px rgba(0,54,35,.8),inset 0 0 0 2px rgba(255,255,255,.25)!important;
+  }
+  .home-premium-scope .home-category-section .cat-grid .cat-card::after{
+    content:"↗"!important;
+    top:13px!important;
+    right:13px!important;
+    width:20px!important;
+    height:20px!important;
+    z-index:9!important;
+    color:#fff!important;
+    font-size:14px!important;
+    line-height:20px!important;
+  }
+
+  /* Compact, consistent title plate. No absolute CTA/button can overlap it. */
+  .home-premium-scope .home-category-section .cat-grid .cat-label,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2) .cat-label,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3) .cat-label,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(4) .cat-label{
+    position:relative!important;
+    display:flex!important;
+    align-items:center!important;
+    width:100%!important;
+    height:48px!important;
+    min-height:48px!important;
+    max-height:48px!important;
+    margin:0!important;
+    padding:7px 36px 7px 16px!important;
+    overflow:hidden!important;
+    border:0!important;
+    border-top:1px solid #e8f1ed!important;
+    border-radius:0!important;
+    background:linear-gradient(180deg,#fff 0%,#f5fcf8 100%)!important;
+    color:#0b4733!important;
+    font-size:14px!important;
+    font-weight:900!important;
+    line-height:1.15!important;
+    letter-spacing:-.02em!important;
+    white-space:nowrap!important;
+    text-overflow:ellipsis!important;
+    box-shadow:none!important;
+  }
+
+  .home-premium-scope .home-category-section .cat-grid .cat-label::before,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2) .cat-label::before,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3) .cat-label::before,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(4) .cat-label::before{
+    content:""!important;
+    position:absolute!important;
+    left:8px!important;
+    top:50%!important;
+    width:3px!important;
+    height:25px!important;
+    transform:translateY(-50%)!important;
+    border-radius:99px!important;
+    background:linear-gradient(180deg,#8bd21d,#18a65f)!important;
+  }
+
+  /* Hide the desktop-only PREMIUM SEED text and decorative pedestal. */
+  .home-premium-scope .home-category-section .cat-grid .cat-label::after{
+    content:none!important;
+  }
+}
+
+@media(max-width:420px){
+  .home-premium-scope .home-category-section .cat-grid{gap:8px!important;padding-bottom:8px!important}
+  .home-premium-scope .home-category-section .cat-grid .cat-card{border-radius:14px!important}
+  .home-premium-scope .home-category-section .cat-grid .cat-icon-wrap{aspect-ratio:1/0.8!important}
+  .home-premium-scope .home-category-section .cat-grid .cat-label,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(2) .cat-label,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(3) .cat-label,
+  .home-premium-scope .home-category-section .cat-grid .cat-card:nth-child(4) .cat-label{
+    height:45px!important;
+    min-height:45px!important;
+    max-height:45px!important;
+    font-size:13px!important;
+    padding-right:34px!important;
+  }
+}
