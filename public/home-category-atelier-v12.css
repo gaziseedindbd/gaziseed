@@ -1,0 +1,368 @@
+/* GAZI SEED — Category Atelier V12
+   High-end editorial category cards: emerald + antique gold + marble paper.
+   Visual layer only. Existing category data/routes remain untouched. */
+
+.home-premium-scope .home-category-section{
+  position:relative!important;
+  overflow:hidden!important;
+  background:
+    radial-gradient(circle at 10% 18%,rgba(255,214,224,.24),transparent 25%),
+    radial-gradient(circle at 88% 22%,rgba(233,194,205,.18),transparent 28%),
+    linear-gradient(135deg,#fbfaf5 0%,#f7f4ea 48%,#eef7f1 100%)!important;
+}
+
+.home-premium-scope .home-category-section::before{
+  content:""!important;
+  position:absolute!important;
+  inset:-18% -8% auto!important;
+  height:70%!important;
+  background:
+    radial-gradient(ellipse at 18% 28%,rgba(164,74,95,.13),transparent 21%),
+    radial-gradient(ellipse at 78% 24%,rgba(102,55,42,.10),transparent 22%),
+    radial-gradient(ellipse at 50% 8%,rgba(255,232,198,.25),transparent 30%)!important;
+  filter:blur(28px)!important;
+  pointer-events:none!important;
+}
+
+.home-premium-scope .home-category-section > .container-custom{
+  position:relative!important;
+  z-index:2!important;
+}
+
+.home-premium-scope .home-category-section .mb-6{
+  margin-bottom:28px!important;
+  align-items:flex-end!important;
+}
+
+.home-premium-scope .home-category-section .section-heading{
+  color:#083d2b!important;
+  letter-spacing:-.045em!important;
+  font-weight:900!important;
+}
+
+.home-premium-scope .home-category-section .section-heading::before{
+  width:52px!important;
+  height:7px!important;
+  background:linear-gradient(90deg,#d8ae46 0%,#0a7d4b 100%)!important;
+}
+
+.home-premium-scope .home-category-section .section-subheading{
+  color:#78857e!important;
+}
+
+.home-premium-scope .home-category-section .view-all-link{
+  border:1px solid rgba(148,110,38,.28)!important;
+  background:rgba(255,255,255,.76)!important;
+  color:#166747!important;
+  box-shadow:0 10px 26px -19px rgba(58,47,16,.55)!important;
+  backdrop-filter:blur(12px)!important;
+}
+
+.home-premium-scope .cat-grid{
+  display:grid!important;
+  grid-template-columns:minmax(0,.88fr) minmax(0,1.08fr) minmax(0,.88fr)!important;
+  align-items:end!important;
+  gap:26px!important;
+  padding:12px 2px 30px!important;
+}
+
+/* Only the three hero categories form the visual stage. More categories remain accessible through View All. */
+.home-premium-scope .cat-grid .cat-card:nth-child(n+4){display:none!important}
+
+.home-premium-scope .cat-grid .cat-card{
+  position:relative!important;
+  display:flex!important;
+  flex-direction:column!important;
+  width:100%!important;
+  min-width:0!important;
+  height:auto!important;
+  padding:0!important;
+  overflow:visible!important;
+  border:0!important;
+  border-radius:24px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  isolation:isolate!important;
+  transform:translateY(0)!important;
+  transition:transform .3s ease!important;
+}
+
+/* Emerald + antique gold enamel frame. */
+.home-premium-scope .cat-grid .cat-card::before{
+  content:"↗"!important;
+  position:absolute!important;
+  top:16px!important;
+  right:16px!important;
+  z-index:8!important;
+  width:42px!important;
+  height:42px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:50%!important;
+  color:#f9f1d3!important;
+  background:linear-gradient(145deg,#0d7550,#063c29)!important;
+  border:2px solid #d5b65c!important;
+  box-shadow:0 8px 22px -11px rgba(0,45,29,.75),inset 0 1px rgba(255,255,255,.22)!important;
+  font:700 20px/1 Arial,sans-serif!important;
+}
+
+.home-premium-scope .cat-grid .cat-card::after{
+  content:"ক্যাটাগরি দেখুন  →"!important;
+  position:absolute!important;
+  left:50%!important;
+  bottom:18px!important;
+  transform:translateX(-50%)!important;
+  z-index:9!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:max-content!important;
+  min-width:138px!important;
+  height:42px!important;
+  padding:0 18px!important;
+  border-radius:999px!important;
+  color:#18452f!important;
+  background:linear-gradient(180deg,#f9e5aa,#d8b458)!important;
+  border:1px solid rgba(91,65,12,.35)!important;
+  box-shadow:0 10px 25px -15px rgba(65,49,10,.75),inset 0 1px rgba(255,255,255,.65)!important;
+  font-size:13px!important;
+  font-weight:900!important;
+  white-space:nowrap!important;
+}
+
+.home-premium-scope .cat-grid .cat-icon-wrap{
+  position:relative!important;
+  width:100%!important;
+  height:auto!important;
+  aspect-ratio:1/1!important;
+  overflow:hidden!important;
+  border:3px solid #d0ad4e!important;
+  border-radius:24px 24px 18px 18px!important;
+  background:#f4f0e5!important;
+  box-shadow:
+    0 0 0 3px #0a5639,
+    0 0 0 5px rgba(213,178,83,.9),
+    0 24px 52px -30px rgba(26,55,40,.65)!important;
+}
+
+.home-premium-scope .cat-grid .cat-icon-wrap::after{
+  content:""!important;
+  position:absolute!important;
+  inset:auto 0 0!important;
+  height:28%!important;
+  background:linear-gradient(to top,rgba(3,44,29,.16),transparent)!important;
+  pointer-events:none!important;
+}
+
+.home-premium-scope .cat-grid .cat-icon-wrap img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+  object-position:center!important;
+  display:block!important;
+  border-radius:19px!important;
+  filter:saturate(1.05) contrast(1.03)!important;
+  transition:transform .55s ease,filter .3s ease!important;
+}
+
+.home-premium-scope .cat-grid .cat-card:hover{
+  transform:translateY(-8px)!important;
+}
+
+.home-premium-scope .cat-grid .cat-card:hover .cat-icon-wrap img{
+  transform:scale(1.045)!important;
+  filter:saturate(1.1) contrast(1.04)!important;
+}
+
+/* Marble/paper title plate. */
+.home-premium-scope .cat-grid .cat-label{
+  position:relative!important;
+  z-index:6!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:calc(100% - 22px)!important;
+  min-height:88px!important;
+  margin:-18px 11px 0!important;
+  padding:27px 18px 30px!important;
+  border:1px solid rgba(112,85,28,.2)!important;
+  border-radius:18px!important;
+  color:#113f2d!important;
+  background:
+    radial-gradient(circle at 18% 28%,rgba(196,179,142,.10),transparent 24%),
+    radial-gradient(circle at 77% 64%,rgba(173,155,117,.08),transparent 28%),
+    linear-gradient(135deg,#fffdf7,#f3eee2)!important;
+  box-shadow:0 14px 26px -21px rgba(28,42,32,.7)!important;
+  font-size:20px!important;
+  line-height:1.2!important;
+  font-weight:900!important;
+  letter-spacing:-.025em!important;
+  text-align:center!important;
+  text-shadow:none!important;
+}
+
+.home-premium-scope .cat-grid .cat-label::before{
+  content:"SEED COLLECTION"!important;
+  position:absolute!important;
+  top:9px!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  color:#8c7540!important;
+  font-family:Arial,sans-serif!important;
+  font-size:7px!important;
+  line-height:1!important;
+  font-weight:800!important;
+  letter-spacing:.18em!important;
+}
+
+/* Central card is the signature piece. */
+.home-premium-scope .cat-grid .cat-card:nth-child(2){
+  transform:translateY(-14px)!important;
+}
+.home-premium-scope .cat-grid .cat-card:nth-child(2) .cat-icon-wrap{
+  aspect-ratio:1/.95!important;
+  box-shadow:
+    0 0 0 3px #0a5639,
+    0 0 0 5px rgba(213,178,83,.96),
+    0 31px 60px -29px rgba(19,54,37,.7)!important;
+}
+.home-premium-scope .cat-grid .cat-card:nth-child(2) .cat-label{
+  min-height:102px!important;
+  font-size:24px!important;
+  margin-top:-20px!important;
+  background:
+    radial-gradient(circle at 16% 22%,rgba(225,202,151,.12),transparent 22%),
+    radial-gradient(circle at 82% 72%,rgba(166,148,106,.08),transparent 28%),
+    linear-gradient(135deg,#fffdf8 0%,#f0eadb 100%)!important;
+}
+.home-premium-scope .cat-grid .cat-card:nth-child(2)::before{
+  width:48px!important;
+  height:48px!important;
+  top:18px!important;
+  right:18px!important;
+  border-width:2px!important;
+}
+.home-premium-scope .cat-grid .cat-card:nth-child(2)::after{
+  min-width:158px!important;
+  height:46px!important;
+  bottom:19px!important;
+}
+
+/* Small golden pedestal below the hero card. */
+.home-premium-scope .cat-grid .cat-card:nth-child(2) .cat-label::after{
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;
+  bottom:-15px!important;
+  transform:translateX(-50%)!important;
+  width:56%!important;
+  height:12px!important;
+  border-radius:50%!important;
+  background:linear-gradient(90deg,rgba(182,137,39,0),#c9a64c,rgba(182,137,39,0))!important;
+  filter:blur(3px)!important;
+}
+
+@media(max-width:1100px) and (min-width:768px){
+  .home-premium-scope .cat-grid{gap:18px!important}
+  .home-premium-scope .cat-grid .cat-label{font-size:16px!important}
+  .home-premium-scope .cat-grid .cat-card:nth-child(2) .cat-label{font-size:20px!important}
+}
+
+@media(max-width:767px){
+  .home-premium-scope .home-category-section{
+    padding:24px 0 30px!important;
+  }
+  .home-premium-scope .home-category-section .mb-6{
+    align-items:stretch!important;
+    margin-bottom:20px!important;
+  }
+  .home-premium-scope .home-category-section .section-heading{
+    font-size:1.55rem!important;
+  }
+  .home-premium-scope .home-category-section .section-subheading{
+    font-size:.8rem!important;
+  }
+  .home-premium-scope .home-category-section .view-all-link{
+    align-self:flex-start!important;
+    min-height:39px!important;
+    padding:0 13px!important;
+    font-size:.7rem!important;
+  }
+  .home-premium-scope .cat-grid{
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:flex-end!important;
+    gap:16px!important;
+    overflow-x:auto!important;
+    overflow-y:visible!important;
+    padding:12px 14px 28px!important;
+    margin:0 -2px!important;
+    scroll-snap-type:x mandatory!important;
+    scrollbar-width:none!important;
+  }
+  .home-premium-scope .cat-grid::-webkit-scrollbar{display:none!important}
+  .home-premium-scope .cat-grid .cat-card,
+  .home-premium-scope .cat-grid .cat-card[class*="!hidden"]{
+    display:flex!important;
+    flex:0 0 76vw!important;
+    width:76vw!important;
+    max-width:292px!important;
+    scroll-snap-align:center!important;
+    transform:none!important;
+  }
+  .home-premium-scope .cat-grid .cat-card:nth-child(2){
+    flex-basis:82vw!important;
+    width:82vw!important;
+    max-width:310px!important;
+    transform:translateY(-8px)!important;
+  }
+  .home-premium-scope .cat-grid .cat-icon-wrap{
+    aspect-ratio:1/.9!important;
+    border-radius:20px 20px 15px 15px!important;
+  }
+  .home-premium-scope .cat-grid .cat-card:nth-child(2) .cat-icon-wrap{
+    aspect-ratio:1/.9!important;
+  }
+  .home-premium-scope .cat-grid .cat-label,
+  .home-premium-scope .cat-grid .cat-card:nth-child(2) .cat-label{
+    min-height:82px!important;
+    margin:-16px 10px 0!important;
+    padding:25px 14px 28px!important;
+    border-radius:16px!important;
+    font-size:18px!important;
+  }
+  .home-premium-scope .cat-grid .cat-card:nth-child(2) .cat-label{font-size:21px!important}
+  .home-premium-scope .cat-grid .cat-card::before{
+    top:13px!important;
+    right:13px!important;
+    width:38px!important;
+    height:38px!important;
+    font-size:18px!important;
+  }
+  .home-premium-scope .cat-grid .cat-card:nth-child(2)::before{
+    width:42px!important;
+    height:42px!important;
+  }
+  .home-premium-scope .cat-grid .cat-card::after,
+  .home-premium-scope .cat-grid .cat-card:nth-child(2)::after{
+    min-width:126px!important;
+    height:39px!important;
+    bottom:16px!important;
+    padding:0 14px!important;
+    font-size:11px!important;
+  }
+  .home-premium-scope .cat-grid .cat-label::before{font-size:6px!important;top:8px!important}
+}
+
+@media(max-width:390px){
+  .home-premium-scope .cat-grid{gap:13px!important}
+  .home-premium-scope .cat-grid .cat-card{flex-basis:79vw!important;width:79vw!important}
+  .home-premium-scope .cat-grid .cat-card:nth-child(2){flex-basis:84vw!important;width:84vw!important}
+  .home-premium-scope .cat-grid .cat-label,.home-premium-scope .cat-grid .cat-card:nth-child(2) .cat-label{font-size:16px!important}
+  .home-premium-scope .cat-grid .cat-card:nth-child(2) .cat-label{font-size:19px!important}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .home-premium-scope .cat-grid .cat-card,.home-premium-scope .cat-grid .cat-icon-wrap img{transition:none!important}
+}
