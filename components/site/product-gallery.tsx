@@ -76,6 +76,7 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
         <div className="relative aspect-square overflow-hidden rounded-[1.5rem] border border-primary/10 bg-gradient-to-br from-primary/5 via-white to-accent/10 shadow-inner">
           <div className="flex h-full w-full items-center justify-center text-6xl">🌱</div>
         </div>
+        <PremiumProductDetailStyles />
       </div>
     );
   }
@@ -165,6 +166,50 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
           ))}
         </div>
       )}
+      <PremiumProductDetailStyles />
     </div>
+  );
+}
+
+function PremiumProductDetailStyles() {
+  return (
+    <style jsx global>{`
+      .min-h-screen:has(.product-gallery-premium) {
+        background: radial-gradient(circle at 5% 0%, hsl(152 68% 28% / .075), transparent 28%), radial-gradient(circle at 95% 6%, hsl(43 86% 55% / .09), transparent 24%), #fafbfc !important;
+      }
+      .min-h-screen:has(.product-gallery-premium) > .max-w-6xl > .grid:first-child {
+        gap: 1.5rem !important;
+      }
+      .min-h-screen:has(.product-gallery-premium) > .max-w-6xl > .grid:first-child > :first-child {
+        padding: .75rem !important;
+        border: 1px solid hsl(152 68% 28% / .12) !important;
+        border-radius: 2rem !important;
+        background: rgba(255,255,255,.82) !important;
+        box-shadow: 0 24px 70px -42px hsl(152 40% 20% / .42) !important;
+      }
+      .min-h-screen:has(.product-gallery-premium) > .max-w-6xl > .grid:first-child > :nth-child(2) {
+        padding: 1.35rem !important;
+        border: 1px solid hsl(152 68% 28% / .10) !important;
+        border-radius: 2rem !important;
+        background: rgba(255,255,255,.86) !important;
+        box-shadow: 0 24px 70px -46px hsl(152 40% 20% / .34) !important;
+        backdrop-filter: blur(16px);
+      }
+      .min-h-screen:has(.product-gallery-premium) > .max-w-6xl > .grid:first-child > :nth-child(2) h1 {
+        font-size: clamp(1.65rem, 3vw, 2.7rem) !important;
+        letter-spacing: -.04em !important;
+      }
+      .min-h-screen:has(.product-gallery-premium) > .max-w-6xl > .grid:first-child > :nth-child(2) > div:nth-child(2) {
+        border-radius: 1.25rem !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.8) !important;
+      }
+      @media (max-width: 640px) {
+        .min-h-screen:has(.product-gallery-premium) > .max-w-6xl > .grid:first-child { gap: .85rem !important; }
+        .min-h-screen:has(.product-gallery-premium) > .max-w-6xl > .grid:first-child > :first-child,
+        .min-h-screen:has(.product-gallery-premium) > .max-w-6xl > .grid:first-child > :nth-child(2) { border-radius: 1.5rem !important; }
+        .min-h-screen:has(.product-gallery-premium) > .max-w-6xl > .grid:first-child > :first-child { padding: .45rem !important; }
+        .min-h-screen:has(.product-gallery-premium) > .max-w-6xl > .grid:first-child > :nth-child(2) { padding: .9rem !important; }
+      }
+    `}</style>
   );
 }
