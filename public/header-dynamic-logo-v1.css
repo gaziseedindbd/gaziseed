@@ -1,0 +1,30 @@
+/* GAZI SEED — always use the live logo configured from Admin > Settings. */
+header.fixed > div:nth-of-type(2) > a:first-child::before{
+  content:none!important;
+  display:none!important;
+  width:0!important;
+  height:0!important;
+  margin:0!important;
+  background:none!important;
+}
+
+header.fixed > div:nth-of-type(2) > a:first-child > img{
+  display:block!important;
+  width:auto!important;
+  height:44px!important;
+  max-width:180px!important;
+  min-width:0!important;
+  object-fit:contain!important;
+  object-position:center!important;
+}
+
+header.fixed > div:nth-of-type(2) > a:first-child > div:first-child{
+  display:flex!important;
+}
+
+@media (max-width:767px){
+  header.fixed > div:nth-of-type(2) > a:first-child > img{
+    height:40px!important;
+    max-width:145px!important;
+  }
+}
