@@ -19,15 +19,22 @@ function getCountry(req: NextRequest): 'BD' | 'IN' {
   return platformCountry === 'IN' ? 'IN' : 'BD';
 }
 
+async function fetchProducts(url: URL, key: string, country: 'BD' | 'IN') {
+  return fetch(url, {
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'x-gazi-country': country,
+    },
+    cache: 'no-store',
+  });
+}
+
 export async function GET(req: NextRequest) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || FALLBACK_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || FALLBACK_KEY;
+    const configuredKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
     const country = getCountry(req);
-
-    if (!anonKey) {
-      return NextResponse.json({ error: 'Supabase is not configured' }, { status: 500 });
-    }
 
     const params = new URLSearchParams({
       select: '*',
@@ -40,14 +47,13 @@ export async function GET(req: NextRequest) {
     const url = new URL(`${supabaseUrl}/rest/v1/products`);
     url.search = params.toString();
 
-    const response = await fetch(url, {
-      headers: {
-        apikey: anonKey,
-        Authorization: `Bearer ${anonKey}`,
-        'x-gazi-country': country,
-      },
-      cache: 'no-store',
-    });
+    let response = await fetchProducts(url, configuredKey || FALLBACK_KEY, country);
+
+    // A stale/invalid Vercel Supabase key should not take the storefront down.
+    // Retry once with the known public anon key for this Supabase project.
+    if (!response.ok && configuredKey && configuredKey !== FALLBACK_KEY && [401, 403].includes(response.status)) {
+      response = await fetchProducts(url, FALLBACK_KEY, country);
+    }
 
     if (!response.ok) {
       const detail = await response.text();
