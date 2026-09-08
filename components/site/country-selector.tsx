@@ -14,6 +14,26 @@ export function CountrySelector({ mobile = false }: { mobile?: boolean }) {
     setValue(saved === 'BD' || saved === 'IN' ? saved : 'AUTO');
   }, []);
 
+  useEffect(() => {
+    const header = document.querySelector('header');
+    if (!header) return;
+
+    const syncHeaderOffset = () => {
+      const height = Math.ceil(header.getBoundingClientRect().height);
+      document.body.style.setProperty('padding-top', `${height}px`, 'important');
+    };
+
+    syncHeaderOffset();
+    const observer = new ResizeObserver(syncHeaderOffset);
+    observer.observe(header);
+    window.addEventListener('resize', syncHeaderOffset);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', syncHeaderOffset);
+    };
+  }, []);
+
   const handleChange = (next: CountryOption) => {
     if (next === 'AUTO') {
       setManualCountry(null);
