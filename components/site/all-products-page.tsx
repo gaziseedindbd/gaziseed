@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ProductCard } from '@/components/site/product-card';
 import { ThemeWrapper } from '@/components/site/theme-wrapper';
-import { getCategories } from '@/lib/data';
+import { getVisitorCountry } from '@/lib/supabase/client';
 import type { Product, Category } from '@/lib/supabase/types';
 import { SlidersHorizontal, X, ChevronDown, Filter as FilterIcon } from 'lucide-react';
 
@@ -24,12 +24,17 @@ export function AllProductsPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    const country = getVisitorCountry();
+    const requestHeaders = { 'x-gazi-country': country };
     Promise.all([
-      fetch('/api/products', { cache: 'no-store' }).then(async (res) => {
+      fetch('/api/products', { headers: requestHeaders, cache: 'no-store' }).then(async (res) => {
         if (!res.ok) throw new Error('Failed to load products');
         return (await res.json()) as Product[];
       }),
-      getCategories(),
+      fetch('/api/categories', { headers: requestHeaders, cache: 'no-store' }).then(async (res) => {
+        if (!res.ok) throw new Error('Failed to load categories');
+        return (await res.json()) as Category[];
+      }),
     ])
       .then(([p, c]) => {
         if (cancelled) return;
