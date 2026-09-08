@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 const FALLBACK_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
-const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmeHN0aG9oeWViYWhrd2JtaW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MzY2MDAsImV4cCI6MjEwNDAxMjYwMH0.oU3ISPzKV6PQ3G0OXoCLHkrVa6qAEjSYoQF8D2Shf-M';
+const FALLBACK_KEY = 'sb_publishable_vCaz5OGrHocUTgpOXmE9xg_QVsuUJc0';
 
 async function fetchCategories(url: URL, key: string) {
   return fetch(url, {
@@ -24,8 +24,9 @@ export async function GET() {
 
     let response = await fetchCategories(url, configuredKey || FALLBACK_KEY);
 
-    // A stale/invalid Vercel Supabase key should not take the storefront down.
-    if (!response.ok && configuredKey && configuredKey !== FALLBACK_KEY && [401, 403].includes(response.status)) {
+    // If the Vercel environment key is stale/invalid, retry with the current
+    // Supabase publishable key verified for this project.
+    if (!response.ok && [401, 403].includes(response.status)) {
       response = await fetchCategories(url, FALLBACK_KEY);
     }
 
