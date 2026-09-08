@@ -19,6 +19,8 @@ export type CartItem = {
 
 const CART_KEY = 'gazi_cart';
 
+const normalizeOptionId = (value?: string) => value || '';
+
 export function getCart(): CartItem[] {
   if (typeof window === 'undefined') return [];
   try {
@@ -37,7 +39,11 @@ export function saveCart(items: CartItem[]) {
 
 export function addToCart(product: Product, quantity: number = 1, overrides?: Partial<Pick<CartItem, 'name' | 'unit_price' | 'variant_id' | 'variant_name' | 'bundle_id'>>) {
   const cart = getCart();
-  const existing = cart.find((item) => item.product_id === product.id && (item.variant_id || '') === (overrides?.variant_id || '') && (item.bundle_id || '') === (overrides?.bundle_id || ''));
+  const existing = cart.find((item) =>
+    item.product_id === product.id &&
+    normalizeOptionId(item.variant_id) === normalizeOptionId(overrides?.variant_id) &&
+    normalizeOptionId(item.bundle_id) === normalizeOptionId(overrides?.bundle_id)
+  );
   const price = overrides?.unit_price ?? (product.sale_price && product.sale_price > 0 && product.sale_price < product.regular_price
     ? product.sale_price
     : product.regular_price);
@@ -53,7 +59,7 @@ export function addToCart(product: Product, quantity: number = 1, overrides?: Pa
       image: product.image,
       unit_price: price,
       regular_price: product.regular_price,
-      quantity: quantity,
+      quantity,
       variant_id: overrides?.variant_id,
       variant_name: overrides?.variant_name,
       bundle_id: overrides?.bundle_id,
@@ -79,12 +85,16 @@ export function addToCart(product: Product, quantity: number = 1, overrides?: Pa
   });
 }
 
-export function updateCartQuantity(productId: string, quantity: number) {
+export function updateCartQuantity(productId: string, quantity: number, variantId?: string, bundleId?: string) {
   const cart = getCart();
-  const item = cart.find((i) => i.product_id === productId);
+  const item = cart.find((i) =>
+    i.product_id === productId &&
+    normalizeOptionId(i.variant_id) === normalizeOptionId(variantId) &&
+    normalizeOptionId(i.bundle_id) === normalizeOptionId(bundleId)
+  );
   if (item) {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(productId, variantId, bundleId);
     } else {
       item.quantity = quantity;
       saveCart(cart);
@@ -92,8 +102,14 @@ export function updateCartQuantity(productId: string, quantity: number) {
   }
 }
 
-export function removeFromCart(productId: string) {
-  const cart = getCart().filter((item) => item.product_id !== productId);
+export function removeFromCart(productId: string, variantId?: string, bundleId?: string) {
+  const variant = normalizeOptionId(variantId);
+  const bundle = normalizeOptionId(bundleId);
+  const cart = getCart().filter((item) => !(
+    item.product_id === productId &&
+    normalizeOptionId(item.variant_id) === variant &&
+    normalizeOptionId(item.bundle_id) === bundle
+  ));
   saveCart(cart);
 }
 
