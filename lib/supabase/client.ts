@@ -45,7 +45,7 @@ const fetchWithCountry: typeof fetch = async (input, init) => {
     init?.headers || (input instanceof Request ? input.headers : undefined)
   );
   headers.set('x-gazi-country', getVisitorCountry());
-  return fetch(input, { ...init, headers });
+  return fetch(input, { ...init, headers, cache: 'no-store' });
 };
 
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
