@@ -57,7 +57,7 @@ export default function PageShare() {
   };
 
   return (
-    <div className="fixed bottom-24 right-4 sm:right-6 z-[70]">
+    <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom)+4.75rem)] right-4 z-[70] sm:bottom-24 sm:right-6">
       {open && (
         <div className="mb-3 w-[250px] overflow-hidden rounded-2xl border border-emerald-100 bg-white/95 p-3 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-2 fade-in duration-200">
           <div className="flex items-center justify-between px-1 pb-2">
