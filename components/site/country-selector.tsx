@@ -21,6 +21,11 @@ export function CountrySelector({ mobile = false }: { mobile?: boolean }) {
     const syncHeaderOffset = () => {
       const height = Math.ceil(header.getBoundingClientRect().height);
       document.body.style.setProperty('padding-top', `${height}px`, 'important');
+
+      const homeScope = document.querySelector('.home-premium-scope') as HTMLElement | null;
+      if (homeScope) {
+        homeScope.style.setProperty('padding-top', '0px', 'important');
+      }
     };
 
     syncHeaderOffset();
