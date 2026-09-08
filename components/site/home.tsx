@@ -10,6 +10,7 @@ import {
   getThisMonthSeeds,
 } from '@/lib/data';
 import { detectAndStoreReferralCode } from '@/lib/referral';
+import { getVisitorCountry } from '@/lib/supabase/client';
 import { useLang } from './language-provider';
 import { getStoredTheme, type HomePageTheme } from './theme-switcher';
 import type {
@@ -18,6 +19,7 @@ import type {
 } from '@/lib/supabase/types';
 
 let memoryCache: {
+  country?: 'BD' | 'IN';
   banners?: Banner[];
   categories?: Category[];
   featuredProducts?: Product[];
@@ -35,18 +37,20 @@ let memoryCache: {
 
 export default function Home() {
   const { lang, t, tDb } = useLang();
-  const [banners, setBanners] = useState<Banner[]>(memoryCache.banners || []);
-  const [categories, setCategories] = useState<Category[]>(memoryCache.categories || []);
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>(memoryCache.featuredProducts || []);
-  const [bestSellers, setBestSellers] = useState<Product[]>(memoryCache.bestSellers || []);
-  const [newArrivals, setNewArrivals] = useState<Product[]>(memoryCache.newArrivals || []);
-  const [seasonal, setSeasonal] = useState<Product[]>(memoryCache.seasonal || []);
-  const [thisMonthSeeds, setThisMonthSeeds] = useState<Product[]>(memoryCache.thisMonthSeeds || []);
-  const [services, setServices] = useState<Service[]>(memoryCache.services || []);
-  const [testimonials, setTestimonials] = useState<Testimonial[]>(memoryCache.testimonials || []);
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(memoryCache.blogPosts || []);
-  const [settings, setSettings] = useState<SiteSettings | null>(memoryCache.settings || null);
-  const [sections, setSections] = useState<HomepageSection[]>(memoryCache.sections || []);
+  const visitorCountry = getVisitorCountry();
+  const cached = memoryCache.country === visitorCountry ? memoryCache : {};
+  const [banners, setBanners] = useState<Banner[]>(cached.banners || []);
+  const [categories, setCategories] = useState<Category[]>(cached.categories || []);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>(cached.featuredProducts || []);
+  const [bestSellers, setBestSellers] = useState<Product[]>(cached.bestSellers || []);
+  const [newArrivals, setNewArrivals] = useState<Product[]>(cached.newArrivals || []);
+  const [seasonal, setSeasonal] = useState<Product[]>(cached.seasonal || []);
+  const [thisMonthSeeds, setThisMonthSeeds] = useState<Product[]>(cached.thisMonthSeeds || []);
+  const [services, setServices] = useState<Service[]>(cached.services || []);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>(cached.testimonials || []);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(cached.blogPosts || []);
+  const [settings, setSettings] = useState<SiteSettings | null>(cached.settings || null);
+  const [sections, setSections] = useState<HomepageSection[]>(cached.sections || []);
   const [currentBanner, setCurrentBanner] = useState(0);
   const [theme, setTheme] = useState<HomePageTheme>('theme1');
 
@@ -60,14 +64,20 @@ export default function Home() {
   useEffect(() => { detectAndStoreReferralCode(); }, []);
 
   useEffect(() => {
-    const isCacheValid = memoryCache.timestamp && Date.now() - memoryCache.timestamp < 60000;
-    if (isCacheValid && memoryCache.banners) return;
-    Promise.allSettled([
-      getBanners(), getCategories(), getProducts({ is_featured: true, limit: 10 }),
-      getProducts({ is_best_seller: true, limit: 10 }), getProducts({ is_new_arrival: true, limit: 10 }),
-      getProducts({ is_seasonal: true, limit: 10 }), getServices(), getTestimonials(), getBlogPosts(),
-      getSiteSettings(), getHomepageSections(), getThisMonthSeeds(),
-    ]).then(([bRes, cRes, fpRes, bsRes, naRes, ssRes, svRes, tRes, bpRes, stRes, hsRes, tmsRes]) => {
+    let cancelled = false;
+    const country = getVisitorCountry();
+    const isCacheValid = memoryCache.country === country && memoryCache.timestamp && Date.now() - memoryCache.timestamp < 60000;
+    if (isCacheValid) return;
+
+    const loadHomepageData = async (attempt: number) => {
+      const results = await Promise.allSettled([
+        getBanners(), getCategories(), getProducts({ is_featured: true, limit: 10 }),
+        getProducts({ is_best_seller: true, limit: 10 }), getProducts({ is_new_arrival: true, limit: 10 }),
+        getProducts({ is_seasonal: true, limit: 10 }), getServices(), getTestimonials(), getBlogPosts(),
+        getSiteSettings(), getHomepageSections(), getThisMonthSeeds(),
+      ]);
+      if (cancelled) return;
+      const [bRes, cRes, fpRes, bsRes, naRes, ssRes, svRes, tRes, bpRes, stRes, hsRes, tmsRes] = results;
       const b = bRes.status === 'fulfilled' ? bRes.value : [];
       const c = cRes.status === 'fulfilled' ? cRes.value : [];
       const fp = fpRes.status === 'fulfilled' ? fpRes.value : [];
@@ -82,9 +92,19 @@ export default function Home() {
       const tms = tmsRes.status === 'fulfilled' ? tmsRes.value : [];
       setBanners(b); setCategories(c); setFeaturedProducts(fp); setBestSellers(bs); setNewArrivals(na);
       setSeasonal(ss); setServices(sv); setTestimonials(tVal); setBlogPosts(bp); setSettings(st); setSections(hs); setThisMonthSeeds(tms);
-      memoryCache = { banners: b, categories: c, featuredProducts: fp, bestSellers: bs, newArrivals: na, seasonal: ss,
+
+      const coreDataEmpty = c.length === 0 && fp.length === 0 && na.length === 0 && tms.length === 0;
+      if (coreDataEmpty && attempt < 2) {
+        window.setTimeout(() => loadHomepageData(attempt + 1), 900);
+        return;
+      }
+
+      memoryCache = { country, banners: b, categories: c, featuredProducts: fp, bestSellers: bs, newArrivals: na, seasonal: ss,
         services: sv, testimonials: tVal, blogPosts: bp, settings: st, sections: hs, thisMonthSeeds: tms, timestamp: Date.now() };
-    });
+    };
+
+    loadHomepageData(1);
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -128,7 +148,7 @@ export default function Home() {
 
       {isSectionEnabled('services') && services.length > 0 && <section className="section-pad"><div className="container-custom"><h2 className="mb-8 text-center section-heading">{t('আমাদের সার্ভিসসমূহ', 'Our Services')}</h2><div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">{services.map((svc) => <div key={svc.id} className="service-card"><div className="service-icon-wrap"><Sprout className="h-6 w-6" /></div><h3 className="mb-2 font-semibold text-foreground">{svc.title}</h3><p className="text-sm text-muted-foreground">{svc.short_description}</p></div>)}</div></div></section>}
 
-      {isSectionEnabled('testimonials') && testimonials.length > 0 && <section className="section-pad testimonial-bg"><div className="container-custom"><h2 className="mb-8 text-center section-heading">{t('গ্রাহকদের মতামত', 'Customer Reviews')}</h2><div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{testimonials.map((testimonial) => <div key={testimonial.id} className="testimonial-card"><div className="mb-3 flex gap-0.5">{Array.from({ length: 5 }).map((_, i) => <span key={i} className={i < testimonial.rating ? 'text-yellow-500' : 'text-muted-foreground/30'}>★</span>)}</div><p className="mb-4 text-sm text-muted-foreground">"{testimonial.review}"</p><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">{testimonial.customer_name.charAt(0)}</div><span className="font-medium text-foreground">{testimonial.customer_name}</span></div></div>)}</div></div></section>}
+      {isSectionEnabled('testimonials') && testimonials.length > 0 && <section className="section-pad testimonial-bg"><div className="container-custom"><h2 className="mb-8 text-center section-heading">{t('গ্রাহকদের মতামত', 'Customer Reviews')}</h2><div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{testimonials.map((testimonial) => <div key={testimonial.id} className="testimonial-card"><div className="mb-3 flex gap-0.5">{Array.from({ length: 5 }).map((_, i) => <span key={i} className={i < testimonial.rating ? 'text-yellow-500' : 'text-muted-foreground/30'}>★</span>)}</div><p className="mb-4 text-sm text-muted-foreground">\"{testimonial.review}\"</p><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">{testimonial.customer_name.charAt(0)}</div><span className="font-medium text-foreground">{testimonial.customer_name}</span></div></div>)}</div></div></section>}
 
       {isSectionEnabled('blog') && blogPosts.length > 0 && <section className="section-pad"><div className="container-custom"><div className="mb-6 flex items-center justify-between"><h2 className="section-heading">{t('বাগান গাইড', 'Garden Guides')}</h2><Link href="/blog" className="view-all-link">{t('সব দেখুন →', 'View All →')}</Link></div><div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{blogPosts.slice(0, 3).map((post) => <Link key={post.id} href={`/blog/${post.slug}`} className="blog-card group">{post.featured_image && <div className="aspect-video overflow-hidden bg-secondary/30"><img src={post.featured_image} alt={post.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" /></div>}<div className="p-4">{post.category && <span className="text-xs text-primary">{post.category}</span>}<h3 className="mt-1 font-semibold text-foreground group-hover:text-primary">{post.title}</h3><p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{post.content.slice(0, 100)}...</p></div></Link>)}</div></div></section>}
 
