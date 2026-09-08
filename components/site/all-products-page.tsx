@@ -25,13 +25,14 @@ export function AllProductsPage() {
     let cancelled = false;
     setLoading(true);
     const country = getVisitorCountry();
+    const query = `?country=${country}`;
     const requestHeaders = { 'x-gazi-country': country };
     Promise.all([
-      fetch('/api/products', { headers: requestHeaders, cache: 'no-store' }).then(async (res) => {
+      fetch(`/api/products${query}`, { headers: requestHeaders, cache: 'no-store' }).then(async (res) => {
         if (!res.ok) throw new Error('Failed to load products');
         return (await res.json()) as Product[];
       }),
-      fetch('/api/categories', { headers: requestHeaders, cache: 'no-store' }).then(async (res) => {
+      fetch(`/api/categories${query}`, { headers: requestHeaders, cache: 'no-store' }).then(async (res) => {
         if (!res.ok) throw new Error('Failed to load categories');
         return (await res.json()) as Category[];
       }),
