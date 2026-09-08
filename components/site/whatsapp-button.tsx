@@ -4,9 +4,12 @@ import { useEffect, useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { getSiteSettings } from '@/lib/data';
 import type { SiteSettings } from '@/lib/supabase/types';
+import { usePathname } from 'next/navigation';
 
 export function WhatsAppButton() {
   const [settings, setSettings] = useState<SiteSettings | null>(null);
+  const pathname = usePathname();
+  const isProductPage = pathname.startsWith('/product/');
 
   useEffect(() => {
     getSiteSettings().then(setSettings);
@@ -23,7 +26,9 @@ export function WhatsAppButton() {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-20 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-green-500 text-white shadow-lg transition-transform hover:scale-110 active:scale-95"
+      className={`fixed right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-green-500 text-white shadow-lg transition-transform hover:scale-110 active:scale-95 ${
+        isProductPage ? 'bottom-[calc(10.5rem+env(safe-area-inset-bottom))]' : 'bottom-20'
+      }`}
       aria-label="WhatsApp"
     >
       <MessageCircle className="h-7 w-7" />
