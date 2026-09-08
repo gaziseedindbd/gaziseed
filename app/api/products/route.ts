@@ -1,0 +1,67 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+const FALLBACK_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
+const FALLBACK_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+
+function getCountry(req: NextRequest): 'BD' | 'IN' {
+  const headerCountry = req.headers.get('x-gazi-country')?.toUpperCase();
+  const cookieCountry = req.cookies.get('gazi_country_override')?.value?.toUpperCase();
+  const platformCountry = (
+    req.headers.get('x-vercel-ip-country') ||
+    req.headers.get('cf-ipcountry') ||
+    'BD'
+  ).toUpperCase();
+
+  if (headerCountry === 'IN' || headerCountry === 'BD') return headerCountry;
+  if (cookieCountry === 'IN' || cookieCountry === 'BD') return cookieCountry;
+  return platformCountry === 'IN' ? 'IN' : 'BD';
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || FALLBACK_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || FALLBACK_KEY;
+
+    if (!anonKey) {
+      return NextResponse.json({ error: 'Supabase is not configured' }, { status: 500 });
+    }
+
+    const params = new URLSearchParams({
+      select: '*',
+      is_active: 'eq.true',
+      is_ads_only: 'eq.false',
+      country_code: `eq.${getCountry(req)}`,
+      order: 'created_at.desc',
+    });
+
+    const url = new URL(`${supabaseUrl}/rest/v1/products`);
+    url.search = params.toString();
+
+    const response = await fetch(url, {
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${anonKey}`,
+        'x-gazi-country': getCountry(req),
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const detail = await response.text();
+      return NextResponse.json(
+        { error: 'Failed to load products', detail },
+        { status: response.status }
+      );
+    }
+
+    const products = await response.json();
+    return NextResponse.json(products, {
+      headers: { 'Cache-Control': 'no-store, max-age=0' },
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
