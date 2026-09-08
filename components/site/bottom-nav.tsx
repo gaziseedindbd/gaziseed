@@ -10,10 +10,10 @@ export function BottomNav() {
 
   const navItems = [
     { label: 'হোম', href: '/', icon: Home },
-    { label: 'সকল প্রোডাক্ট', href: '/all-products', icon: ShoppingBag },
+    { label: 'পণ্য', href: '/all-products', icon: ShoppingBag },
     { label: 'ক্যাটাগরি', href: '/categories', icon: LayoutGrid },
     { label: 'ট্র্যাক', href: '/track-order', icon: Truck },
-    { label: 'ডেলিভারি চার্জ', href: '/charges', icon: BadgeDollarSign },
+    { label: 'চার্জ', href: '/charges', icon: BadgeDollarSign },
     { label: 'যোগাযোগ', href: '/contact', icon: PhoneCall },
   ];
 
