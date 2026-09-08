@@ -26,6 +26,25 @@ export function CountrySelector({ mobile = false }: { mobile?: boolean }) {
       if (homeScope) {
         homeScope.style.setProperty('padding-top', '0px', 'important');
       }
+
+      const topBar = header.querySelector('.top-green-bar > div') as HTMLElement | null;
+      const topBarLeft = topBar?.firstElementChild as HTMLElement | null;
+      const topBarRight = topBar?.lastElementChild as HTMLElement | null;
+      const topBarTagline = topBarLeft?.querySelector(':scope > span') as HTMLElement | null;
+
+      if (topBarLeft) {
+        topBarLeft.style.minWidth = '0';
+        topBarLeft.style.flex = '1 1 auto';
+      }
+      if (topBarRight) {
+        topBarRight.style.flexShrink = '0';
+      }
+      if (topBarTagline) {
+        topBarTagline.style.minWidth = '0';
+        topBarTagline.style.overflow = 'hidden';
+        topBarTagline.style.textOverflow = 'ellipsis';
+        topBarTagline.style.whiteSpace = 'nowrap';
+      }
     };
 
     syncHeaderOffset();
