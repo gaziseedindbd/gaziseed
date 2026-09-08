@@ -1,0 +1,1 @@
+QA note: ProductCard previously placed Add to Cart and Buy Now buttons inside a Next Link. The buttons are now outside the product link so each interaction has an independent click target.
