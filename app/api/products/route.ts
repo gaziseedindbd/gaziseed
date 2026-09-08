@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const FALLBACK_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
-const FALLBACK_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmeHN0aHNoeWViYWhrd2JtaW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MzY2MDAsImV4cCI6MjEwNDAxMjYwMH0.oU3ISPzKV6PQ3G0OXoCLHkrVa6qAEjSYoQF8D2Shf-M';
 
 function getCountry(req: NextRequest): 'BD' | 'IN' {
   const headerCountry = req.headers.get('x-gazi-country')?.toUpperCase();
@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || FALLBACK_URL;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || FALLBACK_KEY;
+    const country = getCountry(req);
 
     if (!anonKey) {
       return NextResponse.json({ error: 'Supabase is not configured' }, { status: 500 });
@@ -30,7 +31,7 @@ export async function GET(req: NextRequest) {
       select: '*',
       is_active: 'eq.true',
       is_ads_only: 'eq.false',
-      country_code: `eq.${getCountry(req)}`,
+      country_code: `eq.${country}`,
       order: 'created_at.desc',
     });
 
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
       headers: {
         apikey: anonKey,
         Authorization: `Bearer ${anonKey}`,
-        'x-gazi-country': getCountry(req),
+        'x-gazi-country': country,
       },
       cache: 'no-store',
     });
