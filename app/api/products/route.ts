@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const FALLBACK_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
-const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmeHN0aHNoeWViYWhrd2JtaW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MzY2MDAsImV4cCI6MjEwNDAxMjYwMH0.oU3ISPzKV6PQ3G0OXoCLHkrVa6qAEjSYoQF8D2Shf-M';
+const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmeHN0aG9oeWViYWhrd2JtaW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MzY2MDAsImV4cCI6MjEwNDAxMjYwMH0.oU3ISPzKV6PQ3G0OXoCLHkrVa6qAEjSYoQF8D2Shf-M';
 
 function getCountry(req: NextRequest): 'BD' | 'IN' {
+  const queryCountry = req.nextUrl.searchParams.get('country')?.toUpperCase();
   const headerCountry = req.headers.get('x-gazi-country')?.toUpperCase();
   const cookieCountry = req.cookies.get('gazi_country_override')?.value?.toUpperCase();
   const platformCountry = (
@@ -12,6 +13,7 @@ function getCountry(req: NextRequest): 'BD' | 'IN' {
     'BD'
   ).toUpperCase();
 
+  if (queryCountry === 'IN' || queryCountry === 'BD') return queryCountry;
   if (headerCountry === 'IN' || headerCountry === 'BD') return headerCountry;
   if (cookieCountry === 'IN' || cookieCountry === 'BD') return cookieCountry;
   return platformCountry === 'IN' ? 'IN' : 'BD';
