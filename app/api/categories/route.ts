@@ -1,15 +1,19 @@
 import { NextResponse } from 'next/server';
 
 const FALLBACK_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
+const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmeHN0aG9oeWViYWhrd2JtaW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MzY2MDAsImV4cCI6MjEwNDAxMjYwMH0.oU3ISPzKV6PQ3G0OXoCLHkrVa6qAEjSYoQF8D2Shf-M';
+
+async function fetchCategories(url: URL, key: string) {
+  return fetch(url, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+    cache: 'no-store',
+  });
+}
 
 export async function GET() {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || FALLBACK_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-
-    if (!anonKey) {
-      return NextResponse.json({ error: 'Supabase is not configured' }, { status: 500 });
-    }
+    const configuredKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
 
     const url = new URL(`${supabaseUrl}/rest/v1/categories`);
     url.search = new URLSearchParams({
@@ -18,10 +22,12 @@ export async function GET() {
       order: 'display_order.asc',
     }).toString();
 
-    const response = await fetch(url, {
-      headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
-      cache: 'no-store',
-    });
+    let response = await fetchCategories(url, configuredKey || FALLBACK_KEY);
+
+    // A stale/invalid Vercel Supabase key should not take the storefront down.
+    if (!response.ok && configuredKey && configuredKey !== FALLBACK_KEY && [401, 403].includes(response.status)) {
+      response = await fetchCategories(url, FALLBACK_KEY);
+    }
 
     if (!response.ok) {
       const detail = await response.text();
