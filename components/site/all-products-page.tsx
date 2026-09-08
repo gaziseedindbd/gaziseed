@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ProductCard } from '@/components/site/product-card';
 import { ThemeWrapper } from '@/components/site/theme-wrapper';
-import { getProducts, getCategories } from '@/lib/data';
+import { getCategories } from '@/lib/data';
 import type { Product, Category } from '@/lib/supabase/types';
 import { SlidersHorizontal, X, ChevronDown, Filter as FilterIcon } from 'lucide-react';
 
@@ -21,9 +21,41 @@ export function AllProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>(''); const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]); const [inStockOnly, setInStockOnly] = useState(false);
   const searchQuery = searchParams.get('search') || '';
 
-  useEffect(() => { Promise.all([getProducts({ search: searchQuery || undefined }), getCategories()]).then(([p, c]) => { setProducts(p); setCategories(c); setLoading(false); }); }, [searchQuery]);
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([
+      fetch('/api/products', { cache: 'no-store' }).then(async (res) => {
+        if (!res.ok) throw new Error('Failed to load products');
+        return (await res.json()) as Product[];
+      }),
+      getCategories(),
+    ])
+      .then(([p, c]) => {
+        if (cancelled) return;
+        setProducts(p);
+        setCategories(c);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setProducts([]);
+        setCategories([]);
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
   const filteredProducts = useMemo(() => {
     let result = [...products];
+    if (searchQuery) {
+      const needle = searchQuery.toLowerCase();
+      result = result.filter((p) =>
+        p.name_bn?.toLowerCase().includes(needle) ||
+        p.name_en?.toLowerCase().includes(needle) ||
+        p.sku?.toLowerCase().includes(needle)
+      );
+    }
     if (selectedCategory) result = result.filter((p) => p.category_id === selectedCategory);
     result = result.filter((p) => { const price = p.sale_price && p.sale_price > 0 && p.sale_price < p.regular_price ? p.sale_price : p.regular_price; return price >= priceRange[0] && price <= priceRange[1]; });
     if (inStockOnly) result = result.filter((p) => p.stock > 0);
@@ -36,7 +68,7 @@ export function AllProductsPage() {
       case 'discount': result.sort((a, b) => (b.regular_price - (b.sale_price || b.regular_price)) - (a.regular_price - (a.sale_price || a.regular_price))); break;
     }
     return result;
-  }, [products, selectedCategory, priceRange, inStockOnly, sortBy]);
+  }, [products, searchQuery, selectedCategory, priceRange, inStockOnly, sortBy]);
 
   const FilterContent = () => <div className="space-y-7">
     <div><div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-black">ক্যাটাগরি</h3><span className="text-[10px] font-bold text-muted-foreground">{categories.length} টি</span></div><div className="space-y-1">{categories.map((cat) => <label key={cat.id} className="group flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition hover:bg-primary/5"><input type="radio" name="category" checked={selectedCategory === cat.id} onChange={() => setSelectedCategory(cat.id)} className="accent-primary" />{cat.name_bn}</label>)}<label className="flex cursor-pointer items-center gap-2 rounded-xl bg-primary/5 px-3 py-2.5 text-sm font-bold text-primary"><input type="radio" name="category" checked={!selectedCategory} onChange={() => setSelectedCategory('')} className="accent-primary" />সকল ক্যাটাগরি</label></div></div>
