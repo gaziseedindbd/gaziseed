@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { ChevronDown, Globe2 } from 'lucide-react';
 import { getVisitorCountry, setManualCountry } from '@/lib/supabase/client';
 
@@ -9,12 +9,12 @@ type CountryOption = 'AUTO' | 'BD' | 'IN';
 export function CountrySelector({ mobile = false }: { mobile?: boolean }) {
   const [value, setValue] = useState<CountryOption>('AUTO');
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const saved = localStorage.getItem('gazi_country_override')?.toUpperCase();
     setValue(saved === 'BD' || saved === 'IN' ? saved : 'AUTO');
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const header = document.querySelector('header');
     if (!header) return;
 
