@@ -11,7 +11,7 @@ import {
 } from '@/lib/data';
 import { detectAndStoreReferralCode } from '@/lib/referral';
 import { useLang } from './language-provider';
-import { ThemeSwitcher, getStoredTheme, type HomePageTheme } from './theme-switcher';
+import { getStoredTheme, type HomePageTheme } from './theme-switcher';
 import type {
   Banner, Category, Product, Service, Testimonial, BlogPost,
   SiteSettings, HomepageSection,
@@ -103,7 +103,6 @@ export default function Home() {
       <link rel="stylesheet" href="/home-premium-v2.css" />
       <link rel="stylesheet" href="/home-category-labels-premium-v2.css" />
       <link rel="stylesheet" href="/home-modern-v1.css" />
-      <ThemeSwitcher defaultTheme={(settings?.homepage_theme as HomePageTheme) || 'theme1'} />
 
       {isSectionEnabled('hero_slider') && banners.length > 0 && <section className="section-pad home-hero-section"><div className="container-custom"><div className="hero-wrap relative overflow-hidden">
         {banners.map((banner, idx) => <div key={banner.id} className={`transition-opacity duration-700 ${idx === currentBanner ? 'block' : 'hidden'}`}><div className="hero-inner grid items-center gap-4 px-6 sm:px-10 lg:grid-cols-2 lg:px-16"><div>{banner.title && <h2 className="hero-title">{tDb(banner.title)}</h2>}{banner.subtitle && <p className="hero-subtitle">{tDb(banner.subtitle)}</p>}{banner.cta_text && <Link href={banner.cta_url || '/all-products'} className="hero-btn">{tDb(banner.cta_text)}<ChevronRight className="h-4 w-4" /></Link>}</div>{banner.desktop_image && <div className="block"><picture><source media="(max-width: 767px)" srcSet={banner.mobile_image || banner.desktop_image} /><img src={banner.desktop_image} alt={banner.title} className="h-56 w-full rounded-2xl object-cover shadow-lg sm:h-72" loading="eager" /></picture></div>}</div></div>)}
@@ -135,7 +134,7 @@ export default function Home() {
 
       {isSectionEnabled('delivery_info') && <section className="section-pad delivery-bg text-primary-foreground"><div className="container-custom"><div className="flex flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left"><div><h2 className="text-xl font-bold sm:text-2xl">{t('সারাদেশে ক্যাশ অন ডেলিভারি', 'Cash on Delivery Nationwide')}</h2><p className="mt-1 text-sm text-primary-foreground/80">{t('পণ্য হাতে পেয়ে টাকা দিন। ঢাকার ভিতরে ১-২ দিন, ঢাকার বাইরে ২-৫ দিন।', 'Pay when you receive. Inside Dhaka 1-2 days, outside 2-5 days.')}</p></div><Link href="/charges" className="delivery-btn">{t('ডেলিভারি চার্জ দেখুন', 'View Delivery Charges')}</Link></div></div></section>}
 
-      {isSectionEnabled('newsletter') && <section className="section-pad"><div className="container-custom"><div className="newsletter-wrap"><h2 className="section-heading">{t('নতুন অফার ও টিপস পেতে সাবস্ক্রাইব করুন', 'Subscribe for Offers & Tips')}</h2><p className="mt-2 text-sm text-muted-foreground">{t('ইমেইল ঠিকানা দিন এবং বাগান পরিচর্যার টিপস পান', 'Enter your email for gardening tips')}</p><form className="mx-auto mt-6 flex max-w-md gap-2" onSubmit={(e) => { e.preventDefault(); }}><input type="email" placeholder={t('আপনার ইমেইল', 'Your email')} className="input-bangla flex-1" /><button type="submit" className="btn-primary">{t('সাবস্ক্রাইব', 'Subscribe')}</button></form></div></div></section>}
+      {isSectionEnabled('newsletter') && <section className="section-pad"><div className="container-custom"><div className="newsletter-wrap"><h2 className="section-heading">{t('নতুন অফার ও টিপস পেতে সাবস্ক্রাইব করুন', 'Subscribe for Offers & Tips')}</h2><p className="mt-2 text-sm text-muted-foreground">{t('ইমেইল ঠিকানা দিন এবং বাগান পরিচর্যার টিপস পান', 'Enter your email for gardening tips')}</p><form className="mx-auto mt-6 flex max-w-md gap-2" onSubmit={(e) => { e.preventDefault(); }}><input type="email" placeholder={t('আপনার ইমেইল', 'Your email')} className="input-bangla flex-1" /><button type="submit" className="btn-primary">সাবস্ক্রাইব</button></form></div></div></section>}
     </div>
   );
 }
