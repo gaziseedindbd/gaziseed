@@ -77,7 +77,7 @@ function OrderSuccessInner() {
               </div>
               <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-xl bg-primary/10 p-2"><ShieldCheck className="h-5 w-5 text-primary' /></div>
+                  <div className="rounded-xl bg-primary/10 p-2"><ShieldCheck className="h-5 w-5 text-primary" /></div>
                   <div><p className="text-sm font-semibold">{t('নিরাপদ অর্ডার', 'Secure order')}</p><p className="text-xs text-muted-foreground">{t('আপনার তথ্য সুরক্ষিতভাবে ব্যবস্থাপনা করা হয়', 'Your information is handled securely')}</p></div>
                 </div>
               </div>
