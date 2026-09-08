@@ -35,6 +35,7 @@ export const setManualCountry = (country: 'BD' | 'IN' | null) => {
       localStorage.removeItem('gazi_country_override');
       document.cookie = 'gazi_country_override=; Path=/; Max-Age=0; SameSite=Lax';
     }
+    window.dispatchEvent(new Event('gazi-country-changed'));
   } catch {
     // Keep the IP-detected country when browser storage is unavailable.
   }
