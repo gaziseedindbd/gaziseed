@@ -29,6 +29,23 @@ const POLICY_COPY = {
   },
 } as const;
 
+const TERMS_COPY = {
+  BD: {
+    market: 'Bangladesh',
+    intro: 'These Terms & Conditions govern your use of the GAZI SEED Bangladesh website, account, purchases, and related services. By using the website or placing an order, you agree to these terms.',
+    currency: 'Bangladeshi Taka (BDT)',
+    delivery: 'within Bangladesh',
+    payment: 'Cash on Delivery and other payment methods made available to Bangladesh customers',
+  },
+  IN: {
+    market: 'India',
+    intro: 'These Terms & Conditions govern your use of the GAZI SEED India website, account, purchases, and related services. By using the website or placing an order, you agree to these terms.',
+    currency: 'Indian Rupees (INR)',
+    delivery: 'within India',
+    payment: 'UPI, supported wallets, cards, Cash on Delivery, and other payment methods made available to India customers',
+  },
+} as const;
+
 function PrivacyPolicy({ country }: { country: 'BD' | 'IN' }) {
   const copy = POLICY_COPY[country];
   const lastUpdated = 'September 9, 2026';
@@ -120,6 +137,48 @@ function PrivacyPolicy({ country }: { country: 'BD' | 'IN' }) {
   );
 }
 
+function TermsConditions({ country }: { country: 'BD' | 'IN' }) {
+  const copy = TERMS_COPY[country];
+  const lastUpdated = 'September 9, 2026';
+
+  return (
+    <div className="container-custom py-8 sm:py-12">
+      <article className="mx-auto max-w-4xl overflow-hidden rounded-3xl border bg-background shadow-sm">
+        <div className="border-b bg-muted/40 px-5 py-7 sm:px-10 sm:py-9">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary">GAZI SEED • {copy.market} Branch</p>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Terms & Conditions</h1>
+          <p className="mt-3 text-sm text-muted-foreground">Last updated: {lastUpdated}</p>
+        </div>
+
+        <div className="space-y-8 px-5 py-7 text-[15px] leading-7 text-muted-foreground sm:px-10 sm:py-10">
+          <p>{copy.intro}</p>
+
+          <section><h2 className="mb-3 text-xl font-semibold text-foreground">1. About GAZI SEED</h2><p>GAZI SEED provides seeds, plants, gardening, and agricultural products through its online services. Product information, photographs, prices, stock availability, and other details may be updated from time to time.</p></section>
+          <section><h2 className="mb-3 text-xl font-semibold text-foreground">2. Accounts</h2><p>You are responsible for providing accurate information and keeping your account credentials secure. You should promptly update information that is no longer accurate and notify us if you believe your account has been used without authorization.</p></section>
+          <section><h2 className="mb-3 text-xl font-semibold text-foreground">3. Products and Availability</h2><p>We aim to keep product descriptions, images, specifications, prices, and stock information accurate. However, minor differences may occur, and availability can change without prior notice. We may limit quantities, refuse an order, or cancel an order where necessary, including in cases of stock errors, pricing errors, suspected misuse, or operational limitations.</p></section>
+          <section><h2 className="mb-3 text-xl font-semibold text-foreground">4. Orders and Acceptance</h2><p>Submitting an order is a request to purchase. An order becomes accepted when GAZI SEED confirms it through the available communication or order-processing system. We may contact you to verify order details before fulfillment.</p></section>
+          <section><h2 className="mb-3 text-xl font-semibold text-foreground">5. Pricing and Payment</h2><p>Prices for the {copy.market} branch are displayed in {copy.currency}. Available payment methods may include {copy.payment}. Any applicable delivery fees, discounts, offers, or charges will be shown during the order process where supported.</p></section>
+          <section><h2 className="mb-3 text-xl font-semibold text-foreground">6. Delivery</h2><p>We arrange delivery to eligible addresses {copy.delivery}. Delivery times are estimates and may be affected by courier capacity, weather, holidays, public events, address issues, or other circumstances outside our reasonable control. Customers should provide a complete and reachable delivery address and contact number.</p></section>
+          <section><h2 className="mb-3 text-xl font-semibold text-foreground">7. Returns, Refunds and Cancellations</h2><p>Returns, refunds, exchanges, and cancellations are subject to the applicable GAZI SEED policies for the relevant branch, product type, order status, and applicable law. Certain products may have special conditions for hygiene, perishability, planting suitability, or other operational reasons. Please review the relevant policy before requesting a return or refund.</p></section>
+          <section><h2 className="mb-3 text-xl font-semibold text-foreground">8. Seeds, Plants and Growing Results</h2><p>Seed germination, plant growth, yield, color, size, harvest time, and other natural outcomes can vary due to climate, soil, cultivation practices, storage, season, and other conditions. Product information is provided as guidance and does not guarantee a specific growing result.</p></section>
+          <section><h2 className="mb-3 text-xl font-semibold text-foreground">9. Referral, Rewards and Promotions</h2><p>Referral programs, rewards, coupons, promotions, gifts, and special offers may have separate eligibility rules, limits, expiry dates, or anti-abuse conditions. GAZI SEED may suspend or refuse benefits where activity appears fraudulent, abusive, duplicated, or inconsistent with the applicable offer terms.</p></section>
+          <section><h2 className="mb-3 text-xl font-semibold text-foreground">10. Prohibited Use</h2><p>You must not use the website for unlawful activity, fraud, abuse, automated misuse, interference with site security, unauthorized access, copying of protected material, or any activity that harms customers, GAZI SEED, or its service providers.</p></section>
+          <section><h2 className="mb-3 text-xl font-semibold text-foreground">11. Intellectual Property</h2><p>Website content, branding, logos, designs, text, images, videos, software, and other materials are owned by or used with permission by GAZI SEED and may not be reproduced, modified, distributed, or commercially reused without appropriate authorization.</p></section>
+          <section><h2 className="mb-3 text-xl font-semibold text-foreground">12. Third-Party Services</h2><p>The website may rely on independent providers for payment, hosting, analytics, delivery, communication, authentication, or other services. Those providers may operate under their own terms and privacy policies.</p></section>
+          <section><h2 className="mb-3 text-xl font-semibold text-foreground">13. Limitation of Liability</h2><p>To the extent permitted by applicable law, GAZI SEED is not responsible for indirect or consequential losses arising from use of the website, temporary unavailability, third-party service interruptions, courier delays, or natural variations in agricultural products and growing results.</p></section>
+          <section><h2 className="mb-3 text-xl font-semibold text-foreground">14. Changes to These Terms</h2><p>We may update these Terms & Conditions from time to time. The latest version will be published on this page with an updated date. Continued use of the service after an update may constitute acceptance of the revised terms to the extent permitted by law.</p></section>
+          <section><h2 className="mb-3 text-xl font-semibold text-foreground">15. Contact Us</h2><p>For questions about orders, accounts, delivery, cancellations, refunds, or these terms, please use the contact and support channels provided on the GAZI SEED website for the {copy.market} branch.</p></section>
+
+          <div className="rounded-2xl border bg-muted/30 p-5 text-sm text-foreground">
+            <p className="font-semibold">Branch-specific note</p>
+            <p className="mt-2 text-muted-foreground">This version is intended for customers using the GAZI SEED {copy.market} branch. Branch-specific pricing, delivery, payment, account, and operational processes may differ between Bangladesh and India.</p>
+          </div>
+        </div>
+      </article>
+    </div>
+  );
+}
+
 export default function PageDetail() {
   const params = useParams();
   const slug = params.slug as string;
@@ -135,7 +194,7 @@ export default function PageDetail() {
   }, []);
 
   useEffect(() => {
-    if (slug === 'privacy-policy') {
+    if (slug === 'privacy-policy' || slug === 'terms-conditions') {
       setLoading(false);
       return;
     }
@@ -148,6 +207,10 @@ export default function PageDetail() {
 
   if (slug === 'privacy-policy') {
     return <PrivacyPolicy country={country} />;
+  }
+
+  if (slug === 'terms-conditions') {
+    return <TermsConditions country={country} />;
   }
 
   if (loading) return <div className="container-custom py-12"><div className="h-64 animate-pulse rounded-2xl bg-secondary" /></div>;
