@@ -86,7 +86,10 @@ function BannerForm({ banner, onSave, onClose }: any) {
   const uploadFile = async (file: File, field: 'desktop_image' | 'mobile_image') => {
     setUploading(true);
     try {
-      const processed = await processLocalImage(file, { maxWidth: 1920, maxHeight: 1080 });
+      // Keep the approved source ratios intact while limiting oversized uploads.
+      const processed = field === 'desktop_image'
+        ? await processLocalImage(file, { maxWidth: 1920, maxHeight: 800 })
+        : await processLocalImage(file, { maxWidth: 800, maxHeight: 1200 });
       const url = await uploadProcessedFile(processed, 'product-images', supabase);
       setForm({ ...form, [field]: url });
       toast('ছবি প্রসেস ও আপলোড হয়েছে');
@@ -99,7 +102,9 @@ function BannerForm({ banner, onSave, onClose }: any) {
     if (!url.trim()) return;
     setUploading(true);
     try {
-      const processed = await processUrlImage(url.trim(), { maxWidth: 1920, maxHeight: 1080 });
+      const processed = field === 'desktop_image'
+        ? await processUrlImage(url.trim(), { maxWidth: 1920, maxHeight: 800 })
+        : await processUrlImage(url.trim(), { maxWidth: 800, maxHeight: 1200 });
       const uploadedUrl = await uploadProcessedFile(processed, 'product-images', supabase);
       setForm({ ...form, [field]: uploadedUrl });
       setUrlInput({ ...urlInput, [field === 'desktop_image' ? 'desktop' : 'mobile']: '' });
@@ -115,20 +120,20 @@ function BannerForm({ banner, onSave, onClose }: any) {
         <div className="mb-4 flex items-center justify-between"><h2 className="text-xl font-bold">{banner ? 'ব্যানার এডিট' : 'নতুন ব্যানার'}</h2><button onClick={onClose}><X className="h-6 w-6" /></button></div>
         <form onSubmit={(e) => { e.preventDefault(); onSave({ ...form, display_order: Number(form.display_order) }); }} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium">ডেস্কটপ ছবি</label><p className="mb-1 text-xs text-muted-foreground">Recommended: 1920 × 1080 px — Best for display</p>
+            <label className="mb-1 block text-sm font-medium">ডেস্কটপ ছবি</label><p className="mb-1 text-xs text-muted-foreground">Standard: 1920 × 800 px — 2.4:1 wide hero. WebP optimized upload supported.</p>
             <div className="flex gap-1">
               <button type="button" onClick={() => desktopRef.current?.click()} disabled={uploading} className="flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"><Upload className="h-4 w-4" /> আপলোড</button>
-              <input ref={desktopRef} type="file" accept="image/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) uploadFile(e.target.files[0], 'desktop_image'); e.target.value = ''; }} />
+              <input ref={desktopRef} type="file" accept="image/*,.webp" className="hidden" onChange={(e) => { if (e.target.files?.[0]) uploadFile(e.target.files[0], 'desktop_image'); e.target.value = ''; }} />
               <input value={urlInput.desktop} onChange={(e) => setUrlInput({ ...urlInput, desktop: e.target.value })} className="input-bangla flex-1" placeholder="অথবা ছবি URL (ওয়াটারমার্ক সহ)" />
               <button type="button" onClick={() => importFromUrl('desktop_image')} disabled={uploading} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"><LinkIcon className="h-4 w-4" /></button>
             </div>
             {form.desktop_image && <img src={form.desktop_image} alt="" className="mt-1 h-20 w-full rounded-lg object-cover" />}
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">মোবাইল ছবি</label><p className="mb-1 text-xs text-muted-foreground">Recommended: 1080 × 1080 px — Best for display</p>
+            <label className="mb-1 block text-sm font-medium">মোবাইল ছবি</label><p className="mb-1 text-xs text-muted-foreground">Standard: 800 × 1200 px — 2:3 vertical hero. WebP optimized upload supported.</p>
             <div className="flex gap-1">
               <button type="button" onClick={() => mobileRef.current?.click()} disabled={uploading} className="flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"><Upload className="h-4 w-4" /> আপলোড</button>
-              <input ref={mobileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) uploadFile(e.target.files[0], 'mobile_image'); e.target.value = ''; }} />
+              <input ref={mobileRef} type="file" accept="image/*,.webp" className="hidden" onChange={(e) => { if (e.target.files?.[0]) uploadFile(e.target.files[0], 'mobile_image'); e.target.value = ''; }} />
               <input value={urlInput.mobile} onChange={(e) => setUrlInput({ ...urlInput, mobile: e.target.value })} className="input-bangla flex-1" placeholder="অথবা ছবি URL (ওয়াটারমার্ক সহ)" />
               <button type="button" onClick={() => importFromUrl('mobile_image')} disabled={uploading} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"><LinkIcon className="h-4 w-4" /></button>
             </div>
