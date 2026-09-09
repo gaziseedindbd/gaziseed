@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { Loader2, LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Tag, Star, Wrench, FileText, Image, Settings, FileBarChart, Menu, X, LogOut, Truck, Megaphone, Layers, BarChart3, Home, ShieldCheck, UserCog, Gift, Bell, Boxes, LifeBuoy, TrendingUp, Sun, Moon, Bot, MessageCircle, Sparkles, Globe2, ChevronDown } from 'lucide-react';
+import { Loader2, LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Tag, Star, Wrench, FileText, Image, Settings, FileBarChart, Menu, X, LogOut, Truck, Megaphone, Layers, BarChart3, Home, ShieldCheck, UserCog, Gift, Bell, Boxes, LifeBuoy, TrendingUp, Sun, Moon, Bot, MessageCircle, Sparkles, Globe2, ChevronDown, Video } from 'lucide-react';
 import Link from 'next/link';
 import { NotificationCenter } from './notification-center';
 
@@ -40,6 +40,7 @@ const navGroups: NavGroup[] = [
     { href: '/admin/banners', label: 'ব্যানার', icon: Image },
     { href: '/admin/services', label: 'সার্ভিস', icon: Wrench },
     { href: '/admin/blog', label: 'ব্লগ / গাইড', icon: FileText },
+    { href: '/admin/videos', label: 'ভিডিও', icon: Video },
     { href: '/admin/reviews', label: 'রিভিউ', icon: Star },
     { href: '/admin/pages', label: 'পেজ', icon: FileBarChart },
   ] },
