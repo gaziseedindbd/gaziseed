@@ -59,6 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="bn" suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="/home-hero-responsive-standard-v1.css" />
+        <link rel="stylesheet" href="/home-hero-layer-fix.css?v=2" />
         <script dangerouslySetInnerHTML={{ __html: `(function(){window.__GAZI_COUNTRY__='${visitorCountry}';})();` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{const theme=localStorage.getItem('admin_theme');if(theme==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')} }catch(e){}})()` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})}})()` }} />
