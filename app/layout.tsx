@@ -28,7 +28,7 @@ import IndiaHomeCountry from '@/components/site/india-home-country';
 
 const hind = Hind({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'], variable: '--font-hind', display: 'swap' });
 
-const FAVICON_URL = '/favicon.svg?v=2';
+const FAVICON_URL = '/favicon.svg?v=3';
 
 export const metadata: Metadata = {
   title: 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
