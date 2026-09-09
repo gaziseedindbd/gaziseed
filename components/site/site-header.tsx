@@ -141,6 +141,7 @@ export function SiteHeader() {
     { label: t('কম্বো', 'Combo'), href: '/combos', icon: Layers },
     { label: t('অফার', 'Offers'), href: '/offers', icon: Tag, badge: 'Hot' },
     { label: t('চাষাবাদ', 'Guides'), href: '/blog', icon: BookOpen },
+    { label: t('ভিডিও', 'Videos'), href: '/videos', icon: Youtube },
     { label: t('ডেলিভারি চার্জ', 'Delivery Charge'), href: '/charges', icon: Truck },
     { label: t('আমাদের', 'About'), href: '/about', icon: Wrench },
     { label: t('যোগাযোগ', 'Contact'), href: '/contact', icon: PhoneCall },
