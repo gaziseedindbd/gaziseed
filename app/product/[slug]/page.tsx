@@ -21,6 +21,7 @@ export default function ProductDetailPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [related, setRelated] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isVerifiedPurchase, setIsVerifiedPurchase] = useState(false);
@@ -40,29 +41,55 @@ export default function ProductDetailPage() {
   const { lang, t, tDb } = useLang();
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
-    getProductBySlug(slug).then(async (p) => {
-      setProduct(p);
-      if (p) {
-        addRecentlyViewed(p);
-        getReviews(p.id).then(setReviews);
-        getBundleOffers(p.id).then(setBundles);
-        getProductFaqs(p.id).then(setFaqs);
-        getActivePromotions().then(setPromotions);
-        getProductVariants(p.id).then((vs) => { 
-          setVariants(vs); 
-          if (vs.length > 0) setSelectedVariant(vs[0]); 
-          else getBulkPricing(p.id).then(setBulkTiers); 
-        });
-        if (p.related_product_ids && p.related_product_ids.length > 0) {
-          getRelatedProducts(p.id, p.related_product_ids).then(setRelated);
-        } else {
-          const allProducts = await getProducts({ category_id: p.category_id || undefined });
-          setRelated(allProducts.filter((item) => item.id !== p.id).slice(0, 4));
-        }
-      }
+    setLoadError(false);
+    setProduct(null);
+
+    const timeoutId = window.setTimeout(() => {
+      if (cancelled) return;
       setLoading(false);
-    });
+      setLoadError(true);
+    }, 12000);
+
+    getProductBySlug(slug)
+      .then(async (p) => {
+        if (cancelled) return;
+        setProduct(p);
+        if (p) {
+          addRecentlyViewed(p);
+          getReviews(p.id).then(setReviews).catch(() => setReviews([]));
+          getBundleOffers(p.id).then(setBundles).catch(() => setBundles([]));
+          getProductFaqs(p.id).then(setFaqs).catch(() => setFaqs([]));
+          getActivePromotions().then(setPromotions).catch(() => setPromotions([]));
+          getProductVariants(p.id).then((vs) => {
+            if (cancelled) return;
+            setVariants(vs);
+            if (vs.length > 0) setSelectedVariant(vs[0]);
+            else getBulkPricing(p.id).then(setBulkTiers).catch(() => setBulkTiers([]));
+          }).catch(() => setVariants([]));
+          if (p.related_product_ids && p.related_product_ids.length > 0) {
+            getRelatedProducts(p.id, p.related_product_ids).then(setRelated).catch(() => setRelated([]));
+          } else {
+            const allProducts = await getProducts({ category_id: p.category_id || undefined });
+            if (!cancelled) setRelated(allProducts.filter((item) => item.id !== p.id).slice(0, 4));
+          }
+        }
+        clearTimeout(timeoutId);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        clearTimeout(timeoutId);
+        setProduct(null);
+        setLoading(false);
+        setLoadError(true);
+      });
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, [slug]);
 
   useEffect(() => {
@@ -109,8 +136,12 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div className="container-custom py-16 text-center overflow-hidden">
-        <h1 className="text-2xl font-bold text-gray-800">{t('প্রোডাক্ট পাওয়া যায়নি', 'Product not found')}</h1>
-        <a href="/all-products" className="mt-4 inline-block rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-white shadow hover:bg-primary/90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">{t('সকল প্রোডাক্ট দেখুন', 'View all products')}</a>
+        <h1 className="text-2xl font-bold text-gray-800">{loadError ? t('পণ্যটি লোড করা যায়নি', 'Could not load this product') : t('প্রোডাক্ট পাওয়া যায়নি', 'Product not found')}</h1>
+        <p className="mt-2 text-sm text-gray-500">{loadError ? t('নেটওয়ার্ক বা ডেটা সমস্যার কারণে পণ্যটি এখন দেখানো যাচ্ছে না। আবার চেষ্টা করুন।', 'The product could not be loaded due to a network or data issue. Please try again.') : t('এই দেশের জন্য পণ্যটি উপলভ্য নয় অথবা লিংকটি সঠিক নয়।', 'This product is not available for this country or the link is invalid.')}</p>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+          {loadError && <button type="button" onClick={() => window.location.reload()} className="rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-white shadow hover:bg-primary/90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">{t('আবার চেষ্টা করুন', 'Try again')}</button>}
+          <a href="/all-products" className="inline-block rounded-xl border border-gray-200 bg-white px-6 py-2.5 text-sm font-bold text-gray-800 shadow-sm hover:bg-gray-50 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">{t('সকল প্রোডাক্ট দেখুন', 'View all products')}</a>
+        </div>
       </div>
     );
   }

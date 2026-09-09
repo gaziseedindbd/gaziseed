@@ -10,14 +10,16 @@ import {
   getThisMonthSeeds,
 } from '@/lib/data';
 import { detectAndStoreReferralCode } from '@/lib/referral';
+import { getVisitorCountry } from '@/lib/supabase/client';
 import { useLang } from './language-provider';
-import { ThemeSwitcher, getStoredTheme, type HomePageTheme } from './theme-switcher';
+import { getStoredTheme, type HomePageTheme } from './theme-switcher';
 import type {
   Banner, Category, Product, Service, Testimonial, BlogPost,
   SiteSettings, HomepageSection,
 } from '@/lib/supabase/types';
 
 let memoryCache: {
+  country?: 'BD' | 'IN';
   banners?: Banner[];
   categories?: Category[];
   featuredProducts?: Product[];
@@ -35,18 +37,20 @@ let memoryCache: {
 
 export default function Home() {
   const { lang, t, tDb } = useLang();
-  const [banners, setBanners] = useState<Banner[]>(memoryCache.banners || []);
-  const [categories, setCategories] = useState<Category[]>(memoryCache.categories || []);
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>(memoryCache.featuredProducts || []);
-  const [bestSellers, setBestSellers] = useState<Product[]>(memoryCache.bestSellers || []);
-  const [newArrivals, setNewArrivals] = useState<Product[]>(memoryCache.newArrivals || []);
-  const [seasonal, setSeasonal] = useState<Product[]>(memoryCache.seasonal || []);
-  const [thisMonthSeeds, setThisMonthSeeds] = useState<Product[]>(memoryCache.thisMonthSeeds || []);
-  const [services, setServices] = useState<Service[]>(memoryCache.services || []);
-  const [testimonials, setTestimonials] = useState<Testimonial[]>(memoryCache.testimonials || []);
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(memoryCache.blogPosts || []);
-  const [settings, setSettings] = useState<SiteSettings | null>(memoryCache.settings || null);
-  const [sections, setSections] = useState<HomepageSection[]>(memoryCache.sections || []);
+  const visitorCountry = getVisitorCountry();
+  const cached = memoryCache.country === visitorCountry ? memoryCache : {};
+  const [banners, setBanners] = useState<Banner[]>(cached.banners || []);
+  const [categories, setCategories] = useState<Category[]>(cached.categories || []);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>(cached.featuredProducts || []);
+  const [bestSellers, setBestSellers] = useState<Product[]>(cached.bestSellers || []);
+  const [newArrivals, setNewArrivals] = useState<Product[]>(cached.newArrivals || []);
+  const [seasonal, setSeasonal] = useState<Product[]>(cached.seasonal || []);
+  const [thisMonthSeeds, setThisMonthSeeds] = useState<Product[]>(cached.thisMonthSeeds || []);
+  const [services, setServices] = useState<Service[]>(cached.services || []);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>(cached.testimonials || []);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(cached.blogPosts || []);
+  const [settings, setSettings] = useState<SiteSettings | null>(cached.settings || null);
+  const [sections, setSections] = useState<HomepageSection[]>(cached.sections || []);
   const [currentBanner, setCurrentBanner] = useState(0);
   const [theme, setTheme] = useState<HomePageTheme>('theme1');
 
@@ -60,14 +64,20 @@ export default function Home() {
   useEffect(() => { detectAndStoreReferralCode(); }, []);
 
   useEffect(() => {
-    const isCacheValid = memoryCache.timestamp && Date.now() - memoryCache.timestamp < 60000;
-    if (isCacheValid && memoryCache.banners) return;
-    Promise.allSettled([
-      getBanners(), getCategories(), getProducts({ is_featured: true, limit: 10 }),
-      getProducts({ is_best_seller: true, limit: 10 }), getProducts({ is_new_arrival: true, limit: 10 }),
-      getProducts({ is_seasonal: true, limit: 10 }), getServices(), getTestimonials(), getBlogPosts(),
-      getSiteSettings(), getHomepageSections(), getThisMonthSeeds(),
-    ]).then(([bRes, cRes, fpRes, bsRes, naRes, ssRes, svRes, tRes, bpRes, stRes, hsRes, tmsRes]) => {
+    let cancelled = false;
+    const country = getVisitorCountry();
+    const isCacheValid = memoryCache.country === country && memoryCache.timestamp && Date.now() - memoryCache.timestamp < 60000;
+    if (isCacheValid) return;
+
+    const loadHomepageData = async (attempt: number) => {
+      const results = await Promise.allSettled([
+        getBanners(), getCategories(), getProducts({ is_featured: true, limit: 10 }),
+        getProducts({ is_best_seller: true, limit: 10 }), getProducts({ is_new_arrival: true, limit: 10 }),
+        getProducts({ is_seasonal: true, limit: 10 }), getServices(), getTestimonials(), getBlogPosts(),
+        getSiteSettings(), getHomepageSections(), getThisMonthSeeds(),
+      ]);
+      if (cancelled) return;
+      const [bRes, cRes, fpRes, bsRes, naRes, ssRes, svRes, tRes, bpRes, stRes, hsRes, tmsRes] = results;
       const b = bRes.status === 'fulfilled' ? bRes.value : [];
       const c = cRes.status === 'fulfilled' ? cRes.value : [];
       const fp = fpRes.status === 'fulfilled' ? fpRes.value : [];
@@ -82,9 +92,19 @@ export default function Home() {
       const tms = tmsRes.status === 'fulfilled' ? tmsRes.value : [];
       setBanners(b); setCategories(c); setFeaturedProducts(fp); setBestSellers(bs); setNewArrivals(na);
       setSeasonal(ss); setServices(sv); setTestimonials(tVal); setBlogPosts(bp); setSettings(st); setSections(hs); setThisMonthSeeds(tms);
-      memoryCache = { banners: b, categories: c, featuredProducts: fp, bestSellers: bs, newArrivals: na, seasonal: ss,
+
+      const coreDataEmpty = c.length === 0 && fp.length === 0 && na.length === 0 && tms.length === 0;
+      if (coreDataEmpty && attempt < 2) {
+        window.setTimeout(() => loadHomepageData(attempt + 1), 900);
+        return;
+      }
+
+      memoryCache = { country, banners: b, categories: c, featuredProducts: fp, bestSellers: bs, newArrivals: na, seasonal: ss,
         services: sv, testimonials: tVal, blogPosts: bp, settings: st, sections: hs, thisMonthSeeds: tms, timestamp: Date.now() };
-    });
+    };
+
+    loadHomepageData(1);
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -103,11 +123,20 @@ export default function Home() {
       <link rel="stylesheet" href="/home-premium-v2.css" />
       <link rel="stylesheet" href="/home-category-labels-premium-v2.css" />
       <link rel="stylesheet" href="/home-modern-v1.css" />
-      <ThemeSwitcher defaultTheme={(settings?.homepage_theme as HomePageTheme) || 'theme1'} />
+      <link rel="stylesheet" href="/home-category-cards-v3.css" />
 
       {isSectionEnabled('hero_slider') && banners.length > 0 && <section className="section-pad home-hero-section"><div className="container-custom"><div className="hero-wrap relative overflow-hidden">
-        {banners.map((banner, idx) => <div key={banner.id} className={`transition-opacity duration-700 ${idx === currentBanner ? 'block' : 'hidden'}`}><div className="hero-inner grid items-center gap-4 px-6 sm:px-10 lg:grid-cols-2 lg:px-16"><div>{banner.title && <h2 className="hero-title">{tDb(banner.title)}</h2>}{banner.subtitle && <p className="hero-subtitle">{tDb(banner.subtitle)}</p>}{banner.cta_text && <Link href={banner.cta_url || '/all-products'} className="hero-btn">{tDb(banner.cta_text)}<ChevronRight className="h-4 w-4" /></Link>}</div>{banner.desktop_image && <div className="block"><picture><source media="(max-width: 767px)" srcSet={banner.mobile_image || banner.desktop_image} /><img src={banner.desktop_image} alt={banner.title} className="h-56 w-full rounded-2xl object-cover shadow-lg sm:h-72" loading="eager" /></picture></div>}</div></div>)}
-        {banners.length > 1 && <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">{banners.map((_, idx) => <button key={idx} onClick={() => setCurrentBanner(idx)} className={`h-2 rounded-full transition-all ${idx === currentBanner ? 'w-8 bg-primary' : 'w-2 bg-primary/30'}`} aria-label={`Banner ${idx + 1}`} />)}</div>}
+        {banners.map((banner, idx) => <div key={banner.id} className={`transition-opacity duration-700 ${idx === currentBanner ? 'block' : 'hidden'}`}><div className="hero-inner relative block p-0">
+          {banner.desktop_image && <div className="hero-image-wrap block w-full"><picture className="block w-full"><source media="(max-width: 767px)" srcSet={banner.mobile_image || banner.desktop_image} /><img src={banner.desktop_image} alt={banner.title || 'GAZI SEED'} className="block h-auto w-full rounded-2xl object-contain shadow-lg" loading="eager" /></picture></div>}
+          {(banner.title || banner.subtitle || banner.cta_text) && <div className="hero-content-overlay absolute inset-x-0 bottom-0 z-10 p-4 sm:p-6 lg:p-8">
+            <div className="max-w-xl rounded-2xl bg-black/25 p-4 text-white backdrop-blur-[2px] sm:p-5">
+              {banner.title && <h2 className="hero-title">{tDb(banner.title)}</h2>}
+              {banner.subtitle && <p className="hero-subtitle">{tDb(banner.subtitle)}</p>}
+              {banner.cta_text && <Link href={banner.cta_url || '/all-products'} className="hero-btn inline-flex">{tDb(banner.cta_text)}<ChevronRight className="h-4 w-4" /></Link>}
+            </div>
+          </div>}
+        </div></div>)}
+        {banners.length > 1 && <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">{banners.map((_, idx) => <button key={idx} onClick={() => setCurrentBanner(idx)} className={`h-2 rounded-full transition-all ${idx === currentBanner ? 'w-8 bg-primary' : 'w-2 bg-primary/30'}`} aria-label={`Banner ${idx + 1}`} />)}</div>}
       </div></div></section>}
 
       {isSectionEnabled('featured_categories') && categories.length > 0 && <section className="section-pad home-category-section"><div className="container-custom"><div className="mb-6 flex items-center justify-between"><div><h2 className="section-heading">{t('জনপ্রিয় ক্যাটাগরি', 'Popular Categories')}</h2><p className="section-subheading">{t('আপনার পছন্দের বীজ এক নজরে', 'Explore seeds by category')}</p></div><Link href="/categories" className="view-all-link">{t('সব ক্যাটাগরি দেখুন →', 'View All Categories →')}</Link></div><div className="cat-grid">{categories.slice(0, 8).map((cat, idx) => { const categoryHref = cat.slug === 'combo-packages' ? '/combos' : `/category/${cat.slug}`; return <Link key={cat.id} href={categoryHref} className={`cat-card group${idx >= 4 ? ' !hidden sm:!flex' : ''}`}><div className="cat-icon-wrap">{cat.image ? <img src={cat.image} alt={lang === 'en' ? (cat.name_en || cat.name_bn) : cat.name_bn} className="h-full w-full rounded-full object-cover" loading="lazy" /> : <Sprout className="h-8 w-8 text-primary" />}</div><span className="cat-label">{lang === 'en' ? (cat.name_en || cat.name_bn) : cat.name_bn}</span></Link>; })}</div></div></section>}

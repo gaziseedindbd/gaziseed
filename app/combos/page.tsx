@@ -18,17 +18,33 @@ export default function CombosPage() {
     if (!ready || !enabled('enable_combos')) return;
 
     const fetchCombos = async () => {
-      // Keep the public storefront list query narrow and independent of the
-      // nested combo_items/products relationship. The detail page handles
-      // combo contents separately. This avoids guest-only RLS failures from
-      // a nested relationship query while preserving the existing data model.
       const { data, error } = await supabase
         .from('combo_packs')
         .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
-      if (!error && data) setCombos(data);
+      if (!error && data) {
+        const comboIds = data.map((combo) => combo.id);
+        let itemCounts: Record<string, number> = {};
+
+        if (comboIds.length > 0) {
+          const { data: items } = await supabase
+            .from('combo_items')
+            .select('combo_id')
+            .in('combo_id', comboIds);
+
+          itemCounts = (items || []).reduce<Record<string, number>>((counts, item) => {
+            counts[item.combo_id] = (counts[item.combo_id] || 0) + 1;
+            return counts;
+          }, {});
+        }
+
+        setCombos(data.map((combo) => ({
+          ...combo,
+          _item_count: itemCounts[combo.id] || 0,
+        })));
+      }
       setLoading(false);
     };
 
@@ -47,6 +63,7 @@ export default function CombosPage() {
   );
 
   const getItemsCount = (combo: any) => {
+    if (combo._item_count > 0) return combo._item_count;
     if (combo.manual_items_list) {
       if (Array.isArray(combo.manual_items_list)) return combo.manual_items_list.length;
       if (typeof combo.manual_items_list === 'string') {

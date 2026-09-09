@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { ChevronDown, Globe2 } from 'lucide-react';
 import { getVisitorCountry, setManualCountry } from '@/lib/supabase/client';
 
@@ -9,9 +9,53 @@ type CountryOption = 'AUTO' | 'BD' | 'IN';
 export function CountrySelector({ mobile = false }: { mobile?: boolean }) {
   const [value, setValue] = useState<CountryOption>('AUTO');
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const saved = localStorage.getItem('gazi_country_override')?.toUpperCase();
     setValue(saved === 'BD' || saved === 'IN' ? saved : 'AUTO');
+  }, []);
+
+  useLayoutEffect(() => {
+    const header = document.querySelector('header');
+    if (!header) return;
+
+    const syncHeaderOffset = () => {
+      const height = Math.ceil(header.getBoundingClientRect().height);
+      document.body.style.setProperty('padding-top', `${height}px`, 'important');
+
+      const homeScope = document.querySelector('.home-premium-scope') as HTMLElement | null;
+      if (homeScope) {
+        homeScope.style.setProperty('padding-top', '0px', 'important');
+      }
+
+      const topBar = header.querySelector('.top-green-bar > div') as HTMLElement | null;
+      const topBarLeft = topBar?.firstElementChild as HTMLElement | null;
+      const topBarRight = topBar?.lastElementChild as HTMLElement | null;
+      const topBarTagline = topBarLeft?.querySelector(':scope > span') as HTMLElement | null;
+
+      if (topBarLeft) {
+        topBarLeft.style.minWidth = '0';
+        topBarLeft.style.flex = '1 1 auto';
+      }
+      if (topBarRight) {
+        topBarRight.style.flexShrink = '0';
+      }
+      if (topBarTagline) {
+        topBarTagline.style.minWidth = '0';
+        topBarTagline.style.overflow = 'hidden';
+        topBarTagline.style.textOverflow = 'ellipsis';
+        topBarTagline.style.whiteSpace = 'nowrap';
+      }
+    };
+
+    syncHeaderOffset();
+    const observer = new ResizeObserver(syncHeaderOffset);
+    observer.observe(header);
+    window.addEventListener('resize', syncHeaderOffset);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', syncHeaderOffset);
+    };
   }, []);
 
   const handleChange = (next: CountryOption) => {

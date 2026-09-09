@@ -1,7 +1,7 @@
 import { createBrowserClient } from '@supabase/ssr';
 
 const FALLBACK_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
-const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmeHN0aHNoeWViYWhrd2JtaW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MzY2MDAsImV4cCI6MjEwNDAxMjYwMH0.oU3ISPzKV6PQ3G0OXoCLHkrVa6qAEjSYoQF8D2Shf-M';
+const FALLBACK_KEY = 'sb_publishable_vCaz5OGrHocUTgpOXmE9xg_QVsuUJc0';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || FALLBACK_KEY;
@@ -35,6 +35,7 @@ export const setManualCountry = (country: 'BD' | 'IN' | null) => {
       localStorage.removeItem('gazi_country_override');
       document.cookie = 'gazi_country_override=; Path=/; Max-Age=0; SameSite=Lax';
     }
+    window.dispatchEvent(new Event('gazi-country-changed'));
   } catch {
     // Keep the IP-detected country when browser storage is unavailable.
   }
@@ -45,7 +46,7 @@ const fetchWithCountry: typeof fetch = async (input, init) => {
     init?.headers || (input instanceof Request ? input.headers : undefined)
   );
   headers.set('x-gazi-country', getVisitorCountry());
-  return fetch(input, { ...init, headers });
+  return fetch(input, { ...init, headers, cache: 'no-store' });
 };
 
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {

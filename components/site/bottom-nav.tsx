@@ -7,20 +7,23 @@ import { Home, ShoppingBag, Truck, LayoutGrid, PhoneCall, BadgeDollarSign } from
 
 export function BottomNav() {
   const pathname = usePathname();
+  const isProductPage = pathname.startsWith('/product/');
 
   const navItems = [
     { label: 'হোম', href: '/', icon: Home },
-    { label: 'সকল প্রোডাক্ট', href: '/all-products', icon: ShoppingBag },
+    { label: 'পণ্য', href: '/all-products', icon: ShoppingBag },
     { label: 'ক্যাটাগরি', href: '/categories', icon: LayoutGrid },
     { label: 'ট্র্যাক', href: '/track-order', icon: Truck },
-    { label: 'ডেলিভারি চার্জ', href: '/charges', icon: BadgeDollarSign },
+    { label: 'চার্জ', href: '/charges', icon: BadgeDollarSign },
     { label: 'যোগাযোগ', href: '/contact', icon: PhoneCall },
   ];
 
   return (
     <nav
       aria-label="Mobile navigation"
-      className="fixed bottom-2 left-2 right-2 z-50 flex min-h-[64px] w-auto items-center justify-around rounded-[20px] border border-primary/10 bg-background/95 px-1.5 py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] shadow-[0_18px_44px_-20px_rgba(15,23,42,.6)] backdrop-blur-xl md:hidden"
+      className={`fixed left-2 right-2 z-50 flex min-h-[64px] w-auto items-center justify-around rounded-[20px] border border-primary/10 bg-background/95 px-1.5 py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] shadow-[0_18px_44px_-20px_rgba(15,23,42,.6)] backdrop-blur-xl md:hidden ${
+        isProductPage ? 'bottom-[calc(5rem+env(safe-area-inset-bottom))]' : 'bottom-2'
+      }`}
     >
       {navItems.map((item) => {
         const Icon = item.icon;
