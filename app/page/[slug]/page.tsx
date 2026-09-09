@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getPageBySlug } from '@/lib/data';
 import { getVisitorCountry } from '@/lib/supabase/client';
 import type { Page as PageType } from '@/lib/supabase/types';
