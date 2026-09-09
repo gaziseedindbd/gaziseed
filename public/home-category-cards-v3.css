@@ -249,3 +249,136 @@
 }
 
 @media(prefers-reduced-motion:reduce){.home-premium-scope .cat-card{transition:none!important}}
+
+/* HOMEPAGE HERO FINAL FIX: use explicit semantic layers, never child-position guesses. */
+.home-premium-scope .hero-wrap{
+  aspect-ratio:2048/366!important;
+  min-height:0!important;
+  max-height:none!important;
+  height:auto!important;
+  isolation:isolate!important;
+}
+.home-premium-scope .hero-wrap>div.block{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+.home-premium-scope .hero-wrap .hero-inner{
+  position:relative!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+.home-premium-scope .hero-wrap .hero-image-wrap{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  z-index:0!important;
+  overflow:hidden!important;
+  border-radius:0!important;
+  transform:none!important;
+}
+.home-premium-scope .hero-wrap .hero-image-wrap picture{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  margin:0!important;
+  padding:0!important;
+  display:block!important;
+  z-index:0!important;
+}
+.home-premium-scope .hero-wrap .hero-image-wrap img{
+  position:absolute!important;
+  inset:0!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:0!important;
+  padding:0!important;
+  object-fit:cover!important;
+  object-position:center!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  transform:none!important;
+  filter:none!important;
+}
+.home-premium-scope .hero-wrap .hero-content-overlay{
+  position:absolute!important;
+  inset:0!important;
+  z-index:4!important;
+  width:100%!important;
+  height:100%!important;
+  margin:0!important;
+  padding:clamp(1rem,3vw,2.5rem)!important;
+  display:flex!important;
+  align-items:flex-end!important;
+  justify-content:flex-start!important;
+  pointer-events:none!important;
+  background:transparent!important;
+}
+.home-premium-scope .hero-wrap .hero-content-overlay>div{
+  pointer-events:auto!important;
+  max-width:min(52%,680px)!important;
+  margin:0!important;
+}
+.home-premium-scope .hero-wrap .hero-content-overlay:empty{display:none!important}
+
+/* Neutralize the old structural selectors that mistook the image/content nodes for each other. */
+.home-premium-scope .hero-wrap .hero-inner>div:first-child,
+.home-premium-scope .hero-wrap .hero-inner>div:last-child{
+  inset:auto!important;
+  width:auto!important;
+  max-width:none!important;
+  height:auto!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  transform:none!important;
+}
+.home-premium-scope .hero-wrap .hero-inner>div.hero-image-wrap{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  z-index:0!important;
+}
+.home-premium-scope .hero-wrap .hero-inner>div.hero-content-overlay{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  z-index:4!important;
+  padding:clamp(1rem,3vw,2.5rem)!important;
+}
+
+@media(max-width:767px){
+  .home-premium-scope .hero-wrap{
+    aspect-ratio:2.25/1!important;
+    min-height:0!important;
+  }
+  .home-premium-scope .hero-wrap .hero-content-overlay{
+    padding:.8rem!important;
+    align-items:flex-end!important;
+  }
+  .home-premium-scope .hero-wrap .hero-content-overlay>div{
+    max-width:88%!important;
+  }
+}
