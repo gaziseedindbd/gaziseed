@@ -23,6 +23,7 @@ import HomeFloatingReviews from '@/components/site/home-floating-reviews';
 import BrandNormalizer from '@/components/site/brand-normalizer';
 import PageShare from '@/components/site/page-share';
 import { AuthSessionBridge } from '@/components/site/auth-session-bridge';
+import HomePromoSync from '@/components/site/home-promo-sync';
 
 const hind = Hind({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'], variable: '--font-hind', display: 'swap' });
 
@@ -72,6 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <AnnouncementBar />
                 <SiteHeader />
                 <AuthSessionBridge />
+                <HomePromoSync />
                 <main className="min-h-screen">{children}</main>
                 <SiteFooter />
                 <WhatsAppButton />
