@@ -29,7 +29,8 @@
 
 /* Remove legacy decorative marks/circles visible in the old card design. */
 .home-premium-scope .home-category-section .cat-card::before,
-.home-premium-scope .home-category-section .cat-icon-wrap::before{
+.home-premium-scope .home-category-section .cat-icon-wrap::before,
+.home-premium-scope .home-category-section .cat-label::before{
   content:none!important;
   display:none!important;
 }
