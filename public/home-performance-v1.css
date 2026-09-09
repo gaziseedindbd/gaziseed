@@ -1,0 +1,4 @@
+.home-premium-scope .home-lazy-section{content-visibility:auto;contain-intrinsic-size:900px;}
+.home-premium-scope .home-product-section{content-visibility:auto;contain-intrinsic-size:620px;}
+.home-premium-scope .home-promo-section,.home-premium-scope .home-stats-strip,.home-premium-scope .home-trust-strip{content-visibility:auto;contain-intrinsic-size:320px;}
+@media(prefers-reduced-motion:no-preference){.home-premium-scope .home-product-section{contain:layout paint style;}}
