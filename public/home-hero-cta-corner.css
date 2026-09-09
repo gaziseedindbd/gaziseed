@@ -1,0 +1,28 @@
+/* GAZI SEED — Hero CTA corner positioning
+   Desktop: bottom-right corner of the banner.
+   Mobile: bottom-right with compact safe-area spacing. */
+.home-premium-scope .hero-content-overlay{
+  align-items:flex-end!important;
+  justify-content:flex-end!important;
+  padding:24px!important;
+}
+.home-premium-scope .hero-content-overlay>div{
+  width:auto!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0!important;
+  background:transparent!important;
+  backdrop-filter:none!important;
+}
+.home-premium-scope .hero-content-overlay .hero-title,
+.home-premium-scope .hero-content-overlay .hero-subtitle{
+  display:none!important;
+}
+.home-premium-scope .hero-content-overlay .hero-btn{
+  pointer-events:auto!important;
+  margin:0!important;
+  align-self:flex-end!important;
+}
+@media(max-width:767px){
+  .home-premium-scope .hero-content-overlay{padding:14px!important}
+}
