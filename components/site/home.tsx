@@ -124,6 +124,7 @@ export default function Home() {
       <link rel="stylesheet" href="/home-category-labels-premium-v2.css" />
       <link rel="stylesheet" href="/home-modern-v1.css" />
       <link rel="stylesheet" href="/home-category-cards-v3.css" />
+      <link rel="stylesheet" href="/home-hero-cta-final.css?v=1" />
 
       {isSectionEnabled('hero_slider') && banners.length > 0 && <section className="section-pad home-hero-section"><div className="container-custom"><div className="hero-wrap relative overflow-hidden">
         {banners.map((banner, idx) => <div key={banner.id} className={`transition-opacity duration-700 ${idx === currentBanner ? 'block' : 'hidden'}`}><div className="hero-inner relative block p-0">
