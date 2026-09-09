@@ -1,0 +1,89 @@
+/* GAZI SEED — final hero CTA positioning override
+   Must load after the premium home styles because those styles target
+   hero-inner children by first/last-child selectors. */
+.home-premium-scope .hero-wrap > div.block > .hero-inner > .hero-image-wrap{
+  position:absolute!important;
+  inset:0!important;
+  z-index:0!important;
+  width:100%!important;
+  height:100%!important;
+  margin:0!important;
+  padding:0!important;
+}
+.home-premium-scope .hero-wrap > div.block > .hero-inner > .hero-image-wrap picture{
+  position:absolute!important;
+  inset:0!important;
+  z-index:0!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  margin:0!important;
+  padding:0!important;
+}
+.home-premium-scope .hero-wrap > div.block > .hero-inner > .hero-image-wrap picture img{
+  position:absolute!important;
+  inset:0!important;
+  z-index:0!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  object-fit:cover!important;
+  object-position:center center!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+.home-premium-scope .hero-wrap > div.block > .hero-inner > .hero-content-overlay{
+  position:absolute!important;
+  inset:0!important;
+  z-index:10!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-end!important;
+  justify-content:flex-end!important;
+  width:100%!important;
+  height:100%!important;
+  margin:0!important;
+  padding:24px!important;
+  background:transparent!important;
+  pointer-events:none!important;
+}
+.home-premium-scope .hero-wrap > div.block > .hero-inner > .hero-content-overlay > div{
+  position:relative!important;
+  z-index:11!important;
+  width:auto!important;
+  max-width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  background:transparent!important;
+  border-radius:0!important;
+  backdrop-filter:none!important;
+  pointer-events:auto!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-end!important;
+}
+.home-premium-scope .hero-wrap > div.block > .hero-inner > .hero-content-overlay .hero-title,
+.home-premium-scope .hero-wrap > div.block > .hero-inner > .hero-content-overlay .hero-subtitle{
+  position:relative!important;
+  z-index:11!important;
+  align-self:flex-end!important;
+  text-align:right!important;
+}
+.home-premium-scope .hero-wrap > div.block > .hero-inner > .hero-content-overlay .hero-btn{
+  position:relative!important;
+  z-index:12!important;
+  display:inline-flex!important;
+  align-self:flex-end!important;
+  margin-top:.9rem!important;
+  margin-right:0!important;
+  pointer-events:auto!important;
+}
+@media(max-width:767px){
+  .home-premium-scope .hero-wrap > div.block > .hero-inner > .hero-content-overlay{padding:14px!important}
+  .home-premium-scope .hero-wrap > div.block > .hero-inner > .hero-content-overlay > div{max-width:100%!important}
+}
