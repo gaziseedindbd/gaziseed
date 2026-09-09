@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Sprout } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
-import { processReferralOnSignup } from '@/lib/referral';
 import { useLang } from '@/components/site/language-provider';
 
 export default function AuthCallbackPage() {
@@ -39,8 +38,15 @@ export default function AuthCallbackPage() {
         return;
       }
 
-      if (data.user) {
-        await processReferralOnSignup(data.user.id, referralCode);
+      if (data.user && referralCode) {
+        try {
+          await supabase.rpc('create_referral_on_signup', {
+            p_referral_code: referralCode,
+            p_new_user_id: data.user.id,
+          });
+        } catch {
+          // Referral tracking must never block account access.
+        }
       }
 
       router.replace(next);
