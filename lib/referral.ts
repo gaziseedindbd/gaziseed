@@ -81,46 +81,12 @@ export async function processReferralOnSignup(
   if (!refCode) return;
 
   try {
-    // The Admin switch is authoritative: when OFF, no referral relationship
-    // may be created even if a previously shared referral link is clicked.
-    const { data: settings, error: settingsError } = await supabase
-      .from('referral_settings')
-      .select('enabled')
-      .eq('id', 1)
-      .maybeSingle();
-
-    if (settingsError || settings?.enabled !== true) {
-      clearStoredReferralCode();
-      return;
-    }
-
-    const { data: referrerCode, error: refError } = await supabase
-      .from('referral_codes')
-      .select('user_id, id')
-      .eq('code', refCode)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (refError || !referrerCode) return;
-
-    if (referrerCode.user_id === newUserId) return;
-
-    const { data: existing } = await supabase
-      .from('referrals')
-      .select('id')
-      .eq('referred_id', newUserId)
-      .maybeSingle();
-
-    if (existing) return;
-
-    const { error: insertError } = await supabase.from('referrals').insert({
-      referrer_id: referrerCode.user_id,
-      referred_id: newUserId,
-      referral_code_id: referrerCode.id,
-      status: 'pending',
+    const { error } = await supabase.rpc('create_referral_on_signup', {
+      p_referral_code: refCode,
+      p_new_user_id: newUserId,
     });
 
-    if (!insertError) clearStoredReferralCode();
+    if (!error) clearStoredReferralCode();
   } catch {
     // Silently ignore — referral tracking must never break signup
   }
