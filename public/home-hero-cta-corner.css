@@ -1,22 +1,20 @@
 /* GAZI SEED — Hero CTA corner positioning
+   Keep banner copy intact; position only the CTA at bottom-right.
    Desktop: bottom-right corner of the banner.
    Mobile: bottom-right with compact safe-area spacing. */
 .home-premium-scope .hero-content-overlay{
+  display:flex!important;
   align-items:flex-end!important;
   justify-content:flex-end!important;
   padding:24px!important;
 }
 .home-premium-scope .hero-content-overlay>div{
   width:auto!important;
-  max-width:none!important;
+  max-width:min(52%,680px)!important;
   margin:0!important;
   padding:0!important;
   background:transparent!important;
   backdrop-filter:none!important;
-}
-.home-premium-scope .hero-content-overlay .hero-title,
-.home-premium-scope .hero-content-overlay .hero-subtitle{
-  display:none!important;
 }
 .home-premium-scope .hero-content-overlay .hero-btn{
   pointer-events:auto!important;
@@ -25,4 +23,5 @@
 }
 @media(max-width:767px){
   .home-premium-scope .hero-content-overlay{padding:14px!important}
+  .home-premium-scope .hero-content-overlay>div{max-width:88%!important}
 }
