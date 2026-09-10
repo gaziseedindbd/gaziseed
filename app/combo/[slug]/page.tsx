@@ -67,7 +67,7 @@ function getComboHeroImages(combo: Record<string, any>, items: ComboItem[]): str
     .map((item) => getProductImage(item.products))
     .filter((value) => value && !value.includes('placehold.co'));
 
-  return Array.from(new Set([...comboImages, ...productImages]));
+  return Array.from(new Set([...productImages, ...comboImages]));
 }
 
 export default function ComboLandingPage() {
@@ -247,7 +247,7 @@ export default function ComboLandingPage() {
                   {heroImages.length > 0 ? (
                     <div className="grid min-h-[360px] items-center gap-4 sm:min-h-[440px] sm:grid-cols-3 sm:gap-5">
                       {heroImages.slice(0, 3).map((image, index) => (
-                        <div key={`${image}-${index}`} className={`relative overflow-hidden rounded-[28px] border border-slate-200/90 bg-white shadow-[0_18px_35px_rgba(15,23,42,.12)] ${index === 1 ? 'sm:-translate-y-7 sm:scale-[1.05]' : 'sm:translate-y-2'}`}>
+                        <div key={`${image}-${index}`} className={`relative overflow-hidden rounded-[28px] border border-slate-200/90 bg-white shadow-[0_18px_35px_rgba(15,23,42,.12)] ${index === 0 ? 'sm:-rotate-3 sm:-translate-y-1' : index === 1 ? 'sm:-translate-y-8 sm:scale-[1.08] sm:z-10' : 'sm:rotate-3 sm:translate-y-3'}`}>
                           <div className="absolute left-3 top-3 z-10 rounded-full bg-white/90 px-2.5 py-1 text-[9px] font-black text-emerald-900 shadow-sm">0{index + 1}</div>
                           <img src={image} alt={`${combo.title_bn} product ${index + 1}`} className="aspect-[4/5] h-full w-full object-contain p-3" loading={index === 0 ? 'eager' : 'lazy'} />
                         </div>
