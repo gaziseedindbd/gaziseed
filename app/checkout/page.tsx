@@ -164,7 +164,7 @@ export default function CheckoutPage() {
         if (data?.already_completed && data?.order_id) {
           localStorage.removeItem('cashfree_pending_order_id');
           navigatedToSuccess = true;
-          router.replace(`/order-success?order_id=${data.order_id}`);
+          router.replace(data.order_number ? `/order-success?number=${encodeURIComponent(data.order_number)}` : `/order-success?order_id=${data.order_id}`);
           return;
         }
         if (data?.paid === false) {
