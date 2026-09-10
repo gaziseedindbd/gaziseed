@@ -1,0 +1,39 @@
+name: Fix combo items query
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch combo item loading
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('app/combo/[slug]/page.tsx')
+          s = p.read_text()
+          old = """      // Important: combo pages need the same gallery source used by product cards.\n      // Product uploads are stored in product_images, so we load that relation here.\n      const { data: items } = await supabase\n        .from('combo_items')\n        .select('product_id, quantity, unit_type, products(*, product_images(image_url, display_order))')\n        .eq('combo_id', data.id);\n\n      setCombo({ ...data, combo_items: items || [] });\n"""
+          new = """      // Load combo items separately from the product gallery. This avoids losing all\n      // combo items when a nested relationship query is unavailable to the client.\n      const { data: items } = await supabase\n        .from('combo_items')\n        .select('product_id, quantity, unit_type, products(*)')\n        .eq('combo_id', data.id);\n\n      const productIds = (items || []).map((item: any) => item.product_id).filter(Boolean);\n      const { data: galleryRows } = productIds.length\n        ? await supabase\n            .from('product_images')\n            .select('product_id, image_url, display_order')\n            .in('product_id', productIds)\n            .order('display_order', { ascending: true })\n        : { data: [] };\n\n      const galleryByProduct = new Map<string, any[]>();\n      (galleryRows || []).forEach((row: any) => {\n        const current = galleryByProduct.get(row.product_id) || [];\n        current.push({ image_url: row.image_url, display_order: row.display_order });\n        galleryByProduct.set(row.product_id, current);\n      });\n\n      const enrichedItems = (items || []).map((item: any) => ({\n        ...item,\n        products: item.products\n          ? { ...item.products, product_images: galleryByProduct.get(item.product_id) || [] }\n          : item.products,\n      }));\n\n      setCombo({ ...data, combo_items: enrichedItems });\n"""
+          if old not in s:
+              raise SystemExit('Expected combo loader block was not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/combo/[slug]/page.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: preserve combo items and load product galleries"
+          git push
