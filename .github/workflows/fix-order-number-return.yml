@@ -1,0 +1,30 @@
+name: Fix Cashfree success order number
+on:
+  push:
+    branches: [main]
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    if: github.event.head_commit.message != 'Remove temporary order number patch workflow'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch checkout return
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/checkout/page.tsx')
+          s = p.read_text()
+          old = 'router.replace(`/order-success?order_id=${data.order_id}`);'
+          new = 'router.replace(data.order_number ? `/order-success?number=${encodeURIComponent(data.order_number)}` : `/order-success?order_id=${data.order_id}`);'
+          if old not in s:
+              raise SystemExit('target line not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/checkout/page.tsx
+          git commit -m 'Fix Cashfree success order number display'
+          git push
