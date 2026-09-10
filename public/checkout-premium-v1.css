@@ -1,84 +1,208 @@
-/* GAZI SEED — premium checkout visual system */
+/* GAZI SEED — premium checkout visual system v2 */
 
 main[class*="bg-slate-50/90"] {
   position: relative;
   isolation: isolate;
+  overflow: clip;
   background:
-    radial-gradient(circle at 9% 7%, rgba(16, 185, 129, .08), transparent 24%),
-    radial-gradient(circle at 91% 22%, rgba(34, 197, 94, .07), transparent 23%),
-    #f7faf9;
+    radial-gradient(circle at 7% 4%, rgba(16, 185, 129, .10), transparent 22%),
+    radial-gradient(circle at 93% 18%, rgba(34, 197, 94, .075), transparent 22%),
+    linear-gradient(180deg, #f8fbfa 0%, #f4f8f7 100%);
+}
+
+main[class*="bg-slate-50/90"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(16, 185, 129, .018) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, .018) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,.28), transparent 58%);
+  z-index: -1;
 }
 
 main[class*="bg-slate-50/90"] .container-custom {
   max-width: 1240px;
 }
 
-main[class*="bg-slate-50/90"] form > .grid {
-  align-items: start;
+/* Premium checkout hero */
+main[class*="bg-slate-50/90"] > .container-custom > div.mb-8 {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(16, 185, 129, .14) !important;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(16, 185, 129, .11), transparent 32%),
+    linear-gradient(135deg, rgba(255,255,255,.98), rgba(247,252,250,.96)) !important;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, .07) !important;
 }
 
-/* Top checkout heading */
-main[class*="bg-slate-50/90"] form + *,
-main[class*="bg-slate-50/90"] form {
-  scroll-margin-top: 96px;
+main[class*="bg-slate-50/90"] > .container-custom > div.mb-8::after {
+  content: "";
+  position: absolute;
+  right: -44px;
+  top: -56px;
+  width: 180px;
+  height: 180px;
+  border-radius: 999px;
+  border: 18px solid rgba(16, 185, 129, .06);
+  box-shadow: 0 0 0 18px rgba(16,185,129,.025), 0 0 0 36px rgba(16,185,129,.018);
+  pointer-events: none;
 }
 
+main[class*="bg-slate-50/90"] > .container-custom > div.mb-8 h1 {
+  letter-spacing: -.035em;
+}
+
+main[class*="bg-slate-50/90"] > .container-custom > div.mb-8 .inline-flex {
+  border-color: rgba(5, 150, 105, .16) !important;
+  box-shadow: 0 7px 20px rgba(5,150,105,.08);
+}
+
+/* Progress steps */
+main[class*="bg-slate-50/90"] > .container-custom > div.mb-8 .flex.items-center.gap-2 {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  row-gap: 8px;
+}
+
+main[class*="bg-slate-50/90"] > .container-custom > div.mb-8 .flex.items-center.gap-2 > span {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(15,23,42,.07);
+  background: rgba(255,255,255,.76);
+  box-shadow: 0 5px 14px rgba(15,23,42,.035);
+}
+
+main[class*="bg-slate-50/90"] > .container-custom > div.mb-8 .flex.items-center.gap-2 > span.text-primary {
+  border-color: rgba(16,185,129,.16);
+  background: rgba(16,185,129,.09);
+}
+
+/* Main cards */
 main[class*="bg-slate-50/90"] form > .grid > div:first-child > section,
 main[class*="bg-slate-50/90"] form > .grid > aside > section {
   border-color: rgba(15, 23, 42, .075) !important;
-  box-shadow: 0 16px 45px rgba(15, 23, 42, .055) !important;
-  backdrop-filter: blur(8px);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, .055) !important;
+  backdrop-filter: blur(10px);
+  transition: box-shadow .22s ease, transform .22s ease, border-color .22s ease;
 }
 
 main[class*="bg-slate-50/90"] form > .grid > div:first-child > section:hover,
 main[class*="bg-slate-50/90"] form > .grid > aside > section:hover {
-  box-shadow: 0 20px 55px rgba(15, 23, 42, .07) !important;
+  border-color: rgba(16,185,129,.13) !important;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, .075) !important;
 }
 
-/* Section headers */
-main[class*="bg-slate-50/90"] form > .grid > div:first-child > section > div:first-child {
-  border-color: rgba(15, 23, 42, .075) !important;
+/* Delivery card */
+main[class*="bg-slate-50/90"] form > .grid > div:first-child > section:first-child {
+  position: relative;
+  background: linear-gradient(180deg, rgba(255,255,255,.99), rgba(250,253,252,.98)) !important;
 }
 
-/* Field labels */
-main[class*="bg-slate-50/90"] label {
+main[class*="bg-slate-50/90"] form > .grid > div:first-child > section:first-child > div:first-child {
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+}
+
+main[class*="bg-slate-50/90"] form > .grid > div:first-child > section:first-child > div:first-child > div:first-child > div:first-child {
+  height: 44px;
+  width: 44px;
+  border-radius: 15px;
+  box-shadow: inset 0 0 0 1px rgba(16,185,129,.12), 0 8px 18px rgba(16,185,129,.08);
+}
+
+/* Labels */
+main[class*="bg-slate-50/90"] form label {
+  color: #475569;
   letter-spacing: .005em;
 }
 
-/* Inputs: cleaner, slightly taller, premium focus */
-main[class*="bg-slate-50/90"] input,
-main[class*="bg-slate-50/90"] textarea {
-  border-color: rgba(15, 23, 42, .13) !important;
-  box-shadow: inset 0 1px 1px rgba(15, 23, 42, .018);
+main[class*="bg-slate-50/90"] form label .text-primary {
+  filter: drop-shadow(0 2px 4px rgba(5,150,105,.15));
+}
+
+/* Inputs / textarea */
+main[class*="bg-slate-50/90"] form input,
+main[class*="bg-slate-50/90"] form textarea,
+main[class*="bg-slate-50/90"] form select {
+  min-height: 52px;
+  border-color: rgba(15, 23, 42, .12) !important;
+  background: rgba(255,255,255,.92) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 4px 13px rgba(15,23,42,.022);
   transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease, transform .18s ease;
 }
 
-main[class*="bg-slate-50/90"] input:hover,
-main[class*="bg-slate-50/90"] textarea:hover {
-  border-color: rgba(16, 185, 129, .35) !important;
+main[class*="bg-slate-50/90"] form input:hover,
+main[class*="bg-slate-50/90"] form textarea:hover,
+main[class*="bg-slate-50/90"] form select:hover {
+  border-color: rgba(16, 185, 129, .34) !important;
+  background: #fff !important;
 }
 
-main[class*="bg-slate-50/90"] input:focus,
-main[class*="bg-slate-50/90"] textarea:focus {
-  border-color: rgba(5, 150, 105, .7) !important;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, .10), 0 8px 22px rgba(15, 23, 42, .035) !important;
+main[class*="bg-slate-50/90"] form input:focus,
+main[class*="bg-slate-50/90"] form textarea:focus,
+main[class*="bg-slate-50/90"] form select:focus {
+  border-color: rgba(5, 150, 105, .72) !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, .10), 0 10px 24px rgba(15, 23, 42, .045) !important;
   transform: translateY(-1px);
 }
 
-/* Saved address tiles */
-main[class*="bg-slate-50/90"] button[aria-pressed="true"] {
-  box-shadow: 0 12px 28px rgba(5, 150, 105, .10);
+main[class*="bg-slate-50/90"] form textarea {
+  padding-top: 14px;
 }
 
-/* Coupon / wallet cards */
-main[class*="bg-slate-50/90"] form > .grid > div:first-child > section:nth-child(2),
+/* Address selectors */
+main[class*="bg-slate-50/90"] form select {
+  cursor: pointer;
+  font-weight: 650;
+}
+
+/* Saved address */
+main[class*="bg-slate-50/90"] form button[aria-pressed] {
+  box-shadow: 0 8px 20px rgba(15,23,42,.035);
+}
+
+main[class*="bg-slate-50/90"] form button[aria-pressed="true"] {
+  border-color: rgba(5,150,105,.65) !important;
+  background: linear-gradient(135deg, rgba(16,185,129,.10), rgba(16,185,129,.035)) !important;
+  box-shadow: 0 14px 30px rgba(5,150,105,.11) !important;
+}
+
+/* Coupon block */
+main[class*="bg-slate-50/90"] form > .grid > div:first-child > section:nth-child(2) {
+  position: relative;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(245,158,11,.08), transparent 28%),
+    linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,253,252,.98)) !important;
+}
+
+main[class*="bg-slate-50/90"] form > .grid > div:first-child > section:nth-child(2) > div:first-child {
+  border-radius: 18px;
+}
+
+main[class*="bg-slate-50/90"] form > .grid > div:first-child > section:nth-child(2) .text-primary {
+  color: rgb(5 150 105);
+}
+
+main[class*="bg-slate-50/90"] form > .grid > div:first-child > section:nth-child(2) input {
+  border-radius: 17px !important;
+  letter-spacing: .07em;
+}
+
+main[class*="bg-slate-50/90"] form > .grid > div:first-child > section:nth-child(2) button[type="button"] {
+  min-width: 104px;
+  border-radius: 17px !important;
+  box-shadow: 0 10px 20px rgba(5,150,105,.18);
+}
+
+/* Wallet */
 main[class*="bg-slate-50/90"] form > .grid > div:first-child > section:nth-child(3) {
-  transition: box-shadow .2s ease, transform .2s ease;
-}
-
-main[class*="bg-slate-50/90"] form > .grid > div:first-child > section:nth-child(2):hover,
-main[class*="bg-slate-50/90"] form > .grid > div:first-child > section:nth-child(3):hover {
-  transform: translateY(-1px);
+  border-color: rgba(16,185,129,.16) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(16,185,129,.12), transparent 28%),
+    linear-gradient(145deg, rgba(247,255,251,.98), rgba(255,255,255,.98)) !important;
 }
 
 /* Order summary */
@@ -87,64 +211,90 @@ main[class*="bg-slate-50/90"] aside {
 }
 
 main[class*="bg-slate-50/90"] aside > section {
-  border-radius: 28px !important;
+  border-radius: 30px !important;
   overflow: hidden;
-  background: rgba(255,255,255,.96) !important;
+  background: rgba(255,255,255,.98) !important;
 }
 
 main[class*="bg-slate-50/90"] aside > section > div:first-child {
-  background: linear-gradient(180deg, rgba(5,150,105,.045), rgba(255,255,255,0));
+  background:
+    radial-gradient(circle at 100% 0%, rgba(16,185,129,.12), transparent 35%),
+    linear-gradient(180deg, rgba(5,150,105,.055), rgba(255,255,255,0));
 }
 
 main[class*="bg-slate-50/90"] aside .max-h-72 {
   scrollbar-width: thin;
-  scrollbar-color: rgba(16,185,129,.28) transparent;
+  scrollbar-color: rgba(16,185,129,.30) transparent;
 }
 
 main[class*="bg-slate-50/90"] aside .max-h-72 > div {
-  padding: 7px 9px;
-  border-radius: 17px;
-  transition: background-color .16s ease;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  transition: background-color .16s ease, border-color .16s ease, transform .16s ease;
 }
 
 main[class*="bg-slate-50/90"] aside .max-h-72 > div:hover {
-  background: rgba(16,185,129,.045);
+  border-color: rgba(16,185,129,.10);
+  background: rgba(16,185,129,.042);
+  transform: translateX(2px);
 }
 
 main[class*="bg-slate-50/90"] aside .max-h-72 img {
-  border-radius: 15px;
+  border-radius: 16px;
 }
 
 /* Total emphasis */
 main[class*="bg-slate-50/90"] aside .text-2xl {
-  font-size: 1.72rem !important;
+  font-size: 1.78rem !important;
+  letter-spacing: -.035em;
 }
 
-/* Main CTA */
+main[class*="bg-slate-50/90"] aside .text-primary {
+  text-shadow: 0 3px 15px rgba(5,150,105,.10);
+}
+
+/* CTA */
 main[class*="bg-slate-50/90"] aside button[type="submit"] {
-  min-height: 56px !important;
+  min-height: 58px !important;
   border-radius: 18px !important;
-  font-size: .94rem !important;
+  font-size: .96rem !important;
   letter-spacing: -.01em;
-  box-shadow: 0 14px 26px rgba(5, 150, 105, .22) !important;
+  box-shadow: 0 15px 30px rgba(5, 150, 105, .24) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+main[class*="bg-slate-50/90"] aside button[type="submit"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 25%, rgba(255,255,255,.20) 46%, transparent 68%);
+  transform: translateX(-100%);
+  transition: transform .55s ease;
+}
+
+main[class*="bg-slate-50/90"] aside button[type="submit"]:hover:not(:disabled)::before {
+  transform: translateX(100%);
 }
 
 main[class*="bg-slate-50/90"] aside button[type="submit"]:hover:not(:disabled) {
-  box-shadow: 0 18px 34px rgba(5, 150, 105, .28) !important;
+  box-shadow: 0 20px 38px rgba(5,150,105,.30) !important;
   transform: translateY(-2px);
 }
 
 /* Trust tiles */
 main[class*="bg-slate-50/90"] aside .grid.grid-cols-3 > div {
-  border: 1px solid rgba(15, 23, 42, .05);
-  background: rgba(248,250,249,.92) !important;
+  border: 1px solid rgba(16,185,129,.08);
+  background: linear-gradient(180deg, rgba(248,252,250,.98), rgba(242,247,245,.94)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
 }
 
 /* Desktop secure-processing card */
 main[class*="bg-slate-50/90"] aside + div {
-  border-color: rgba(16,185,129,.16) !important;
-  background: rgba(255,255,255,.9) !important;
-  box-shadow: 0 12px 30px rgba(15,23,42,.04);
+  border-color: rgba(16,185,129,.14) !important;
+  background: rgba(255,255,255,.88) !important;
+  box-shadow: 0 14px 32px rgba(15,23,42,.045);
 }
 
 /* Mobile action bar */
@@ -153,15 +303,22 @@ main[class*="bg-slate-50/90"] .fixed.inset-x-3.bottom-3 {
 }
 
 main[class*="bg-slate-50/90"] .fixed.inset-x-3.bottom-3 > div {
-  border-color: rgba(15,23,42,.10) !important;
-  box-shadow: 0 18px 45px rgba(15,23,42,.18) !important;
+  border-color: rgba(16,185,129,.14) !important;
+  background: rgba(255,255,255,.94) !important;
+  box-shadow: 0 20px 50px rgba(15,23,42,.20) !important;
+  backdrop-filter: blur(18px);
+}
+
+main[class*="bg-slate-50/90"] .fixed.inset-x-3.bottom-3 button {
+  min-height: 50px;
+  border-radius: 17px;
 }
 
 @media (max-width: 1023px) {
   main[class*="bg-slate-50/90"] {
     background:
-      radial-gradient(circle at 8% 2%, rgba(16,185,129,.065), transparent 34%),
-      #f8fbfa;
+      radial-gradient(circle at 8% 2%, rgba(16,185,129,.075), transparent 34%),
+      #f7fbf9;
   }
 
   main[class*="bg-slate-50/90"] .container-custom {
@@ -170,19 +327,44 @@ main[class*="bg-slate-50/90"] .fixed.inset-x-3.bottom-3 > div {
 }
 
 @media (max-width: 639px) {
+  main[class*="bg-slate-50/90"]::before {
+    display: none;
+  }
+
   main[class*="bg-slate-50/90"] .container-custom {
-    padding-left: 14px !important;
-    padding-right: 14px !important;
-    padding-bottom: 118px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    padding-bottom: 120px !important;
+  }
+
+  main[class*="bg-slate-50/90"] > .container-custom > div.mb-8 {
+    border-radius: 24px !important;
+    padding: 18px !important;
+  }
+
+  main[class*="bg-slate-50/90"] > .container-custom > div.mb-8 .flex.items-center.gap-2 {
+    justify-content: flex-start;
+  }
+
+  main[class*="bg-slate-50/90"] > .container-custom > div.mb-8 .flex.items-center.gap-2 > span {
+    min-height: 31px;
+    padding: 0 10px;
+    font-size: 10px;
   }
 
   main[class*="bg-slate-50/90"] form > .grid > div:first-child > section,
   main[class*="bg-slate-50/90"] form > .grid > aside > section {
-    border-radius: 23px !important;
+    border-radius: 24px !important;
   }
 
   main[class*="bg-slate-50/90"] form > .grid > div:first-child > section {
-    padding: 18px !important;
+    padding: 17px !important;
+  }
+
+  main[class*="bg-slate-50/90"] form input,
+  main[class*="bg-slate-50/90"] form textarea,
+  main[class*="bg-slate-50/90"] form select {
+    min-height: 50px;
   }
 
   main[class*="bg-slate-50/90"] aside > section > div:first-child,
@@ -191,12 +373,12 @@ main[class*="bg-slate-50/90"] .fixed.inset-x-3.bottom-3 > div {
   }
 
   main[class*="bg-slate-50/90"] aside .max-h-72 {
-    padding: 14px 17px !important;
+    padding: 12px 15px !important;
   }
 
   main[class*="bg-slate-50/90"] .fixed.inset-x-3.bottom-3 {
-    left: 10px;
-    right: 10px;
+    left: 8px;
+    right: 8px;
   }
 }
 
