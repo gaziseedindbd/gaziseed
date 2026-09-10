@@ -1,0 +1,43 @@
+name: Refine combo hero
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Refine product-first hero composition
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('app/combo/[slug]/page.tsx')
+          s = p.read_text()
+          s = s.replace(
+              "return Array.from(new Set([...comboImages, ...productImages]));",
+              "return Array.from(new Set([...productImages, ...comboImages]));",
+          )
+          s = s.replace(
+              "${index === 1 ? 'sm:-translate-y-7 sm:scale-[1.05]' : 'sm:translate-y-2'}",
+              "${index === 0 ? 'sm:-rotate-3 sm:-translate-y-1' : index === 1 ? 'sm:-translate-y-8 sm:scale-[1.08] sm:z-10' : 'sm:rotate-3 sm:translate-y-3'}",
+          )
+          p.write_text(s)
+          PY
+
+      - name: Commit refinement
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/combo/[slug]/page.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m "design: make combo hero product-first"
+          git push
