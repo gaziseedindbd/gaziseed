@@ -50,6 +50,14 @@ type WalletSummary = {
   enabled: boolean;
 };
 
+declare global {
+  interface Window {
+    Cashfree?: (options: { mode: 'production' | 'sandbox' }) => {
+      checkout: (options: { paymentSessionId: string }) => Promise<unknown> | unknown;
+    };
+  }
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { t } = useLang();
@@ -106,6 +114,49 @@ export default function CheckoutPage() {
 
     return () => window.removeEventListener('cart-updated', handler);
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('cashfree_return') !== '1') return;
+    const cashfreeOrderId = params.get('order_id');
+    if (!cashfreeOrderId) return;
+
+    let active = true;
+    setLoading(true);
+    setError('');
+
+    (async () => {
+      try {
+        const { data, error: verifyError } = await supabase.functions.invoke('cashfree-complete-order', {
+          body: { cashfree_order_id: cashfreeOrderId },
+        });
+        if (!active) return;
+        if (verifyError) throw verifyError;
+        if (data?.completed && data?.order_number) {
+          localStorage.removeItem('gazi_cart');
+          window.dispatchEvent(new Event('cart-updated'));
+          router.replace(`/order-success?number=${data.order_number}`);
+          return;
+        }
+        if (data?.already_completed && data?.order_id) {
+          router.replace(`/order-success?order_id=${data.order_id}`);
+          return;
+        }
+        if (data?.paid === false) {
+          setError(t('পেমেন্ট সম্পন্ন হয়নি। আবার চেষ্টা করুন।', 'Payment was not completed. Please try again.'));
+        } else {
+          setError(data?.error || t('পেমেন্ট যাচাই করা যায়নি।', 'Payment could not be verified.'));
+        }
+      } catch {
+        if (active) setError(t('পেমেন্ট যাচাই করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।', 'Unable to verify the payment. Please try again.'));
+      } finally {
+        if (active) setLoading(false);
+        window.history.replaceState({}, '', '/checkout');
+      }
+    })();
+
+    return () => { active = false; };
+  }, [router, t]);
 
   const selectSavedAddress = (id: string) => {
     setSelectedAddrId(id);
@@ -193,6 +244,56 @@ export default function CheckoutPage() {
     setCouponError('');
   };
 
+  const loadCashfreeSdk = async () => {
+    if (window.Cashfree) return;
+    await new Promise<void>((resolve, reject) => {
+      const existing = document.querySelector('script[data-cashfree-sdk="v3"]') as HTMLScriptElement | null;
+      if (existing) {
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => reject(new Error('Cashfree SDK failed to load')), { once: true });
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+      script.async = true;
+      script.dataset.cashfreeSdk = 'v3';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Cashfree SDK failed to load'));
+      document.head.appendChild(script);
+    });
+  };
+
+  const startCashfreePayment = async (fullAddress: string, items: Array<{ product_id: string; quantity: number; variant_id: string | null; bundle_id: string | null }>, phone: string) => {
+    try {
+      const returnUrl = `${window.location.origin}/checkout?cashfree_return=1`;
+      const { data, error: sessionError } = await supabase.functions.invoke('cashfree-payment-session', {
+        body: {
+          customer_name: form.name.trim(),
+          customer_phone: phone,
+          customer_email: '',
+          delivery_address: fullAddress,
+          special_instructions: form.instructions.trim(),
+          items,
+          coupon_code: appliedCoupon?.code || null,
+          use_referral_wallet: Boolean(useWallet && walletCredit > 0),
+          return_url: returnUrl,
+        },
+      });
+      if (sessionError) throw sessionError;
+      if (!data?.ok || !data.payment_session_id || !data.order_id) throw new Error(data?.error || 'Unable to start Cashfree payment');
+
+      await loadCashfreeSdk();
+      if (!window.Cashfree) throw new Error('Cashfree SDK is unavailable');
+      const cashfree = window.Cashfree({ mode: 'production' });
+      await cashfree.checkout({ paymentSessionId: data.payment_session_id });
+    } catch (paymentError) {
+      console.error(paymentError);
+      setError(t('অনলাইন পেমেন্ট শুরু করা যায়নি। আবার চেষ্টা করুন।', 'Unable to start online payment. Please try again.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -225,6 +326,12 @@ export default function CheckoutPage() {
         variant_id: item.variant_id || null,
         bundle_id: item.bundle_id || null,
       }));
+
+      if (country === 'IN') {
+        await startCashfreePayment(fullAddress, items, phone);
+        return;
+      }
+
       const { data, error: rpcError } = await supabase.rpc('create_order_with_referral_wallet', {
         p_customer_name: form.name.trim(),
         p_customer_phone: phone,
@@ -552,12 +659,12 @@ export default function CheckoutPage() {
                     disabled={loading}
                     className="mt-2 inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-black text-primary-foreground shadow-lg shadow-primary/25 transition hover:-translate-y-0.5 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
+                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? t('অনলাইনে পেমেন্ট করুন', 'Pay online') : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
                   </button>
 
                   <div className="grid grid-cols-3 gap-2 pt-1 text-center">
                     <div className="rounded-2xl bg-secondary/70 p-3"><Truck className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">{country === 'IN' ? 'India Delivery' : t('দেশজুড়ে', 'Nationwide')}</span></div>
-                    <div className="rounded-2xl bg-secondary/70 p-3"><Banknote className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">COD</span></div>
+                    <div className="rounded-2xl bg-secondary/70 p-3"><Banknote className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">{country === 'IN' ? 'UPI / Card' : 'COD'}</span></div>
                     <div className="rounded-2xl bg-secondary/70 p-3"><Lock className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">SSL</span></div>
                   </div>
                 </div>
@@ -586,7 +693,7 @@ export default function CheckoutPage() {
               disabled={loading}
               className="inline-flex min-h-12 shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-primary px-5 text-xs font-black text-primary-foreground shadow-lg shadow-primary/25 transition active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:opacity-60"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{t('অর্ডার করুন', 'Place order')} <ChevronRight className="h-4 w-4" /></>}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{country === 'IN' ? t('পেমেন্ট করুন', 'Pay online') : t('অর্ডার করুন', 'Place order')} <ChevronRight className="h-4 w-4" /></>}
             </button>
           </div>
         </div>
