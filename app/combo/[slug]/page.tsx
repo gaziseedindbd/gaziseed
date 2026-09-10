@@ -109,14 +109,37 @@ export default function ComboLandingPage() {
         return;
       }
 
-      // Important: combo pages need the same gallery source used by product cards.
-      // Product uploads are stored in product_images, so we load that relation here.
+      // Load combo items separately from the product gallery. This avoids losing all
+      // combo items when a nested relationship query is unavailable to the client.
       const { data: items } = await supabase
         .from('combo_items')
-        .select('product_id, quantity, unit_type, products(*, product_images(image_url, display_order))')
+        .select('product_id, quantity, unit_type, products(*)')
         .eq('combo_id', data.id);
 
-      setCombo({ ...data, combo_items: items || [] });
+      const productIds = (items || []).map((item: any) => item.product_id).filter(Boolean);
+      const { data: galleryRows } = productIds.length
+        ? await supabase
+            .from('product_images')
+            .select('product_id, image_url, display_order')
+            .in('product_id', productIds)
+            .order('display_order', { ascending: true })
+        : { data: [] };
+
+      const galleryByProduct = new Map<string, any[]>();
+      (galleryRows || []).forEach((row: any) => {
+        const current = galleryByProduct.get(row.product_id) || [];
+        current.push({ image_url: row.image_url, display_order: row.display_order });
+        galleryByProduct.set(row.product_id, current);
+      });
+
+      const enrichedItems = (items || []).map((item: any) => ({
+        ...item,
+        products: item.products
+          ? { ...item.products, product_images: galleryByProduct.get(item.product_id) || [] }
+          : item.products,
+      }));
+
+      setCombo({ ...data, combo_items: enrichedItems });
       const tiers = Array.isArray(data.tier_pricing) ? data.tier_pricing : [];
       setSelectedQty(Number(tiers[0]?.qty ?? tiers[0]?.quantity ?? 1));
       setLoading(false);
