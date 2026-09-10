@@ -268,6 +268,7 @@ function ProductForm({ product, categories, allProducts, onSave, onClose, onSave
     is_best_seller: product?.is_best_seller || false,
     is_new_arrival: product?.is_new_arrival || false,
     is_seasonal: product?.is_seasonal || false,
+    free_delivery: product?.free_delivery || false,
     image: product?.image || '',
     images: product?.images || [],
     seed_type: product?.seed_type || '',
@@ -382,7 +383,7 @@ function ProductForm({ product, categories, allProducts, onSave, onClose, onSave
             {[
               ['is_active', 'সক্রিয়'], ['is_featured', 'ফিচার্ড'],
               ['is_best_seller', 'বেস্ট সেলার'], ['is_new_arrival', 'নতুন'],
-              ['is_seasonal', 'মৌসুমি'],
+              ['is_seasonal', 'মৌসুমি'], ['free_delivery', 'Free Delivery (India)'],
             ].map(([key, label]) => (
               <label key={key} className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={(form as any)[key]} onChange={(e) => setForm({ ...form, [key]: e.target.checked })} className="accent-primary" />
