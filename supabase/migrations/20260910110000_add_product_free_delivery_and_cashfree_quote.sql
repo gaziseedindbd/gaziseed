@@ -1,2 +1,0 @@
--- Product-level Free Delivery (India) is already applied to the database.
--- This migration file is intentionally not used for the UI patch.
