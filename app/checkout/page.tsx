@@ -140,6 +140,7 @@ export default function CheckoutPage() {
     if (!cashfreeOrderId) return;
 
     let active = true;
+    let navigatedToSuccess = false;
     setLoading(true);
     setError('');
 
@@ -153,10 +154,12 @@ export default function CheckoutPage() {
         if (data?.completed && data?.order_number) {
           localStorage.removeItem('gazi_cart');
           window.dispatchEvent(new Event('cart-updated'));
+          navigatedToSuccess = true;
           router.replace(`/order-success?number=${data.order_number}`);
           return;
         }
         if (data?.already_completed && data?.order_id) {
+          navigatedToSuccess = true;
           router.replace(`/order-success?order_id=${data.order_id}`);
           return;
         }
@@ -169,7 +172,9 @@ export default function CheckoutPage() {
         if (active) setError(t('পেমেন্ট যাচাই করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।', 'Unable to verify the payment. Please try again.'));
       } finally {
         if (active) setLoading(false);
-        window.history.replaceState({}, '', '/checkout');
+        if (!navigatedToSuccess) {
+          window.history.replaceState({}, '', '/checkout');
+        }
       }
     })();
 
