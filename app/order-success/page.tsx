@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle2, ArrowRight, PackageCheck, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, ArrowRight, PackageCheck, ShieldCheck, CreditCard } from 'lucide-react';
 import { useLang } from '@/components/site/language-provider';
 
 function OrderJourney({ current }: { current: 'cart' | 'checkout' | 'confirmation' | 'tracking' }) {
@@ -38,6 +38,9 @@ function OrderSuccessInner() {
   const { t } = useLang();
   const searchParams = useSearchParams();
   const orderNumber = searchParams.get('number');
+  const amount = searchParams.get('amount');
+  const paymentStatus = searchParams.get('payment_status');
+  const isPaid = paymentStatus === 'paid';
 
   return (
     <main className="min-h-[70vh] bg-gradient-to-b from-primary/[0.04] via-background to-background px-4 py-8 sm:py-12">
@@ -65,6 +68,28 @@ function OrderSuccessInner() {
                   <p className="break-all text-xl font-bold tracking-wide text-primary sm:text-2xl">{orderNumber}</p>
                   <PackageCheck className="h-7 w-7 shrink-0 text-primary/70" />
                 </div>
+              </div>
+            )}
+
+            {(amount || isPaid) && (
+              <div className="mx-auto mt-4 grid max-w-md gap-3 sm:grid-cols-2">
+                {amount && (
+                  <div className="rounded-2xl border border-border/70 bg-background/70 p-4 text-left">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-xl bg-primary/10 p-2"><CreditCard className="h-5 w-5 text-primary" /></div>
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('পরিশোধের পরিমাণ', 'Paid amount')}</p>
+                        <p className="mt-1 text-lg font-bold text-foreground">₹{Number(amount).toLocaleString('en-IN')}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {isPaid && (
+                  <div className="rounded-2xl border border-primary/15 bg-primary/[0.045] p-4 text-left">
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('পেমেন্ট স্ট্যাটাস', 'Payment status')}</p>
+                    <p className="mt-1 text-lg font-bold text-primary">{t('পরিশোধিত', 'PAID')}</p>
+                  </div>
+                )}
               </div>
             )}
 
