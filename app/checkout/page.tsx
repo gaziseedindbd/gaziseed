@@ -135,8 +135,10 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('cashfree_return') !== '1') return;
-    const cashfreeOrderId = params.get('order_id');
+    const returnedFromCashfree = params.get('cashfree_return') === '1';
+    const queryOrderId = params.get('order_id');
+    const pendingOrderId = localStorage.getItem('cashfree_pending_order_id');
+    const cashfreeOrderId = queryOrderId || (returnedFromCashfree ? pendingOrderId : null);
     if (!cashfreeOrderId) return;
 
     let active = true;
@@ -153,12 +155,14 @@ export default function CheckoutPage() {
         if (verifyError) throw verifyError;
         if (data?.completed && data?.order_number) {
           localStorage.removeItem('gazi_cart');
+          localStorage.removeItem('cashfree_pending_order_id');
           window.dispatchEvent(new Event('cart-updated'));
           navigatedToSuccess = true;
           router.replace(`/order-success?number=${data.order_number}`);
           return;
         }
         if (data?.already_completed && data?.order_id) {
+          localStorage.removeItem('cashfree_pending_order_id');
           navigatedToSuccess = true;
           router.replace(`/order-success?order_id=${data.order_id}`);
           return;
@@ -308,6 +312,7 @@ export default function CheckoutPage() {
       });
       if (sessionError) throw sessionError;
       if (!data?.ok || !data.payment_session_id || !data.order_id) throw new Error(data?.error || 'Unable to start Cashfree payment');
+      localStorage.setItem('cashfree_pending_order_id', data.order_id);
 
       await loadCashfreeSdk();
       if (!window.Cashfree) throw new Error('Cashfree SDK is unavailable');
