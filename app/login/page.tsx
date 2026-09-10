@@ -117,7 +117,7 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-8 flex justify-center gap-3">
-            <div className="neo-mini" aria-hidden="true">G</div><div className="neo-mini" aria-hidden="true">f</div><div className="neo-mini" aria-hidden="true">in</div>
+            <div className="neo-mini" aria-hidden="true">G</div><div className="neo-mini" aria-hidden="true">A</div><div className="neo-mini" aria-hidden="true">Z</div><div className="neo-mini" aria-hidden="true">I</div>
           </div>
         </section>
       </div>
