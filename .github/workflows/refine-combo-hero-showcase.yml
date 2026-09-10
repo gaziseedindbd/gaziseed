@@ -1,0 +1,108 @@
+name: Refine combo hero showcase
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Refine hero product showcase
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('app/combo/[slug]/page.tsx')
+          s = p.read_text()
+          start = s.index('            <div className="relative mx-auto w-full max-w-[590px]">')
+          end = s.index('          </div>\n        </div>\n      </section>', start)
+          old = s[start:end]
+          new = '''            <div className="relative mx-auto w-full max-w-[590px]">
+              <div className="absolute -left-8 top-8 h-28 w-28 rounded-full bg-lime-200/20 blur-3xl" />
+              <div className="absolute -right-8 bottom-10 h-36 w-36 rounded-full bg-emerald-200/20 blur-3xl" />
+
+              <div className="relative rounded-[42px] border border-white/20 bg-white/[0.06] p-2.5 shadow-[0_30px_90px_rgba(0,0,0,.28)] backdrop-blur-sm">
+                <div className="relative min-h-[360px] overflow-hidden rounded-[34px] border border-white/70 bg-[radial-gradient(circle_at_50%_34%,rgba(255,255,255,1),rgba(246,250,247,.98)_50%,rgba(224,237,228,.98))] px-4 py-6 sm:min-h-[470px] sm:px-8 sm:py-8">
+                  <div className="pointer-events-none absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-100/70 blur-2xl sm:h-72 sm:w-72" />
+                  <div className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full border border-emerald-900/10 bg-emerald-100/40" />
+                  <div className="pointer-events-none absolute -bottom-16 left-8 h-36 w-36 rounded-full bg-lime-100/70 blur-xl" />
+
+                  {heroImages.length > 0 ? (
+                    <div className="relative flex min-h-[300px] items-center justify-center sm:min-h-[405px]">
+                      {heroImages.slice(0, 3).map((image, index) => {
+                        const positions = [
+                          'left-[6%] top-[20%] -rotate-6 sm:left-[7%] sm:top-[21%]',
+                          'left-1/2 top-[8%] -translate-x-1/2 sm:top-[5%]',
+                          'right-[6%] top-[23%] rotate-6 sm:right-[7%] sm:top-[24%]',
+                        ];
+                        const sizes = [
+                          'w-[39%] sm:w-[34%]',
+                          'w-[49%] sm:w-[41%]',
+                          'w-[39%] sm:w-[34%]',
+                        ];
+                        return (
+                          <div
+                            key={`${image}-${index}`}
+                            className={`absolute ${positions[index] || positions[2]} ${sizes[index] || sizes[2]} z-${index === 1 ? '20' : '10'}`}
+                          >
+                            <div className={`relative overflow-hidden rounded-[24px] border border-white/90 bg-white/95 p-2 shadow-[0_22px_40px_rgba(15,23,42,.16)] sm:rounded-[30px] sm:p-2.5 ${index === 1 ? 'shadow-[0_28px_55px_rgba(15,23,42,.2)]' : ''}`}>
+                              <div className="absolute left-2.5 top-2.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-[9px] font-black text-emerald-900 shadow-sm sm:h-8 sm:w-8 sm:text-[10px]">0{index + 1}</div>
+                              <img
+                                src={image}
+                                alt={`${combo.title_bn} product ${index + 1}`}
+                                className={`aspect-[4/5] w-full object-contain ${index === 1 ? 'p-1.5 sm:p-2' : 'p-2 sm:p-3'}`}
+                                loading={index === 0 ? 'eager' : 'lazy'}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      <div className="absolute bottom-[6%] left-1/2 z-30 -translate-x-1/2 rounded-full border border-white/90 bg-white/90 px-4 py-2 text-[10px] font-black text-emerald-900 shadow-lg backdrop-blur sm:bottom-[5%] sm:px-5 sm:py-2.5 sm:text-xs">
+                        {country === 'IN' ? '3 curated seed varieties' : '৩টি বাছাই করা বীজ একসাথে'}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex min-h-[300px] items-center justify-center sm:min-h-[405px]">
+                      <div className="max-w-xs text-center">
+                        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[30px] bg-emerald-100 text-emerald-700 shadow-inner"><Leaf className="h-11 w-11" /></div>
+                        <p className="mt-5 text-sm font-black text-slate-800">{country === 'IN' ? 'Add product images to build the combo showcase.' : 'পণ্যের ছবি যোগ করলেই এখানে কম্বো শোকেস তৈরি হবে।'}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="absolute left-5 top-5 z-40 rounded-[20px] bg-amber-400 px-4 py-2.5 text-center text-amber-950 shadow-[0_14px_28px_rgba(0,0,0,.14)] sm:left-7 sm:top-7 sm:px-5 sm:py-3">
+                    <div className="text-[8px] font-black uppercase tracking-[.18em]">SAVE</div>
+                    <div className="mt-0.5 text-2xl font-black leading-none sm:text-[1.7rem]">{formatPrice(savings)}</div>
+                  </div>
+
+                  <div className="absolute bottom-5 right-5 z-40 rounded-[20px] border border-white/70 bg-slate-950/92 px-4 py-2.5 text-white shadow-xl backdrop-blur sm:bottom-7 sm:right-7 sm:px-5 sm:py-3">
+                    <div className="text-[8px] font-black uppercase tracking-[.16em] text-slate-400">Selected pack</div>
+                    <div className="mt-0.5 text-lg font-black sm:text-xl">{selectedQty}× Pack</div>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute -bottom-4 left-1/2 hidden -translate-x-1/2 rounded-full border border-emerald-100 bg-white px-5 py-2.5 text-xs font-black text-emerald-900 shadow-xl sm:block">
+                {country === 'IN' ? 'Three useful seed varieties in one smart bundle' : 'এক অর্ডারে প্রয়োজনীয় বীজ একসাথে'}
+              </div>
+            </div>
+'''
+          p.write_text(s[:start] + new + s[end:])
+          PY
+
+      - name: Commit hero refinement
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/combo/[slug]/page.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m "design: refine combo hero product showcase"
+          git push
