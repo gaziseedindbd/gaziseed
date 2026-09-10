@@ -248,3 +248,66 @@
   .home-premium-scope .delivery-bg,
   .home-premium-scope .newsletter-wrap { border-radius: 1.75rem !important; }
 }
+
+/* CHECKOUT — LIGHT NEUMORPHIC / EMBOSSED UI
+   Strictly presentation-only and scoped to the existing checkout form. */
+html:not(.dark) body:has(#checkout-form) {
+  background: #eef2f7 !important;
+}
+html:not(.dark) main:has(#checkout-form) {
+  background: radial-gradient(circle at 12% 0%, rgba(255,255,255,.98), transparent 32%), radial-gradient(circle at 90% 8%, rgba(216,229,244,.9), transparent 30%), #eef2f7 !important;
+}
+html:not(.dark) main:has(#checkout-form) .rounded-\[2rem\] {
+  border: 1px solid rgba(255,255,255,.88) !important;
+  background: rgba(238,242,247,.92) !important;
+  box-shadow: 14px 14px 32px rgba(163,177,198,.28), -12px -12px 28px rgba(255,255,255,.92) !important;
+}
+html:not(.dark) main:has(#checkout-form) .rounded-\[2rem\]:hover {
+  box-shadow: 16px 16px 36px rgba(163,177,198,.32), -13px -13px 30px rgba(255,255,255,.96) !important;
+}
+html:not(.dark) main:has(#checkout-form) input,
+html:not(.dark) main:has(#checkout-form) textarea,
+html:not(.dark) main:has(#checkout-form) select {
+  border-color: transparent !important;
+  background: #eef2f7 !important;
+  box-shadow: inset 6px 6px 12px rgba(163,177,198,.22), inset -6px -6px 12px rgba(255,255,255,.92) !important;
+}
+html:not(.dark) main:has(#checkout-form) input:focus,
+html:not(.dark) main:has(#checkout-form) textarea:focus,
+html:not(.dark) main:has(#checkout-form) select:focus {
+  border-color: rgba(20,184,166,.34) !important;
+  box-shadow: inset 5px 5px 10px rgba(163,177,198,.20), inset -5px -5px 10px rgba(255,255,255,.94), 0 0 0 4px rgba(20,184,166,.10) !important;
+}
+html:not(.dark) main:has(#checkout-form) button:not([type="submit"]):not([role="switch"]) {
+  box-shadow: 7px 7px 15px rgba(163,177,198,.25), -7px -7px 15px rgba(255,255,255,.90) !important;
+}
+html:not(.dark) main:has(#checkout-form) button[role="switch"] {
+  box-shadow: 6px 6px 14px rgba(163,177,198,.22), -6px -6px 14px rgba(255,255,255,.90) !important;
+}
+html:not(.dark) main:has(#checkout-form) button[type="submit"] {
+  box-shadow: 9px 9px 18px rgba(163,177,198,.30), -7px -7px 16px rgba(255,255,255,.86), 0 12px 26px rgba(20,184,166,.16) !important;
+}
+html:not(.dark) main:has(#checkout-form) .rounded-2xl {
+  border-color: rgba(255,255,255,.72) !important;
+}
+html:not(.dark) main:has(#checkout-form) .rounded-2xl.bg-background,
+html:not(.dark) main:has(#checkout-form) .rounded-2xl.bg-secondary\/70,
+html:not(.dark) main:has(#checkout-form) .rounded-2xl.bg-background\/70 {
+  background: #eef2f7 !important;
+  box-shadow: 6px 6px 14px rgba(163,177,198,.20), -6px -6px 14px rgba(255,255,255,.90) !important;
+}
+html:not(.dark) main:has(#checkout-form) .max-h-72 {
+  scrollbar-color: rgba(120,140,160,.35) transparent;
+}
+html:not(.dark) main:has(#checkout-form) .fixed.inset-x-3.bottom-3 > div {
+  border-color: rgba(255,255,255,.9) !important;
+  background: rgba(238,242,247,.94) !important;
+  box-shadow: 12px 12px 28px rgba(163,177,198,.34), -10px -10px 24px rgba(255,255,255,.94) !important;
+}
+html:not(.dark) main:has(#checkout-form) .text-primary {
+  text-shadow: 0 1px 0 rgba(255,255,255,.8);
+}
+@media (max-width: 640px) {
+  html:not(.dark) main:has(#checkout-form) .rounded-\[2rem\] { border-radius: 1.5rem !important; }
+  html:not(.dark) main:has(#checkout-form) .rounded-2xl { border-radius: 1rem; }
+}
