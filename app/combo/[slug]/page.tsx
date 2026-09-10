@@ -35,11 +35,17 @@ type ComboItem = {
 function getProductImage(product: Record<string, any> | null | undefined): string {
   if (!product) return '';
 
+  const isUsableImage = (value: unknown): value is string => {
+    if (typeof value !== 'string' || !value.trim()) return false;
+    const normalized = value.trim().toLowerCase();
+    return !normalized.includes('placehold.co') && !normalized.includes('placeholder');
+  };
+
   const gallery = Array.isArray(product.product_images)
     ? [...product.product_images]
-        .filter((item: any) => typeof item?.image_url === 'string' && item.image_url.trim())
+        .filter((item: any) => isUsableImage(item?.image_url))
         .sort((a: any, b: any) => Number(a.display_order ?? 0) - Number(b.display_order ?? 0))
-        .map((item: any) => item.image_url)
+        .map((item: any) => item.image_url.trim())
     : [];
 
   const candidates = [
@@ -52,7 +58,7 @@ function getProductImage(product: Record<string, any> | null | undefined): strin
     Array.isArray(product.gallery) ? product.gallery[0] : '',
   ];
 
-  return candidates.find((value) => typeof value === 'string' && value.trim())?.trim() || '';
+  return candidates.find(isUsableImage)?.trim() || '';
 }
 
 function getComboHeroImages(combo: Record<string, any>, items: ComboItem[]): string[] {
