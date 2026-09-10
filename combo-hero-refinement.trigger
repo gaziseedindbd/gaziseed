@@ -1,1 +1,0 @@
-trigger hero refinement workflow
