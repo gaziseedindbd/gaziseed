@@ -125,8 +125,8 @@ export default function ComboLandingPage() {
     if (slug) void load();
   }, [slug]);
 
-  const tiers = Array.isArray(combo?.tier_pricing) ? combo.tier_pricing : [];
-  const items: ComboItem[] = Array.isArray(combo?.combo_items) ? combo.combo_items : [];
+  const tiers = Array.isArray(combo?.tier_pricing) ? (combo?.tier_pricing ?? []) : [];
+  const items: ComboItem[] = Array.isArray(combo?.combo_items) ? (combo?.combo_items ?? []) : [];
   const getQty = (tier: any) => Number(tier?.qty ?? tier?.quantity ?? 1);
   const getFree = (tier: any) => tier?.freeDelivery === true || tier?.free_delivery === true;
 
