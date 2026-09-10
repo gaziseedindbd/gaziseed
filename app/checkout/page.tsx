@@ -77,6 +77,7 @@ export default function CheckoutPage() {
   const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null);
   const [useWallet, setUseWallet] = useState(false);
   const [walletLoading, setWalletLoading] = useState(false);
+  const [freeDeliveryProductIds, setFreeDeliveryProductIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const visitorCountry = getVisitorCountry();
@@ -114,6 +115,23 @@ export default function CheckoutPage() {
 
     return () => window.removeEventListener('cart-updated', handler);
   }, []);
+
+  useEffect(() => {
+    if (country !== 'IN' || cart.length === 0) {
+      setFreeDeliveryProductIds(new Set());
+      return;
+    }
+
+    const productIds = Array.from(new Set(cart.map((item) => item.product_id)));
+    supabase
+      .from('products')
+      .select('id, free_delivery')
+      .in('id', productIds)
+      .then(({ data }) => {
+        const rows = (data || []) as Array<{ id: string; free_delivery: boolean }>;
+        setFreeDeliveryProductIds(new Set(rows.filter((product) => product.free_delivery).map((product) => product.id)));
+      });
+  }, [cart, country]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -171,7 +189,7 @@ export default function CheckoutPage() {
   const savingsTotal = Math.max(0, originalTotal - subtotal);
   const discountPercent = originalTotal > 0 ? Math.round((savingsTotal / originalTotal) * 100) : 0;
   const deliveryCharge = country === 'IN'
-    ? subtotal >= 999 ? 0 : subtotal >= 499 ? 60 : 90
+    ? freeDeliveryProductIds.size > 0 ? 0 : subtotal >= 999 ? 0 : subtotal >= 499 ? 60 : 90
     : subtotal >= 600 ? 0 : subtotal >= 400 ? 50 : subtotal >= 200 ? 70 : 120;
   const couponDiscount = appliedCoupon
     ? appliedCoupon.type === 'percentage'
@@ -186,9 +204,13 @@ export default function CheckoutPage() {
   const selectedWalletAmount = walletSummary?.unlocked ? Math.min(walletSummary.max_usable, grandTotal) : 0;
 
   const deliveryMessage = useMemo(() => {
-    if (country === 'IN') return subtotal >= 999 ? t('ফ্রি ডেলিভারি যোগ হয়েছে', 'Free delivery unlocked') : t('₹৯৯৯+ অর্ডারে ফ্রি ডেলিভারি', 'Free delivery on ₹999+');
+    if (country === 'IN') {
+      return freeDeliveryProductIds.size > 0
+        ? t('ফ্রি ডেলিভারি যোগ হয়েছে', 'Free delivery unlocked')
+        : subtotal >= 999 ? t('ফ্রি ডেলিভারি যোগ হয়েছে', 'Free delivery unlocked') : t('₹৯৯৯+ অর্ডারে ফ্রি ডেলিভারি', 'Free delivery on ₹999+');
+    }
     return subtotal >= 600 ? t('ফ্রি ডেলিভারি যোগ হয়েছে', 'Free delivery unlocked') : t('৳৬০০+ অর্ডারে ফ্রি ডেলিভারি', 'Free delivery on ৳600+');
-  }, [country, subtotal, t]);
+  }, [country, subtotal, freeDeliveryProductIds, t]);
 
   const applyCoupon = async () => {
     const normalizedCode = couponCode.trim().toUpperCase();
