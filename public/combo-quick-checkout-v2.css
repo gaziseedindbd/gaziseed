@@ -1,0 +1,27 @@
+/* GAZI SEED Combo Quick Checkout V2 */
+#quick-checkout{background:linear-gradient(180deg,#ffffff 0%,#fbfdfb 100%);}
+#quick-checkout>div:first-child{padding-bottom:1.25rem;border-bottom:1px solid #e8efe9;margin-bottom:1.25rem;}
+#quick-checkout form{display:grid;grid-template-columns:1fr;gap:1rem;}
+#quick-checkout form>div:nth-child(1),#quick-checkout form>div:nth-child(2){min-width:0;}
+#quick-checkout form>div:nth-child(3){grid-column:1/-1;}
+#quick-checkout form>div:nth-child(4){grid-column:1/-1;}
+#quick-checkout form>button{grid-column:1/-1;}
+#quick-checkout form>div:nth-child(1) input,#quick-checkout form>div:nth-child(2) input{box-shadow:0 4px 16px rgba(15,23,42,.035);}
+#quick-checkout form textarea{box-shadow:0 4px 16px rgba(15,23,42,.035);}
+#quick-checkout form input:hover,#quick-checkout form textarea:hover{border-color:#b8d9c4;background:#fff;}
+#quick-checkout form input:focus,#quick-checkout form textarea:focus{transform:translateY(-1px);box-shadow:0 0 0 4px rgba(16,185,129,.09),0 10px 25px rgba(15,23,42,.06);}
+#quick-checkout form>div:nth-child(4){border:1px solid #ccefe0;background:linear-gradient(135deg,#effcf7,#f8fffb);box-shadow:inset 0 1px 0 rgba(255,255,255,.9);}
+#quick-checkout form>button{border-radius:18px;min-height:58px;font-size:.92rem;letter-spacing:-.01em;}
+#quick-checkout form>button:not(:disabled):hover{box-shadow:0 16px 34px rgba(180,118,0,.17);}
+#quick-checkout form>div:last-child{padding-top:.25rem;}
+@media (min-width:640px){
+  #quick-checkout{padding:1.5rem 1.75rem 1.75rem!important;}
+  #quick-checkout form{grid-template-columns:1fr 1fr;gap:1rem 1.1rem;}
+}
+@media (min-width:1024px){
+  #quick-checkout form{gap:.95rem 1rem;}
+  #quick-checkout form>div:nth-child(3){grid-column:1/-1;}
+}
+@media (max-width:639px){
+  #quick-checkout{padding:1.2rem!important;}
+}
