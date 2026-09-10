@@ -23,7 +23,7 @@ jobs:
           from pathlib import Path
           p = Path('app/checkout/page.tsx')
           s = p.read_text()
-          old = 'router.replace(`/order-success?number=${encodeURIComponent(data.order_number)}`);'
+          old = 'router.replace(`/order-success?number=${data.order_number}`);'
           new = 'router.replace(`/order-success?number=${encodeURIComponent(data.order_number)}&amount=${encodeURIComponent(data.amount ?? "")}&payment_status=paid`);'
           if old not in s:
               raise SystemExit('target redirect not found')
