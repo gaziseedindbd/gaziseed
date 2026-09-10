@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, Check, X, Sprout, ShieldCheck } from 'lucide-react';
+import { Loader2, Check, X, UserPlus } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 import { useLang } from '@/components/site/language-provider';
 
@@ -64,51 +64,42 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="electric-auth relative min-h-[calc(100vh-160px)] overflow-hidden px-4 py-7 sm:py-12">
-      <div className="electric-orb electric-orb-one" aria-hidden="true" /><div className="electric-orb electric-orb-two" aria-hidden="true" /><div className="electric-grid" aria-hidden="true" />
-      <div className="relative z-10 mx-auto max-w-5xl">
-        <div className="electric-frame">
-          <div className="electric-panel hidden lg:flex lg:flex-col lg:justify-between">
-            <div><div className="electric-logo"><Sprout className="h-7 w-7" /></div><p className="mt-7 text-xs font-black uppercase tracking-[0.3em] text-cyan-300">GAZI SEED</p><h2 className="mt-3 text-4xl font-black leading-tight text-white">{t('আজই আপনার seed journey শুরু করুন', 'Start your seed journey today')}</h2><p className="mt-5 text-sm leading-7 text-slate-300">{t('অর্ডার, wishlist, saved addresses এবং আরও সুবিধা এক account-এ।', 'Orders, wishlist, saved addresses, and more—all in one account.')}</p></div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-300"><ShieldCheck className="h-4 w-4 text-cyan-300" /> {t('দ্রুত ও নিরাপদ signup', 'Fast and secure signup')}</div>
+    <main className="neo-auth min-h-[calc(100vh-160px)] px-4 py-7 sm:py-12">
+      <div className="mx-auto w-full max-w-[500px]">
+        <section className="neo-card px-5 py-8 sm:px-9 sm:py-9">
+          <div className="text-center">
+            <div className="neo-icon mx-auto"><UserPlus className="h-8 w-8" strokeWidth={1.8} /></div>
+            <p className="mt-5 text-xs font-black uppercase tracking-[0.28em] text-slate-500">GAZI SEED</p>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-800 sm:text-4xl">{t('নতুন অ্যাকাউন্ট', 'Create account')}</h1>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">{t('কয়েকটি তথ্য দিয়ে আপনার account তৈরি করুন', 'Create your account with a few details')}</p>
           </div>
-          <div className="electric-content">
-            <div className="mx-auto max-w-md">
-              <div className="mb-6 text-center lg:hidden"><div className="electric-logo mx-auto"><Sprout className="h-7 w-7" /></div><p className="mt-3 text-xs font-black uppercase tracking-[0.3em] text-cyan-400">GAZI SEED</p></div>
-              <div className="text-center"><span className="electric-kicker">CREATE YOUR ACCOUNT</span><h1 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">{t('নতুন অ্যাকাউন্ট', 'Create account')}</h1><p className="mt-2 text-sm leading-6 text-slate-400">{t('কয়েকটি তথ্য দিয়ে নিরাপদে account তৈরি করুন', 'Create your account securely with a few details')}</p></div>
-              <button type="button" onClick={handleGoogleSignup} disabled={googleLoading || loading} className="electric-button electric-button-secondary mt-7">{googleLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <GoogleIcon />}<span>{t('Google দিয়ে account তৈরি করুন', 'Sign up with Google')}</span></button>
-              <div className="my-6 flex items-center gap-3 text-xs font-bold tracking-widest text-slate-500"><span className="h-px flex-1 bg-white/10" /><span>{t('অথবা', 'OR')}</span><span className="h-px flex-1 bg-white/10" /></div>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div><label className="electric-label">{t('নাম', 'Name')} *</label><input type="text" autoComplete="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="electric-input" required /></div>
-                <div><label className="electric-label">{t('ইমেইল', 'Email')} *</label><input type="email" inputMode="email" autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="electric-input" required /></div>
-                <div><label className="electric-label">{t('মোবাইল নম্বর', 'Mobile number')} <span className="font-normal text-slate-500">({t('ঐচ্ছিক', 'optional')})</span></label><input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="electric-input" placeholder="01XXXXXXXXX" /></div>
-                <div><label className="electric-label">{t('পাসওয়ার্ড', 'Password')} *</label><input type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="electric-input" required maxLength={20} />{form.password.length > 0 && <div className="mt-3 grid gap-1 rounded-2xl border border-cyan-400/10 bg-black/20 p-3 sm:grid-cols-2">{passwordChecksWithState.map((rule, idx) => <div key={idx} className="flex items-start gap-2 text-xs leading-5">{rule.passed ? <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300" /> : <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-400" />}<span className={rule.passed ? 'text-cyan-300' : 'text-slate-500'}>{rule.label}</span></div>)}</div>}</div>
-                <div><label className="electric-label">{t('পাসওয়ার্ড নিশ্চিত করুন', 'Confirm password')} *</label><input type="password" autoComplete="new-password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className="electric-input" required /></div>
-                {error && <p role="alert" className="rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-sm font-medium leading-5 text-red-300">{error}</p>}
-                <button type="submit" disabled={loading || googleLoading} className="electric-button electric-button-primary">{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t('অ্যাকাউন্ট তৈরি করুন', 'Create account')}</button>
-                <p className="text-center text-sm leading-6 text-slate-500">{t('অ্যাকাউন্ট আছে?', 'Already have an account?')} <Link href="/login" className="electric-link">{t('লগইন করুন', 'Sign in')}</Link></p>
-              </form>
-            </div>
-          </div>
-        </div>
+
+          <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+            <div><label className="neo-label">{t('নাম', 'Name')} *</label><input type="text" autoComplete="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="neo-input" required /></div>
+            <div><label className="neo-label">{t('ইমেইল', 'Email')} *</label><input type="email" inputMode="email" autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="neo-input" required /></div>
+            <div><label className="neo-label">{t('মোবাইল নম্বর', 'Mobile number')} <span className="font-normal text-slate-400">({t('ঐচ্ছিক', 'optional')})</span></label><input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="neo-input" placeholder="01XXXXXXXXX" /></div>
+            <div><label className="neo-label">{t('পাসওয়ার্ড', 'Password')} *</label><input type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="neo-input" required maxLength={20} />{form.password.length > 0 && <div className="neo-rules mt-3">{passwordChecksWithState.map((rule, idx) => <div key={idx} className="flex items-start gap-2 text-xs leading-5">{rule.passed ? <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-600" /> : <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />}<span className={rule.passed ? 'text-cyan-700' : 'text-slate-500'}>{rule.label}</span></div>)}</div>}</div>
+            <div><label className="neo-label">{t('পাসওয়ার্ড নিশ্চিত করুন', 'Confirm password')} *</label><input type="password" autoComplete="new-password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className="neo-input" required /></div>
+            {error && <p role="alert" className="neo-error">{error}</p>}
+            <button type="submit" disabled={loading || googleLoading} className="neo-button neo-button-primary mt-2">{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t('অ্যাকাউন্ট তৈরি করুন', 'CREATE ACCOUNT')}</button>
+          </form>
+
+          <div className="my-6 flex items-center gap-3"><span className="neo-line" /><span className="text-xs font-bold text-slate-400">{t('অথবা', 'OR')}</span><span className="neo-line" /></div>
+          <button type="button" onClick={handleGoogleSignup} disabled={googleLoading || loading} className="neo-button neo-button-secondary">{googleLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <GoogleIcon />}<span>{t('Google দিয়ে account তৈরি করুন', 'Sign up with Google')}</span></button>
+          <p className="mt-7 text-center text-sm text-slate-500">{t('অ্যাকাউন্ট আছে?', 'Already have an account?')} <Link href="/login" className="neo-link font-black">{t('লগইন করুন', 'Sign in')}</Link></p>
+          <div className="mt-7 flex justify-center gap-3"><div className="neo-mini" aria-hidden="true">G</div><div className="neo-mini" aria-hidden="true">f</div><div className="neo-mini" aria-hidden="true">in</div></div>
+        </section>
       </div>
+
       <style jsx>{`
-        .electric-auth { background:radial-gradient(circle at 50% 0%,rgba(0,229,255,.10),transparent 38%),linear-gradient(135deg,#050812 0%,#08111d 48%,#04070d 100%); }
-        .electric-grid{position:absolute;inset:0;opacity:.2;background-image:linear-gradient(rgba(0,229,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.08) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,black,transparent 85%)}
-        .electric-orb{position:absolute;width:320px;height:320px;border-radius:999px;filter:blur(90px);opacity:.2;pointer-events:none;animation:float 8s ease-in-out infinite}.electric-orb-one{background:#00e5ff;top:-120px;left:8%}.electric-orb-two{background:#2563eb;right:5%;bottom:-160px;animation-delay:-4s}
-        .electric-frame{position:relative;display:grid;overflow:hidden;border-radius:32px;border:1px solid rgba(0,229,255,.35);background:rgba(8,14,25,.82);box-shadow:0 0 0 1px rgba(255,255,255,.03) inset,0 30px 100px rgba(0,0,0,.55),0 0 55px rgba(0,229,255,.1);backdrop-filter:blur(22px)}
-        .electric-frame:before{content:"";position:absolute;inset:-2px;border-radius:34px;padding:2px;background:conic-gradient(from 0deg,transparent 0deg,transparent 120deg,#00e5ff 165deg,#7c3aed 205deg,transparent 250deg,transparent 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:spin 6s linear infinite;pointer-events:none}
-        .electric-panel{min-height:690px;padding:48px;background:linear-gradient(145deg,rgba(0,229,255,.11),rgba(37,99,235,.08) 45%,rgba(124,58,237,.08));border-right:1px solid rgba(255,255,255,.07)}
-        .electric-content{padding:28px 22px;background:linear-gradient(180deg,rgba(6,12,22,.78),rgba(4,8,15,.92))}
-        @media(min-width:640px){.electric-content{padding:48px}.electric-frame{grid-template-columns:.85fr 1.15fr}.electric-panel{display:flex!important}}
-        .electric-logo{display:flex;align-items:center;justify-content:center;width:54px;height:54px;border-radius:18px;color:#cffafe;background:linear-gradient(145deg,rgba(0,229,255,.22),rgba(37,99,235,.14));border:1px solid rgba(0,229,255,.38);box-shadow:inset 3px 3px 7px rgba(0,0,0,.35),inset -2px -2px 6px rgba(255,255,255,.05),0 0 24px rgba(0,229,255,.2)}
-        .electric-kicker{font-size:10px;font-weight:900;letter-spacing:.25em;color:#67e8f9}.electric-label{display:block;margin-bottom:8px;font-size:13px;font-weight:800;color:#cbd5e1}
-        .electric-input{width:100%;height:52px;border-radius:14px;border:1px solid rgba(148,163,184,.18);background:rgba(2,6,14,.72);color:#f8fafc;padding:0 16px;outline:none;box-shadow:inset 4px 4px 10px rgba(0,0,0,.38),inset -2px -2px 7px rgba(255,255,255,.025);transition:.25s}.electric-input:focus{border-color:rgba(0,229,255,.72);box-shadow:inset 4px 4px 10px rgba(0,0,0,.38),0 0 0 3px rgba(0,229,255,.08),0 0 24px rgba(0,229,255,.14)}
-        .electric-button{position:relative;display:flex;min-height:52px;width:100%;align-items:center;justify-content:center;gap:10px;border-radius:14px;padding:12px 16px;font-weight:900;transition:.25s;overflow:hidden}.electric-button:hover:not(:disabled){transform:translateY(-2px)}.electric-button:disabled{cursor:not-allowed;opacity:.5}
-        .electric-button-primary{color:#001018;background:linear-gradient(135deg,#67e8f9,#22d3ee 45%,#38bdf8);box-shadow:inset 2px 2px 5px rgba(255,255,255,.55),inset -3px -3px 8px rgba(0,80,120,.35),0 0 28px rgba(0,229,255,.25)}
-        .electric-button-secondary{color:#f1f5f9;background:rgba(255,255,255,.035);border:1px solid rgba(148,163,184,.18);box-shadow:inset 2px 2px 5px rgba(255,255,255,.035),inset -3px -3px 8px rgba(0,0,0,.35)}.electric-button-secondary:hover:not(:disabled){border-color:rgba(0,229,255,.45);box-shadow:0 0 22px rgba(0,229,255,.1)}
-        .electric-link{font-weight:800;color:#67e8f9;transition:.2s}.electric-link:hover{color:#a5f3fc;text-decoration:underline}
-        @keyframes spin{to{transform:rotate(360deg)}}@keyframes float{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(25px,-18px,0)}}@media(prefers-reduced-motion:reduce){.electric-frame:before,.electric-orb{animation:none}}
+        .neo-auth{background:linear-gradient(135deg,#eef3f7 0%,#f7f9fb 50%,#e8eef3 100%);display:flex;align-items:center;justify-content:center}
+        .neo-card{border-radius:34px;background:#eef3f7;box-shadow:18px 18px 38px rgba(163,177,198,.42),-18px -18px 38px rgba(255,255,255,.95);border:1px solid rgba(255,255,255,.7)}
+        .neo-icon{width:82px;height:82px;border-radius:28px;display:flex;align-items:center;justify-content:center;color:#0f8796;background:#eef3f7;box-shadow:inset 8px 8px 16px rgba(163,177,198,.42),inset -8px -8px 16px rgba(255,255,255,.95),10px 10px 20px rgba(163,177,198,.22),-8px -8px 18px rgba(255,255,255,.75)}
+        .neo-label{display:block;margin:0 0 8px 4px;font-size:13px;font-weight:800;color:#566575}.neo-input{width:100%;height:52px;border:0;border-radius:16px;background:#eef3f7;color:#263746;padding:0 16px;outline:none;box-shadow:inset 6px 6px 13px rgba(163,177,198,.40),inset -6px -6px 13px rgba(255,255,255,.95);transition:box-shadow .2s}.neo-input::placeholder{color:#9aa7b4}.neo-input:focus{box-shadow:inset 5px 5px 11px rgba(163,177,198,.34),inset -5px -5px 11px rgba(255,255,255,.96),0 0 0 3px rgba(34,211,238,.16),0 0 18px rgba(34,211,238,.18)}
+        .neo-button{width:100%;min-height:52px;border:0;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:900;transition:transform .2s,box-shadow .2s;box-shadow:8px 8px 16px rgba(163,177,198,.42),-8px -8px 16px rgba(255,255,255,.9)}.neo-button:hover:not(:disabled){transform:translateY(-1px)}.neo-button:active:not(:disabled){transform:translateY(1px);box-shadow:inset 5px 5px 11px rgba(163,177,198,.34),inset -5px -5px 11px rgba(255,255,255,.92)}.neo-button:disabled{opacity:.55;cursor:not-allowed}.neo-button-primary{color:#fff;background:linear-gradient(135deg,#16b7c7,#0797a9);box-shadow:8px 8px 17px rgba(128,151,170,.42),-8px -8px 17px rgba(255,255,255,.9),0 7px 20px rgba(14,165,183,.20)}.neo-button-secondary{color:#445565;background:#eef3f7}
+        .neo-link{color:#078fa1;transition:color .2s}.neo-link:hover{color:#056b79;text-decoration:underline}.neo-line{height:1px;flex:1;background:linear-gradient(90deg,transparent,#c5ced7,transparent)}.neo-mini{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#657585;background:#eef3f7;box-shadow:6px 6px 12px rgba(163,177,198,.38),-6px -6px 12px rgba(255,255,255,.9)}
+        .neo-rules{display:grid;gap:4px;border-radius:15px;padding:11px 12px;background:#eef3f7;box-shadow:inset 4px 4px 9px rgba(163,177,198,.25),inset -4px -4px 9px rgba(255,255,255,.9)}.neo-error{border-radius:14px;padding:11px 13px;background:#fff0f0;color:#c53c3c;box-shadow:inset 3px 3px 7px rgba(200,120,120,.16),inset -3px -3px 7px rgba(255,255,255,.9);font-size:13px;line-height:1.5}
+        @media (min-width:640px){.neo-rules{grid-template-columns:1fr 1fr}}@media (prefers-reduced-motion:reduce){.neo-button,.neo-input,.neo-link{transition:none}}
       `}</style>
     </main>
   );
