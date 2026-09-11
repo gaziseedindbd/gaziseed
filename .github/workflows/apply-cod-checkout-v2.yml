@@ -1,0 +1,33 @@
+name: Apply COD checkout v2
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  patch:
+    if: github.event.head_commit.message != 'Apply India COD checkout v2'
+    runs-on: ubuntu-latest
+    permissions: {contents: write}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch checkout
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('app/checkout/page.tsx'); s=p.read_text()
+          s=s.replace("const [useWallet, setUseWallet] = useState(false);","const [useWallet, setUseWallet] = useState(false);\n  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');",1)
+          s=s.replace("const selectedWalletAmount = walletSummary?.unlocked ? Math.min(walletSummary.max_usable, grandTotal) : 0;","const selectedWalletAmount = walletSummary?.unlocked ? Math.min(walletSummary.max_usable, grandTotal) : 0;\n  const codAdvance = country === 'IN' ? (deliveryCharge > 0 ? deliveryCharge : 120) : 0;\n  const codAvailable = country !== 'IN' || deliveryCharge > 0 || payableTotal >= 120;\n  const codDue = country === 'IN' && paymentMethod === 'cod' ? Math.max(0, payableTotal - codAdvance) : 0;",1)
+          s=s.replace("phone: string) => {","phone: string, method: 'online' | 'cod') => {",1)
+          s=s.replace("use_referral_wallet: Boolean(useWallet && walletCredit > 0),\n          return_url: returnUrl,","use_referral_wallet: Boolean(useWallet && walletCredit > 0),\n          payment_method: method === 'cod' ? 'cod' : 'cashfree',\n          return_url: returnUrl,",1)
+          s=s.replace("await startCashfreePayment(fullAddress, items, phone);","await startCashfreePayment(fullAddress, items, phone, paymentMethod);",1)
+          anchor="<Truck className=\"h-3.5 w-3.5\" /> {deliveryMessage}</div>"
+          block="<Truck className=\"h-3.5 w-3.5\" /> {deliveryMessage}</div>\n                  {country === 'IN' && <div className=\"mt-4 grid grid-cols-2 gap-2\"><button type=\"button\" onClick={() => setPaymentMethod('online')} className={`rounded-2xl border p-3 text-left ${paymentMethod === 'online' ? 'border-primary bg-primary/10' : 'border-border'}`}><b className=\"block text-xs\">{t('অনলাইন পেমেন্ট','Online payment')}</b><span className=\"text-[10px] text-muted-foreground\">{formatPrice(payableTotal)}</span></button><button type=\"button\" disabled={!codAvailable} onClick={() => setPaymentMethod('cod')} className={`rounded-2xl border p-3 text-left disabled:opacity-40 ${paymentMethod === 'cod' ? 'border-primary bg-primary/10' : 'border-border'}`}><b className=\"block text-xs\">{t('ক্যাশ অন ডেলিভারি','Cash on Delivery')}</b><span className=\"text-[10px] text-muted-foreground\">{codAvailable ? `${formatPrice(codAdvance)} ${t('এখন, বাকি ডেলিভারিতে','now, rest on delivery')}` : t('ন্যূনতম ₹১২০','Minimum ₹120')}</span></button></div>}"
+          s=s.replace(anchor,block,1)
+          delivery="                  <div className=\"flex justify-between gap-4 text-sm\"><span className=\"text-muted-foreground\">{t('ডেলিভারি', 'Delivery')}</span><span className=\"font-bold\">{deliveryCharge === 0 ? t('ফ্রি', 'Free') : formatPrice(deliveryCharge)}</span></div>"
+          s=s.replace(delivery,delivery+"\n                  {country === 'IN' && paymentMethod === 'cod' && <><div className=\"flex justify-between gap-4 text-sm text-primary\"><span>{t('COD অগ্রিম','COD advance')}</span><span className=\"font-bold\">{formatPrice(codAdvance)}</span></div><div className=\"flex justify-between gap-4 text-sm\"><span className=\"text-muted-foreground\">{t('ডেলিভারিতে বাকি','Due on delivery')}</span><span className=\"font-bold\">{formatPrice(codDue)}</span></div></>}",1)
+          s=s.replace("{formatPrice(payableTotal)}</span>","{formatPrice(country === 'IN' && paymentMethod === 'cod' ? codAdvance : payableTotal)}</span>",1)
+          s=s.replace("country === 'IN' ? t('অনলাইনে পেমেন্ট করুন', 'Pay online') : t('অর্ডার কনফার্ম করুন', 'Confirm order')","country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম পরিশোধ করুন', 'Pay COD advance') : t('অনলাইনে পেমেন্ট করুন', 'Pay online')) : t('অর্ডার কনফার্ম করুন', 'Confirm order')",1)
+          p.write_text(s)
+          PY
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/checkout/page.tsx; git diff --cached --check; git commit -m 'Apply India COD checkout v2'; git push
