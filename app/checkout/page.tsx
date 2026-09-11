@@ -76,6 +76,7 @@ export default function CheckoutPage() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null);
   const [useWallet, setUseWallet] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
   const [walletLoading, setWalletLoading] = useState(false);
   const [freeDeliveryProductIds, setFreeDeliveryProductIds] = useState<Set<string>>(new Set());
 
@@ -211,6 +212,9 @@ export default function CheckoutPage() {
     : 0;
   const payableTotal = Math.max(0, grandTotal - walletCredit);
   const selectedWalletAmount = walletSummary?.unlocked ? Math.min(walletSummary.max_usable, grandTotal) : 0;
+  const codAdvance = country === 'IN' ? (deliveryCharge > 0 ? deliveryCharge : 120) : 0;
+  const codAvailable = country !== 'IN' || deliveryCharge > 0 || payableTotal >= 120;
+  const codDue = country === 'IN' && paymentMethod === 'cod' ? Math.max(0, payableTotal - codAdvance) : 0;
 
   const deliveryMessage = useMemo(() => {
     if (country === 'IN') {
@@ -294,7 +298,7 @@ export default function CheckoutPage() {
     });
   };
 
-  const startCashfreePayment = async (fullAddress: string, items: Array<{ product_id: string; quantity: number; variant_id: string | null; bundle_id: string | null }>, phone: string) => {
+  const startCashfreePayment = async (fullAddress: string, items: Array<{ product_id: string; quantity: number; variant_id: string | null; bundle_id: string | null }>, phone: string, method: 'online' | 'cod') => {
     try {
       const returnUrl = `${window.location.origin}/checkout?cashfree_return=1`;
       const { data, error: sessionError } = await supabase.functions.invoke('cashfree-payment-session', {
@@ -307,6 +311,7 @@ export default function CheckoutPage() {
           items,
           coupon_code: appliedCoupon?.code || null,
           use_referral_wallet: Boolean(useWallet && walletCredit > 0),
+          payment_method: method === 'cod' ? 'cod' : 'cashfree',
           return_url: returnUrl,
         },
       });
@@ -360,7 +365,7 @@ export default function CheckoutPage() {
       }));
 
       if (country === 'IN') {
-        await startCashfreePayment(fullAddress, items, phone);
+        await startCashfreePayment(fullAddress, items, phone, paymentMethod);
         return;
       }
 
@@ -671,13 +676,14 @@ export default function CheckoutPage() {
                   {savingsTotal > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t(`আপনার সাশ্রয়${discountPercent ? ` (${discountPercent}%)` : ''}`, `You save${discountPercent ? ` (${discountPercent}%)` : ''}`)}</span><span className="font-bold">-{formatPrice(savingsTotal)}</span></div>}
                   {couponDiscount > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('কুপন ডিসকাউন্ট', 'Coupon discount')}</span><span className="font-bold">-{formatPrice(couponDiscount)}</span></div>}
                   <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারি', 'Delivery')}</span><span className="font-bold">{deliveryCharge === 0 ? t('ফ্রি', 'Free') : formatPrice(deliveryCharge)}</span></div>
+                  {country === 'IN' && paymentMethod === 'cod' && <><div className="flex justify-between gap-4 text-sm text-primary"><span>{t('COD অগ্রিম','COD advance')}</span><span className="font-bold">{formatPrice(codAdvance)}</span></div><div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারিতে বাকি','Due on delivery')}</span><span className="font-bold">{formatPrice(codDue)}</span></div></>}
                   {walletCredit > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('ওয়ালেট ক্রেডিট', 'Wallet credit')}</span><span className="font-bold">-{formatPrice(walletCredit)}</span></div>}
                   <div className="mt-3 flex items-end justify-between gap-4 border-t border-border pt-4">
                     <div>
                       <span className="block text-sm font-black">{t('সর্বমোট', 'Total')}</span>
                       <span className="mt-0.5 block text-[10px] font-semibold text-muted-foreground">{t('চূড়ান্ত পরিশোধযোগ্য', 'Final payable amount')}</span>
                     </div>
-                    <span className="text-2xl font-black tracking-tight text-primary">{formatPrice(payableTotal)}</span>
+                    <span className="text-2xl font-black tracking-tight text-primary">{formatPrice(country === 'IN' && paymentMethod === 'cod' ? codAdvance : payableTotal)}</span>
                   </div>
 
                   {error && (
@@ -691,7 +697,7 @@ export default function CheckoutPage() {
                     disabled={loading}
                     className="mt-2 inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-black text-primary-foreground shadow-lg shadow-primary/25 transition hover:-translate-y-0.5 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? t('অনলাইনে পেমেন্ট করুন', 'Pay online') : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
+                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম পরিশোধ করুন', 'Pay COD advance') : t('অনলাইনে পেমেন্ট করুন', 'Pay online')) : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
                   </button>
 
                   <div className="grid grid-cols-3 gap-2 pt-1 text-center">
