@@ -1,0 +1,39 @@
+name: Premium Auth UI Patch
+on:
+  push:
+    paths:
+      - '.github/workflows/premium-auth-ui-patch.yml'
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch login and register UI styles only
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          files = [Path('app/login/page.tsx'), Path('app/register/page.tsx')]
+          old = '.neo-auth{background:linear-gradient(135deg,#eef3f7 0%,#f7f9fb 50%,#e8eef3 100%);display:flex;align-items:center;justify-content:center}'
+          new = '.neo-auth{position:relative;overflow:hidden;background:radial-gradient(circle at 50% 8%,rgba(34,211,238,.13),transparent 34%),linear-gradient(135deg,#e9f0f5 0%,#f8fafc 50%,#e4ebf1 100%);display:flex;align-items:center;justify-content:center}.neo-auth:before{content:"";position:absolute;width:420px;height:420px;border-radius:999px;top:-230px;right:-150px;background:rgba(34,211,238,.10);filter:blur(30px);pointer-events:none}.neo-auth:after{content:"";position:absolute;width:320px;height:320px;border-radius:999px;bottom:-210px;left:-140px;background:rgba(8,145,178,.08);filter:blur(34px);pointer-events:none}'
+          card_old = '.neo-card{border-radius:34px;background:#eef3f7;'
+          card_new = '.neo-card{position:relative;z-index:1;border-radius:34px;background:#eef3f7;'
+          for p in files:
+              s = p.read_text()
+              if old not in s:
+                  raise SystemExit(f'missing auth style in {p}')
+              s = s.replace(old, new, 1)
+              if card_old not in s:
+                  raise SystemExit(f'missing card style in {p}')
+              s = s.replace(card_old, card_new, 1)
+              p.write_text(s)
+          PY
+      - name: Commit UI-only patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/login/page.tsx app/register/page.tsx
+          git diff --cached --check
+          git diff --cached --quiet && exit 0 || git commit -m 'Premium electric embossed auth UI'
+          git push
