@@ -87,7 +87,7 @@ export default function RegisterPage() {
           <div className="my-6 flex items-center gap-3"><span className="neo-line" /><span className="text-xs font-bold text-slate-400">{t('অথবা', 'OR')}</span><span className="neo-line" /></div>
           <button type="button" onClick={handleGoogleSignup} disabled={googleLoading || loading} className="neo-button neo-button-secondary">{googleLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <GoogleIcon />}<span>{t('Google দিয়ে account তৈরি করুন', 'Sign up with Google')}</span></button>
           <p className="mt-7 text-center text-sm text-slate-500">{t('অ্যাকাউন্ট আছে?', 'Already have an account?')} <Link href="/login" className="neo-link font-black">{t('লগইন করুন', 'Sign in')}</Link></p>
-          <div className="mt-7 flex justify-center gap-3"><div className="neo-mini" aria-hidden="true">G</div><div className="neo-mini" aria-hidden="true">f</div><div className="neo-mini" aria-hidden="true">in</div></div>
+          <div className="mt-7 flex justify-center gap-3"><div className="neo-mini" aria-hidden="true">G</div><div className="neo-mini" aria-hidden="true">A</div><div className="neo-mini" aria-hidden="true">Z</div><div className="neo-mini" aria-hidden="true">I</div><div className="neo-mini" aria-hidden="true">S</div><div className="neo-mini" aria-hidden="true">E</div><div className="neo-mini" aria-hidden="true">E</div><div className="neo-mini" aria-hidden="true">D</div></div>
         </section>
       </div>
 
