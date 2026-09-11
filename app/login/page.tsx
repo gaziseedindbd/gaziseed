@@ -131,8 +131,8 @@ export default function LoginPage() {
       </div>}
 
       <style jsx>{`
-        .neo-auth{background:linear-gradient(135deg,#eef3f7 0%,#f7f9fb 50%,#e8eef3 100%);display:flex;align-items:center;justify-content:center}
-        .neo-card{border-radius:34px;background:#eef3f7;box-shadow:18px 18px 38px rgba(163,177,198,.42),-18px -18px 38px rgba(255,255,255,.95);border:1px solid rgba(255,255,255,.7)}
+        .neo-auth{position:relative;overflow:hidden;background:radial-gradient(circle at 50% 8%,rgba(34,211,238,.13),transparent 34%),linear-gradient(135deg,#e9f0f5 0%,#f8fafc 50%,#e4ebf1 100%);display:flex;align-items:center;justify-content:center}.neo-auth:before{content:"";position:absolute;width:420px;height:420px;border-radius:999px;top:-230px;right:-150px;background:rgba(34,211,238,.10);filter:blur(30px);pointer-events:none}.neo-auth:after{content:"";position:absolute;width:320px;height:320px;border-radius:999px;bottom:-210px;left:-140px;background:rgba(8,145,178,.08);filter:blur(34px);pointer-events:none}
+        .neo-card{position:relative;z-index:1;border-radius:34px;background:#eef3f7;box-shadow:18px 18px 38px rgba(163,177,198,.42),-18px -18px 38px rgba(255,255,255,.95);border:1px solid rgba(255,255,255,.7)}
         .neo-icon{width:82px;height:82px;border-radius:28px;display:flex;align-items:center;justify-content:center;color:#0f8796;background:#eef3f7;box-shadow:inset 8px 8px 16px rgba(163,177,198,.42),inset -8px -8px 16px rgba(255,255,255,.95),10px 10px 20px rgba(163,177,198,.22),-8px -8px 18px rgba(255,255,255,.75)}
         .neo-label{display:block;margin:0 0 9px 4px;font-size:13px;font-weight:800;color:#566575}
         .neo-input{width:100%;height:54px;border:0;border-radius:17px;background:#eef3f7;color:#263746;padding:0 17px;outline:none;box-shadow:inset 6px 6px 13px rgba(163,177,198,.40),inset -6px -6px 13px rgba(255,255,255,.95);transition:box-shadow .2s,transform .2s}
