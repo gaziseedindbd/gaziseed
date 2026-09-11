@@ -16,7 +16,8 @@ export function OrderBranchHeader() {
     setBranch(next);
     const { count: total } = await supabase
       .from('orders')
-      .select('id', { count: 'exact', head: true });
+      .select('id', { count: 'exact', head: true })
+      .eq('country_code', next);
     setCount(total || 0);
   };
 
