@@ -139,8 +139,10 @@ export default function CheckoutPage() {
     const returnedFromCashfree = params.get('cashfree_return') === '1';
     const queryOrderId = params.get('order_id');
     const pendingOrderId = localStorage.getItem('cashfree_pending_order_id');
+    const pendingPaymentIntentId = localStorage.getItem('cashfree_pending_payment_intent_id');
+    const pendingPaymentMethod = localStorage.getItem('cashfree_pending_payment_method') || 'online';
     const cashfreeOrderId = queryOrderId || (returnedFromCashfree ? pendingOrderId : null);
-    if (!cashfreeOrderId) return;
+    if (!cashfreeOrderId && !pendingPaymentIntentId) return;
 
     let active = true;
     let navigatedToSuccess = false;
@@ -149,21 +151,31 @@ export default function CheckoutPage() {
 
     (async () => {
       try {
-        const { data, error: verifyError } = await supabase.functions.invoke('cashfree-complete-order', {
-          body: { cashfree_order_id: cashfreeOrderId },
-        });
+        const isCodReturn = pendingPaymentMethod === 'cod' && Boolean(pendingPaymentIntentId);
+        const { data, error: verifyError } = isCodReturn
+          ? await supabase.functions.invoke('cashfree-complete-cod-order', {
+              body: { payment_intent_id: pendingPaymentIntentId },
+            })
+          : await supabase.functions.invoke('cashfree-complete-order', {
+              body: { cashfree_order_id: cashfreeOrderId },
+            });
         if (!active) return;
         if (verifyError) throw verifyError;
         if (data?.completed && data?.order_number) {
           localStorage.removeItem('gazi_cart');
           localStorage.removeItem('cashfree_pending_order_id');
+          localStorage.removeItem('cashfree_pending_payment_intent_id');
+          localStorage.removeItem('cashfree_pending_payment_method');
           window.dispatchEvent(new Event('cart-updated'));
           navigatedToSuccess = true;
-          router.replace(`/order-success?number=${encodeURIComponent(data.order_number)}&amount=${encodeURIComponent(data.amount ?? "")}&payment_status=paid`);
+          const successStatus = isCodReturn ? 'cod' : 'paid';
+          router.replace(`/order-success?number=${encodeURIComponent(data.order_number)}&amount=${encodeURIComponent(data.amount ?? data.advance_amount ?? "")}&payment_status=${successStatus}`);
           return;
         }
         if (data?.already_completed && data?.order_id) {
           localStorage.removeItem('cashfree_pending_order_id');
+          localStorage.removeItem('cashfree_pending_payment_intent_id');
+          localStorage.removeItem('cashfree_pending_payment_method');
           navigatedToSuccess = true;
           router.replace(data.order_number ? `/order-success?number=${encodeURIComponent(data.order_number)}` : `/order-success?order_id=${data.order_id}`);
           return;
@@ -318,6 +330,8 @@ export default function CheckoutPage() {
       if (sessionError) throw sessionError;
       if (!data?.ok || !data.payment_session_id || !data.order_id) throw new Error(data?.error || 'Unable to start Cashfree payment');
       localStorage.setItem('cashfree_pending_order_id', data.order_id);
+      localStorage.setItem('cashfree_pending_payment_intent_id', data.payment_intent_id || '');
+      localStorage.setItem('cashfree_pending_payment_method', data.payment_method || method);
 
       await loadCashfreeSdk();
       if (!window.Cashfree) throw new Error('Cashfree SDK is unavailable');
