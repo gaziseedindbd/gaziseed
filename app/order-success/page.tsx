@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle2, ArrowRight, PackageCheck, ShieldCheck, CreditCard } from 'lucide-react';
+import { CheckCircle2, ArrowRight, PackageCheck, ShieldCheck, CreditCard, Banknote } from 'lucide-react';
 import { useLang } from '@/components/site/language-provider';
 
 function OrderJourney({ current }: { current: 'cart' | 'checkout' | 'confirmation' | 'tracking' }) {
@@ -41,6 +41,7 @@ function OrderSuccessInner() {
   const amount = searchParams.get('amount');
   const paymentStatus = searchParams.get('payment_status');
   const isPaid = paymentStatus === 'paid';
+  const isCod = paymentStatus === 'cod';
 
   return (
     <main className="min-h-[70vh] bg-gradient-to-b from-primary/[0.04] via-background to-background px-4 py-8 sm:py-12">
@@ -53,12 +54,14 @@ function OrderSuccessInner() {
           <div className="relative px-5 pb-8 pt-10 text-center sm:px-10 sm:pb-10 sm:pt-14">
             <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 ring-8 ring-primary/[0.04] sm:h-24 sm:w-24">
-              <CheckCircle2 className="h-12 w-12 text-primary sm:h-14 sm:w-14" strokeWidth={1.8} />
+              {isCod ? <Banknote className="h-12 w-12 text-primary sm:h-14 sm:w-14" strokeWidth={1.8} /> : <CheckCircle2 className="h-12 w-12 text-primary sm:h-14 sm:w-14" strokeWidth={1.8} />}
             </div>
-            <p className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-primary">{t('অর্ডার নিশ্চিত হয়েছে', 'Order confirmed')}</p>
+            <p className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-primary">{isCod ? t('COD অর্ডার নিশ্চিত হয়েছে', 'COD order confirmed') : t('অর্ডার নিশ্চিত হয়েছে', 'Order confirmed')}</p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">{t('অর্ডার সফল হয়েছে!', 'Order placed successfully!')}</h1>
             <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
-              {t('আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে। আমাদের টিম খুব শীঘ্রই আপনার সাথে যোগাযোগ করবে।', 'Your order has been received successfully. Our team will contact you shortly.')}
+              {isCod
+                ? t('আপনার COD অর্ডারটি নিশ্চিত হয়েছে। অগ্রিম পেমেন্ট সফল হয়েছে এবং বাকি টাকা ডেলিভারির সময় সংগ্রহ করা হবে।', 'Your COD order is confirmed. The advance payment was successful and the remaining amount will be collected on delivery.')
+                : t('আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে। আমাদের টিম খুব শীঘ্রই আপনার সাথে যোগাযোগ করবে।', 'Your order has been received successfully. Our team will contact you shortly.')}
             </p>
 
             {orderNumber && (
@@ -71,25 +74,32 @@ function OrderSuccessInner() {
               </div>
             )}
 
-            {(amount || isPaid) && (
+            {(amount || isPaid || isCod) && (
               <div className="mx-auto mt-4 grid max-w-md gap-3 sm:grid-cols-2">
                 {amount && (
                   <div className="rounded-2xl border border-border/70 bg-background/70 p-4 text-left">
                     <div className="flex items-center gap-3">
                       <div className="rounded-xl bg-primary/10 p-2"><CreditCard className="h-5 w-5 text-primary" /></div>
                       <div>
-                        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('পরিশোধের পরিমাণ', 'Paid amount')}</p>
+                        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{isCod ? t('অগ্রিম পরিশোধের পরিমাণ', 'COD advance paid') : t('পরিশোধের পরিমাণ', 'Paid amount')}</p>
                         <p className="mt-1 text-lg font-bold text-foreground">₹{Number(amount).toLocaleString('en-IN')}</p>
                       </div>
                     </div>
                   </div>
                 )}
-                {isPaid && (
+                {(isPaid || isCod) && (
                   <div className="rounded-2xl border border-primary/15 bg-primary/[0.045] p-4 text-left">
                     <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('পেমেন্ট স্ট্যাটাস', 'Payment status')}</p>
-                    <p className="mt-1 text-lg font-bold text-primary">{t('পরিশোধিত', 'PAID')}</p>
+                    <p className="mt-1 text-lg font-bold text-primary">{isCod ? t('COD · আংশিক পরিশোধিত', 'COD · PARTIALLY PAID') : t('পরিশোধিত', 'PAID')}</p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {isCod && (
+              <div className="mx-auto mt-4 max-w-md rounded-2xl border border-amber-200/80 bg-amber-500/[0.08] p-4 text-left dark:border-amber-900/60">
+                <p className="text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">{t('COD বাকি টাকা', 'COD balance')}</p>
+                <p className="mt-1 text-sm font-semibold leading-6 text-amber-900/80 dark:text-amber-200/90">{t('অবশিষ্ট টাকা ডেলিভারির সময় কুরিয়ারকে পরিশোধ করবেন।', 'Please pay the remaining balance to the courier when your order is delivered.')}</p>
               </div>
             )}
 
