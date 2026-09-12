@@ -25,6 +25,7 @@ export default function AdminOrdersPage() {
   const [loadingItems, setLoadingItems] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [note, setNote] = useState('');
+  const [settlingDue, setSettlingDue] = useState(false);
 
   const [duplicateOrders, setDuplicateOrders] = useState<Record<string, any[]>>({});
 
@@ -90,10 +91,15 @@ export default function AdminOrdersPage() {
 
   const updateStatus = async () => {
     if (!selectedOrder) return;
-    await supabase.from('orders').update({ 
+    const { error } = await supabase.from('orders').update({ 
       status: newStatus, 
       internal_notes: note 
     }).eq('id', selectedOrder.id);
+
+    if (error) {
+      toast('আপডেট করতে সমস্যা হয়েছে', 'error');
+      return;
+    }
 
     if (newStatus !== selectedOrder.status) {
       await supabase.from('order_status_history').insert({ 
@@ -104,6 +110,39 @@ export default function AdminOrdersPage() {
     }
     toast('আপডেট সফল হয়েছে');
     setSelectedOrder(null);
+    loadOrders();
+  };
+
+  const collectCodDue = async () => {
+    if (!selectedOrder) return;
+
+    const dueAmount = Math.max(
+      0,
+      Number(selectedOrder.payment_due_amount || 0)
+    );
+
+    if (selectedOrder.country_code !== 'IN' || selectedOrder.payment_method !== 'cod' || selectedOrder.status !== 'delivered' || dueAmount <= 0) {
+      toast('এই অর্ডারে এখন COD due collection করা যাবে না', 'error');
+      return;
+    }
+
+    setSettlingDue(true);
+    const { data, error } = await supabase.rpc('collect_cod_due_atomic', {
+      p_order_id: selectedOrder.id,
+    });
+    setSettlingDue(false);
+
+    if (error || !data?.success) {
+      toast(data?.error || error?.message || 'Due collection ব্যর্থ হয়েছে', 'error');
+      return;
+    }
+
+    toast(`COD due ${formatPrice(dueAmount)} collected successfully`);
+    setSelectedOrder({
+      ...selectedOrder,
+      payment_status: 'paid',
+      payment_due_amount: 0,
+    });
     loadOrders();
   };
 
@@ -294,6 +333,12 @@ export default function AdminOrdersPage() {
               <div><span className="text-muted-foreground">ফোন: </span><span className="font-semibold">{selectedOrder.customer_phone}</span></div>
               <div><span className="text-muted-foreground">সোর্স: </span><span className="font-semibold capitalize">{selectedOrder.order_source}</span></div>
               <div><span className="text-muted-foreground">পেমেন্ট মেথড: </span><span className="font-semibold uppercase">{selectedOrder.payment_method || 'COD'}</span></div>
+              <div><span className="text-muted-foreground">পেমেন্ট স্ট্যাটাস: </span><span className="font-semibold uppercase">{selectedOrder.payment_status || 'unpaid'}</span></div>
+              <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-2 rounded-xl border border-border/60 bg-background/70 p-2.5">
+                <div><span className="text-muted-foreground">মোট: </span><span className="font-bold">{formatPrice(selectedOrder.final_amount ?? selectedOrder.grand_total ?? selectedOrder.total_amount ?? 0)}</span></div>
+                <div><span className="text-muted-foreground">পেইড: </span><span className="font-bold text-green-600">{formatPrice(Math.max(0, Number(selectedOrder.final_amount ?? selectedOrder.grand_total ?? selectedOrder.total_amount ?? 0) - Number(selectedOrder.payment_due_amount || 0)))}</span></div>
+                <div><span className="text-muted-foreground">বাকি: </span><span className="font-bold text-orange-600">{formatPrice(Math.max(0, Number(selectedOrder.payment_due_amount || 0)))}</span></div>
+              </div>
               <div className="sm:col-span-2"><span className="text-muted-foreground">ঠিকানা: </span><span className="font-semibold">{selectedOrder.delivery_address}</span></div>
               <div><span className="text-muted-foreground">এলাকা: </span><span className="font-semibold">{selectedOrder.delivery_zone_name || selectedOrder.thana || selectedOrder.district || '-'}</span></div>
               {selectedOrder.utm_campaign && <div><span className="text-muted-foreground">ক্যাম্পেইন: </span>{selectedOrder.utm_campaign}</div>}
@@ -374,6 +419,21 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
             </div>
+
+            {selectedOrder.country_code === 'IN' && selectedOrder.payment_method === 'cod' && selectedOrder.status === 'delivered' && Number(selectedOrder.payment_due_amount || 0) > 0 && (
+              <div className="mb-4 rounded-2xl border border-orange-200 bg-orange-50/70 p-3.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-orange-800">COD বাকি সংগ্রহ</p>
+                    <p className="mt-0.5 text-xs text-orange-700">ডেলিভারি সম্পন্ন। এখন বাকি টাকা সংগ্রহ করে Paid করা যাবে।</p>
+                  </div>
+                  <span className="text-sm font-bold text-orange-800">{formatPrice(selectedOrder.payment_due_amount)}</span>
+                </div>
+                <button onClick={collectCodDue} disabled={settlingDue} className="mt-3 w-full rounded-xl bg-orange-600 py-2.5 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-60">
+                  {settlingDue ? 'সংগ্রহ হচ্ছে...' : `বাকি ${formatPrice(selectedOrder.payment_due_amount)} Paid করুন`}
+                </button>
+              </div>
+            )}
 
             {/* স্ট্যাটাস আপডেট */}
             <div className="space-y-2.5 border-t border-border pt-3.5">
