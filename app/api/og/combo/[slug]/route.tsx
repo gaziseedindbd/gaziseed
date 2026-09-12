@@ -15,13 +15,14 @@ function getImageUrl(combo: any) {
   return typeof image === 'string' && /^https?:\/\//i.test(image) ? image : null;
 }
 
-export async function GET(_request: Request, { params }: { params: { slug: string } }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   try {
+    const { slug } = await params;
     const supabase = getSupabase();
     const { data: combo, error } = await supabase
       .from('combo_packs')
       .select('title_bn,title_en,description_bn,description_en,images,image')
-      .eq('slug', params.slug)
+      .eq('slug', slug)
       .maybeSingle();
 
     if (error || !combo) {
