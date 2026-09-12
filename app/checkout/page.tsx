@@ -655,6 +655,53 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
+                {country === 'IN' && (
+                  <div className="border-b border-border/60 p-5 sm:p-6">
+                    <div className="mb-3">
+                      <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">{t('পেমেন্ট পদ্ধতি', 'Payment method')}</p>
+                      <h3 className="mt-1 text-sm font-black text-foreground">{t('কীভাবে পেমেন্ট করবেন?', 'How would you like to pay?')}</h3>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('online')}
+                        aria-pressed={paymentMethod === 'online'}
+                        className={`rounded-2xl border-2 p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${paymentMethod === 'online' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border bg-background hover:border-primary/30'}`}
+                      >
+                        <span className="flex items-start gap-3">
+                          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><WalletCards className="h-4 w-4" /></span>
+                          <span className="min-w-0">
+                            <span className="block text-sm font-black">{t('অনলাইন পেমেন্ট', 'Online payment')}</span>
+                            <span className="mt-1 block text-[10px] leading-4 text-muted-foreground">UPI / Card</span>
+                          </span>
+                        </span>
+                      </button>
+
+                      {codAvailable && (
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMethod('cod')}
+                          aria-pressed={paymentMethod === 'cod'}
+                          className={`rounded-2xl border-2 p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${paymentMethod === 'cod' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border bg-background hover:border-primary/30'}`}
+                        >
+                          <span className="flex items-start gap-3">
+                            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Banknote className="h-4 w-4" /></span>
+                            <span className="min-w-0">
+                              <span className="block text-sm font-black">{t('ক্যাশ অন ডেলিভারি', 'Cash on Delivery')}</span>
+                              <span className="mt-1 block text-[10px] leading-4 text-muted-foreground">{t(`অগ্রিম ${formatPrice(codAdvance)} · ডেলিভারিতে ${formatPrice(codDue)}`, `Advance ${formatPrice(codAdvance)} · ${formatPrice(codDue)} due on delivery`)}</span>
+                            </span>
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                    {!codAvailable && (
+                      <p className="mt-3 rounded-xl border border-amber-200/80 bg-amber-500/10 px-3 py-2 text-[10px] font-bold leading-4 text-amber-700 dark:border-amber-900/60 dark:text-amber-300">
+                        {t('এই অর্ডারের জন্য COD উপলভ্য নয়।', 'COD is not available for this order.')}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <div className="max-h-72 space-y-3 overflow-y-auto border-b border-border/60 p-5 sm:p-6">
                   {cart.map((item) => (
                     <div key={`${item.product_id}-${item.variant_id || ''}-${item.bundle_id || ''}`} className="flex items-center gap-3">
@@ -731,7 +778,7 @@ export default function CheckoutPage() {
               disabled={loading}
               className="inline-flex min-h-12 shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-primary px-5 text-xs font-black text-primary-foreground shadow-lg shadow-primary/25 transition active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:opacity-60"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{country === 'IN' ? t('পেমেন্ট করুন', 'Pay online') : t('অর্ডার করুন', 'Place order')} <ChevronRight className="h-4 w-4" /></>}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম', 'COD advance') : t('অনলাইন পেমেন্ট', 'Pay online')) : t('অর্ডার করুন', 'Place order')} <ChevronRight className="h-4 w-4" /></>}
             </button>
           </div>
         </div>
