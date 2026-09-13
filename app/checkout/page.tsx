@@ -169,7 +169,7 @@ export default function CheckoutPage() {
           window.dispatchEvent(new Event('cart-updated'));
           navigatedToSuccess = true;
           const successStatus = isCodReturn ? 'cod' : 'paid';
-          router.replace(`/order-success?number=${encodeURIComponent(data.order_number)}&amount=${encodeURIComponent(data.amount ?? data.advance_amount ?? "")}&payment_status=${successStatus}`);
+          router.replace(`/order-success?number=${encodeURIComponent(data.order_number)}&amount=${encodeURIComponent(data.amount ?? data.advance_amount ?? "")}&payment_status=${successStatus}&due_amount=${encodeURIComponent(isCodReturn ? data.due_amount ?? "" : "")}`);
           return;
         }
         if (data?.already_completed && data?.order_id) {
@@ -177,7 +177,7 @@ export default function CheckoutPage() {
           localStorage.removeItem('cashfree_pending_payment_intent_id');
           localStorage.removeItem('cashfree_pending_payment_method');
           navigatedToSuccess = true;
-          router.replace(data.order_number ? `/order-success?number=${encodeURIComponent(data.order_number)}` : `/order-success?order_id=${data.order_id}`);
+          router.replace(data.order_number ? `/order-success?number=${encodeURIComponent(data.order_number)}&amount=${encodeURIComponent(data.amount ?? data.advance_amount ?? "")}&payment_status=${isCodReturn ? 'cod' : 'paid'}&due_amount=${encodeURIComponent(isCodReturn ? data.due_amount ?? "" : "")}` : `/order-success?order_id=${data.order_id}`);
           return;
         }
         if (data?.paid === false) {
@@ -763,7 +763,7 @@ export default function CheckoutPage() {
 
                   <div className="grid grid-cols-3 gap-2 pt-1 text-center">
                     <div className="rounded-2xl bg-secondary/70 p-3"><Truck className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">{country === 'IN' ? 'India Delivery' : t('দেশজুড়ে', 'Nationwide')}</span></div>
-                    <div className="rounded-2xl bg-secondary/70 p-3"><Banknote className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">{country === 'IN' ? 'UPI / Card' : 'COD'}</span></div>
+                    <div className="rounded-2xl bg-secondary/70 p-3"><Banknote className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">{country === 'IN' ? (paymentMethod === 'cod' ? 'COD' : 'UPI / Card') : 'COD'}</span></div>
                     <div className="rounded-2xl bg-secondary/70 p-3"><Lock className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">SSL</span></div>
                   </div>
                 </div>
@@ -784,7 +784,7 @@ export default function CheckoutPage() {
           <div className="flex items-center gap-3 rounded-[22px] border border-border/80 bg-background/95 p-3 shadow-2xl shadow-black/20 backdrop-blur-xl" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
             <div className="min-w-0 flex-1 pl-1">
               <p className="text-[10px] font-bold text-muted-foreground">{t('পরিশোধযোগ্য', 'Payable')}</p>
-              <p className="truncate text-lg font-black text-primary">{formatPrice(payableTotal)}</p>
+              <p className="truncate text-lg font-black text-primary">{formatPrice(paymentMethod === 'cod' ? codAdvance : payableTotal)}</p>
             </div>
             <button
               type="submit"
