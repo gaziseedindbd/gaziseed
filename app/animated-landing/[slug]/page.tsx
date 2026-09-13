@@ -184,7 +184,7 @@ export default function AnimatedLandingPage() {
   const heroHighlight = page?.hero_highlight || 'বেশি ফলন, বেশি লাভ!';
   const heroSubtitle = page?.hero_subtitle || product?.short_description || 'সঠিক বীজ ও সঠিক পরিচর্যা—কৃষকের সফলতার প্রথম ধাপ।';
   const heroImage = page?.hero_image || product?.image || '';
-  const productName = product?.name_bn || product?.name_en || 'SUPER KING SEED';
+  const productName = product?.name_bn || product?.name_en || page?.landing_name || 'পণ্য';
 
   const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
