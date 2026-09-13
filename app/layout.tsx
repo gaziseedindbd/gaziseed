@@ -44,9 +44,10 @@ export const metadata: Metadata = {
   openGraph: { title: 'GAZI SEED', description: 'বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর', type: 'website' },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const requestHeaders = headers();
-  const cookieOverride = cookies().get('gazi_country_override')?.value?.toUpperCase();
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const requestHeaders = await headers();
+  const cookieStore = await cookies();
+  const cookieOverride = cookieStore.get('gazi_country_override')?.value?.toUpperCase();
   const detectedCountry = (
     requestHeaders.get('x-vercel-ip-country') ||
     requestHeaders.get('cf-ipcountry') ||
