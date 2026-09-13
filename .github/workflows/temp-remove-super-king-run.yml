@@ -1,0 +1,31 @@
+name: Run landing fallback cleanup
+on:
+  push:
+    branches:
+      - fix/remove-super-king-fallback-final6
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply cleanup
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('app/animated-landing/[slug]/page.tsx')
+          s = p.read_text(encoding='utf-8')
+          old = "const productName = product?.name_bn || product?.name_en || 'SUPER KING SEED';"
+          new = "const productName = product?.name_bn || product?.name_en || page?.landing_name || 'পণ্য';"
+          if s.count(old) != 1:
+              raise SystemExit(f'expected exactly one stale fallback, found {s.count(old)}')
+          p.write_text(s.replace(old, new), encoding='utf-8')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/temp-remove-super-king.yml .github/workflows/temp-remove-super-king-run.yml
+          git add app/animated-landing/[slug]/page.tsx
+          git commit -m "fix: remove stale Super King landing fallback"
+          git push
