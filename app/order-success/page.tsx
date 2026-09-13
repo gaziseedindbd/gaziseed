@@ -40,6 +40,7 @@ function OrderSuccessInner() {
   const orderNumber = searchParams.get('number');
   const amount = searchParams.get('amount');
   const paymentStatus = searchParams.get('payment_status');
+  const dueAmount = searchParams.get('due_amount');
   const isPaid = paymentStatus === 'paid';
   const isCod = paymentStatus === 'cod';
 
@@ -89,8 +90,8 @@ function OrderSuccessInner() {
                 )}
                 {(isPaid || isCod) && (
                   <div className="rounded-2xl border border-primary/15 bg-primary/[0.045] p-4 text-left">
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('পেমেন্ট স্ট্যাটাস', 'Payment status')}</p>
-                    <p className="mt-1 text-lg font-bold text-primary">{isCod ? t('COD · আংশিক পরিশোধিত', 'COD · PARTIALLY PAID') : t('পরিশোধিত', 'PAID')}</p>
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{isCod && dueAmount ? t('ডেলিভারিতে পরিশোধযোগ্য', 'COD due on delivery') : t('পেমেন্ট স্ট্যাটাস', 'Payment status')}</p>
+                    <p className="mt-1 text-lg font-bold text-primary">{isCod && dueAmount ? `₹${Number(dueAmount).toLocaleString('en-IN')}` : (isCod ? t('COD · আংশিক পরিশোধিত', 'COD · PARTIALLY PAID') : t('পরিশোধিত', 'PAID'))}</p>
                   </div>
                 )}
               </div>
@@ -99,7 +100,7 @@ function OrderSuccessInner() {
             {isCod && (
               <div className="mx-auto mt-4 max-w-md rounded-2xl border border-amber-200/80 bg-amber-500/[0.08] p-4 text-left dark:border-amber-900/60">
                 <p className="text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">{t('COD বাকি টাকা', 'COD balance')}</p>
-                <p className="mt-1 text-sm font-semibold leading-6 text-amber-900/80 dark:text-amber-200/90">{t('অবশিষ্ট টাকা ডেলিভারির সময় কুরিয়ারকে পরিশোধ করবেন।', 'Please pay the remaining balance to the courier when your order is delivered.')}</p>
+                <p className="mt-1 text-sm font-semibold leading-6 text-amber-900/80 dark:text-amber-200/90">{dueAmount ? t(`ডেলিভারির সময় ₹${Number(dueAmount).toLocaleString('en-IN')} কুরিয়ারকে পরিশোধ করবেন।`, `Please pay ₹${Number(dueAmount).toLocaleString('en-IN')} to the courier when your order is delivered.`) : t('অবশিষ্ট টাকা ডেলিভারির সময় কুরিয়ারকে পরিশোধ করবেন।', 'Please pay the remaining balance to the courier when your order is delivered.')}</p>
               </div>
             )}
 
