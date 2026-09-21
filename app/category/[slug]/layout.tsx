@@ -3,7 +3,8 @@ import { getServerRow, pageMetadata } from '@/lib/seo-metadata';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const category = await getServerRow('categories', 'slug', slug);
+  const country = slug.endsWith('-india') ? 'IN' : 'BD';
+  const category = await getServerRow('categories', 'slug', slug, country);
   const title = category?.name_bn || category?.name_en || slug.replace(/-/g, ' ');
   const description = category?.description || `বীজ ও কৃষি পণ্যের ${title} ক্যাটাগরি — GAZI SEED`;
   const image = category?.banner || category?.image || null;
