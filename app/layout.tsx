@@ -62,7 +62,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     : detectedCountry === 'IN' ? 'IN' : 'BD';
 
   return (
-    <html lang="bn" suppressHydrationWarning>
+    <html lang={visitorCountry === 'IN' ? 'en' : 'bn'} suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="/home-hero-responsive-standard-v1.css" />
         <link rel="stylesheet" href="/home-hero-layer-fix.css?v=2" />
@@ -78,7 +78,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <MarketingTracker />
           <ReferralTracker />
           <BrandNormalizer />
-          <LanguageProvider>
+          <LanguageProvider defaultCountry={visitorCountry}>
             <ToastProvider>
               <CartProvider>
                 <AnnouncementBar />
