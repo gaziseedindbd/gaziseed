@@ -10,6 +10,7 @@ import { getVisitorCountry } from '@/lib/supabase/client';
 import { useLang } from './language-provider';
 import { getStoredTheme, type HomePageTheme } from './theme-switcher';
 import type { Banner, Category, Product, Service, Testimonial, BlogPost, SiteSettings, HomepageSection } from '@/lib/supabase/types';
+import { requestHindiTranslations, type HindiTranslations } from '@/lib/translation-cache';
 
 let memoryCache: { country?: 'BD' | 'IN'; banners?: Banner[]; categories?: Category[]; featuredProducts?: Product[]; bestSellers?: Product[]; newArrivals?: Product[]; seasonal?: Product[]; thisMonthSeeds?: Product[]; services?: Service[]; testimonials?: Testimonial[]; blogPosts?: BlogPost[]; settings?: SiteSettings | null; sections?: HomepageSection[]; timestamp?: number } = {};
 
@@ -29,6 +30,7 @@ export default function Home() {
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(cached.blogPosts || []);
   const [settings, setSettings] = useState<SiteSettings | null>(cached.settings || null);
   const [sections, setSections] = useState<HomepageSection[]>(cached.sections || []);
+  const [categoryHindi, setCategoryHindi] = useState<Record<string, HindiTranslations>>({});
   const [currentBanner, setCurrentBanner] = useState(0);
   const [theme, setTheme] = useState<HomePageTheme>('theme1');
 
@@ -102,6 +104,18 @@ export default function Home() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    if (lang !== 'hi' || categories.length === 0) {
+      setCategoryHindi({});
+      return;
+    }
+    let cancelled = false;
+    requestHindiTranslations(categories.map((cat) => ({ entity_type: 'category' as const, id: cat.id }))).then((result) => {
+      if (!cancelled) setCategoryHindi(result);
+    });
+    return () => { cancelled = true; };
+  }, [lang, categories]);
+
   useEffect(() => { if (banners.length <= 1) return; const interval = setInterval(() => setCurrentBanner((prev) => (prev + 1) % banners.length), 5000); return () => clearInterval(interval); }, [banners.length]);
 
   const isSectionEnabled = (key: string) => sections.length === 0 || sections.find((s) => s.section_key === key)?.is_enabled !== false;
@@ -117,7 +131,7 @@ export default function Home() {
       <link rel="stylesheet" href="/home-category-cards-v3.css" />
       <link rel="stylesheet" href="/home-hero-cta-final.css?v=1" />
       {isSectionEnabled('hero_slider') && banners.length > 0 && <section className="section-pad home-hero-section"><div className="container-custom"><div className="hero-wrap relative overflow-hidden">{banners.map((banner, idx) => <div key={banner.id} className={`transition-opacity duration-700 ${idx === currentBanner ? 'block' : 'hidden'}`}><div className="hero-inner relative block p-0">{banner.desktop_image && <div className="hero-image-wrap block w-full"><picture className="block w-full"><source media="(max-width: 767px)" srcSet={banner.mobile_image || banner.desktop_image} /><img src={banner.desktop_image} alt={banner.title || 'GAZI SEED'} className="block h-auto w-full rounded-2xl object-contain shadow-lg" loading="eager" /></picture></div>}{(banner.title || banner.subtitle || banner.cta_text) && <div className="hero-content-overlay absolute inset-x-0 bottom-0 z-10 p-4 sm:p-6 lg:p-8"><div className="max-w-xl rounded-2xl bg-black/25 p-4 text-white backdrop-blur-[2px] sm:p-5">{banner.title && <h2 className="hero-title">{tDb(banner.title)}</h2>}{banner.subtitle && <p className="hero-subtitle">{tDb(banner.subtitle)}</p>}{banner.cta_text && <Link href={banner.cta_url || '/all-products'} className="hero-btn inline-flex">{tDb(banner.cta_text)}<ChevronRight className="h-4 w-4" /></Link>}</div></div>}</div></div>)}{banners.length > 1 && <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">{banners.map((_, idx) => <button key={idx} onClick={() => setCurrentBanner(idx)} className={`h-2 rounded-full transition-all ${idx === currentBanner ? 'w-8 bg-primary' : 'w-2 bg-primary/30'}`} aria-label={`Banner ${idx + 1}`} />)}</div>}</div></div></section>}
-      {isSectionEnabled('featured_categories') && categories.length > 0 && <section className="section-pad home-category-section"><div className="container-custom"><div className="mb-6 flex items-center justify-between"><div><h2 className="section-heading">{t('জনপ্রিয় ক্যাটাগরি', 'Popular Categories')}</h2><p className="section-subheading">{t('আপনার পছন্দের বীজ এক নজরে', 'Explore seeds by category')}</p></div><Link href="/categories" className="view-all-link">{t('সব ক্যাটাগরি দেখুন →', 'View All Categories →')}</Link></div><div className="cat-grid">{categories.slice(0, 8).map((cat, idx) => { const categoryHref = cat.slug === 'combo-packages' ? '/combos' : `/category/${cat.slug}`; return <Link key={cat.id} href={categoryHref} className={`cat-card group${idx >= 4 ? ' !hidden sm:!flex' : ''}`}><div className="cat-icon-wrap">{cat.image ? <img src={cat.image} alt={lang === 'en' ? (cat.name_en || cat.name_bn) : cat.name_bn} className="h-full w-full rounded-full object-cover" loading="lazy" /> : <Sprout className="h-8 w-8 text-primary" />}</div><span className="cat-label">{lang === 'en' ? (cat.name_en || cat.name_bn) : cat.name_bn}</span></Link>; })}</div></div></section>}
+      {isSectionEnabled('featured_categories') && categories.length > 0 && <section className="section-pad home-category-section"><div className="container-custom"><div className="mb-6 flex items-center justify-between"><div><h2 className="section-heading">{t('জনপ্রিয় ক্যাটাগরি', 'Popular Categories')}</h2><p className="section-subheading">{t('আপনার পছন্দের বীজ এক নজরে', 'Explore seeds by category')}</p></div><Link href="/categories" className="view-all-link">{t('সব ক্যাটাগরি দেখুন →', 'View All Categories →')}</Link></div><div className="cat-grid">{categories.slice(0, 8).map((cat, idx) => { const categoryHref = cat.slug === 'combo-packages' ? '/combos' : `/category/${cat.slug}`; const catTitle = lang === 'hi' ? String(categoryHindi[cat.id]?.name || cat.name_en || cat.name_bn) : (lang === 'en' ? (cat.name_en || cat.name_bn) : cat.name_bn); return <Link key={cat.id} href={categoryHref} className={`cat-card group${idx >= 4 ? ' !hidden sm:!flex' : ''}`}><div className="cat-icon-wrap">{cat.image ? <img src={cat.image} alt={catTitle} className="h-full w-full rounded-full object-cover" loading="lazy" /> : <Sprout className="h-8 w-8 text-primary" />}</div><span lang={lang === 'hi' ? 'hi-x-mtfrom-und' : undefined} className="cat-label">{catTitle}</span></Link>; })}</div></div></section>}
       <section className="home-trust-strip"><div className="container-custom home-trust-grid"><TrustItem icon={Sprout} title={t('১০০% অরিজিনাল বীজ', '100% Original Seeds')} text={t('বিশ্বস্ত উৎস থেকে', 'From trusted sources')} /><TrustItem icon={Truck} title={visitorCountry === 'IN' ? t('সারা ভারতে ডেলিভারি', 'Pan-India Delivery') : t('সারা দেশে ডেলিভারি', 'Nationwide Delivery')} text={t('দ্রুত ও নিরাপদ', 'Fast & secure')} /><TrustItem icon={ShieldCheck} title={t('নিরাপদ পেমেন্ট', 'Secure Payment')} text={visitorCountry === 'IN' ? t('Cashfree, UPI, কার্ড ও COD', 'Cashfree, UPI, card & COD') : t('বিকাশ, নগদ, কার্ড ও COD', 'bKash, Nagad, card & COD')} /><TrustItem icon={Headphones} title={t('কাস্টমার সাপোর্ট', 'Customer Support')} text={t('সবসময় আপনার পাশে', 'Always here for you')} /></div></section>
       {isSectionEnabled('featured_products') && featuredProducts.length > 0 && <ProductSection title={t('জনপ্রিয় পণ্য', 'Popular Products')} subtitle={t('কৃষকদের পছন্দের বীজ', 'Farmers’ favorite seeds')} products={featuredProducts} theme={theme} />}
       {(promoImage1 || promoImage2) && <section className="section-pad home-promo-section"><div className="container-custom home-promo-grid"><PromoCard image={promoImage1} title={t('চাষাবাদ গাইড', 'Growing Guide')} text={t('সঠিক বীজ, সঠিক পদ্ধতি — বেশি ফলন', 'Right seed, right method — better yield')} href="/blog" button={t('বিস্তারিত দেখুন', 'Explore Guide')} /><PromoCard image={promoImage2} title={t('কৃষকের গল্প', 'Farmer Stories')} text={t('আমাদের বীজে সাফল্যের অনুপ্রেরণামূলক গল্প', 'Inspiring success stories from farmers')} href="/blog" button={t('দেখুন এখন', 'View Stories')} /></div></section>}
