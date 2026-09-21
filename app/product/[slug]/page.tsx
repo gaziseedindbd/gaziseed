@@ -158,9 +158,10 @@ export default function ProductDetailPage() {
   const finalUnitPrice = applicableBulk ? applicableBulk.unit_price : effectivePrice;
   const totalPrice = finalUnitPrice * quantity;
 
-  const productName = lang === 'en' && product.name_en ? product.name_en : product.name_bn;
-  const productDesc = tDb(product.description || '');
-  const productShortDesc = tDb(product.short_description || '');
+  const translated = (product as any).translations?.[lang] || {};
+  const productName = translated.name || (lang === 'en' && product.name_en ? product.name_en : lang === 'hi' && product.name_en ? product.name_en : product.name_bn);
+  const productDesc = translated.description || tDb(product.description || '');
+  const productShortDesc = translated.short_description || tDb(product.short_description || '');
 
   const handleAddToCart = () => {
     if (!inStock) { toast(t('পণ্যটি স্টকে নেই', 'Product is out of stock'), 'error'); return false; }
@@ -240,7 +241,7 @@ export default function ProductDetailPage() {
                   <Heart className={`h-4 w-4 ${inWishlist ? 'fill-current' : ''}`} />
                 </button>
               </div>
-              {product.name_en && <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{product.name_en}</p>}
+              {lang !== 'en' && product.name_en && <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{product.name_en}</p>}
               <h1 className="mt-1 text-xl sm:text-3xl font-black text-gray-900 leading-tight break-words">{productName}</h1>
               <div className="mt-2.5 flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full text-xs font-bold text-amber-700"><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /><span>{avgRating ? `${avgRating} / ৫.০` : t('নতুন পণ্য', 'New Product')}</span></div>
