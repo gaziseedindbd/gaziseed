@@ -24,6 +24,7 @@ import HomeFloatingReviews from '@/components/site/home-floating-reviews';
 import BrandNormalizer from '@/components/site/brand-normalizer';
 import PageShare from '@/components/site/page-share';
 import { AuthSessionBridge } from '@/components/site/auth-session-bridge';
+import { GoogleTranslationBadge } from '@/components/site/google-translation-badge';
 import HomePromoSync from '@/components/site/home-promo-sync';
 import IndiaHomeCountry from '@/components/site/india-home-country';
 
@@ -96,6 +97,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <AccountPasswordLauncher />
                 <HomeFloatingReviews />
                 <PageShare />
+                <GoogleTranslationBadge />
               </CartProvider>
             </ToastProvider>
           </LanguageProvider>
