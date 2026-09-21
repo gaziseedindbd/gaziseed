@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 import { Plus, Edit, Trash2, X, Wand2 } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 import { processUrlImage, uploadProcessedFile } from '@/lib/image-processing';
+import { MultilingualFields } from '@/components/admin/multilingual-fields';
 
 export default function AdminBlogPage() {
   const [posts, setPosts] = useState<any[]>([]);
@@ -91,6 +92,7 @@ function BlogForm({ post, onSave, onClose }: any) {
     title: post?.title || '', slug: post?.slug || '', featured_image: post?.featured_image || '',
     content: post?.content || '', category: post?.category || '', seo_title: post?.seo_title || '',
     meta_description: post?.meta_description || '', is_published: post?.is_published ?? false,
+    translations: post?.translations || {},
   });
 
   return (
@@ -99,6 +101,7 @@ function BlogForm({ post, onSave, onClose }: any) {
       <div className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-background p-6">
         <div className="mb-4 flex items-center justify-between"><h2 className="text-xl font-bold">{post ? 'আর্টিকেল এডিট' : 'নতুন আর্টিকেল'}</h2><button onClick={onClose}><X className="h-6 w-6" /></button></div>
         <form onSubmit={(e) => { e.preventDefault(); const slug = form.slug || form.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); onSave({ ...form, slug }); }} className="space-y-4">
+          <MultilingualFields value={form.translations || {}} onChange={(translations) => setForm({ ...form, translations })} title="🌐 Article Language Versions" fields={[{ key: 'title', label: 'Title' }, { key: 'content', label: 'Content', multiline: true }, { key: 'category', label: 'Category' }, { key: 'seo_title', label: 'SEO Title' }, { key: 'meta_description', label: 'Meta Description', multiline: true }]} />
           <div><label className="mb-1 block text-sm font-medium">শিরোনাম</label><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="input-bangla" required /></div>
           <div><label className="mb-1 block text-sm font-medium">Slug</label><input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className="input-bangla" placeholder="auto-generated" /></div>
           <div><label className="mb-1 block text-sm font-medium">ক্যাটাগরি</label><input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input-bangla" /></div>
