@@ -75,8 +75,8 @@ export function pageMetadata({
   };
 }
 
-export async function getServerRow(table: string, slugColumn: string, slug: string) {
-  const supabase = await createServerSupabase();
+export async function getServerRow(table: string, slugColumn: string, slug: string, country?: 'BD' | 'IN') {
+  const supabase = await createServerSupabase(country);
   const { data } = await supabase.from(table).select('*').eq(slugColumn, slug).maybeSingle();
   return data as any;
 }
