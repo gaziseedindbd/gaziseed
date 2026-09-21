@@ -50,11 +50,18 @@ export default function FloatingCartDrawer() {
       flyer.style.width = `${source.width}px`;
       flyer.style.height = `${source.height}px`;
       flyer.style.objectFit = 'cover';
-      flyer.style.borderRadius = '12px';
+      flyer.style.borderRadius = '14px';
       flyer.style.pointerEvents = 'none';
       flyer.style.zIndex = '9999';
-      flyer.style.boxShadow = '0 14px 36px -12px rgba(5,150,105,.65)';
+      flyer.style.willChange = 'transform, opacity';
+      flyer.style.boxShadow = '0 18px 42px -14px rgba(5,150,105,.8)';
       document.body.appendChild(flyer);
+
+      const trail = flyer.cloneNode(true) as HTMLImageElement;
+      trail.style.opacity = '.22';
+      trail.style.filter = 'blur(1px)';
+      trail.style.zIndex = '9998';
+      document.body.appendChild(trail);
 
       const dx = targetCenterX - sourceCenterX;
       const dy = targetCenterY - sourceCenterY;
@@ -62,15 +69,29 @@ export default function FloatingCartDrawer() {
       const animation = flyer.animate(
         [
           { transform: 'translate3d(0,0,0) scale(1) rotate(0deg)', opacity: 1, offset: 0 },
-          { transform: `translate3d(${dx * 0.62}px,${dy * 0.62 - 35}px,0) scale(.58) rotate(-8deg)`, opacity: 1, offset: 0.58 },
-          { transform: `translate3d(${dx}px,${dy}px,0) scale(.18) rotate(8deg)`, opacity: .15, offset: 1 },
+          { transform: `translate3d(${dx * 0.22}px,${dy * 0.22 - 34}px,0) scale(.94) rotate(-3deg)`, opacity: 1, offset: 0.24 },
+          { transform: `translate3d(${dx * 0.66}px,${dy * 0.66 - 48}px,0) scale(.64) rotate(-8deg)`, opacity: .98, offset: 0.62 },
+          { transform: `translate3d(${dx * 0.9}px,${dy * 0.9 - 10}px,0) scale(.4) rotate(5deg)`, opacity: .82, offset: 0.84 },
+          { transform: `translate3d(${dx}px,${dy}px,0) scale(.26) rotate(10deg)`, opacity: .08, offset: 1 },
         ],
-        { duration: 700, easing: 'cubic-bezier(.2,.8,.25,1)', fill: 'forwards' },
+        { duration: 950, easing: 'cubic-bezier(.16,.84,.22,1)', fill: 'forwards' },
       );
 
-      setCartBump(true);
-      window.setTimeout(() => setCartBump(false), 520);
-      animation.finished.finally(() => flyer.remove());
+      trail.animate(
+        [
+          { transform: 'translate3d(0,0,0) scale(.94)', opacity: .22, offset: 0 },
+          { transform: `translate3d(${dx * 0.48}px,${dy * 0.48 - 36}px,0) scale(.58)`, opacity: .12, offset: 0.55 },
+          { transform: `translate3d(${dx}px,${dy}px,0) scale(.22)`, opacity: 0, offset: 1 },
+        ],
+        { duration: 820, easing: 'cubic-bezier(.2,.8,.25,1)', fill: 'forwards' },
+      );
+
+      window.setTimeout(() => setCartBump(true), 720);
+      window.setTimeout(() => setCartBump(false), 1180);
+      animation.finished.finally(() => {
+        flyer.remove();
+        trail.remove();
+      });
     };
 
     window.addEventListener('gazi-cart-open', openCart);
