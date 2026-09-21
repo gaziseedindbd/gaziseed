@@ -19,11 +19,29 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
   const secondaryName = lang === 'bn' ? product.name_en : product.name_bn;
   const badge = product.is_best_seller ? t('বেস্ট সেলার', 'Best Seller') : product.is_new_arrival ? t('নতুন এসেছে', 'New Arrival') : product.is_featured ? t('জনপ্রিয়', 'Popular') : product.is_seasonal ? t('মৌসুমি', 'Seasonal') : null;
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault(); e.stopPropagation();
+  const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!inStock) { toast(t('পণ্যটি স্টকে নেই', 'Out of stock'), 'error'); return; }
+
+    const image = e.currentTarget.closest('article')?.querySelector('img');
+    const sourceRect = image?.getBoundingClientRect();
     addToCart(product, 1);
     toast(t('কার্টে যোগ করা হয়েছে', 'Added to cart'));
+
+    if (image && sourceRect) {
+      window.dispatchEvent(new CustomEvent('gazi-cart-fly', {
+        detail: {
+          image: image.currentSrc || image.src,
+          sourceRect: {
+            left: sourceRect.left,
+            top: sourceRect.top,
+            width: sourceRect.width,
+            height: sourceRect.height,
+          },
+        },
+      }));
+    }
   };
 
   const handleBuyNow = (e: React.MouseEvent) => {
@@ -58,7 +76,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
       <div className="mt-auto space-y-2 p-3 pt-0 sm:space-y-2.5 sm:p-4 sm:pt-0 lg:p-5 lg:pt-0">
         <div className="flex min-w-0 items-end justify-between gap-2 border-t border-slate-100 pt-2.5 sm:pt-3"><div className="flex min-w-0 flex-wrap items-baseline gap-1.5 sm:gap-2"><span className="text-[1.05rem] font-black tracking-tight text-emerald-800 sm:text-[1.35rem]">{formatPrice(price)}</span>{discount > 0 && <span className="text-[10px] font-semibold text-slate-400 line-through sm:text-xs">{formatPrice(product.regular_price)}</span>}</div><span className={`hidden shrink-0 rounded-full px-2 py-1 text-[8px] font-bold sm:block sm:text-[9px] ${inStock ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>{inStock ? t('স্টকে আছে', 'In stock') : t('স্টক শেষ', 'Sold out')}</span></div>
         <div className={`grid gap-1.5 sm:gap-2 ${stackedActions ? 'grid-cols-2 sm:grid-cols-1' : 'grid-cols-2'}`}>
-          <button onClick={handleAddToCart} disabled={!inStock} className="flex min-w-0 items-center justify-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-1.5 py-2.5 text-[9px] font-black text-emerald-800 transition-all hover:-translate-y-0.5 hover:border-emerald-700 hover:bg-emerald-700 hover:text-white active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-50 sm:gap-1.5 sm:px-2 sm:py-3 sm:text-xs"><ShoppingCart className="h-3 w-3 sm:h-3.5 sm:w-3.5" /><span>{t('কার্টে যোগ', 'Add to Cart')}</span></button>
+          <button onClick={handleAddToCart} disabled={!inStock} className="flex min-w-0 items-center justify-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-1.5 py-2.5 text-[9px] font-black text-emerald-800 transition-all hover:-translate-y-0.5 hover:border-emerald-700 hover:bg-emerald-700 hover:text-white active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-50"><ShoppingCart className="h-3 w-3 sm:h-3.5 sm:w-3.5" /><span>{t('কার্টে যোগ', 'Add to Cart')}</span></button>
           <button onClick={handleBuyNow} disabled={!inStock} className="flex min-w-0 items-center justify-center gap-1 rounded-xl bg-slate-950 px-1.5 py-2.5 text-[9px] font-black text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-50 sm:gap-1.5 sm:px-2 sm:py-3 sm:text-xs"><Zap className="h-3 w-3 fill-current text-lime-300 sm:h-3.5 sm:w-3.5" /><span>{t('এখনই কিনুন', 'Buy Now')}</span></button>
         </div>
       </div>
