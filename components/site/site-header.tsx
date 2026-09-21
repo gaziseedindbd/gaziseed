@@ -31,7 +31,7 @@ import {
 import { getSiteSettings, getProducts } from '@/lib/data';
 import { getVisitorCountry } from '@/lib/supabase/client';
 import type { SiteSettings, Product } from '@/lib/supabase/types';
-import { useLang } from '@/components/site/language-provider';
+import { useLang, type Lang } from '@/components/site/language-provider';
 import CountrySelector from '@/components/site/country-selector';
 
 export function SiteHeader() {
@@ -235,7 +235,24 @@ export function SiteHeader() {
             {searchLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin text-emerald-700" />}
             {searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="mr-1 rounded-full p-1 text-slate-400 hover:bg-slate-100" aria-label="Clear search"><X className="h-3.5 w-3.5" /></button>}
           </div>
-          <button type="button" onClick={() => setLang(lang === 'bn' ? 'en' : 'bn')} className="rounded-xl px-2.5 py-2.5 text-xs font-black text-emerald-900 transition hover:bg-emerald-50" title={t('ভাষা পরিবর্তন', 'Change language')}>{lang === 'bn' ? 'EN' : 'বাংলা'}</button>
+          {country === 'IN' ? (
+            <label className="relative flex items-center rounded-xl border border-emerald-100 bg-emerald-50/70 px-2.5 py-2">
+              <span className="sr-only">{t('ভাষা পরিবর্তন', 'Change language')}</span>
+              <select
+                value={lang}
+                onChange={(e) => setLang(e.target.value as Lang)}
+                className="cursor-pointer appearance-none bg-transparent pr-4 text-[11px] font-black text-emerald-900 outline-none"
+                aria-label={t('ভাষা পরিবর্তন', 'Change language')}
+              >
+                <option value="en">English</option>
+                <option value="bn">বাংলা</option>
+                <option value="hi">हिन्दी</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-1.5 h-3 w-3 text-emerald-700" />
+            </label>
+          ) : (
+            <button type="button" onClick={() => setLang(lang === 'bn' ? 'en' : 'bn')} className="rounded-xl px-2.5 py-2.5 text-xs font-black text-emerald-900 transition hover:bg-emerald-50" title={t('ভাষা পরিবর্তন', 'Change language')}>{lang === 'bn' ? 'EN' : 'বাংলা'}</button>
+          )}
           <Link href="/wishlist" title={t('প্রিয় তালিকা', 'Wishlist')} className={`rounded-xl p-2.5 transition hover:bg-emerald-50 hover:text-emerald-700 ${isActive('/wishlist') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700'}`}><Heart className="h-5 w-5" /></Link>
           <Link href="/account" title={t('অ্যাকাউন্ট', 'Account')} className={`flex items-center gap-1.5 rounded-xl px-2.5 py-2.5 text-sm font-bold transition hover:bg-emerald-50 hover:text-emerald-700 ${isActive('/account') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700'}`}><User className="h-5 w-5" /><span className="hidden 2xl:inline">GAZI SEED</span><ChevronDown className="hidden h-3.5 w-3.5 2xl:block" /></Link>
           <Link href="/cart" title={t('কার্ট', 'Cart')} className={`relative rounded-xl p-2.5 transition hover:bg-emerald-50 hover:text-emerald-700 ${isActive('/cart') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700'}`}><ShoppingCart className="h-5 w-5" />{cartCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-700 px-1 text-[9px] font-black text-white ring-2 ring-white">{cartCount > 99 ? '99+' : cartCount}</span>}</Link>
@@ -269,7 +286,16 @@ export function SiteHeader() {
         </>
       )}
       <nav className="hidden border-t border-slate-100/80 bg-white/90 py-2 lg:block xl:hidden"><div className="mx-auto flex max-w-[1100px] items-center justify-center px-4">{renderNav(false)}</div></nav>
-      {mobileMenuOpen && <div className="border-t border-slate-100 bg-white shadow-2xl md:hidden"><div className="p-3"><div className="mb-2 flex items-center gap-2 px-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-400">Menu<span className="h-px flex-1 bg-slate-100" /></div><button type="button" onClick={() => { setMobileMenuOpen(false); setSearchOpen(true); }} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-left text-sm font-bold text-emerald-900"><Search className="h-5 w-5 text-emerald-700" />{t('পণ্য ও বীজ খুঁজুন...', 'Search products & seeds...')}</button><Link href="/account" onClick={() => setMobileMenuOpen(false)} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-left text-sm font-black text-emerald-900"><User className="h-5 w-5 text-emerald-700" />{t('অ্যাকাউন্ট / লগইন', 'Account / Login')}</Link><div className="mb-3"><CountrySelector mobile /></div><div className="grid grid-cols-2 gap-2">{navLinks.map((link) => { const Icon = link.icon; const active = isActive(link.href); return (<Link key={link.href} href={link.href} className={`flex items-center gap-2 rounded-2xl border p-3 text-sm font-bold transition ${active ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-100 bg-slate-50 text-slate-700 hover:border-emerald-100 hover:bg-emerald-50/50'}`}><Icon className="h-5 w-5 text-emerald-700" />{link.label}</Link>); })}</div></div></div>}
+      {mobileMenuOpen && <div className="border-t border-slate-100 bg-white shadow-2xl md:hidden"><div className="p-3"><div className="mb-2 flex items-center gap-2 px-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-400">Menu<span className="h-px flex-1 bg-slate-100" /></div><button type="button" onClick={() => { setMobileMenuOpen(false); setSearchOpen(true); }} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-left text-sm font-bold text-emerald-900"><Search className="h-5 w-5 text-emerald-700" />{t('পণ্য ও বীজ খুঁজুন...', 'Search products & seeds...')}</button><Link href="/account" onClick={() => setMobileMenuOpen(false)} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-left text-sm font-black text-emerald-900"><User className="h-5 w-5 text-emerald-700" />{t('অ্যাকাউন্ট / লগইন', 'Account / Login')}</Link><div className="mb-3"><CountrySelector mobile /></div>{country === 'IN' && (
+          <label className="mb-3 flex w-full items-center justify-between rounded-2xl border border-emerald-200 bg-white p-3 text-sm font-black text-emerald-900">
+            <span>{t('ভাষা পরিবর্তন', 'Language')}</span>
+            <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-900 outline-none">
+              <option value="en">English</option>
+              <option value="bn">বাংলা</option>
+              <option value="hi">हिन्दी</option>
+            </select>
+          </label>
+        )}<div className="grid grid-cols-2 gap-2">{navLinks.map((link) => { const Icon = link.icon; const active = isActive(link.href); return (<Link key={link.href} href={link.href} className={`flex items-center gap-2 rounded-2xl border p-3 text-sm font-bold transition ${active ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-100 bg-slate-50 text-slate-700 hover:border-emerald-100 hover:bg-emerald-50/50'}`}><Icon className="h-5 w-5 text-emerald-700" />{link.label}</Link>); })}</div></div></div>}
     </header>
   );
 }
