@@ -364,6 +364,8 @@ const LangContext = createContext<LangContextType>({
 });
 
 const LANG_KEY = 'gazi_lang';
+const getCountryLangKey = (country: 'BD' | 'IN') => `${LANG_KEY}_${country}`;
+const isLang = (value: string | null): value is Lang => value === 'bn' || value === 'en' || value === 'hi';
 
 export function LanguageProvider({
   children,
@@ -375,8 +377,8 @@ export function LanguageProvider({
   const [lang, setLangState] = useState<Lang>(defaultCountry === 'IN' ? 'en' : 'bn');
 
   useEffect(() => {
-    const saved = localStorage.getItem(LANG_KEY) as Lang | null;
-    if (saved === 'bn' || saved === 'en' || (saved === 'hi' && defaultCountry === 'IN')) {
+    const saved = localStorage.getItem(getCountryLangKey(defaultCountry));
+    if (isLang(saved) && !(defaultCountry === 'BD' && saved === 'hi')) {
       setLangState(saved);
     } else {
       setLangState(defaultCountry === 'IN' ? 'en' : 'bn');
@@ -391,6 +393,7 @@ export function LanguageProvider({
     const safeLang = defaultCountry === 'BD' && next === 'hi' ? 'bn' : next;
     setLangState(safeLang);
     localStorage.setItem(LANG_KEY, safeLang);
+    localStorage.setItem(getCountryLangKey(defaultCountry), safeLang);
   };
 
   const t = (bn: string, en: string) => {
