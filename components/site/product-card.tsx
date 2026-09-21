@@ -22,7 +22,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
     if (!inStock) { toast(t('পণ্যটি স্টকে নেই', 'Out of stock'), 'error'); return; }
-    addToCart(product, 1); toast(t('কার্টে যোগ করা হয়েছে', 'Added to cart'));
+    addToCart(product, 1); toast(t('কার্টে যোগ করা হয়েছে', 'Added to cart')); window.dispatchEvent(new CustomEvent('gazi-cart-open'));
   };
   const handleBuyNow = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
