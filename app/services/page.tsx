@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { getServices } from '@/lib/data';
 import type { Service } from '@/lib/supabase/types';
+import { useLang } from '@/components/site/language-provider';
+import { requestHindiTranslations, type HindiTranslations } from '@/lib/translation-cache';
 import {
   ArrowRight,
   CheckCircle2,
@@ -15,6 +17,8 @@ import {
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [serviceHindi, setServiceHindi] = useState<Record<string, HindiTranslations>>({});
+  const { lang, t } = useLang();
 
   useEffect(() => {
     getServices().then((s) => {
@@ -22,6 +26,13 @@ export default function ServicesPage() {
       setLoading(false);
     });
   }, []);
+
+  useEffect(() => {
+    if (lang !== 'hi' || services.length === 0) { setServiceHindi({}); return; }
+    let cancelled = false;
+    requestHindiTranslations(services.map((svc) => ({ entity_type: 'service' as const, id: svc.id }))).then((result) => { if (!cancelled) setServiceHindi(result); });
+    return () => { cancelled = true; };
+  }, [lang, services]);
 
   return (
     <main className="min-h-screen bg-background">
@@ -38,7 +49,7 @@ export default function ServicesPage() {
             </div>
 
             <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-              আমাদের সেবাসমূহ
+              {t('আমাদের সেবাসমূহ', 'Our Services')}
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
               ভালো বীজের পাশাপাশি আপনার চাষাবাদ ও বাগানের প্রতিটি গুরুত্বপূর্ণ ধাপে
@@ -111,10 +122,10 @@ export default function ServicesPage() {
                 </div>
 
                 <h3 className="relative mt-5 text-xl font-bold tracking-tight text-foreground">
-                  {svc.title}
+                  {lang === 'hi' ? String(serviceHindi[svc.id]?.title || svc.title) : svc.title}
                 </h3>
                 <p className="relative mt-2 min-h-[72px] text-sm leading-6 text-muted-foreground">
-                  {svc.short_description}
+                  {lang === 'hi' ? String(serviceHindi[svc.id]?.short_description || svc.short_description) : svc.short_description}
                 </p>
 
                 <div className="my-4 h-px bg-border/70" />
@@ -135,7 +146,7 @@ export default function ServicesPage() {
                     href={svc.cta_url || '#'}
                     className="relative mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
                   >
-                    {svc.cta_text}
+                    {lang === 'hi' ? String(serviceHindi[svc.id]?.cta_text || svc.cta_text) : svc.cta_text}
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </a>
                 )}
