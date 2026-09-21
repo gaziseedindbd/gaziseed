@@ -6,11 +6,13 @@ import { getBlogPosts } from '@/lib/data';
 import type { BlogPost } from '@/lib/supabase/types';
 import Link from 'next/link';
 import { useLang } from '@/components/site/language-provider';
+import { requestHindiTranslations, type HindiTranslations } from '@/lib/translation-cache';
 
 export default function BlogPage() {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [blogHindi, setBlogHindi] = useState<Record<string, HindiTranslations>>({});
 
   useEffect(() => {
     getBlogPosts().then((p) => {
@@ -18,6 +20,13 @@ export default function BlogPage() {
       setLoading(false);
     });
   }, []);
+
+  useEffect(() => {
+    if (lang !== 'hi' || posts.length === 0) { setBlogHindi({}); return; }
+    let cancelled = false;
+    requestHindiTranslations(posts.map((post) => ({ entity_type: 'blog' as const, id: post.id }))).then((result) => { if (!cancelled) setBlogHindi(result); });
+    return () => { cancelled = true; };
+  }, [lang, posts]);
 
   const categories = useMemo(
     () => Array.from(new Set(posts.map((post) => post.category).filter(Boolean))).slice(0, 5) as string[],
@@ -54,7 +63,7 @@ export default function BlogPage() {
                 {t('সব আর্টিকেল', 'All Articles')}
               </span>
               {categories.map((category) => (
-                <span key={category} className="rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground">
+                <span key={lang === 'hi' ? String(blogHindi[posts.find((p) => p.category === category)?.id || '']?.category || category) : category} className="rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground">
                   {category}
                 </span>
               ))}
@@ -111,19 +120,19 @@ export default function BlogPage() {
                 >
                   <div className="relative aspect-[16/10] overflow-hidden bg-secondary/40 lg:aspect-auto lg:min-h-[360px]">
                     {featured.featured_image ? (
-                      <img src={featured.featured_image} alt={featured.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
+                      <img src={featured.featured_image} alt={lang === 'hi' ? String(blogHindi[featured.id]?.title || featured.title) : featured.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
                     ) : (
                       <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/10 to-secondary text-6xl">🌱</div>
                     )}
                     <div className="absolute left-5 top-5 rounded-full bg-background/90 px-3 py-1.5 text-xs font-bold text-primary shadow-sm backdrop-blur">
-                      {featured.category || t('বাগান ও চাষাবাদ', 'Gardening & Cultivation')}
+                      {lang === 'hi' ? String(blogHindi[featured.id]?.category || featured.category || t('বাগান ও চাষাবাদ', 'Gardening & Cultivation')) : (featured.category || t('বাগান ও চাষাবাদ', 'Gardening & Cultivation'))}
                     </div>
                   </div>
                   <div className="flex flex-col justify-center p-7 sm:p-10">
                     <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">SEED BARI JOURNAL</p>
-                    <h3 className="mt-3 text-2xl font-black leading-tight text-foreground sm:text-3xl lg:text-4xl">{featured.title}</h3>
+                    <h3 className="mt-3 text-2xl font-black leading-tight text-foreground sm:text-3xl lg:text-4xl">{lang === 'hi' ? String(blogHindi[featured.id]?.title || featured.title) : featured.title}</h3>
                     <p className="mt-4 line-clamp-4 text-sm leading-7 text-muted-foreground sm:text-base">
-                      {featured.content.slice(0, 280)}{featured.content.length > 280 ? '…' : ''}
+                      {(lang === 'hi' ? String(blogHindi[featured.id]?.content || featured.content) : featured.content).slice(0, 280)}{(lang === 'hi' ? String(blogHindi[featured.id]?.content || featured.content) : featured.content).length > 280 ? '…' : ''}
                     </p>
                     <span className="mt-7 inline-flex w-fit items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/15 transition-all group-hover:gap-3">
                       {t('আর্টিকেল পড়ুন', 'Read article')}
@@ -155,7 +164,7 @@ export default function BlogPage() {
                     >
                       <div className="relative aspect-[16/10] overflow-hidden bg-secondary/40">
                         {post.featured_image ? (
-                          <img src={post.featured_image} alt={post.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.05]" loading="lazy" />
+                          <img src={post.featured_image} alt={lang === 'hi' ? String(blogHindi[post.id]?.title || post.title) : post.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.05]" loading="lazy" />
                         ) : (
                           <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/10 to-secondary text-5xl">🌱</div>
                         )}
@@ -166,9 +175,9 @@ export default function BlogPage() {
                         )}
                       </div>
                       <div className="flex flex-1 flex-col p-5 sm:p-6">
-                        <h3 className="line-clamp-2 text-lg font-extrabold leading-snug text-foreground transition-colors group-hover:text-primary">{post.title}</h3>
+                        <h3 className="line-clamp-2 text-lg font-extrabold leading-snug text-foreground transition-colors group-hover:text-primary">{lang === 'hi' ? String(blogHindi[post.id]?.title || post.title) : post.title}</h3>
                         <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted-foreground">
-                          {post.content.slice(0, 150)}{post.content.length > 150 ? '…' : ''}
+                          {(lang === 'hi' ? String(blogHindi[post.id]?.content || post.content) : post.content).slice(0, 150)}{post.content.length > 150 ? '…' : ''}
                         </p>
                         <div className="mt-auto flex items-center justify-between pt-6 text-xs font-bold text-primary">
                           <span>{t('আরও পড়ুন', 'Read more')}</span>
