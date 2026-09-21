@@ -26,18 +26,18 @@ export default function BlogPostPage() {
   }
 
   if (!post) {
-    const translatedPost = (post as any)?.translations?.[lang] || {};
-  const postTitle = translatedPost.title || post?.title || '';
-  const postContent = translatedPost.content || post?.content || '';
-  const postCategory = translatedPost.category || post?.category || '';
-
-  return (
+    return (
       <div className="container-custom py-12 text-center">
         <h1 className="text-2xl font-bold">{t('আর্টিকেল পাওয়া যায়নি', 'Article not found')}</h1>
         <Link href="/blog" className="mt-4 inline-block text-primary hover:underline">{t('সব আর্টিকেল দেখুন', 'View all articles')}</Link>
       </div>
     );
   }
+
+  const translatedPost = (post as any)?.translations?.[lang] || {};
+  const postTitle = translatedPost.title || post.title || '';
+  const postContent = translatedPost.content || post.content || '';
+  const postCategory = translatedPost.category || post.category || '';
 
   return (
     <div className="container-custom py-6">
