@@ -10,6 +10,7 @@ import { SiteFooter } from '@/components/site/site-footer';
 import { AnnouncementBar } from '@/components/site/announcement-bar';
 import { WhatsAppButton } from '@/components/site/whatsapp-button';
 import { CartProvider } from '@/components/site/cart-provider';
+import FloatingCartDrawer from '@/components/site/floating-cart-drawer';
 import { ToastProvider } from '@/components/site/toast-provider';
 import { LanguageProvider } from '@/components/site/language-provider';
 import { PromotionalPopup } from '@/components/site/promotional-popup';
@@ -82,6 +83,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <CartProvider>
                 <AnnouncementBar />
                 <SiteHeader />
+                <FloatingCartDrawer />
                 <AuthSessionBridge />
                 <HomePromoSync />
                 <IndiaHomeCountry />
