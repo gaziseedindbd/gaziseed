@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getCart } from '@/lib/cart';
+import { getValidatedCart } from '@/lib/cart';
 import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/data';
 import type { CustomerAddress } from '@/lib/supabase/types';
@@ -83,8 +83,8 @@ export default function CheckoutPage() {
   useEffect(() => {
     const visitorCountry = getVisitorCountry();
     setCountry(visitorCountry);
-    setCart(getCart() as CartItemWithDiscount[]);
-    const handler = () => setCart(getCart() as CartItemWithDiscount[]);
+    void getValidatedCart(visitorCountry).then((validCart) => setCart(validCart as CartItemWithDiscount[]));
+    const handler = () => void getValidatedCart(getVisitorCountry()).then((validCart) => setCart(validCart as CartItemWithDiscount[]));
     window.addEventListener('cart-updated', handler);
 
     supabase.auth.getSession().then(async ({ data }) => {
