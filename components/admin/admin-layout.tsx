@@ -107,14 +107,15 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     setAdminCountry(ownCountry);
 
     if (master) {
-      const savedBranch = localStorage.getItem(BRANCH_KEY);
-      const branch = savedBranch === 'IN' ? 'IN' : 'BD';
+      const { data: branchRow } = await supabase
+        .from('admin_branch_context')
+        .select('country_code')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      const branch = branchRow?.country_code === 'IN' ? 'IN' : 'BD';
       setSelectedBranch(branch);
-      if (session.user.user_metadata?.gazi_admin_branch !== branch) {
-        await supabase.auth.updateUser({ data: { gazi_admin_branch: branch } });
-        await supabase.auth.refreshSession();
-      } else {
-        await supabase.auth.refreshSession();
+      if (!branchRow) {
+        await supabase.rpc('set_admin_branch', { p_country: 'BD' });
       }
     } else {
       setSelectedBranch(ownCountry);
@@ -126,20 +127,18 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const handleBranchChange = async (branch: Branch) => {
     if (!isMasterAdmin) return;
     setSelectedBranch(branch);
-    const { error } = await supabase.auth.updateUser({ data: { gazi_admin_branch: branch } });
+    const { error } = await supabase.rpc('set_admin_branch', { p_country: branch });
     if (error) {
       console.error('Branch update failed:', error);
       return;
     }
-    await supabase.auth.refreshSession();
     window.dispatchEvent(new CustomEvent('gazi-branch-change', { detail: branch }));
     window.location.reload();
   };
 
   useEffect(() => {
     const syncBranch = () => {
-      const saved = localStorage.getItem(BRANCH_KEY);
-      if (saved === 'BD' || saved === 'IN') setSelectedBranch(saved);
+      checkAdmin();
     };
     window.addEventListener('gazi-branch-change', syncBranch);
     return () => window.removeEventListener('gazi-branch-change', syncBranch);
