@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Check, Minus, Plus, ShoppingCart, Sparkles, Trash2, Truck, X } from 'lucide-react';
+import { Check, ChevronRight, Minus, Plus, ShoppingCart, Trash2, Truck, X } from 'lucide-react';
 import { useCart } from '@/components/site/cart-provider';
 import { removeFromCart, updateCartQuantity, type CartItem } from '@/lib/cart';
 import { formatPrice } from '@/lib/data';
@@ -23,6 +23,7 @@ export default function FloatingCartDrawer() {
 
     window.addEventListener('gazi-cart-open', openCart);
     window.addEventListener('gazi-cart-close', closeCart);
+
     return () => {
       window.removeEventListener('gazi-cart-open', openCart);
       window.removeEventListener('gazi-cart-close', closeCart);
@@ -31,29 +32,28 @@ export default function FloatingCartDrawer() {
 
   useEffect(() => {
     if (!open) return;
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false);
     };
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+
     window.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.body.style.overflow = previous;
-      window.removeEventListener('keydown', onKeyDown);
-    };
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, [open]);
 
   const freeDeliveryTarget = country === 'IN' ? 999 : 600;
   const remaining = Math.max(0, freeDeliveryTarget - total);
   const progress = Math.min(100, Math.round((total / freeDeliveryTarget) * 100));
 
-  const message = useMemo(() => {
-    if (items.length === 0) return t('আপনার কার্ট এখনো খালি।', 'Your cart is empty.');
-    if (remaining <= 0) return t('অভিনন্দন! আপনার ফ্রি ডেলিভারি আনলক হয়েছে।', 'Great! Free delivery is unlocked.');
-    return country === 'IN'
-      ? `আর ${formatPrice(remaining)} যোগ করলে ফ্রি ডেলিভারি পাবেন।`
-      : `আর ${formatPrice(remaining)} যোগ করলে ফ্রি ডেলিভারি পাবেন।`;
-  }, [country, items.length, remaining, t]);
+  const deliveryMessage = useMemo(() => {
+    if (remaining <= 0) {
+      return t('ফ্রি ডেলিভারি আনলক হয়েছে', 'Free delivery unlocked');
+    }
+    return t(
+      `আর ${formatPrice(remaining)} যোগ করলে ফ্রি ডেলিভারি পাবেন`,
+      `Add ${formatPrice(remaining)} more for free delivery`,
+    );
+  }, [remaining, t]);
 
   const changeQuantity = (item: CartItem, nextQuantity: number) => {
     updateCartQuantity(item.product_id, nextQuantity, item.variant_id, item.bundle_id);
@@ -63,162 +63,136 @@ export default function FloatingCartDrawer() {
   return (
     <>
       {open && (
-        <button
-          type="button"
-          aria-label={t('কার্ট বন্ধ করুন', 'Close cart')}
-          onClick={() => setOpen(false)}
-          className="fixed inset-0 z-[80] bg-slate-950/35 backdrop-blur-[2px] transition-opacity"
-        />
-      )}
-
-      <aside
-        aria-label={t('শপিং কার্ট', 'Shopping cart')}
-        className={`fixed right-0 top-0 z-[90] flex h-dvh w-full max-w-[430px] flex-col border-l border-emerald-100 bg-white shadow-[-24px_0_70px_-30px_rgba(5,46,22,.5)] transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
-      >
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
-          <div>
-            <div className="flex items-center gap-2 text-emerald-900">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50">
-                <ShoppingCart className="h-5 w-5 text-emerald-700" />
-              </span>
-              <div>
-                <h2 className="text-base font-black">{t('আপনার কার্ট', 'Your Cart')}</h2>
-                <p className="text-[11px] font-semibold text-slate-400">{count} {t('টি আইটেম', 'items')}</p>
+        <div className="fixed bottom-[5.5rem] right-3 z-[91] w-[calc(100vw-1.5rem)] max-w-[350px] origin-bottom-right animate-[gaziCartIn_.2s_ease-out] sm:bottom-[5.75rem] sm:right-5">
+          <div className="overflow-hidden rounded-[1.35rem] border border-emerald-200/80 bg-white/95 shadow-[0_24px_70px_-28px_rgba(5,46,22,.55)] backdrop-blur-xl">
+            <div className="flex items-center justify-between border-b border-emerald-100 bg-gradient-to-r from-emerald-50 to-lime-50/60 px-4 py-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
+                  <ShoppingCart className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-slate-950">{t('আপনার কার্ট', 'Your Cart')}</p>
+                  <p className="text-[10px] font-bold text-slate-500">{count} {t('টি আইটেম', 'items')}</p>
+                </div>
               </div>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="rounded-xl p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-            aria-label={t('বন্ধ করুন', 'Close')}
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {items.length > 0 && (
-          <div className="border-b border-emerald-100 bg-gradient-to-br from-emerald-50 via-lime-50/60 to-white px-5 py-4 sm:px-6">
-            <div className="mb-2 flex items-start gap-2">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
-              <p className="text-xs font-bold leading-5 text-emerald-900">{message}</p>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white shadow-inner">
-              <div className="h-full rounded-full bg-emerald-600 transition-all duration-500" style={{ width: `${progress}%` }} />
-            </div>
-            <div className="mt-2 flex items-center justify-between text-[10px] font-bold text-slate-500">
-              <span>{formatPrice(total)}</span>
-              <span>{formatPrice(freeDeliveryTarget)} {t('ফ্রি ডেলিভারি', 'free delivery')}</span>
-            </div>
-          </div>
-        )}
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
-          {items.length === 0 ? (
-            <div className="flex min-h-[55vh] flex-col items-center justify-center px-6 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-[26px] bg-emerald-50">
-                <ShoppingCart className="h-9 w-9 text-emerald-600" />
-              </div>
-              <h3 className="mt-5 text-lg font-black text-slate-900">{t('কার্ট খালি', 'Your cart is empty')}</h3>
-              <p className="mt-2 max-w-xs text-sm leading-6 text-slate-500">{t('পছন্দের বীজ কার্টে যোগ করুন এবং অর্ডার শুরু করুন।', 'Add your favorite seeds to the cart and start your order.')}</p>
-              <Link
-                href="/all-products"
+              <button
+                type="button"
                 onClick={() => setOpen(false)}
-                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-emerald-800 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:-translate-y-0.5 hover:bg-emerald-900"
+                aria-label={t('কার্ট বন্ধ করুন', 'Close cart')}
+                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white hover:text-slate-800"
               >
-                {t('শপিং শুরু করুন', 'Start Shopping')}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+                <X className="h-4 w-4" />
+              </button>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {items.map((item) => (
-                <article
-                  key={`${item.product_id}:${item.variant_id || ''}:${item.bundle_id || ''}`}
-                  className="flex gap-3 rounded-2xl border border-slate-100 bg-slate-50/55 p-3 transition hover:border-emerald-100 hover:bg-white"
-                >
-                  <Link href={`/product/${item.slug}`} onClick={() => setOpen(false)} className="h-[76px] w-[76px] shrink-0 overflow-hidden rounded-xl bg-emerald-50">
-                    {item.image ? (
-                      <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-2xl">🌱</div>
-                    )}
+
+            <div className="max-h-[290px] overflow-y-auto p-3">
+              {items.length === 0 ? (
+                <div className="px-4 py-7 text-center">
+                  <ShoppingCart className="mx-auto h-8 w-8 text-emerald-300" />
+                  <p className="mt-2 text-sm font-black text-slate-800">{t('কার্ট খালি', 'Your cart is empty')}</p>
+                  <Link href="/all-products" onClick={() => setOpen(false)} className="mt-3 inline-flex rounded-lg bg-emerald-700 px-3.5 py-2 text-xs font-black text-white">
+                    {t('শপিং শুরু করুন', 'Start Shopping')}
                   </Link>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start gap-2">
-                      <Link href={`/product/${item.slug}`} onClick={() => setOpen(false)} className="line-clamp-2 min-w-0 flex-1 text-sm font-black leading-5 text-slate-900 hover:text-emerald-700">
-                        {item.name}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {items.map((item) => (
+                    <article
+                      key={`${item.product_id}:${item.variant_id || ''}:${item.bundle_id || ''}`}
+                      className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50/80 p-2"
+                    >
+                      <Link href={`/product/${item.slug}`} onClick={() => setOpen(false)} className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-emerald-50">
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">🌱</div>
+                        )}
                       </Link>
+
+                      <div className="min-w-0 flex-1">
+                        <Link href={`/product/${item.slug}`} onClick={() => setOpen(false)} className="line-clamp-1 text-[11px] font-black text-slate-900">
+                          {item.name}
+                        </Link>
+                        <div className="mt-1 flex items-center justify-between gap-2">
+                          <span className="text-xs font-black text-emerald-800">{formatPrice(item.unit_price * item.quantity)}</span>
+                          <div className="flex items-center rounded-lg border border-slate-200 bg-white">
+                            <button type="button" onClick={() => changeQuantity(item, item.quantity - 1)} className="p-1 text-slate-500 hover:text-emerald-700" aria-label={t('একটি কমান', 'Decrease quantity')}>
+                              <Minus className="h-3 w-3" />
+                            </button>
+                            <span className="w-5 text-center text-[10px] font-black">{item.quantity}</span>
+                            <button type="button" onClick={() => changeQuantity(item, item.quantity + 1)} className="p-1 text-slate-500 hover:text-emerald-700" aria-label={t('একটি বাড়ান', 'Increase quantity')}>
+                              <Plus className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
                       <button
                         type="button"
                         onClick={() => { removeFromCart(item.product_id, item.variant_id, item.bundle_id); refresh(); }}
-                        className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                        className="rounded-lg p-1.5 text-slate-300 transition hover:bg-red-50 hover:text-red-500"
                         aria-label={t('পণ্য মুছুন', 'Remove product')}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between gap-2">
-                      <span className="text-sm font-black text-emerald-800">{formatPrice(item.unit_price)}</span>
-                      <div className="flex items-center rounded-xl border border-slate-200 bg-white p-0.5 shadow-sm">
-                        <button
-                          type="button"
-                          onClick={() => changeQuantity(item, item.quantity - 1)}
-                          className="rounded-lg p-1.5 text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-700"
-                          aria-label={t('একটি কমান', 'Decrease quantity')}
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="w-7 text-center text-xs font-black text-slate-800">{item.quantity}</span>
-                        <button
-                          type="button"
-                          onClick={() => changeQuantity(item, item.quantity + 1)}
-                          className="rounded-lg p-1.5 text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-700"
-                          aria-label={t('একটি বাড়ান', 'Increase quantity')}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="mt-1 text-right text-[11px] font-bold text-slate-500">{formatPrice(item.unit_price * item.quantity)}</div>
-                  </div>
-                </article>
-              ))}
+                    </article>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {items.length > 0 && (
-          <div className="border-t border-slate-100 bg-white px-5 pb-5 pt-4 shadow-[0_-16px_40px_-32px_rgba(5,46,22,.5)] sm:px-6">
-            <div className="mb-3 flex items-center gap-2 text-[11px] font-bold text-slate-500">
-              <Truck className="h-4 w-4 text-emerald-700" />
-              <span>{remaining <= 0 ? t('ফ্রি ডেলিভারি প্রযোজ্য', 'Free delivery applies') : t('ডেলিভারি চার্জ চেকআউটে নির্ধারিত হবে', 'Delivery charge is calculated at checkout')}</span>
-              {remaining <= 0 && <Check className="ml-auto h-4 w-4 text-emerald-600" />}
-            </div>
-            <div className="mb-4 flex items-end justify-between">
-              <span className="text-sm font-bold text-slate-500">{t('Subtotal', 'Subtotal')}</span>
-              <span className="text-2xl font-black tracking-tight text-slate-950">{formatPrice(total)}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2.5">
-              <Link
-                href="/cart"
-                onClick={() => setOpen(false)}
-                className="flex min-h-12 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-sm font-black text-emerald-800 transition hover:bg-emerald-100"
-              >
-                {t('কার্ট দেখুন', 'View Cart')}
-              </Link>
-              <Link
-                href="/checkout"
-                onClick={() => setOpen(false)}
-                className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-800 px-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:-translate-y-0.5 hover:bg-emerald-900"
-              >
-                {t('চেকআউট', 'Checkout')}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
+            {items.length > 0 && (
+              <div className="border-t border-emerald-100 bg-white px-3.5 pb-3.5 pt-3">
+                <div className="mb-2 flex items-center gap-2">
+                  <Truck className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                  <p className="min-w-0 flex-1 truncate text-[10px] font-bold text-slate-500">{deliveryMessage}</p>
+                  {remaining <= 0 && <Check className="h-3.5 w-3.5 text-emerald-600" />}
+                </div>
+                <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-emerald-50">
+                  <div className="h-full rounded-full bg-emerald-500 transition-all duration-500" style={{ width: `${progress}%` }} />
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">{t('মোট', 'Total')}</p>
+                    <p className="text-lg font-black tracking-tight text-slate-950">{formatPrice(total)}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Link href="/cart" onClick={() => setOpen(false)} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[10px] font-black text-emerald-800">
+                      {t('কার্ট', 'Cart')}
+                    </Link>
+                    <Link href="/checkout" onClick={() => setOpen(false)} className="inline-flex items-center gap-1 rounded-lg bg-emerald-700 px-3 py-2 text-[10px] font-black text-white shadow-sm">
+                      {t('চেকআউট', 'Checkout')}
+                      <ChevronRight className="h-3 w-3" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </aside>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-label={t('কার্ট দেখুন', 'View cart')}
+        className="fixed bottom-4 right-3 z-[90] inline-flex min-h-11 items-center gap-2 rounded-full border border-emerald-300/70 bg-emerald-600 px-3.5 py-2 text-white shadow-[0_12px_34px_-12px_rgba(5,150,105,.65)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-700 active:scale-[.97] sm:bottom-5 sm:right-5 sm:px-4"
+      >
+        <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-white/15">
+          <ShoppingCart className="h-3.5 w-3.5" />
+          {count > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[8px] font-black text-emerald-700">{count}</span>}
+        </span>
+        <span className="text-[11px] font-black">{t('কার্ট দেখুন', 'View cart')}</span>
+        {count > 0 && <span className="border-l border-white/20 pl-2 text-[10px] font-extrabold text-emerald-50">{formatPrice(total)}</span>}
+      </button>
+
+      <style jsx global>{`
+        @keyframes gaziCartIn {
+          from { opacity: 0; transform: translateY(10px) scale(.96); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
     </>
   );
 }
