@@ -6,6 +6,7 @@ import { formatPrice } from '@/lib/data';
 import { Plus, Edit, Trash2, X, Search, Upload, Link as LinkIcon, Star, HelpCircle, ChevronDown } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 import { MediaUploader } from '@/components/admin/media-uploader';
+import { MultilingualFields } from '@/components/admin/multilingual-fields';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -302,12 +303,13 @@ function ProductForm({ product, categories, allProducts, onSave, onClose, onSave
     season_tags: product?.season_tags || [],
     cost_price: product?.cost_price || '',
     show_low_stock: product?.show_low_stock ?? true,
+    translations: product?.translations || {},
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const slug = form.slug || form.name_en.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || form.name_bn;
-    const payload = { ...form, slug, regular_price: Number(form.regular_price), sale_price: form.sale_price ? Number(form.sale_price) : null, stock: Number(form.stock), low_stock_threshold: Number(form.low_stock_threshold), images: form.images, related_product_ids: form.related_product_ids, min_order_qty: form.min_order_qty ? Number(form.min_order_qty) : null, max_order_qty: form.max_order_qty ? Number(form.max_order_qty) : null, cost_price: form.cost_price ? Number(form.cost_price) : null, suitable_months: form.suitable_months, growing_type: form.growing_type || null, season_tags: form.season_tags, show_low_stock: form.show_low_stock };
+    const payload = { ...form, translations: form.translations || {}, slug, regular_price: Number(form.regular_price), sale_price: form.sale_price ? Number(form.sale_price) : null, stock: Number(form.stock), low_stock_threshold: Number(form.low_stock_threshold), images: form.images, related_product_ids: form.related_product_ids, min_order_qty: form.min_order_qty ? Number(form.min_order_qty) : null, max_order_qty: form.max_order_qty ? Number(form.max_order_qty) : null, cost_price: form.cost_price ? Number(form.cost_price) : null, suitable_months: form.suitable_months, growing_type: form.growing_type || null, season_tags: form.season_tags, show_low_stock: form.show_low_stock };
     onSave({ payload, faqs, variants, bulkTiers, removedFaqs, removedVariants, removedBulkTiers });
   };
 
@@ -337,6 +339,8 @@ function ProductForm({ product, categories, allProducts, onSave, onClose, onSave
             <div><label className="mb-1 block text-sm font-medium">স্টক</label><input type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="input-bangla" /></div>
             <div><label className="mb-1 block text-sm font-medium">লো স্টক থ্রেশহোল্ড</label><input type="number" value={form.low_stock_threshold} onChange={(e) => setForm({ ...form, low_stock_threshold: e.target.value })} className="input-bangla" /></div>
           </div>
+
+          <MultilingualFields value={form.translations || {}} onChange={(translations) => setForm({ ...form, translations })} title="🌐 Product Language Versions" fields={[{ key: 'name', label: 'Product Name' }, { key: 'short_description', label: 'Short Description', multiline: true }, { key: 'description', label: 'Description', multiline: true }, { key: 'seo_title', label: 'SEO Title' }, { key: 'meta_description', label: 'Meta Description', multiline: true }]} />
 
           <div><label className="mb-1 block text-sm font-medium">সংক্ষিপ্ত বিবরণ</label><textarea value={form.short_description} onChange={(e) => setForm({ ...form, short_description: e.target.value })} className="input-bangla min-h-[60px]" /></div>
 
