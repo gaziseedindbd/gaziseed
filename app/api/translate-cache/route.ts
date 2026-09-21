@@ -2,7 +2,7 @@ import { createHash } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-type EntityType = 'product' | 'category' | 'faq';
+type EntityType = 'product' | 'category' | 'faq' | 'banner' | 'service' | 'testimonial' | 'blog' | 'combo' | 'variant' | 'bundle' | 'promotion' | 'delivery_zone';
 
 type EntityRequest = {
   entity_type: EntityType;
@@ -94,10 +94,97 @@ function buildFaqSource(row: any): Record<string, string | string[]> {
   };
 }
 
+function buildBannerSource(row: any): Record<string, string | string[]> {
+  return {
+    title: text(row.title),
+    subtitle: text(row.subtitle),
+    cta_text: text(row.cta_text),
+  };
+}
+
+function buildServiceSource(row: any): Record<string, string | string[]> {
+  return {
+    title: text(row.title),
+    short_description: text(row.short_description),
+    full_description: text(row.full_description),
+    cta_text: text(row.cta_text),
+  };
+}
+
+function buildTestimonialSource(row: any): Record<string, string | string[]> {
+  return {
+    review: text(row.review),
+  };
+}
+
+function buildBlogSource(row: any): Record<string, string | string[]> {
+  return {
+    title: text(row.title),
+    content: text(row.content),
+    category: text(row.category),
+    seo_title: text(row.seo_title),
+    meta_description: text(row.meta_description),
+  };
+}
+
+function buildComboSource(row: any): Record<string, string | string[]> {
+  return {
+    title: text(row.title_en) || text(row.name_en) || text(row.title_bn) || text(row.name_bn) || text(row.title) || text(row.name),
+    description: text(row.description_en) || text(row.description_bn) || text(row.description),
+    subtitle: text(row.subtitle),
+    manual_items_list: text(row.manual_items_list),
+    seo_title: text(row.seo_title),
+    meta_description: text(row.meta_description),
+  };
+}
+
+function buildVariantSource(row: any): Record<string, string | string[]> {
+  return {
+    name: text(row.name),
+    weight_or_count: text(row.weight_or_count),
+  };
+}
+
+function buildBundleSource(row: any): Record<string, string | string[]> {
+  return {
+    bundle_name: text(row.bundle_name),
+    savings: text(row.savings),
+    badge: text(row.badge),
+  };
+}
+
+function buildPromotionSource(row: any): Record<string, string | string[]> {
+  return {
+    title: text(row.title),
+    subtitle: text(row.subtitle),
+    description: text(row.description),
+    cta_text: text(row.cta_text),
+    name: text(row.name),
+    eligibility: text(row.eligibility),
+    gift_mode: text(row.gift_mode),
+  };
+}
+
+function buildDeliveryZoneSource(row: any): Record<string, string | string[]> {
+  return {
+    zone_name: text(row.zone_name),
+    estimated_time: text(row.estimated_time),
+  };
+}
+
 function buildSource(entityType: EntityType, row: any): Record<string, string | string[]> {
   if (entityType === 'product') return buildProductSource(row);
   if (entityType === 'category') return buildCategorySource(row);
-  return buildFaqSource(row);
+  if (entityType === 'faq') return buildFaqSource(row);
+  if (entityType === 'banner') return buildBannerSource(row);
+  if (entityType === 'service') return buildServiceSource(row);
+  if (entityType === 'testimonial') return buildTestimonialSource(row);
+  if (entityType === 'blog') return buildBlogSource(row);
+  if (entityType === 'combo') return buildComboSource(row);
+  if (entityType === 'variant') return buildVariantSource(row);
+  if (entityType === 'bundle') return buildBundleSource(row);
+  if (entityType === 'promotion') return buildPromotionSource(row);
+  return buildDeliveryZoneSource(row);
 }
 
 async function fetchEntityRows(
@@ -117,6 +204,17 @@ async function fetchEntityRows(
     return new Map((data || []).map((row) => [row.id, row]));
   }
 
+  const simpleTables: Record<Exclude<EntityType, 'product' | 'category' | 'faq' | 'variant'>, string> = {
+    banner: 'banners',
+    service: 'services',
+    testimonial: 'testimonials',
+    blog: 'blog_posts',
+    combo: 'combo_packs',
+    bundle: 'bundle_offers',
+    promotion: 'promotions',
+    delivery_zone: 'delivery_zones',
+  };
+
   if (entityType === 'category') {
     const { data, error } = await supabase
       .from('categories')
@@ -128,27 +226,63 @@ async function fetchEntityRows(
     return new Map((data || []).map((row) => [row.id, row]));
   }
 
+  if (entityType === 'faq') {
+    const { data, error } = await supabase
+      .from('product_faqs')
+      .select('id,product_id,is_active,question_bn,answer_bn,question_en,answer_en')
+      .in('id', ids)
+      .eq('is_active', true);
+    if (error) throw error;
+
+    const productIds = [...new Set((data || []).map((row) => row.product_id).filter(Boolean))];
+    if (productIds.length === 0) return new Map();
+
+    const { data: products, error: productError } = await supabase
+      .from('products')
+      .select('id')
+      .in('id', productIds)
+      .eq('country_code', 'IN')
+      .eq('is_active', true)
+      .eq('is_ads_only', false);
+    if (productError) throw productError;
+
+    const allowed = new Set((products || []).map((row) => row.id));
+    return new Map((data || []).filter((row) => allowed.has(row.product_id)).map((row) => [row.id, row]));
+  }
+
+  if (entityType === 'variant') {
+    const { data, error } = await supabase
+      .from('product_variants')
+      .select('id,product_id,is_active,name,weight_or_count')
+      .in('id', ids)
+      .eq('is_active', true);
+    if (error) throw error;
+
+    const productIds = [...new Set((data || []).map((row) => row.product_id).filter(Boolean))];
+    const { data: products, error: productError } = await supabase
+      .from('products')
+      .select('id')
+      .in('id', productIds)
+      .eq('country_code', 'IN')
+      .eq('is_active', true)
+      .eq('is_ads_only', false);
+    if (productError) throw productError;
+
+    const allowed = new Set((products || []).map((row) => row.id));
+    return new Map((data || []).filter((row) => allowed.has(row.product_id)).map((row) => [row.id, row]));
+  }
+
+  const table = simpleTables[entityType as keyof typeof simpleTables];
+  if (!table) return new Map();
+
   const { data, error } = await supabase
-    .from('product_faqs')
-    .select('id,product_id,is_active,question_bn,answer_bn,question_en,answer_en')
+    .from(table)
+    .select('*')
     .in('id', ids)
+    .eq('country_code', 'IN')
     .eq('is_active', true);
   if (error) throw error;
-
-  const productIds = [...new Set((data || []).map((row) => row.product_id).filter(Boolean))];
-  if (productIds.length === 0) return new Map();
-
-  const { data: products, error: productError } = await supabase
-    .from('products')
-    .select('id')
-    .in('id', productIds)
-    .eq('country_code', 'IN')
-    .eq('is_active', true)
-    .eq('is_ads_only', false);
-  if (productError) throw productError;
-
-  const allowed = new Set((products || []).map((row) => row.id));
-  return new Map((data || []).filter((row) => allowed.has(row.product_id)).map((row) => [row.id, row]));
+  return new Map((data || []).map((row: any) => [row.id, row]));
 }
 
 async function translateBatch(values: string[]) {
@@ -227,7 +361,7 @@ export async function POST(req: NextRequest) {
 
     const deduped = new Map<string, EntityRequest>();
     for (const item of items) {
-      if (!item || !['product', 'category', 'faq'].includes(item.entity_type) || typeof item.id !== 'string') continue;
+      if (!item || !['product', 'category', 'faq', 'banner', 'service', 'testimonial', 'blog', 'combo', 'variant', 'bundle', 'promotion', 'delivery_zone'].includes(item.entity_type) || typeof item.id !== 'string') continue;
       deduped.set(`${item.entity_type}:${item.id}`, item);
     }
 
