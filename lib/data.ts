@@ -365,12 +365,19 @@ export async function getWishlist(userId: string): Promise<Product[]> {
 }
 
 export async function toggleWishlist(userId: string, productId: string): Promise<boolean> {
-  const { data: existing } = await supabase.from('wishlists').select('id').eq('user_id', userId).eq('product_id', productId).maybeSingle();
+  const country = getVisitorCountry();
+  const { data: existing } = await supabase
+    .from('wishlists')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('product_id', productId)
+    .eq('country_code', country)
+    .maybeSingle();
   if (existing) {
     await supabase.from('wishlists').delete().eq('id', existing.id);
     return false;
   }
-  await supabase.from('wishlists').insert({ user_id: userId, product_id: productId });
+  await supabase.from('wishlists').insert({ user_id: userId, product_id: productId, country_code: country });
   return true;
 }
 
