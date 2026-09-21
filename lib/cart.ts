@@ -31,6 +31,23 @@ export function getCart(): CartItem[] {
   }
 }
 
+export async function getValidatedCart(country: 'BD' | 'IN'): Promise<CartItem[]> {
+  const cart = getCart();
+  if (cart.length === 0) return [];
+  const productIds = Array.from(new Set(cart.map((item) => item.product_id).filter(Boolean)));
+  const { data, error } = await supabase
+    .from('products')
+    .select('id')
+    .eq('country_code', country)
+    .eq('is_active', true)
+    .in('id', productIds);
+  if (error) return cart;
+  const activeIds = new Set((data || []).map((row) => row.id));
+  const validCart = cart.filter((item) => activeIds.has(item.product_id));
+  if (validCart.length !== cart.length) saveCart(validCart);
+  return validCart;
+}
+
 export function saveCart(items: CartItem[]) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(CART_KEY, JSON.stringify(items));
