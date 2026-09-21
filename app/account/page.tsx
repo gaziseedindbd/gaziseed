@@ -29,7 +29,8 @@ export default function AccountPage() {
   const [wishlist, setWishlist] = useState<Product[]>([]);
   const [showAddrForm, setShowAddrForm] = useState(false);
   const [editingAddr, setEditingAddr] = useState<CustomerAddress | null>(null);
-  const [referralEnabled, setReferralEnabled] = useState(false);\n  const [country, setCountry] = useState<'BD' | 'IN'>('BD');
+  const [referralEnabled, setReferralEnabled] = useState(false);
+  const [country, setCountry] = useState<'BD' | 'IN'>('BD');
 
   // অর্ডার ডিটেইলস মডালের স্টেট
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
