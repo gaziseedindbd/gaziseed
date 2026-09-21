@@ -167,7 +167,7 @@ export function SiteHeader() {
             href={link.href}
             className={`group relative flex shrink-0 items-center rounded-full font-extrabold transition-all duration-200 ${
               compact
-                ? 'gap-1.5 px-2.5 py-2 text-[11px] 2xl:gap-2 2xl:px-3 2xl:text-[12px]'
+                ? 'gap-1 px-2 py-1.5 text-[10px] 2xl:gap-1.5 2xl:px-2.5 2xl:text-[11px]'
                 : 'gap-2 px-4 py-2.5 text-[13px]'
             } ${
               active
@@ -176,7 +176,7 @@ export function SiteHeader() {
             }`}
           >
             <Icon
-              className={`${compact ? 'h-3.5 w-3.5 2xl:h-4 2xl:w-4' : 'h-4 w-4'} transition-transform duration-200 group-hover:scale-110 ${
+              className={`${compact ? 'h-3 w-3 2xl:h-3.5 2xl:w-3.5' : 'h-4 w-4'} transition-transform duration-200 group-hover:scale-110 ${
                 active ? 'text-white' : 'text-emerald-700'
               }`}
             />
@@ -231,7 +231,7 @@ export function SiteHeader() {
         <div className="ml-auto hidden shrink-0 items-center gap-1.5 lg:flex">
           <div className={`relative flex items-center overflow-hidden rounded-2xl border transition-all duration-200 ${searchOpen ? 'border-emerald-400 bg-white ring-4 ring-emerald-600/10 shadow-sm' : 'border-emerald-100 bg-emerald-50/65 hover:border-emerald-200 hover:bg-white'}`}>
             <button type="button" onClick={() => setSearchOpen(true)} aria-label={t('খুঁজুন', 'Search')} className="flex shrink-0 items-center justify-center pl-2.5 text-emerald-700"><Search className="h-4.5 w-4.5" /></button>
-            <input ref={searchInputRef} value={searchQuery} onFocus={() => setSearchOpen(true)} onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }} onKeyDown={(e) => { if (e.key === 'Enter') submitSearch(); if (e.key === 'Escape') setSearchOpen(false); }} type="search" placeholder={t('পণ্য খুঁজুন...', 'Search products...')} className="w-[120px] bg-transparent px-2 py-2.5 text-[12px] font-semibold text-slate-800 outline-none placeholder:text-slate-400 2xl:w-[145px]" aria-label={t('পণ্য খুঁজুন', 'Search products')} />
+            <input ref={searchInputRef} value={searchQuery} onFocus={() => setSearchOpen(true)} onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }} onKeyDown={(e) => { if (e.key === 'Enter') submitSearch(); if (e.key === 'Escape') setSearchOpen(false); }} type="search" placeholder={t('পণ্য খুঁজুন...', 'Search products...')} className="w-[105px] bg-transparent px-1.5 py-2.5 text-[11px] font-semibold text-slate-800 outline-none placeholder:text-slate-400 2xl:w-[125px]" aria-label={t('পণ্য খুঁজুন', 'Search products')} />
             {searchLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin text-emerald-700" />}
             {searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="mr-1 rounded-full p-1 text-slate-400 hover:bg-slate-100" aria-label="Clear search"><X className="h-3.5 w-3.5" /></button>}
           </div>
