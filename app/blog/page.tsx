@@ -64,7 +64,7 @@ export default function BlogPage() {
               </span>
               {categories.map((category) => (
                 <span key={lang === 'hi' ? String(blogHindi[posts.find((p) => p.category === category)?.id || '']?.category || category) : category} className="rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold text-muted-foreground">
-                  {category}
+                  {lang === 'hi' ? String(blogHindi[posts.find((p) => p.category === category)?.id || '']?.category || category) : category}
                 </span>
               ))}
             </div>
