@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useLang } from '@/components/site/language-provider';
 import { supabase, getVisitorCountry } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/data';
 import { useParams, useRouter } from 'next/navigation';
@@ -87,6 +88,7 @@ export default function ComboLandingPage() {
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const { lang, t } = useLang();
   const [timeLeft, setTimeLeft] = useState(3 * 3600);
 
   useEffect(() => {
@@ -225,7 +227,11 @@ export default function ComboLandingPage() {
   }
 
   if (!combo) {
-    return (
+    const translatedCombo = (combo as any)?.translations?.[lang] || {};
+  const comboTitle = translatedCombo.title || combo?.title_bn || combo?.title_en || '';
+  const comboDescription = translatedCombo.description || combo?.description_bn || combo?.description_en || '';
+
+  return (
       <div className="min-h-[70vh] bg-[#f5f8f4] px-4 py-28 text-center">
         <div className="mx-auto max-w-md rounded-[32px] border border-emerald-100 bg-white p-10 shadow-xl">
           <PackageCheck className="mx-auto h-14 w-14 text-emerald-700" />
@@ -250,9 +256,9 @@ export default function ComboLandingPage() {
               <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[.18em] text-emerald-100">
                 <Sparkles className="h-4 w-4 text-lime-300" /> GAZI SEED • SMART COMBO
               </div>
-              <h1 className="mt-6 max-w-3xl text-4xl font-black leading-[1.02] tracking-tight sm:text-5xl lg:text-[4.35rem]">{combo.title_bn}</h1>
+              <h1 className="mt-6 max-w-3xl text-4xl font-black leading-[1.02] tracking-tight sm:text-5xl lg:text-[4.35rem]">{comboTitle}</h1>
               <p className="mt-5 max-w-2xl text-sm leading-7 text-emerald-50/80 sm:text-base">
-                {combo.description_bn || (country === 'IN' ? 'Everything you need to start a beautiful home garden, bundled at a smarter price.' : 'প্রয়োজনীয় বীজ একসাথে নিন, স্মার্ট দামে বাগান শুরু করুন।')}
+                {comboDescription || (country === 'IN' ? 'Everything you need to start a beautiful home garden, bundled at a smarter price.' : 'প্রয়োজনীয় বীজ একসাথে নিন, স্মার্ট দামে বাগান শুরু করুন।')}
               </p>
 
               <div className="mt-7 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
