@@ -96,7 +96,14 @@ export default function AccountPage() {
       toast('ঠিকানা আপডেট হয়েছে');
     } else {
       if (payload.is_default) {
-        await supabase.from('customer_addresses').update({ is_default: false }).eq('user_id', user.id);
+        const { error: clearDefaultError } = await supabase
+          .from('customer_addresses')
+          .update({ is_default: false })
+          .eq('user_id', user.id);
+        if (clearDefaultError) {
+          toast('ডিফল্ট ঠিকানা পরিবর্তন করা যায়নি', 'error');
+          return;
+        }
       }
       const { error } = await supabase.from('customer_addresses').insert(payload);
       if (error) { toast('যোগ করা ব্যর্থ', 'error'); return; }
@@ -109,15 +116,47 @@ export default function AccountPage() {
 
   const handleDeleteAddress = async (id: string) => {
     if (!confirm('ঠিকানা মুছতে চান?')) return;
-    await supabase.from('customer_addresses').delete().eq('id', id);
+    const target = addresses.find((address) => address.id === id);
+    const { error } = await supabase.from('customer_addresses').delete().eq('id', id);
+    if (error) {
+      toast('ঠিকানা মুছে ফেলা যায়নি', 'error');
+      return;
+    }
     toast('ঠিকানা মুছে ফেলা হয়েছে');
+    if (target?.is_default) {
+      const replacement = addresses.find((address) => address.id !== id);
+      if (replacement) {
+        const { error: defaultError } = await supabase
+          .from('customer_addresses')
+          .update({ is_default: true })
+          .eq('id', replacement.id);
+        if (defaultError) {
+          toast('নতুন ডিফল্ট ঠিকানা সেট করা যায়নি', 'error');
+        }
+      }
+    }
     loadAddresses(user.id);
   };
 
   const handleSetDefault = async (id: string) => {
-    await supabase.from('customer_addresses').update({ is_default: false }).eq('user_id', user.id);
-    await supabase.from('customer_addresses').update({ is_default: true }).eq('id', id);
-    loadAddresses(user.id);
+    const { error: clearError } = await supabase
+      .from('customer_addresses')
+      .update({ is_default: false })
+      .eq('user_id', user.id);
+    if (clearError) {
+      toast('ডিফল্ট ঠিকানা পরিবর্তন করা যায়নি', 'error');
+      return;
+    }
+    const { error: setError } = await supabase
+      .from('customer_addresses')
+      .update({ is_default: true })
+      .eq('id', id)
+      .eq('user_id', user.id);
+    if (setError) {
+      toast('নতুন ডিফল্ট ঠিকানা সেট করা যায়নি', 'error');
+      return;
+    }
+    await loadAddresses(user.id);
   };
 
   const handleReorder = async (order: any) => {
