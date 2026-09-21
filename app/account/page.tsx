@@ -45,7 +45,13 @@ export default function AccountPage() {
   }, []);
 
   const loadAddresses = useCallback(async (uid: string) => {
-    const { data } = await supabase.from('customer_addresses').select('*').eq('user_id', uid).order('created_at', { ascending: false });
+    const currentCountry = getVisitorCountry();
+    const { data } = await supabase
+      .from('customer_addresses')
+      .select('*')
+      .eq('user_id', uid)
+      .eq('country_code', currentCountry)
+      .order('created_at', { ascending: false });
     setAddresses((data || []) as CustomerAddress[]);
   }, []);
 
@@ -54,8 +60,8 @@ export default function AccountPage() {
       if (!data.session) { router.push('/login'); return; }
       setUser(data.session.user);
       const [o, a] = await Promise.all([
-        supabase.from('orders').select('*').eq('user_id', data.session.user.id).order('created_at', { ascending: false }),
-        supabase.from('customer_addresses').select('*').eq('user_id', data.session.user.id).order('created_at', { ascending: false }),
+        supabase.from('orders').select('*').eq('user_id', data.session.user.id).eq('country_code', getVisitorCountry()).order('created_at', { ascending: false }),
+        supabase.from('customer_addresses').select('*').eq('user_id', data.session.user.id).eq('country_code', getVisitorCountry()).order('created_at', { ascending: false }),
       ]);
       setOrders((o.data || []) as Order[]);
       setAddresses((a.data || []) as CustomerAddress[]);
@@ -74,7 +80,8 @@ export default function AccountPage() {
     const { data, error } = await supabase
       .from('order_items')
       .select('*, products(*)')
-      .eq('order_id', order.id);
+      .eq('order_id', order.id)
+      .eq('country_code', getVisitorCountry());
 
     if (error) {
       console.error('Error fetching order items:', error);
@@ -89,7 +96,7 @@ export default function AccountPage() {
 
   const handleSaveAddress = async (addrData: any) => {
     const isEditing = !!editingAddr;
-    const payload = { ...addrData, user_id: user.id };
+    const payload = { ...addrData, user_id: user.id, country_code: getVisitorCountry() };
     if (isEditing) {
       const { error } = await supabase.from('customer_addresses').update(payload).eq('id', editingAddr!.id);
       if (error) { toast('আপডেট ব্যর্থ', 'error'); return; }
