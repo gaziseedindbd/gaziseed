@@ -109,18 +109,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (lang !== 'hi' || categories.length === 0) {
-      setCategoryHindi({});
-      return;
-    }
-    let cancelled = false;
-    requestHindiTranslations(categories.map((cat) => ({ entity_type: 'category' as const, id: cat.id }))).then((result) => {
-      if (!cancelled) setCategoryHindi(result);
-    });
-    return () => { cancelled = true; };
-  }, [lang, categories]);
-
-  useEffect(() => {
     if (lang !== 'hi') {
       setCategoryHindi({});
       setBannerHindi({});
