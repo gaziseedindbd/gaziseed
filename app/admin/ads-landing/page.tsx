@@ -7,6 +7,7 @@ import { Plus, Edit, Eye, Copy, Trash2, Power, CopyPlus, X, Search, Megaphone, U
 import { toast } from '@/components/site/toast-provider';
 import { processLocalImage, processUrlImage, uploadProcessedFile } from '@/lib/image-processing';
 import Link from 'next/link';
+import { MultilingualFields } from '@/components/admin/multilingual-fields';
 
 export default function AdminAdsLandingPage() {
   const [landings, setLandings] = useState<any[]>([]);
@@ -156,6 +157,7 @@ function CreateLandingModal({ onClose, onCreated }: { onClose: () => void; onCre
     compare_price: '', offer_price: '', cta_text: 'অর্ডার কনফার্ম করুন',
     status: 'active', description: '', trust_text: '', cod_text: '', delivery_text: '',
     growing_guide: '',
+    translations: {},
   });
   // Images
   const [images, setImages] = useState<string[]>([]);
@@ -235,7 +237,8 @@ function CreateLandingModal({ onClose, onCreated }: { onClose: () => void; onCre
         delivery_text: landing.delivery_text || null,
         growing_guide: landing.growing_guide || null,
         pricing_tiers: formattedTiers,
-        tiers: formattedTiers
+        tiers: formattedTiers,
+        translations: landing.translations || {},
       }).select().single();
 
       if (lpError) throw lpError;
@@ -305,6 +308,7 @@ function CreateLandingModal({ onClose, onCreated }: { onClose: () => void; onCre
                 {products.map((p) => <option key={p.id} value={p.id}>{p.name_bn || p.name_en} — {formatPrice(p.sale_price || p.regular_price)} (Stock: {p.stock})</option>)}
               </select>
             </div>
+            <MultilingualFields value={landing.translations || {}} onChange={(translations) => setLanding({ ...landing, translations })} title="🌐 Ads Landing Page Language Versions" fields={[{ key: 'title', label: 'Title' }, { key: 'subtitle', label: 'Subtitle' }, { key: 'description', label: 'Description', multiline: true }, { key: 'cta_text', label: 'CTA Text' }, { key: 'trust_text', label: 'Trust Text' }, { key: 'delivery_text', label: 'Delivery Text' }, { key: 'cod_text', label: 'COD Text' }]} />
             <LandingFields landing={landing} setLanding={setLanding} />
             <MediaUploader images={images} setImages={setImages} imageUrl={imageUrl} setImageUrl={setImageUrl} uploading={uploading} setUploading={setUploading} />
             <DescriptionFields landing={landing} setLanding={setLanding} benefits={benefits} setBenefits={setBenefits} features={features} setFeatures={setFeatures} />
