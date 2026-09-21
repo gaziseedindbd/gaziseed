@@ -227,11 +227,7 @@ export default function ComboLandingPage() {
   }
 
   if (!combo) {
-    const translatedCombo = (combo as any)?.translations?.[lang] || {};
-  const comboTitle = translatedCombo.title || combo?.title_bn || combo?.title_en || '';
-  const comboDescription = translatedCombo.description || combo?.description_bn || combo?.description_en || '';
-
-  return (
+    return (
       <div className="min-h-[70vh] bg-[#f5f8f4] px-4 py-28 text-center">
         <div className="mx-auto max-w-md rounded-[32px] border border-emerald-100 bg-white p-10 shadow-xl">
           <PackageCheck className="mx-auto h-14 w-14 text-emerald-700" />
@@ -243,6 +239,10 @@ export default function ComboLandingPage() {
       </div>
     );
   }
+
+  const translatedCombo = (combo as any)?.translations?.[lang] || {};
+  const comboTitle = translatedCombo.title || combo.title_bn || combo.title_en || '';
+  const comboDescription = translatedCombo.description || combo.description_bn || combo.description_en || '';
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#f5f8f4] pb-28 text-slate-900">
