@@ -37,6 +37,13 @@ export default function AccountPage() {
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
 
+  useEffect(() => {
+    setCountry(getVisitorCountry());
+    const handleCountryChange = () => setCountry(getVisitorCountry());
+    window.addEventListener('gazi-country-changed', handleCountryChange);
+    return () => window.removeEventListener('gazi-country-changed', handleCountryChange);
+  }, []);
+
   const loadAddresses = useCallback(async (uid: string) => {
     const { data } = await supabase.from('customer_addresses').select('*').eq('user_id', uid).order('created_at', { ascending: false });
     setAddresses((data || []) as CustomerAddress[]);
