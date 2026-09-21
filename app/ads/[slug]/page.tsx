@@ -7,6 +7,7 @@ import { getEffectivePrice, getLandingPageBySlug, getProductBySlug, getReviews, 
 import { addToCart } from '@/lib/cart';
 import type { LandingPage, Product, Review } from '@/lib/supabase/types';
 import { toast } from '@/components/site/toast-provider';
+import { useLang } from '@/components/site/language-provider';
 
 export default function AdsLandingPage() {
   const params = useParams();
@@ -20,6 +21,7 @@ export default function AdsLandingPage() {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const { lang } = useLang();
 
   useEffect(() => {
     let active = true;
@@ -67,10 +69,12 @@ export default function AdsLandingPage() {
   const discount = comparePrice > price ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0;
   const images = product?.images?.length ? product.images : product?.image ? [product.image] : [];
   const heroImage = landing?.images?.[0] || images[0] || '';
-  const productName = product?.name_bn || product?.name_en || 'Premium Seed';
-  const headline = landing?.offer_headline || landing?.title || 'ভালো ফলনের শুরু হোক ভালো বীজ দিয়ে';
-  const subtitle = landing?.subtitle || product?.short_description || 'নির্বাচিত মানসম্মত বীজ, সহজ অর্ডার এবং সারাদেশে ডেলিভারি।';
-  const ctaText = landing?.cta_text || 'এখনই অর্ডার করুন';
+  const landingTranslation = (landing as any)?.translations?.[lang] || {};
+  const productTranslation = (product as any)?.translations?.[lang] || {};
+  const productName = productTranslation.name || product?.name_bn || product?.name_en || 'Premium Seed';
+  const headline = landingTranslation.title || landingTranslation.offer_headline || landing?.offer_headline || landing?.title || 'ভালো ফলনের শুরু হোক ভালো বীজ দিয়ে';
+  const subtitle = landingTranslation.subtitle || landing?.subtitle || productTranslation.short_description || product?.short_description || 'নির্বাচিত মানসম্মত বীজ, সহজ অর্ডার এবং সারাদেশে ডেলিভারি।';
+  const ctaText = landingTranslation.cta_text || landing?.cta_text || 'এখনই অর্ডার করুন';
   const benefits = landing?.benefits?.length ? landing.benefits : (product?.benefits?.length ? product.benefits : ['মানসম্মত ও বাছাই করা বীজ', 'সহজ অর্ডার প্রসেস', 'সারাদেশে হোম ডেলিভারি']);
   const features = landing?.features?.length ? landing.features : (product?.features?.length ? product.features : []);
   const faqs = landing?.faq || [];
