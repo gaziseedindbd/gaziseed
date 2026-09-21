@@ -2,7 +2,7 @@ export const revalidate = 60;
 
 import './globals.css';
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { cookies, headers } from 'next/headers';
 import { Hind } from 'next/font/google';
 import { SiteHeader } from '@/components/site/site-header';
@@ -30,12 +30,15 @@ const hind = Hind({ subsets: ['latin'], weight: ['300', '400', '500', '600', '70
 
 const FAVICON_URL = '/favicon.svg?v=3';
 
+export const viewport: Viewport = {
+  themeColor: '#047857',
+};
+
 export const metadata: Metadata = {
   title: 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
   description: 'GAZI SEED - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। ক্যাশ অন ডেলিভারি সারাদেশে।',
   metadataBase: new URL('https://www.gaziseed.com'),
   manifest: '/manifest.webmanifest',
-  themeColor: '#047857',
   icons: {
     icon: [{ url: FAVICON_URL, type: 'image/svg+xml' }],
     shortcut: [{ url: FAVICON_URL, type: 'image/svg+xml' }],
