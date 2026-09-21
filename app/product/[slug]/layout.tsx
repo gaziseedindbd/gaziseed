@@ -3,7 +3,8 @@ import { getServerRow, pageMetadata } from '@/lib/seo-metadata';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const product = await getServerRow('products', 'slug', slug);
+  const country = slug.startsWith('india-') ? 'IN' : 'BD';
+  const product = await getServerRow('products', 'slug', slug, country);
   const title = product?.name_bn || product?.name_en || 'Product';
   const description = product?.short_description || product?.description || `${title} — GAZI SEED`;
   const image = product?.image || product?.images?.[0] || null;
