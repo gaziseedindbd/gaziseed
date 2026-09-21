@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useLang } from '@/components/site/language-provider';
 import { useParams, useSearchParams } from 'next/navigation';
 import { AddressSelector, formatAddressToString, type AddressValue } from '@/components/site/address-selector';
 import { supabase } from '@/lib/supabase/client';
@@ -90,6 +91,7 @@ export default function AnimatedLandingPage() {
   const [activeSection, setActiveSection] = useState('story');
   const [form, setForm] = useState({ name: '', phone: '', instructions: '' });
   const [address, setAddress] = useState<AddressValue>({ division: '', district: '', thana: '', detail: '', postalCode: '' });
+  const { lang, t } = useLang();
 
   const utm = useMemo(() => ({
     source: searchParams.get('utm_source') || '',
@@ -180,11 +182,13 @@ export default function AnimatedLandingPage() {
   const cultivation: ContentCard[] = Array.isArray(page?.cultivation_steps) && page.cultivation_steps.length ? page.cultivation_steps : fallbackCultivation;
   const testimonials: Testimonial[] = Array.isArray(page?.testimonials) ? page.testimonials : [];
   const trustItems: ContentCard[] = Array.isArray(page?.trust_items) && page.trust_items.length ? page.trust_items : fallbackTrust;
-  const heroTitle = page?.hero_title || product?.name_bn || 'মানসম্মত বীজ, ভালো ফলনের শুরু';
-  const heroHighlight = page?.hero_highlight || 'বেশি ফলন, বেশি লাভ!';
-  const heroSubtitle = page?.hero_subtitle || product?.short_description || 'সঠিক বীজ ও সঠিক পরিচর্যা—কৃষকের সফলতার প্রথম ধাপ।';
+  const pageTranslation = page?.translations?.[lang] || {};
+  const productTranslation = product?.translations?.[lang] || {};
+  const heroTitle = pageTranslation.hero_title || page?.hero_title || productTranslation.name || product?.name_bn || 'মানসম্মত বীজ, ভালো ফলনের শুরু';
+  const heroHighlight = pageTranslation.hero_highlight || page?.hero_highlight || 'বেশি ফলন, বেশি লাভ!';
+  const heroSubtitle = pageTranslation.hero_subtitle || page?.hero_subtitle || productTranslation.short_description || product?.short_description || 'সঠিক বীজ ও সঠিক পরিচর্যা—কৃষকের সফলতার প্রথম ধাপ।';
   const heroImage = page?.hero_image || product?.image || '';
-  const productName = product?.name_bn || product?.name_en || page?.landing_name || 'পণ্য';
+  const productName = pageTranslation.landing_name || productTranslation.name || product?.name_bn || product?.name_en || page?.landing_name || 'পণ্য';
 
   const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
