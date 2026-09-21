@@ -8,15 +8,20 @@ import { addToCart } from '@/lib/cart';
 import { toast } from './toast-provider';
 import { useRouter } from 'next/navigation';
 import { useLang } from './language-provider';
+import { useHindiEntityTranslation } from '@/lib/translation-cache';
 
 export function ProductCard({ product, stackedActions = false }: { product: Product; stackedActions?: boolean }) {
   const router = useRouter();
   const { lang, t } = useLang();
+  const hi = useHindiEntityTranslation({ entity_type: 'product', id: product.id }, lang === 'hi');
+  const localizedName = lang === 'hi' ? String(hi?.name || product.name_en || product.name_bn) : (lang === 'en' ? (product.name_en || product.name_bn) : (product.name_bn || product.name_en));
+  const localizedShortDescription = lang === 'hi' ? String(hi?.short_description || product.short_description || '') : product.short_description;
+  const localizedSeedType = lang === 'hi' ? String(hi?.seed_type || product.seed_type || '') : product.seed_type;
   const price = getEffectivePrice(product);
   const discount = getDiscountPercent(product);
   const inStock = product.stock > 0;
-  const name = lang === 'en' ? (product.name_en || product.name_bn) : (product.name_bn || product.name_en);
-  const secondaryName = lang === 'bn' ? product.name_en : product.name_bn;
+  const name = localizedName;
+  const secondaryName = lang === 'hi' ? product.name_en : (lang === 'bn' ? product.name_en : product.name_bn);
   const badge = product.is_best_seller ? t('বেস্ট সেলার', 'Best Seller') : product.is_new_arrival ? t('নতুন এসেছে', 'New Arrival') : product.is_featured ? t('জনপ্রিয়', 'Popular') : product.is_seasonal ? t('মৌসুমি', 'Seasonal') : null;
 
   const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -54,7 +59,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
     <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-[1.25rem] border border-slate-200/80 bg-white shadow-[0_8px_30px_-22px_rgba(15,23,42,.55)] ring-1 ring-transparent transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-emerald-300/80 hover:shadow-[0_24px_60px_-30px_rgba(5,150,105,.45)] hover:ring-emerald-500/10 sm:rounded-[1.5rem]">
       <Link href={`/product/${product.slug}`} className="group block min-w-0">
         <div className="relative aspect-[1/1.02] w-full overflow-hidden bg-gradient-to-br from-emerald-50 via-lime-50 to-stone-100 sm:aspect-[.96]">
-          {product.image ? <img src={product.image} alt={product.image_alt || product.image_alt_bn || name} className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.055]" loading="lazy" /> : <div className="flex h-full w-full items-center justify-center"><Leaf className="h-12 w-12 text-emerald-300 sm:h-16 sm:w-16" /></div>}
+          {product.image ? <img src={product.image} alt={(lang === 'hi' ? String(hi?.image_alt || product.image_alt || product.image_alt_bn || name) : (product.image_alt || product.image_alt_bn || name))} className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.055]" loading="lazy" /> : <div className="flex h-full w-full items-center justify-center"><Leaf className="h-12 w-12 text-emerald-300 sm:h-16 sm:w-16" /></div>}
           <div className="absolute inset-x-2.5 top-2.5 flex items-start justify-between sm:inset-x-3 sm:top-3">
             {badge ? <span className="rounded-full bg-emerald-700 px-2.5 py-1.5 text-[9px] font-black text-white shadow-lg sm:px-3 sm:text-[10px]">{badge}</span> : <span />}
             <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/80 bg-white/90 text-slate-700 shadow-md backdrop-blur-md sm:h-10 sm:w-10"><Heart className="h-3.5 w-3.5 sm:h-[17px] sm:w-[17px]" /></span>
@@ -65,10 +70,10 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
           <span aria-hidden="true" className="absolute right-2.5 top-[3.25rem] flex h-8 w-8 translate-x-1 items-center justify-center rounded-xl bg-white/90 text-slate-900 shadow-md backdrop-blur-md opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100 sm:right-3 sm:top-[4rem] sm:h-9 sm:w-9"><ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></span>
         </div>
         <div className="flex flex-col gap-2.5 p-3 sm:gap-3 sm:p-4 lg:p-5">
-          <div className="min-w-0"><div className="mb-1.5 flex items-center gap-1.5 sm:mb-2 sm:gap-2"><span className="inline-flex items-center gap-1 rounded-full border border-amber-200/80 bg-amber-50 px-2 py-1 text-[8px] font-extrabold text-amber-700 sm:px-2.5 sm:py-1 sm:text-[10px]"><Star className="h-2.5 w-2.5 fill-current sm:h-3 sm:w-3" />{t('জনপ্রিয়', 'Quality')}</span>{product.seed_type && <span className="truncate text-[9px] font-semibold text-slate-400 sm:text-[10px]">{product.seed_type}</span>}</div>
-            <h3 className="line-clamp-2 text-[13px] font-black leading-[1.35] tracking-[-.01em] text-slate-900 sm:text-[15px] lg:text-base">{name}</h3>
+          <div className="min-w-0"><div className="mb-1.5 flex items-center gap-1.5 sm:mb-2 sm:gap-2"><span className="inline-flex items-center gap-1 rounded-full border border-amber-200/80 bg-amber-50 px-2 py-1 text-[8px] font-extrabold text-amber-700 sm:px-2.5 sm:py-1 sm:text-[10px]"><Star className="h-2.5 w-2.5 fill-current sm:h-3 sm:w-3" />{t('জনপ্রিয়', 'Quality')}</span>{product.seed_type && <span className="truncate text-[9px] font-semibold text-slate-400 sm:text-[10px]">{localizedSeedType}</span>}</div>
+            <h3 lang={lang === 'hi' ? 'hi-x-mtfrom-und' : undefined} className="line-clamp-2 text-[13px] font-black leading-[1.35] tracking-[-.01em] text-slate-900 sm:text-[15px] lg:text-base">{name}</h3>
             {secondaryName && secondaryName !== name && <p className="mt-1 line-clamp-1 text-[9px] font-medium text-slate-400 sm:text-[11px]">{secondaryName}</p>}
-            {product.short_description && <p className="mt-1.5 line-clamp-1 text-[9px] leading-relaxed text-slate-500 sm:mt-2 sm:text-[10px]">{product.short_description}</p>}
+            {localizedShortDescription && <p lang={lang === 'hi' ? 'hi-x-mtfrom-und' : undefined} className="mt-1.5 line-clamp-1 text-[9px] leading-relaxed text-slate-500 sm:mt-2 sm:text-[10px]">{localizedShortDescription}</p>}
           </div>
         </div>
       </Link>
