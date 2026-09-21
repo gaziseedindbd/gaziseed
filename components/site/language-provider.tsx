@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-type Lang = 'bn' | 'en';
+export type Lang = 'bn' | 'en' | 'hi';
 
 const DB_TRANSLATIONS: Record<string, string> = {
   'হোম': 'Home',
@@ -37,6 +37,7 @@ type LangContextType = {
   setLang: (l: Lang) => void;
   t: (bn: string, en: string) => string;
   tDb: (text: string) => string;
+  content: (translations: any, fallback: any) => any;
 };
 
 const LangContext = createContext<LangContextType>({
@@ -44,6 +45,7 @@ const LangContext = createContext<LangContextType>({
   setLang: () => {},
   t: (bn) => bn,
   tDb: (text) => text,
+  content: (_translations, fallback) => fallback,
 });
 
 const LANG_KEY = 'gazi_lang';
@@ -53,7 +55,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem(LANG_KEY) as Lang | null;
-    if (saved === 'bn' || saved === 'en') setLangState(saved);
+    if (saved === 'bn' || saved === 'en' || saved === 'hi') setLangState(saved);
   }, []);
 
   const setLang = (l: Lang) => {
@@ -61,7 +63,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(LANG_KEY, l);
   };
 
-  const t = (bn: string, en: string) => (lang === 'en' ? en : bn);
+  const t = (bn: string, en: string) => lang === 'en' ? en : bn;
+  const content = (translations: any, fallback: any) => {
+    const current = translations?.[lang];
+    if (!current || typeof current !== 'object') return fallback;
+    if (typeof fallback === 'string') return current.value || fallback;
+    return { ...fallback, ...current };
+  };
   const tDb = (text: string) => {
     if (!text) return text;
     const trimmed = text.trim();
