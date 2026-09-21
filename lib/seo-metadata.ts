@@ -2,12 +2,9 @@ import type { Metadata } from 'next';
 import { createServerSupabase } from '@/lib/supabase/server';
 
 const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-const vercelSiteUrl = process.env.VERCEL_URL?.trim();
 export const SITE_URL = configuredSiteUrl
   ? configuredSiteUrl.replace(/\/$/, '')
-  : vercelSiteUrl
-    ? `https://${vercelSiteUrl}`
-    : 'https://www.gaziseed.com';
+  : 'https://www.gaziseed.com';
 
 export const FALLBACK_IMAGE = `${SITE_URL}/favicon.svg`;
 
