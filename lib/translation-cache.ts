@@ -7,7 +7,7 @@ import type { Category, Product, ProductFaq } from '@/lib/supabase/types';
 export type HindiTranslations = Record<string, string | string[]>;
 
 type HindiEntity = {
-  entity_type: 'product' | 'category' | 'faq';
+  entity_type: 'product' | 'category' | 'faq' | 'banner' | 'service' | 'testimonial' | 'blog' | 'combo' | 'variant' | 'bundle' | 'promotion' | 'delivery_zone';
   id: string;
 };
 
@@ -18,7 +18,6 @@ type QueueRequest = {
 
 type HindiTranslationsMap = Record<string, HindiTranslations>;
 
-const pending = new Map<string, Promise<HindiTranslationsMap>>();
 let queue: QueueRequest[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -43,25 +42,27 @@ async function flushQueue() {
   if (batch.length === 0) return;
 
   const deduped = [...new Map(batch.map((entry) => [keyOf(entry.item), entry.item])).values()];
-  const request = fetch('/api/translate-cache', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-gazi-country': 'IN' },
-    body: JSON.stringify({ items: deduped, target_lang: 'hi' }),
-  })
-    .then(async (response) => {
-      if (!response.ok) return {} as HindiTranslationsMap;
-      const payload = await response.json();
-      return (payload?.translations || {}) as HindiTranslationsMap;
-    })
-    .catch(() => ({} as HindiTranslationsMap));
+  const chunks: HindiEntity[][] = [];
+  for (let i = 0; i < deduped.length; i += 20) chunks.push(deduped.slice(i, i + 20));
 
-  for (const item of deduped) {
-    pending.set(keyOf(item), request);
-  }
+  const request = Promise.all(
+    chunks.map(async (chunk) => {
+      try {
+        const response = await fetch('/api/translate-cache', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-gazi-country': 'IN' },
+          body: JSON.stringify({ items: chunk, target_lang: 'hi' }),
+        });
+        if (!response.ok) return {} as HindiTranslationsMap;
+        const payload = await response.json();
+        return (payload?.translations || {}) as HindiTranslationsMap;
+      } catch {
+        return {} as HindiTranslationsMap;
+      }
+    }),
+  ).then((parts) => Object.assign({}, ...parts));
 
   const result = await request;
-  pending.clear();
-
   for (const entry of batch) {
     const key = keyOf(entry.item);
     entry.resolve(result[key] ? { [key]: result[key] } : {});
