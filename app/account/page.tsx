@@ -128,7 +128,7 @@ export default function AccountPage() {
     for (const item of items) {
       if (item.is_free_gift) continue;
       const p = item.products;
-      if (!p || !p.is_active || p.stock <= 0) { skipped++; continue; }
+      if (!p || !p.is_active || p.stock <= 0 || p.country_code !== getVisitorCountry()) { skipped++; continue; }
       const currentPrice = getEffectivePrice(p);
       cart.push({ product_id: p.id, name: p.name_bn, slug: p.slug, image: p.image, unit_price: currentPrice, regular_price: p.regular_price, quantity: item.quantity, variant_id: item.variant_id, variant_name: item.variant_name });
       added++;
