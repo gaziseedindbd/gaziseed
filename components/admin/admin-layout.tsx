@@ -62,8 +62,6 @@ const navGroups: NavGroup[] = [
   ] },
 ];
 
-const BRANCH_KEY = 'gazi_admin_branch';
-
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -128,7 +126,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const handleBranchChange = async (branch: Branch) => {
     if (!isMasterAdmin) return;
     setSelectedBranch(branch);
-    localStorage.setItem(BRANCH_KEY, branch);
     const { error } = await supabase.auth.updateUser({ data: { gazi_admin_branch: branch } });
     if (error) {
       console.error('Branch update failed:', error);
