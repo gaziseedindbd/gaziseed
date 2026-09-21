@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next';
+import { supabase } from '@/lib/supabase/client';
 const BASE_URL = 'https://www.gaziseed.com';
 const FALLBACK_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
 const FALLBACK_KEY = 'sb_publishable_vCaz5OGrHocUTgpOXmE9xg_QVsuUJc0';
