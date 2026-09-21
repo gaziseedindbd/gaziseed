@@ -4,7 +4,7 @@ import { cookies, headers } from 'next/headers';
 const FALLBACK_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
 const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1ZnhzdGhzaHllYmFoa3dibWlvZSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzg4NDM2NjAwLCJleHAiOjIxMDQwMTI2MDB9.oU3ISPzKV6PQ3G0OXoCLHkrVa6qAEjSYoQF8D2Shf-M';
 
-export async function createServerSupabase() {
+export async function createServerSupabase(country?: 'BD' | 'IN') {
   const cookieStore = await cookies();
   const headerStore = await headers();
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_URL;
@@ -16,9 +16,11 @@ export async function createServerSupabase() {
     headerStore.get('cf-ipcountry') ||
     'BD'
   ).toUpperCase();
-  const visitorCountry = manualOverride === 'IN' || manualOverride === 'BD'
-    ? manualOverride
-    : detectedCountry === 'IN' ? 'IN' : 'BD';
+  const visitorCountry = country === 'IN' || country === 'BD'
+    ? country
+    : manualOverride === 'IN' || manualOverride === 'BD'
+      ? manualOverride
+      : detectedCountry === 'IN' ? 'IN' : 'BD';
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
