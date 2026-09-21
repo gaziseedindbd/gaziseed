@@ -11,8 +11,15 @@ type HindiEntity = {
   id: string;
 };
 
-const pending = new Map<string, Promise<Record<string, HindiTranslations>>>();
-let queue: HindiEntity[] = [];
+type QueueRequest = {
+  item: HindiEntity;
+  resolve: (value: HindiTranslationsMap) => void;
+};
+
+type HindiTranslationsMap = Record<string, HindiTranslations>;
+
+const pending = new Map<string, Promise<HindiTranslationsMap>>();
+let queue: QueueRequest[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 
 function isHindiActive() {
@@ -29,64 +36,57 @@ function keyOf(item: HindiEntity) {
   return `${item.entity_type}:${item.id}`;
 }
 
-function flushQueue() {
+async function flushQueue() {
   const batch = queue;
   queue = [];
   flushTimer = null;
   if (batch.length === 0) return;
 
-  const deduped = [...new Map(batch.map((item) => [keyOf(item), item])).values()];
+  const deduped = [...new Map(batch.map((entry) => [keyOf(entry.item), entry.item])).values()];
   const request = fetch('/api/translate-cache', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-gazi-country': 'IN' },
     body: JSON.stringify({ items: deduped, target_lang: 'hi' }),
   })
     .then(async (response) => {
-      if (!response.ok) return {};
+      if (!response.ok) return {} as HindiTranslationsMap;
       const payload = await response.json();
-      return (payload?.translations || {}) as Record<string, HindiTranslations>;
+      return (payload?.translations || {}) as HindiTranslationsMap;
     })
-    .catch(() => ({}));
+    .catch(() => ({} as HindiTranslationsMap));
 
   for (const item of deduped) {
     pending.set(keyOf(item), request);
+  }
+
+  const result = await request;
+  pending.clear();
+
+  for (const entry of batch) {
+    const key = keyOf(entry.item);
+    entry.resolve(result[key] ? { [key]: result[key] } : {});
   }
 }
 
 export function requestHindiTranslations(items: HindiEntity[]) {
   if (items.length === 0 || !isHindiActive()) {
-    return Promise.resolve({} as Record<string, HindiTranslations>);
+    return Promise.resolve({} as HindiTranslationsMap);
   }
 
-  for (const item of items) {
-    queue.push(item);
-  }
-  if (!flushTimer) {
-    flushTimer = setTimeout(flushQueue, 0);
-  }
-
-  return new Promise<Record<string, HindiTranslations>>((resolve) => {
-    const run = () => {
-      requestHindiTranslationsOnce(items).then(resolve);
-    };
-    queueMicrotask(run);
-  });
-}
-
-async function requestHindiTranslationsOnce(items: HindiEntity[]) {
   const unique = [...new Map(items.map((item) => [keyOf(item), item])).values()];
-  const results: Record<string, HindiTranslations> = {};
-
-  for (const item of unique) {
-    const existing = pending.get(keyOf(item));
-    if (existing) {
-      const response = await existing;
-      if (response[keyOf(item)]) results[keyOf(item)] = response[keyOf(item)];
-      pending.delete(keyOf(item));
+  return new Promise<HindiTranslationsMap>((resolve) => {
+    for (const item of unique) queue.push({ item, resolve });
+    if (!flushTimer) {
+      flushTimer = setTimeout(() => { void flushQueue(); }, 0);
     }
-  }
-
-  return results;
+  }).then((result) => {
+    const merged: HindiTranslationsMap = {};
+    for (const item of unique) {
+      const key = keyOf(item);
+      if (result[key]) merged[key] = result[key];
+    }
+    return merged;
+  });
 }
 
 export function useHindiEntityTranslation(
