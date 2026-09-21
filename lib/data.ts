@@ -353,8 +353,15 @@ export async function getBulkPricing(productId: string, variantId?: string): Pro
 }
 
 export async function getWishlist(userId: string): Promise<Product[]> {
-  const { data } = await supabase.from('wishlists').select('product_id, products(*)').eq('user_id', userId);
-  return (data || []).map((w: any) => w.products).filter(Boolean) as Product[];
+  const country = getVisitorCountry();
+  const { data } = await supabase
+    .from('wishlists')
+    .select('product_id, products(*)')
+    .eq('user_id', userId)
+    .eq('country_code', country);
+  return (data || [])
+    .map((w: any) => w.products)
+    .filter((p: any) => p && p.country_code === country && p.is_active) as Product[];
 }
 
 export async function toggleWishlist(userId: string, productId: string): Promise<boolean> {
