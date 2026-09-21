@@ -8,6 +8,7 @@ import { getCategoryBySlug, getProducts, getCategories } from '@/lib/data';
 import type { Category, Product } from '@/lib/supabase/types';
 import { SlidersHorizontal, X, Sparkles, Package, ArrowRight, Layers, Crown, ShieldCheck } from 'lucide-react';
 import { useLang } from '@/components/site/language-provider';
+import { requestHindiTranslations, type HindiTranslations } from '@/lib/translation-cache';
 
 export default function CategoryPage() {
   const params = useParams();
@@ -18,6 +19,7 @@ export default function CategoryPage() {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('default');
   const [showFilters, setShowFilters] = useState(false);
+  const [categoryHindi, setCategoryHindi] = useState<Record<string, HindiTranslations>>({});
   const { lang, t, tDb } = useLang();
 
   useEffect(() => {
@@ -32,6 +34,18 @@ export default function CategoryPage() {
       setLoading(false);
     });
   }, [slug]);
+
+  useEffect(() => {
+    if (lang !== 'hi' || categories.length === 0) {
+      setCategoryHindi({});
+      return;
+    }
+    let cancelled = false;
+    requestHindiTranslations(categories.map((cat) => ({ entity_type: 'category' as const, id: cat.id }))).then((result) => {
+      if (!cancelled) setCategoryHindi(result);
+    });
+    return () => { cancelled = true; };
+  }, [lang, categories]);
 
   const categoryProducts = useMemo(() => {
     let result = products.filter((p) => p.category_id === category?.id);
@@ -49,8 +63,8 @@ export default function CategoryPage() {
     return result;
   }, [products, category, sortBy]);
 
-  const categoryName = category ? (lang === 'en' && (category as any).name_en ? (category as any).name_en : category.name_bn) : '';
-  const categoryDesc = category ? tDb(category.description || '') : '';
+  const categoryName = category ? (lang === 'hi' ? String(categoryHindi[category.id]?.name || category.name_en || category.name_bn) : (lang === 'en' && (category as any).name_en ? (category as any).name_en : category.name_bn)) : '';
+  const categoryDesc = category ? (lang === 'hi' ? String(categoryHindi[category.id]?.description || category.description || '') : tDb(category.description || '')) : '';
 
   if (!loading && !category) {
     return (
@@ -79,7 +93,7 @@ export default function CategoryPage() {
               <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-white/15 backdrop-blur-2xl text-white text-xs font-black tracking-widest uppercase border border-white/30 shadow-2xl">
                 <Crown className="h-4 w-4 text-amber-400 fill-amber-400 animate-bounce" /> {t('GAZI SEED Premium', 'GAZI SEED Premium')}
               </div>
-              <h1 className="text-5xl sm:text-8xl font-black text-white tracking-tighter drop-shadow-2xl">{categoryName}</h1>
+              <h1 lang={lang === 'hi' ? 'hi-x-mtfrom-und' : undefined} className="text-5xl sm:text-8xl font-black text-white tracking-tighter drop-shadow-2xl">{categoryName}</h1>
               {categoryDesc && (
                 <p className="text-sm sm:text-base text-gray-200 max-w-2xl line-clamp-2 drop-shadow-md leading-relaxed font-medium">{categoryDesc}</p>
               )}
@@ -108,7 +122,7 @@ export default function CategoryPage() {
             <Layers className="h-4 w-4 text-primary" /> {t('ক্যাটাগরি:', 'Category:')}
           </span>
           {categories.map((cat) => {
-            const catTitle = lang === 'en' && (cat as any).name_en ? (cat as any).name_en : cat.name_bn;
+            const catTitle = lang === 'hi' ? String(categoryHindi[cat.id]?.name || cat.name_en || cat.name_bn) : (lang === 'en' && (cat as any).name_en ? (cat as any).name_en : cat.name_bn);
             return (
               <Link
                 key={cat.id}
