@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { formatPrice } from '@/lib/data';
@@ -29,7 +29,7 @@ export default function AccountPage() {
   const [wishlist, setWishlist] = useState<Product[]>([]);
   const [showAddrForm, setShowAddrForm] = useState(false);
   const [editingAddr, setEditingAddr] = useState<CustomerAddress | null>(null);
-  const [referralEnabled, setReferralEnabled] = useState(false);
+  const [referralEnabled, setReferralEnabled] = useState(false);\n  const [country, setCountry] = useState<'BD' | 'IN'>('BD');
 
   // অর্ডার ডিটেইলস মডালের স্টেট
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
@@ -230,7 +230,7 @@ export default function AccountPage() {
               </p>
               <p className="text-[11px] text-muted-foreground">অর্ডার বা পণ্য সম্পর্কিত যেকোনো তথ্যের জন্য সরাসরি যোগাযোগ করুন।</p>
               <a 
-                href="https://wa.me/8801818838394" 
+                {...{href: country === 'BD' ? 'https://wa.me/8801818838394' : '/contact'}} 
                 target="_blank" 
                 rel="noreferrer"
                 className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-white font-bold text-xs hover:bg-emerald-700 transition"
