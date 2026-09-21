@@ -15,8 +15,10 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
   const price = getEffectivePrice(product);
   const discount = getDiscountPercent(product);
   const inStock = product.stock > 0;
-  const name = lang === 'en' ? (product.name_en || product.name_bn) : (product.name_bn || product.name_en);
-  const secondaryName = lang === 'bn' ? product.name_en : product.name_bn;
+  const translations = (product as any).translations || {};
+  const translated = translations?.[lang] || {};
+  const name = translated.name || (lang === 'en' ? (product.name_en || product.name_bn) : (lang === 'hi' ? (product.name_en || product.name_bn) : (product.name_bn || product.name_en)));
+  const secondaryName = lang === 'hi' ? (product.name_en || product.name_bn) : (lang === 'bn' ? product.name_en : product.name_bn);
   const badge = product.is_best_seller ? t('বেস্ট সেলার', 'Best Seller') : product.is_new_arrival ? t('নতুন এসেছে', 'New Arrival') : product.is_featured ? t('জনপ্রিয়', 'Popular') : product.is_seasonal ? t('মৌসুমি', 'Seasonal') : null;
 
   const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -54,7 +56,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
     <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-[1.25rem] border border-slate-200/80 bg-white shadow-[0_8px_30px_-22px_rgba(15,23,42,.55)] ring-1 ring-transparent transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-emerald-300/80 hover:shadow-[0_24px_60px_-30px_rgba(5,150,105,.45)] hover:ring-emerald-500/10 sm:rounded-[1.5rem]">
       <Link href={`/product/${product.slug}`} className="group block min-w-0">
         <div className="relative aspect-[1/1.02] w-full overflow-hidden bg-gradient-to-br from-emerald-50 via-lime-50 to-stone-100 sm:aspect-[.96]">
-          {product.image ? <img src={product.image} alt={product.image_alt || product.image_alt_bn || name} className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.055]" loading="lazy" /> : <div className="flex h-full w-full items-center justify-center"><Leaf className="h-12 w-12 text-emerald-300 sm:h-16 sm:w-16" /></div>}
+          {product.image ? <img src={product.image} alt={translated.image_alt || product.image_alt || product.image_alt_bn || name} className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.055]" loading="lazy" /> : <div className="flex h-full w-full items-center justify-center"><Leaf className="h-12 w-12 text-emerald-300 sm:h-16 sm:w-16" /></div>}
           <div className="absolute inset-x-2.5 top-2.5 flex items-start justify-between sm:inset-x-3 sm:top-3">
             {badge ? <span className="rounded-full bg-emerald-700 px-2.5 py-1.5 text-[9px] font-black text-white shadow-lg sm:px-3 sm:text-[10px]">{badge}</span> : <span />}
             <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/80 bg-white/90 text-slate-700 shadow-md backdrop-blur-md sm:h-10 sm:w-10"><Heart className="h-3.5 w-3.5 sm:h-[17px] sm:w-[17px]" /></span>
