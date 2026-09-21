@@ -77,7 +77,7 @@ export default function CategoryPage() {
             <div className="absolute inset-0 bg-gradient-to-t from-background via-black/70 to-black/30 backdrop-blur-[3px]" />
             <div className="absolute inset-0 flex flex-col items-center justify-end text-center p-8 sm:p-16 max-w-5xl mx-auto space-y-5">
               <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-white/15 backdrop-blur-2xl text-white text-xs font-black tracking-widest uppercase border border-white/30 shadow-2xl">
-                <Crown className="h-4 w-4 text-amber-400 fill-amber-400 animate-bounce" /> {t('সিড বাড়ি প্রিমিয়াম লাক্সারি', 'Seed Bari Premium Luxury')}
+                <Crown className="h-4 w-4 text-amber-400 fill-amber-400 animate-bounce" /> {t('GAZI SEED Premium', 'GAZI SEED Premium')}
               </div>
               <h1 className="text-5xl sm:text-8xl font-black text-white tracking-tighter drop-shadow-2xl">{categoryName}</h1>
               {categoryDesc && (
