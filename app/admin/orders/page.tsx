@@ -14,6 +14,17 @@ const STATUS_LABELS: Record<string, string> = {
 
 const SOURCE_FILTERS = ['all', 'website', 'facebook', 'instagram', 'google', 'tiktok'];
 
+const STATUS_TRANSITIONS: Record<string, string[]> = {
+  pending: ['pending', 'confirmed', 'cancelled'],
+  confirmed: ['confirmed', 'processing', 'cancelled'],
+  processing: ['processing', 'packed', 'cancelled'],
+  packed: ['packed', 'shipped', 'cancelled'],
+  shipped: ['shipped', 'delivered', 'returned', 'cancelled'],
+  delivered: ['delivered', 'returned'],
+  cancelled: ['cancelled'],
+  returned: ['returned'],
+};
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +37,7 @@ export default function AdminOrdersPage() {
   const [newStatus, setNewStatus] = useState('');
   const [note, setNote] = useState('');
   const [settlingDue, setSettlingDue] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const [duplicateOrders, setDuplicateOrders] = useState<Record<string, any[]>>({});
 
@@ -90,27 +102,53 @@ export default function AdminOrdersPage() {
   };
 
   const updateStatus = async () => {
-    if (!selectedOrder) return;
-    const { error } = await supabase.from('orders').update({ 
-      status: newStatus, 
-      internal_notes: note 
-    }).eq('id', selectedOrder.id);
+    if (!selectedOrder || updatingStatus) return;
 
-    if (error) {
-      toast('আপডেট করতে সমস্যা হয়েছে', 'error');
+    const currentStatus = selectedOrder.status;
+    const allowedStatuses = STATUS_TRANSITIONS[currentStatus] || [currentStatus];
+    if (!allowedStatuses.includes(newStatus)) {
+      toast('এই স্ট্যাটাস পরিবর্তনটি অনুমোদিত নয়', 'error');
+      setNewStatus(currentStatus);
       return;
     }
 
-    if (newStatus !== selectedOrder.status) {
-      await supabase.from('order_status_history').insert({ 
-        order_id: selectedOrder.id, 
-        status: newStatus, 
-        note 
-      });
+    setUpdatingStatus(true);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({
+          status: newStatus,
+          internal_notes: note,
+        })
+        .eq('id', selectedOrder.id);
+
+      if (error) {
+        console.error('Order status update failed:', error);
+        toast(error.hint || error.message || 'আপডেট করতে সমস্যা হয়েছে', 'error');
+        return;
+      }
+
+      if (newStatus !== currentStatus) {
+        const { error: historyError } = await supabase
+          .from('order_status_history')
+          .insert({
+            order_id: selectedOrder.id,
+            status: newStatus,
+            note,
+          });
+
+        if (historyError) {
+          console.error('Order status history insert failed:', historyError);
+          toast('স্ট্যাটাস আপডেট হয়েছে, কিন্তু হিস্টোরি সেভ হয়নি', 'error');
+        }
+      }
+
+      toast('আপডেট সফল হয়েছে');
+      setSelectedOrder(null);
+      await loadOrders();
+    } finally {
+      setUpdatingStatus(false);
     }
-    toast('আপডেট সফল হয়েছে');
-    setSelectedOrder(null);
-    loadOrders();
   };
 
   const collectCodDue = async () => {
@@ -439,8 +477,15 @@ export default function AdminOrdersPage() {
             <div className="space-y-2.5 border-t border-border pt-3.5">
               <div>
                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">স্ট্যাটাস পরিবর্তন</label>
-                <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)} className="input-bangla w-full">
-                  {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                <select
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value)}
+                  className="input-bangla w-full"
+                  disabled={updatingStatus}
+                >
+                  {(STATUS_TRANSITIONS[selectedOrder.status] || [selectedOrder.status]).map((s) => (
+                    <option key={s} value={s}>{STATUS_LABELS[s] || s}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -453,8 +498,12 @@ export default function AdminOrdersPage() {
                   placeholder="অর্ডার সংক্রান্ত নোট লিখুন..." 
                 />
               </div>
-              <button onClick={updateStatus} className="w-full rounded-xl bg-primary py-2.5 sm:py-3 font-semibold text-primary-foreground hover:bg-primary/90 transition shadow">
-                আপডেট করুন
+              <button
+                onClick={updateStatus}
+                disabled={updatingStatus}
+                className="w-full rounded-xl bg-primary py-2.5 sm:py-3 font-semibold text-primary-foreground hover:bg-primary/90 transition shadow disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {updatingStatus ? 'আপডেট হচ্ছে...' : 'আপডেট করুন'}
               </button>
             </div>
           </div>
