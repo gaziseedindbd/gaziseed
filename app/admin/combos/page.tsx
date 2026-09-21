@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { MultilingualFields } from '@/components/admin/multilingual-fields';
 import { Plus, Edit, Trash2, X, Search, Upload, Loader2, Image as ImageIcon, FileText, Link as LinkIcon } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 import { processLocalImage, processUrlImage, uploadProcessedFile } from '@/lib/image-processing';
@@ -130,6 +131,7 @@ function ComboForm({ combo, onSave, onClose }: { combo: any; onSave: (data: any)
     regular_total: combo?.regular_total || 0,
     combo_price: combo?.combo_price || 0,
     is_active: combo?.is_active ?? true,
+    translations: combo?.translations || {},
   });
 
   const [manualItems, setManualItems] = useState<any[]>(
@@ -241,7 +243,7 @@ function ComboForm({ combo, onSave, onClose }: { combo: any; onSave: (data: any)
     const baseSlug = form.slug || form.title_bn?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'combo';
     const slug = combo ? baseSlug : `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`;
     
-    onSave({ ...form, slug, images, items, tier_pricing: tiers, manual_items_list: manualItems });
+    onSave({ ...form, translations: form.translations || {}, slug, images, items, tier_pricing: tiers, manual_items_list: manualItems });
   };
 
   const filteredProducts = allProducts.filter((p) => {
@@ -272,6 +274,8 @@ function ComboForm({ combo, onSave, onClose }: { combo: any; onSave: (data: any)
               <input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className="input-bangla border p-3 w-full rounded-xl bg-secondary/30" placeholder="auto-generated" />
             </div>
           </div>
+
+          <MultilingualFields value={form.translations || {}} onChange={(translations) => setForm({ ...form, translations })} title="🌐 Combo Language Versions" fields={[{ key: 'title', label: 'Combo Title' }, { key: 'subtitle', label: 'Subtitle' }, { key: 'description', label: 'Description', multiline: true }, { key: 'seo_title', label: 'SEO Title' }, { key: 'meta_description', label: 'Meta Description', multiline: true }]} />
 
           <div>
             <label className="mb-1.5 block text-sm font-semibold">কম্বো প্যাকেজ বিবরণ (Description)</label>
