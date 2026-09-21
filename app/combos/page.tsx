@@ -6,12 +6,14 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Sparkles, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useLang } from '@/components/site/language-provider';
+import { requestHindiTranslations, type HindiTranslations } from '@/lib/translation-cache';
 import { useFeatureFlags } from '@/components/site/feature-provider';
 
 export default function CombosPage() {
   const [combos, setCombos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { lang, t } = useLang();
+  const [comboHindi, setComboHindi] = useState<Record<string, HindiTranslations>>({});
   const { ready, enabled } = useFeatureFlags();
 
   useEffect(() => {
@@ -50,6 +52,13 @@ export default function CombosPage() {
 
     fetchCombos();
   }, [ready, enabled]);
+
+  useEffect(() => {
+    if (lang !== 'hi' || combos.length === 0) { setComboHindi({}); return; }
+    let cancelled = false;
+    requestHindiTranslations(combos.map((combo) => ({ entity_type: 'combo' as const, id: combo.id }))).then((result) => { if (!cancelled) setComboHindi(result); });
+    return () => { cancelled = true; };
+  }, [lang, combos]);
 
   if (!ready) return null;
 
@@ -120,8 +129,8 @@ export default function CombosPage() {
             const totalItems = getItemsCount(combo);
             const badge = firstTier.badge || 'SPECIAL OFFER';
 
-            const comboTitle = lang === 'en' && combo.title_en ? combo.title_en : combo.title_bn;
-            const comboDesc = lang === 'en' && combo.description_en ? combo.description_en : combo.description_bn;
+            const comboTitle = lang === 'hi' ? String(comboHindi[combo.id]?.title || comboHindi[combo.id]?.name || combo.title_en || combo.name_en || combo.title_bn || combo.name_bn) : (lang === 'en' ? (combo.title_en || combo.name_en || combo.title_bn || combo.name_bn) : (combo.title_bn || combo.name_bn));
+            const comboDesc = lang === 'hi' ? String(comboHindi[combo.id]?.description || combo.description_en || combo.description_bn || combo.description || '') : (lang === 'en' ? (combo.description_en || combo.description_bn || combo.description || '') : (combo.description_bn || combo.description || ''));
 
             return (
               <Link
