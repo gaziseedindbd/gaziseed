@@ -150,17 +150,17 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
 
         <div className="flex flex-col gap-2.5 px-3 pb-3 pt-3 sm:gap-3.5 sm:px-4.5 sm:pb-4 sm:pt-4.5 lg:px-5 lg:pb-4.5 lg:pt-5">
           <div className="min-w-0">
-            <div className="mb-1.5 flex items-center gap-1.5 sm:gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-1 text-[8px] font-extrabold text-amber-700 sm:text-[10px]">
+            <div className="mb-1.5 flex min-w-0 flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-1 text-[8px] font-extrabold text-amber-700 sm:text-[10px]">
                 <Star className="h-2.5 w-2.5 fill-current sm:h-3 sm:w-3" />
                 {t('মান যাচাই', 'Quality', 'गुणवत्ता')}
               </span>
               {product.seed_type && (
-                <span className="truncate text-[9px] font-semibold text-slate-400 sm:text-[10px]">{product.seed_type}</span>
+                <span className="max-w-full text-[9px] font-semibold leading-tight text-slate-400 sm:text-[10px]">{product.seed_type}</span>
               )}
             </div>
 
-            <h3 className="line-clamp-2 text-[12px] font-black leading-[1.35] tracking-[-.012em] text-slate-900 sm:text-[15px] lg:text-[16px]">
+            <h3 className="line-clamp-2 text-[13px] font-black leading-[1.4] tracking-[-.012em] text-slate-900 sm:text-[15px] lg:text-[16px]">
               {name}
             </h3>
 
@@ -169,7 +169,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
             )}
 
             {product.short_description && (
-              <p className="mt-1 line-clamp-2 text-[8.5px] leading-[1.5] text-slate-500 sm:mt-2 sm:text-[10px]">
+              <p className="mt-1 line-clamp-2 text-[9px] leading-[1.55] text-slate-500 sm:mt-2 sm:text-[10px]">
                 {product.short_description}
               </p>
             )}
@@ -177,7 +177,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
         </div>
       </Link>
 
-      <div className="mt-auto px-3 pb-3.5 sm:px-4 sm:pb-4 lg:px-5 lg:pb-5">
+      <div className="mt-auto px-3 pb-4.5 sm:px-4 sm:pb-4 lg:px-5 lg:pb-5">
         <div className="mb-2.5 flex min-w-0 items-end justify-between gap-2 border-t border-slate-100 pt-2.5 sm:mb-3 sm:pt-3.5">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <span className="text-[1.05rem] font-black tracking-tight text-emerald-800 sm:text-[1.4rem]">
