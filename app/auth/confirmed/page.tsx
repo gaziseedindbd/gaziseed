@@ -22,6 +22,15 @@ export default function AuthConfirmedPage() {
       const target = verified
         ? `${next}?verified=1`
         : next;
+      const code = searchParams.get('code');
+
+      if (code) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (exchangeError) {
+          if (active) setError(exchangeError.message);
+          return;
+        }
+      }
 
       const { data, error: sessionError } = await supabase.auth.getSession();
 
