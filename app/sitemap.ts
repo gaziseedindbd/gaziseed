@@ -56,5 +56,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entries.push({ url: `${BASE_URL}/blog/${p.slug}`, lastModified: new Date(p.updated_at || p.created_at || new Date()), changeFrequency: 'monthly', priority: 0.5 });
   });
 
-  return entries;
+  const { data: pages } = await supabase.from('pages').select('slug, updated_at, created_at').eq('is_published', true);
+  (pages || []).forEach((p: any) => {
+    entries.push({ url: `${BASE_URL}/page/${p.slug}`, lastModified: new Date(p.updated_at || p.created_at || new Date()), changeFrequency: 'monthly', priority: 0.4 });
+  });
+
+  const { data: animatedLandings } = await supabase
+    .from('animated_landing_pages')
+    .select('slug, updated_at, created_at')
+    .eq('status', 'active');
+  (animatedLandings || []).forEach((p: any) => {
+    entries.push({ url: `${BASE_URL}/animated-landing/${p.slug}`, lastModified: new Date(p.updated_at || p.created_at || new Date()), changeFrequency: 'weekly', priority: 0.6 });
+  });
+
+  const unique = new Map<string, MetadataRoute.Sitemap[number]>();
+  entries.forEach((entry) => unique.set(entry.url, entry));
+  return Array.from(unique.values());
 }
