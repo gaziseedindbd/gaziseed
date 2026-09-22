@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Sprout } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
+import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { useLang } from '@/components/site/language-provider';
 
 export default function AuthCallbackPage() {
@@ -19,6 +19,7 @@ export default function AuthCallbackPage() {
       const code = params.get('code');
       const errorDescription = params.get('error_description') || params.get('error');
       const nextParam = params.get('next') || '/account';
+      const mode = params.get('mode') || 'login';
       const next = nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/account';
       const referralCode = params.get('ref');
 
@@ -35,6 +36,17 @@ export default function AuthCallbackPage() {
       const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
       if (exchangeError) {
         if (active) setError(exchangeError.message || t('Google লগইন সম্পন্ন করা যায়নি।', 'Could not complete Google sign in.'));
+        return;
+      }
+
+      if (data.user && mode === 'signup' && !data.user.user_metadata?.mobile_verification_required) {
+        await supabase.auth.updateUser({ data: { mobile_verification_required: true, phone_verified: false } });
+      }
+
+      if (data.user && mode === 'signup' && getVisitorCountry() === 'IN' && data.user.user_metadata?.phone_verified !== true) {
+        const qs = new URLSearchParams({ next });
+        if (referralCode) qs.set('ref', referralCode);
+        router.replace(`/verify-mobile?${qs.toString()}`);
         return;
       }
 
