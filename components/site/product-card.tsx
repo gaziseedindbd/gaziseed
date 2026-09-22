@@ -113,7 +113,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
 
             <span
               aria-hidden="true"
-              className="flex h-8.5 w-8.5 items-center justify-center rounded-full border border-white/75 bg-white/92 text-slate-700 shadow-lg shadow-slate-900/10 backdrop-blur-md transition-all duration-300 group-hover:scale-[1.03] sm:h-10 sm:w-10"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/75 bg-white/92 text-slate-700 shadow-lg shadow-slate-900/10 backdrop-blur-md transition-all duration-300 group-hover:scale-[1.03] sm:h-10 sm:w-10"
             >
               <Heart className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />
             </span>
@@ -148,7 +148,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
           </span>
         </div>
 
-        <div className="flex flex-col gap-3 gap-2.5 px-3 pb-3 pt-3 sm:gap-3.5 sm:px-4.5 sm:pb-4 sm:pt-4.5 lg:px-5 lg:pb-4.5 lg:pt-5">
+        <div className="flex flex-col gap-2.5 px-3 pb-3 pt-3 sm:gap-3.5 sm:px-4.5 sm:pb-4 sm:pt-4.5 lg:px-5 lg:pb-4.5 lg:pt-5">
           <div className="min-w-0">
             <div className="mb-1.5 flex items-center gap-1.5 sm:gap-2">
               <span className="inline-flex items-center gap-1 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-1 text-[8px] font-extrabold text-amber-700 sm:text-[10px]">
