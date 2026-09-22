@@ -10,7 +10,7 @@ import {
   Package, MapPin, User, LogOut, LayoutDashboard, Plus, Edit, 
   Trash2, Star, X, Check, Heart, RotateCcw, AlertCircle, Users, 
   Eye, Truck, Calendar, ShoppingBag, Receipt, Printer, MessageCircle, 
-  Award, CheckCircle2, Clock, Box, HelpCircle
+  Award, CheckCircle2, Clock, Box, HelpCircle, PartyPopper, MailCheck
 } from 'lucide-react';
 import { AddressSelector, formatAddressToString, type AddressValue } from '@/components/site/address-selector';
 import { toast } from '@/components/site/toast-provider';
@@ -31,6 +31,7 @@ export default function AccountPage() {
   const [editingAddr, setEditingAddr] = useState<CustomerAddress | null>(null);
   const [referralEnabled, setReferralEnabled] = useState(false);
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
+  const [showVerifiedWelcome, setShowVerifiedWelcome] = useState(false);
 
   // অর্ডার ডিটেইলস মডালের স্টেট
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
@@ -59,6 +60,17 @@ export default function AccountPage() {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) { router.push('/login'); return; }
       setUser(data.session.user);
+
+      const verificationParams = new URLSearchParams(window.location.search);
+      if (verificationParams.get('verified') === '1') {
+        const welcomeKey = `gazi-email-verified-welcome:${data.session.user.id}`;
+        if (!window.localStorage.getItem(welcomeKey)) {
+          window.localStorage.setItem(welcomeKey, '1');
+          setShowVerifiedWelcome(true);
+        }
+        window.history.replaceState({}, '', '/account');
+      }
+
       const [o, a] = await Promise.all([
         supabase.from('orders').select('*').eq('user_id', data.session.user.id).eq('country_code', getVisitorCountry()).order('created_at', { ascending: false }),
         supabase.from('customer_addresses').select('*').eq('user_id', data.session.user.id).eq('country_code', getVisitorCountry()).order('created_at', { ascending: false }),
@@ -231,7 +243,8 @@ export default function AccountPage() {
   const activeStep = latestActiveOrder ? getStatusStep(latestActiveOrder.status) : 0;
 
   return (
-    <div className="container-custom py-6 max-w-6xl">
+    <>
+      <div className="container-custom py-6 max-w-6xl">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black sm:text-3xl text-foreground">আমার অ্যাকাউন্ট</h1>
@@ -684,6 +697,60 @@ export default function AccountPage() {
         </div>
       )}
     </div>
+
+      {showVerifiedWelcome && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/50 px-4 py-6 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="verified-welcome-title"
+        >
+          <div className="w-full max-w-lg overflow-hidden rounded-[32px] border border-white/70 bg-white shadow-2xl">
+            <div className="relative overflow-hidden bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 px-6 pb-7 pt-8 text-center text-white sm:px-9 sm:pt-10">
+              <div className="absolute -right-14 -top-14 h-40 w-40 rounded-full bg-white/10" />
+              <div className="absolute -bottom-20 -left-16 h-44 w-44 rounded-full bg-white/10" />
+              <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-white/15 ring-1 ring-white/30 backdrop-blur">
+                <PartyPopper className="h-10 w-10" />
+              </div>
+              <p className="relative mt-5 text-[11px] font-black uppercase tracking-[0.24em] text-emerald-50/90">
+                GAZI SEED
+              </p>
+              <h2 id="verified-welcome-title" className="relative mt-2 text-3xl font-black tracking-tight sm:text-4xl">
+                অভিনন্দন! 🎉
+              </h2>
+              <p className="relative mt-3 text-sm leading-6 text-emerald-50 sm:text-base">
+                আপনার account সফলভাবে তৈরি হয়েছে এবং আপনার email address সফলভাবে verify হয়েছে।
+              </p>
+            </div>
+
+            <div className="space-y-4 px-6 py-6 sm:px-9 sm:py-8">
+              <div className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                <MailCheck className="mt-0.5 h-6 w-6 shrink-0 text-emerald-600" />
+                <div>
+                  <p className="font-black text-slate-800">Email verified successfully</p>
+                  <p className="mt-1 break-all text-sm leading-6 text-slate-600">{user?.email}</p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="font-black text-slate-800">আপনার Dashboard প্রস্তুত ✅</p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  এখন থেকে এখান থেকেই আপনার order, address, wishlist, profile এবং অন্যান্য account information পরিচালনা করতে পারবেন।
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowVerifiedWelcome(false)}
+                className="flex h-12 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 px-5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition-transform hover:-translate-y-0.5"
+              >
+                Dashboard শুরু করুন →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
