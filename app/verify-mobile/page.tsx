@@ -7,6 +7,16 @@ import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { useLang } from '@/components/site/language-provider';
 import { toast } from '@/components/site/toast-provider';
 
+async function getFunctionError(error: any) {
+  if (error?.context?.json) {
+    try {
+      const body = await error.context.json();
+      if (body?.error) return String(body.error);
+    } catch {}
+  }
+  return error?.message || '';
+}
+
 export default function VerifyMobilePage() {
   const router = useRouter();
   const params = useSearchParams();
@@ -18,7 +28,14 @@ export default function VerifyMobilePage() {
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState('');
+  const [resendIn, setResendIn] = useState(0);
   const next = params.get('next')?.startsWith('/') && !params.get('next')?.startsWith('//') ? params.get('next')! : '/account';
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const timer = window.setInterval(() => setResendIn(value => Math.max(0, value - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [resendIn]);
 
   useEffect(() => {
     if (getVisitorCountry() !== 'IN') {
@@ -38,14 +55,21 @@ export default function VerifyMobilePage() {
   }, [next, router]);
 
   const sendOtp = async () => {
+    if (resendIn > 0) return;
     setError('');
     setSending(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-india-registration-otp', {
         body: { phone, country_code: 'IN' },
       });
-      if (error || !data?.sent) throw new Error(data?.error || error?.message || 'Unable to send verification SMS');
+      if (error) {
+        const message = await getFunctionError(error);
+        throw new Error(message || 'Unable to send verification SMS');
+      }
+      if (!data?.sent) throw new Error(data?.error || 'Unable to send verification SMS');
       setSent(true);
+      setResendIn(60);
+      setError('');
       toast(t('ভেরিফিকেশন কোড পাঠানো হয়েছে', 'Verification code sent'));
     } catch (e: any) {
       setError(e.message || t('SMS পাঠানো যায়নি', 'Could not send SMS'));
@@ -60,7 +84,11 @@ export default function VerifyMobilePage() {
       const { data, error } = await supabase.functions.invoke('verify-india-registration-otp', {
         body: { phone, otp, country_code: 'IN' },
       });
-      if (error || !data?.verified) throw new Error(data?.error || error?.message || 'Verification failed');
+      if (error) {
+        const message = await getFunctionError(error);
+        throw new Error(message || 'Verification failed');
+      }
+      if (!data?.verified) throw new Error(data?.error || 'Verification failed');
       await supabase.auth.refreshSession();
       toast(t('মোবাইল নম্বর সফলভাবে verified হয়েছে', 'Mobile number verified successfully'));
       router.replace(next);
@@ -84,7 +112,7 @@ export default function VerifyMobilePage() {
             <input type="tel" inputMode="tel" value={phone} onChange={e=>setPhone(e.target.value)} disabled={sent} className="w-full rounded-xl border border-border bg-background px-4 py-3 outline-none focus:ring-2 focus:ring-primary/30" placeholder="10-digit mobile number" />
           </div>
           {!sent ? (
-            <button type="button" onClick={sendOtp} disabled={sending || !phone.trim()} className="w-full rounded-xl bg-primary px-4 py-3 font-black text-primary-foreground disabled:opacity-50">
+            <button type="button" onClick={sendOtp} disabled={sending || !phone.trim() || resendIn > 0} className="w-full rounded-xl bg-primary px-4 py-3 font-black text-primary-foreground disabled:opacity-50">
               {sending ? <Loader2 className="mx-auto h-5 w-5 animate-spin" /> : t('OTP পাঠান', 'Send OTP')}
             </button>
           ) : (
@@ -97,7 +125,10 @@ export default function VerifyMobilePage() {
               <button type="submit" disabled={verifying || otp.length !== 6} className="w-full rounded-xl bg-primary px-4 py-3 font-black text-primary-foreground disabled:opacity-50">
                 {verifying ? <Loader2 className="mx-auto h-5 w-5 animate-spin" /> : t('Verify করুন', 'Verify mobile')}
               </button>
-              <button type="button" onClick={()=>{setSent(false);setOtp('');setError('');}} className="mx-auto flex items-center gap-2 text-xs font-bold text-primary hover:underline"><RefreshCw className="h-3.5 w-3.5" /> {t('অন্য নম্বর / আবার OTP', 'Change number / resend OTP')}</button>
+              <button type="button" disabled={resendIn > 0} onClick={()=>{setSent(false);setOtp('');setError('');}} className="mx-auto flex items-center gap-2 text-xs font-bold text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50">
+                <RefreshCw className="h-3.5 w-3.5" />
+                {resendIn > 0 ? t(`আবার OTP পাঠাতে ${resendIn}s অপেক্ষা করুন`, `Resend OTP in ${resendIn}s`) : t('অন্য নম্বর / আবার OTP', 'Change number / resend OTP')}
+              </button>
             </form>
           )}
           {error && !sent && <p role="alert" className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
