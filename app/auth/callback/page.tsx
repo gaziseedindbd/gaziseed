@@ -39,17 +39,6 @@ export default function AuthCallbackPage() {
         return;
       }
 
-      if (data.user && mode === 'signup' && !data.user.user_metadata?.mobile_verification_required) {
-        await supabase.auth.updateUser({ data: { mobile_verification_required: true, phone_verified: false } });
-      }
-
-      if (data.user && mode === 'signup' && getVisitorCountry() === 'IN' && data.user.user_metadata?.phone_verified !== true) {
-        const qs = new URLSearchParams({ next });
-        if (referralCode) qs.set('ref', referralCode);
-        router.replace(`/verify-mobile?${qs.toString()}`);
-        return;
-      }
-
       if (data.user && referralCode) {
         try {
           await supabase.rpc('create_referral_on_signup', {
