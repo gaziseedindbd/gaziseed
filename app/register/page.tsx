@@ -5,7 +5,6 @@ import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, Check, X, UserPlus, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
-import { toast } from '@/components/site/toast-provider';
 import { useLang } from '@/components/site/language-provider';
 
 function GoogleIcon() {
