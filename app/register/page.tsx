@@ -46,7 +46,17 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       const referralCode = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('ref') : null;
-      const { data, error } = await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { name: form.name, phone: form.phone } } });
+      const emailRedirectTo = typeof window !== 'undefined'
+        ? `${window.location.origin}/auth/confirmed?next=/account&verified=1`
+        : undefined;
+      const { data, error } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+        options: {
+          emailRedirectTo,
+          data: { name: form.name, phone: form.phone },
+        },
+      });
       if (error) throw error;
       if (data.user) await createReferral(data.user.id, referralCode);
       setRegisteredEmail(form.email);
