@@ -85,7 +85,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
   return (
     <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-[1.2rem] border border-slate-200/70 bg-white shadow-[0_12px_34px_-24px_rgba(15,23,42,.48)] ring-1 ring-black/[0.02] transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-emerald-300/70 hover:shadow-[0_28px_70px_-34px_rgba(5,150,105,.34)] hover:ring-emerald-500/10 sm:rounded-[1.7rem] active:scale-[.995]">
       <Link href={`/product/${product.slug}`} className="group block min-w-0">
-        <div className="relative mx-1.5 mt-1.5 aspect-[.96] overflow-hidden rounded-[1rem] bg-gradient-to-br from-[#f7fbf8] via-[#eef7f1] to-[#f6f2e8] ring-1 ring-emerald-900/[0.04] sm:mx-2.5 sm:mt-2.5 sm:rounded-[1.3rem]">
+        <div className="relative mx-1.5 mt-1.5 aspect-square overflow-hidden rounded-[1rem] bg-gradient-to-br from-[#f7fbf8] via-[#eef7f1] to-[#f6f2e8] ring-1 ring-emerald-900/[0.04] sm:mx-2.5 sm:mt-2.5 sm:rounded-[1.3rem]">
           <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-emerald-200/25 blur-2xl transition-transform duration-500 group-hover:scale-125" />
           <div className="pointer-events-none absolute -bottom-12 -left-10 h-28 w-28 rounded-full bg-lime-200/20 blur-2xl transition-transform duration-500 group-hover:scale-125" />
 
@@ -93,7 +93,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
             <img
               src={product.image}
               alt={translated.image_alt || product.image_alt || product.image_alt_bn || name}
-              className="relative z-[1] h-full w-full object-contain p-3 transition-transform duration-500 ease-out group-hover:scale-[1.045] sm:p-5"
+              className="relative z-[1] h-full w-full object-contain p-1.5 transition-transform duration-500 ease-out group-hover:scale-[1.045] sm:p-5"
               loading="lazy"
             />
           ) : (
@@ -102,9 +102,9 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
             </div>
           )}
 
-          <div className="absolute inset-x-2.5 top-2.5 z-[3] flex items-start justify-between sm:inset-x-3.5 sm:top-3.5">
+          <div className="absolute inset-x-2 top-2 z-[3] flex items-start justify-between sm:inset-x-3.5 sm:top-3.5">
             {badge ? (
-              <span className="rounded-full border border-white/70 bg-emerald-700/95 px-2.5 py-1.5 text-[8px] font-black text-white shadow-lg shadow-emerald-900/15 backdrop-blur sm:px-3.5 sm:text-[10px]">
+              <span className="max-w-[72%] truncate rounded-full border border-white/75 bg-emerald-700/95 px-2 py-1 text-[7px] font-black leading-none text-white shadow-md shadow-emerald-900/15 backdrop-blur sm:px-3.5 sm:py-1.5 sm:text-[10px]">
                 {badge}
               </span>
             ) : (
@@ -113,21 +113,21 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
 
             <span
               aria-hidden="true"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/75 bg-white/92 text-slate-700 shadow-lg shadow-slate-900/10 backdrop-blur-md transition-all duration-300 group-hover:scale-[1.03] sm:h-10 sm:w-10"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/75 bg-white/92 text-slate-700 shadow-lg shadow-slate-900/10 backdrop-blur-md transition-all duration-300 group-hover:scale-[1.03] sm:h-10 sm:w-10"
             >
               <Heart className="h-4 w-4 sm:h-[17px] sm:w-[17px]" />
             </span>
           </div>
 
           {discount > 0 && (
-            <span className="absolute bottom-2.5 left-2.5 z-[3] inline-flex items-center rounded-full border border-white/20 bg-red-500 px-2.5 py-1.5 text-[9px] font-black text-white shadow-lg shadow-red-900/10 sm:left-3.5 sm:px-3 sm:text-[10px]">
+            <span className="absolute bottom-2 left-2 z-[3] inline-flex items-center rounded-full border border-white/25 bg-red-500 px-2 py-1 text-[7px] font-black leading-none text-white shadow-md shadow-red-900/10 sm:bottom-2.5 sm:left-3.5 sm:px-3 sm:py-1.5 sm:text-[10px]">
               {discount}% {t('ছাড়', 'OFF', 'छूट')}
             </span>
           )}
 
           {product.packet_weight && (
-            <span className="absolute bottom-2.5 right-2.5 z-[3] inline-flex items-center gap-1.5 rounded-full border border-white/75 bg-white/92 px-2.5 py-1.5 text-[9px] font-extrabold text-slate-700 shadow-lg shadow-slate-900/10 backdrop-blur-md sm:right-3.5 sm:px-3 sm:text-[10px]">
-              <Package className="h-3 w-3 text-emerald-700" />
+            <span className="absolute bottom-2 right-2 z-[3] inline-flex items-center gap-1 rounded-full border border-white/75 bg-white/92 px-2 py-1 text-[7px] font-extrabold leading-none text-slate-700 shadow-md shadow-slate-900/10 backdrop-blur-md sm:bottom-2.5 sm:right-3.5 sm:px-3 sm:py-1.5 sm:text-[10px]">
+              <Package className="h-2.5 w-2.5 text-emerald-700 sm:h-3 sm:w-3" />
               {product.packet_weight}
             </span>
           )}
@@ -148,7 +148,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
           </span>
         </div>
 
-        <div className="flex flex-col gap-2.5 px-3 pb-3 pt-3 sm:gap-3.5 sm:px-4.5 sm:pb-4 sm:pt-4.5 lg:px-5 lg:pb-4.5 lg:pt-5">
+        <div className="flex flex-col gap-2 px-2.5 pb-3 pt-2.5 sm:gap-3.5 sm:px-4.5 sm:pb-4 sm:pt-4.5 lg:px-5 lg:pb-4.5 lg:pt-5">
           <div className="min-w-0">
             <div className="mb-1.5 flex min-w-0 flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-2">
               <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-1 text-[8px] font-extrabold text-amber-700 sm:text-[10px]">
@@ -156,7 +156,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
                 {t('মান যাচাই', 'Quality', 'गुणवत्ता')}
               </span>
               {product.seed_type && (
-                <span className="max-w-full text-[9px] font-semibold leading-tight text-slate-400 sm:text-[10px]">{product.seed_type}</span>
+                <span className="text-[8px] font-semibold leading-tight text-slate-400 sm:text-[10px]">{product.seed_type}</span>
               )}
             </div>
 
@@ -177,7 +177,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
         </div>
       </Link>
 
-      <div className="mt-auto px-3 pb-4.5 sm:px-4 sm:pb-4 lg:px-5 lg:pb-5">
+      <div className="mt-auto px-2.5 pb-4 sm:px-4 sm:pb-4 lg:px-5 lg:pb-5">
         <div className="mb-2.5 flex min-w-0 items-end justify-between gap-2 border-t border-slate-100 pt-2.5 sm:mb-3 sm:pt-3.5">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <span className="text-[1.05rem] font-black tracking-tight text-emerald-800 sm:text-[1.4rem]">
