@@ -22,14 +22,31 @@ export default function AdminLoginPage() {
     if (!form.email || !form.password) { setError('ইমেইল ও পাসওয়ার্ড দিন'); return; }
     setLoading(true);
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
         email: form.email,
         password: form.password,
       });
       if (signInError) throw signInError;
 
-      const { data: isAdmin } = await supabase.rpc('is_admin');
-      if (!isAdmin) {
+      const user = authData.user;
+      if (!user) {
+        await supabase.auth.signOut();
+        setError('লগইন সেশন তৈরি হয়নি। আবার চেষ্টা করুন।');
+        return;
+      }
+
+      // Validate access directly against the authenticated user's own admin_users row.
+      // This avoids treating an RPC error/null result as "not an admin".
+      const { data: adminRow, error: adminCheckError } = await supabase
+        .from('admin_users')
+        .select('user_id, role, is_active')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (adminCheckError) throw adminCheckError;
+
+      if (!adminRow) {
         await supabase.auth.signOut();
         setError('এই অ্যাকাউন্টে অ্যাডমিন অ্যাক্সেস নেই।');
         return;
