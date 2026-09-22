@@ -134,7 +134,7 @@ export default function FloatingCartDrawer() {
   return (
     <>
       {open && (
-        <div className="fixed bottom-[5.5rem] right-3 z-[91] w-[calc(100vw-1.5rem)] max-w-[350px] origin-bottom-right animate-[gaziCartIn_.2s_ease-out] sm:bottom-[5.75rem] sm:right-5">
+        <div className={`fixed right-3 z-[91] w-[calc(100vw-1.5rem)] max-w-[350px] origin-bottom-right bottom-[5.5rem] max-md:${isProductPage ? 'bottom-[10.5rem]' : 'bottom-[5.5rem]'} animate-[gaziCartIn_.2s_ease-out] sm:bottom-[5.75rem] sm:right-5">
           <div className="overflow-hidden rounded-[1.35rem] border border-emerald-200/80 bg-white/95 shadow-[0_24px_70px_-28px_rgba(5,46,22,.55)] backdrop-blur-xl">
             <div className="flex items-center justify-between border-b border-emerald-100 bg-gradient-to-r from-emerald-50 to-lime-50/60 px-4 py-3">
               <div className="flex min-w-0 items-center gap-2.5">
