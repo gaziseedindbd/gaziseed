@@ -95,31 +95,48 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const checkAdmin = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { router.push('/'); return; }
-    const { data } = await supabase.rpc('is_admin');
-    if (!data) { router.push('/'); return; }
+
+    // Validate directly against the authenticated user's own admin_users row.
+    const { data: adminRow, error: adminCheckError } = await supabase
+      .from('admin_users')
+      .select('user_id, role, is_active, country_code')
+      .eq('user_id', session.user.id)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (adminCheckError || !adminRow) {
+      if (adminCheckError) console.error('Admin access check failed:', adminCheckError);
+      router.push('/');
+      return;
+    }
+
     setAdminEmail(session.user.email || '');
-    const { data: masterData } = await supabase.rpc('is_master_admin');
-    const master = !!masterData;
+    const master = adminRow.role === 'master_admin';
     setIsMasterAdmin(master);
 
-    const { data: adminRow } = await supabase.from('admin_users').select('country_code').eq('user_id', session.user.id).maybeSingle();
-    const ownCountry = adminRow?.country_code === 'IN' ? 'IN' : 'BD';
+    const ownCountry = adminRow.country_code === 'IN' ? 'IN' : 'BD';
     setAdminCountry(ownCountry);
 
     if (master) {
-      const { data: branchRow } = await supabase
+      const { data: branchRow, error: branchError } = await supabase
         .from('admin_branch_context')
         .select('country_code')
         .eq('user_id', session.user.id)
         .maybeSingle();
+
+      if (branchError) console.error('Admin branch context check failed:', branchError);
+
       const branch = branchRow?.country_code === 'IN' ? 'IN' : 'BD';
       setSelectedBranch(branch);
+
       if (!branchRow) {
-        await supabase.rpc('set_admin_branch', { p_country: 'BD' });
+        const { error } = await supabase.rpc('set_admin_branch', { p_country: 'BD' });
+        if (error) console.error('Default admin branch setup failed:', error);
       }
     } else {
       setSelectedBranch(ownCountry);
     }
+
     setIsAdmin(true);
     setLoading(false);
   };
