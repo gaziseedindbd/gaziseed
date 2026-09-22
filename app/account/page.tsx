@@ -18,9 +18,11 @@ import { getWishlist, toggleWishlist, getEffectivePrice } from '@/lib/data';
 import { addToCart } from '@/lib/cart';
 import type { Product } from '@/lib/supabase/types';
 import ReferralSection from '@/components/site/referral-section';
+import { useLang } from '@/components/site/language-provider';
 
 export default function AccountPage() {
   const router = useRouter();
+  const { t } = useLang();
   const [user, setUser] = useState<any>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
@@ -716,10 +718,10 @@ export default function AccountPage() {
                 GAZI SEED
               </p>
               <h2 id="verified-welcome-title" className="relative mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-                অভিনন্দন! 🎉
+                {t('অভিনন্দন! 🎉', 'Congratulations! 🎉', 'बधाई हो! 🎉')}
               </h2>
               <p className="relative mt-3 text-sm leading-6 text-emerald-50 sm:text-base">
-                আপনার account সফলভাবে তৈরি হয়েছে এবং আপনার email address সফলভাবে verify হয়েছে।
+                {t('আপনার account সফলভাবে তৈরি হয়েছে এবং আপনার email address সফলভাবে verify হয়েছে।', 'Your account has been created successfully and your email address has been verified successfully.', 'आपका account सफलतापूर्वक बन गया है और आपका email address सफलतापूर्वक सत्यापित हो गया है।')}
               </p>
             </div>
 
@@ -727,15 +729,15 @@ export default function AccountPage() {
               <div className="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
                 <MailCheck className="mt-0.5 h-6 w-6 shrink-0 text-emerald-600" />
                 <div>
-                  <p className="font-black text-slate-800">Email verified successfully</p>
+                  <p className="font-black text-slate-800">{t('ইমেইল সফলভাবে verify হয়েছে', 'Email verified successfully', 'ईमेल सफलतापूर्वक सत्यापित हुआ')}</p>
                   <p className="mt-1 break-all text-sm leading-6 text-slate-600">{user?.email}</p>
                 </div>
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="font-black text-slate-800">আপনার Dashboard প্রস্তুত ✅</p>
+                <p className="font-black text-slate-800">{t('আপনার Dashboard প্রস্তুত ✅', 'Your dashboard is ready ✅', 'आपका dashboard तैयार है ✅')}</p>
                 <p className="mt-1 text-sm leading-6 text-slate-600">
-                  এখন থেকে এখান থেকেই আপনার order, address, wishlist, profile এবং অন্যান্য account information পরিচালনা করতে পারবেন।
+                  {t('এখন থেকে এখান থেকেই আপনার order, address, wishlist, profile এবং অন্যান্য account information পরিচালনা করতে পারবেন।', 'From here you can manage your orders, addresses, wishlist, profile, and other account information.', 'यहाँ से आप अपने orders, addresses, wishlist, profile और अन्य account information manage कर सकते हैं।')}
                 </p>
               </div>
 
@@ -744,7 +746,7 @@ export default function AccountPage() {
                 onClick={() => setShowVerifiedWelcome(false)}
                 className="flex h-12 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 px-5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition-transform hover:-translate-y-0.5"
               >
-                Dashboard শুরু করুন →
+                {t('Dashboard শুরু করুন →', 'Continue to Dashboard →', 'Dashboard शुरू करें →')}
               </button>
             </div>
           </div>
