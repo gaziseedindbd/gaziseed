@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Sprout } from 'lucide-react';
-import { getVisitorCountry, supabase } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase/client';
 import { useLang } from '@/components/site/language-provider';
 
 export default function AuthCallbackPage() {
@@ -19,7 +19,6 @@ export default function AuthCallbackPage() {
       const code = params.get('code');
       const errorDescription = params.get('error_description') || params.get('error');
       const nextParam = params.get('next') || '/account';
-      const mode = params.get('mode') || 'login';
       const next = nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/account';
       const referralCode = params.get('ref');
 
