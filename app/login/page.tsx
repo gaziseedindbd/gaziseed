@@ -53,7 +53,7 @@ export default function LoginPage() {
     setError('');
     setGoogleLoading(true);
     try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=/account`;
+      const redirectTo = `${window.location.origin}/auth/callback?next=/account&mode=login`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo, queryParams: { access_type: 'offline', prompt: 'select_account' } },
