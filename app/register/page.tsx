@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, Check, X, UserPlus } from 'lucide-react';
@@ -37,13 +37,15 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError('');
+    const country = getVisitorCountry();
     if (!form.name || !form.email || !form.password) { setError(t('সব প্রয়োজনীয় তথ্য পূরণ করুন', 'Please fill in all required fields')); return; }
+    if (country === 'IN' && !form.phone.trim()) { setError(t('India-এর জন্য মোবাইল নম্বর আবশ্যক', 'Mobile number is required for India')); return; }
     if (form.password !== form.confirmPassword) { setError(t('পাসওয়ার্ড মেলে না', 'Passwords do not match')); return; }
     if (!allRulesPassed) { setError(t('পাসওয়ার্ড নিয়ম মেনে চলুন', 'Please follow the password requirements')); return; }
     setLoading(true);
     try {
       const referralCode = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('ref') : null;
-      const { data, error } = await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { name: form.name, phone: form.phone } } });
+      const { data, error } = await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { name: form.name, phone: form.phone, mobile_verification_required: country === 'IN', phone_verified: false } } });
       if (error) throw error;
       if (data.user) await createReferral(data.user.id, referralCode);
       toast(t('অ্যাকাউন্ট তৈরি সফল হয়েছে', 'Account created successfully')); router.push('/account');
@@ -55,7 +57,7 @@ export default function RegisterPage() {
     setError(''); setGoogleLoading(true);
     try {
       const referralCode = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('ref') : null;
-      const callbackParams = new URLSearchParams({ next: '/account' });
+      const callbackParams = new URLSearchParams({ next: '/account', mode: 'signup' });
       if (referralCode) callbackParams.set('ref', referralCode);
       const redirectTo = `${window.location.origin}/auth/callback?${callbackParams.toString()}`;
       const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo, queryParams: { access_type: 'offline', prompt: 'select_account' } } });
@@ -77,7 +79,7 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="mt-7 space-y-4">
             <div><label className="neo-label">{t('নাম', 'Name')} *</label><input type="text" autoComplete="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="neo-input" required /></div>
             <div><label className="neo-label">{t('ইমেইল', 'Email')} *</label><input type="email" inputMode="email" autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="neo-input" required /></div>
-            <div><label className="neo-label">{t('মোবাইল নম্বর', 'Mobile number')} <span className="font-normal text-slate-400">({t('ঐচ্ছিক', 'optional')})</span></label><input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="neo-input" placeholder="01XXXXXXXXX" /></div>
+            <div><label className="neo-label">{t('মোবাইল নম্বর', 'Mobile number')} <span className="font-normal text-slate-400">({t('আবশ্যক', 'required')})</span></label><input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="neo-input" placeholder="01XXXXXXXXX" /></div>
             <div><label className="neo-label">{t('পাসওয়ার্ড', 'Password')} *</label><input type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="neo-input" required maxLength={20} />{form.password.length > 0 && <div className="neo-rules mt-3">{passwordChecksWithState.map((rule, idx) => <div key={idx} className="flex items-start gap-2 text-xs leading-5">{rule.passed ? <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-600" /> : <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />}<span className={rule.passed ? 'text-cyan-700' : 'text-slate-500'}>{rule.label}</span></div>)}</div>}</div>
             <div><label className="neo-label">{t('পাসওয়ার্ড নিশ্চিত করুন', 'Confirm password')} *</label><input type="password" autoComplete="new-password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className="neo-input" required /></div>
             {error && <p role="alert" className="neo-error">{error}</p>}
