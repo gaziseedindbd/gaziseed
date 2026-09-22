@@ -88,7 +88,8 @@ export default async function ProductSeoLayout({
   params: Promise<{ slug: string }>;
   children: React.ReactNode;
 }) {
-  const { slug } = await params;
+  const resolvedParams = await params;
+  const slug = resolvedParams.slug;
   const product = await getProduct(slug);
 
   if (!product) return children;
