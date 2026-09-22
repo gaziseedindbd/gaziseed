@@ -45,13 +45,9 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       const referralCode = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('ref') : null;
-      const { data, error } = await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { name: form.name, phone: form.phone, mobile_verification_required: country === 'IN', phone_verified: false } } });
+      const { data, error } = await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { name: form.name, phone: form.phone } } });
       if (error) throw error;
       if (data.user) await createReferral(data.user.id, referralCode);
-      if (data.user && country === 'IN') {
-        router.replace('/verify-mobile?next=/account');
-        return;
-      }
       toast(t('অ্যাকাউন্ট তৈরি সফল হয়েছে', 'Account created successfully')); router.push('/account');
     } catch (err: any) { setError(err.message || t('রেজিস্ট্রেশন ব্যর্থ হয়েছে', 'Registration failed')); }
     finally { setLoading(false); }
