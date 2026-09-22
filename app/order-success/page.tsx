@@ -60,6 +60,16 @@ function OrderSuccessInner() {
             </div>
             <p className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-primary">{isCod ? t('COD অর্ডার নিশ্চিত হয়েছে', 'COD order confirmed') : t('অর্ডার নিশ্চিত হয়েছে', 'Order confirmed')}</p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">{t('অর্ডার সফল হয়েছে!', 'Order placed successfully!')}</h1>
+            {orderNumber && (
+              <div className="mx-auto mt-6 max-w-md rounded-2xl border-2 border-primary/20 bg-primary/[0.06] p-5 text-left shadow-sm sm:p-6">
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary/80">{t('আপনার অর্ডার নম্বর', 'YOUR ORDER NUMBER')}</p>
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <p className="break-all text-2xl font-black tracking-wide text-primary sm:text-3xl">{orderNumber}</p>
+                  <PackageCheck className="h-8 w-8 shrink-0 text-primary/80" />
+                </div>
+              </div>
+            )}
+
             <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
               {isCod
                 ? t('আপনার COD অর্ডারটি নিশ্চিত হয়েছে। অগ্রিম পেমেন্ট সফল হয়েছে এবং বাকি টাকা ডেলিভারির সময় সংগ্রহ করা হবে।', 'Your COD order is confirmed. The advance payment was successful and the remaining amount will be collected on delivery.')
