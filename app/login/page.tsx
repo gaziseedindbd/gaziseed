@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, KeyRound, X, LockKeyhole } from 'lucide-react';
@@ -36,8 +36,12 @@ export default function LoginPage() {
     if (!form.email || !form.password) { setError(t('ইমেইল ও পাসওয়ার্ড দিন', 'Enter your email and password')); return; }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
       if (error) throw error;
+      if (getVisitorCountry() === 'IN' && data.user && data.user.user_metadata?.mobile_verification_required && data.user.user_metadata?.phone_verified !== true) {
+        router.push('/verify-mobile?next=/account');
+        return;
+      }
       toast(t('লগইন সফল হয়েছে', 'Login successful'));
       router.push('/account');
     } catch (err: any) {
