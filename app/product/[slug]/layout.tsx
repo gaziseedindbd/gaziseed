@@ -87,12 +87,12 @@ export default async function ProductSeoLayout({
 }: {
   params: Promise<{ slug: string }>;
   children: React.ReactNode;
-}) {
+}): Promise<JSX.Element> {
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
   const product = await getProduct(slug);
 
-  if (!product) return children;
+  if (!product) return <>{children}</>;
 
   const name = product.name_bn || product.name_en || product.name || 'GAZI SEED Product';
   const description = (product.meta_description || product.short_description || product.description || `${name} - GAZI SEED`).slice(0, 160);
