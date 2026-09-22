@@ -122,10 +122,10 @@ export default function RegisterPage() {
 
             <div className="mt-5 text-center">
               <p className="text-[11px] font-black uppercase tracking-[0.24em] text-emerald-600">
-                {t('ইমেইল ভেরিফিকেশন', 'EMAIL VERIFICATION')}
+                {t('ইমেইল ভেরিফিকেশন', 'EMAIL VERIFICATION', 'ईमेल सत्यापन')}
               </p>
               <h2 id="verification-title" className="mt-2 text-2xl font-black tracking-tight text-slate-800 sm:text-3xl">
-                {t('আপনার email verify করুন', 'Verify your email')}
+                {t('আপনার email verify করুন', 'Verify your email', 'अपना ईमेल सत्यापित करें')}
               </h2>
               <p className="mt-3 text-sm leading-6 text-slate-600">
                 {t(
@@ -137,7 +137,7 @@ export default function RegisterPage() {
 
             <div className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4">
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">
-                {t('Verification email পাঠানো হয়েছে', 'VERIFICATION EMAIL SENT')}
+                {t('Verification email পাঠানো হয়েছে', 'VERIFICATION EMAIL SENT', 'VERIFICATION EMAIL भेजा गया है')}
               </p>
               <p className="mt-2 break-all text-sm font-bold text-slate-800">{registeredEmail}</p>
             </div>
@@ -147,7 +147,7 @@ export default function RegisterPage() {
                 <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
                 <div className="text-sm leading-6 text-slate-600">
                   <p className="font-bold text-slate-800">
-                    {t('Inbox-এ email না পেলে', 'Can\'t find the email?')}
+                    {t('Inbox-এ email না পেলে', 'Can\'t find the email?', 'Email नहीं मिला?')}
                   </p>
                   <p className="mt-1">
                     {t(
@@ -164,7 +164,7 @@ export default function RegisterPage() {
               onClick={() => { setShowVerificationModal(false); router.push('/login'); }}
               className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-sm font-black text-white shadow-lg shadow-emerald-500/20 transition-transform hover:-translate-y-0.5"
             >
-              {t('Login page-এ যান', 'Go to Login')}
+              {t('Login page-এ যান', 'Go to Login', 'Login page पर जाएँ')}
               <ArrowRight className="h-4 w-4" />
             </button>
 
@@ -173,7 +173,7 @@ export default function RegisterPage() {
               onClick={() => setShowVerificationModal(false)}
               className="mt-3 w-full rounded-2xl px-4 py-3 text-sm font-bold text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
             >
-              {t('এখন নয়', 'Not now')}
+              {t('এখন নয়', 'Not now', 'अभी नहीं')}
             </button>
           </div>
         </div>
