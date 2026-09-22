@@ -164,3 +164,9 @@ html:not(.dark) main:has(#checkout-form) .text-primary { text-shadow: 0 1px 0 rg
   html:not(.dark) main:has(#checkout-form) .fixed.inset-x-3.bottom-3 button { min-height: 3rem !important; padding-inline: 1rem !important; }
   html:not(.dark) main:has(#checkout-form) .fixed.inset-x-3.bottom-3 .text-lg { font-size: 1.05rem !important; }
 }
+
+
+/* MOBILE NAV SAFE AREA — keep fixed cart/navigation controls from covering product content. */
+@media (max-width: 767px) {
+  body { padding-bottom: 5.5rem !important; }
+}
