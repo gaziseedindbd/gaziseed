@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingCart, Zap, Heart, Star, ArrowUpRight, Leaf, Package } from 'lucide-react';
 import { formatPrice, getEffectivePrice, getDiscountPercent } from '@/lib/utils';
@@ -90,11 +91,13 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
           <div className="pointer-events-none absolute -bottom-12 -left-10 h-28 w-28 rounded-full bg-lime-200/20 blur-2xl transition-transform duration-500 group-hover:scale-125" />
 
           {product.image ? (
-            <img
+            <Image
               src={product.image}
               alt={translated.image_alt || product.image_alt || product.image_alt_bn || name}
-              className="relative z-[1] h-full w-full object-contain p-1.5 transition-transform duration-500 ease-out group-hover:scale-[1.045] sm:p-5"
-              loading="lazy"
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
+              quality={78}
+              className="relative z-[1] object-contain p-1.5 transition-transform duration-500 ease-out group-hover:scale-[1.045] sm:p-5"
             />
           ) : (
             <div className="relative z-[1] flex h-full w-full items-center justify-center">
