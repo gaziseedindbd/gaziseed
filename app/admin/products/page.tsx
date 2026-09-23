@@ -7,6 +7,7 @@ import { Plus, Edit, Trash2, X, Search, Upload, Link as LinkIcon, Star, HelpCirc
 import { toast } from '@/components/site/toast-provider';
 import { MediaUploader } from '@/components/admin/media-uploader';
 import { MultilingualFields } from '@/components/admin/multilingual-fields';
+import { generateProductSeo } from '@/lib/seo/auto-seo';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -308,8 +309,20 @@ function ProductForm({ product, categories, allProducts, onSave, onClose, onSave
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const slug = form.slug || form.name_en.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || form.name_bn;
-    const payload = { ...form, translations: form.translations || {}, slug, regular_price: Number(form.regular_price), sale_price: form.sale_price ? Number(form.sale_price) : null, stock: Number(form.stock), low_stock_threshold: Number(form.low_stock_threshold), images: form.images, related_product_ids: form.related_product_ids, min_order_qty: form.min_order_qty ? Number(form.min_order_qty) : null, max_order_qty: form.max_order_qty ? Number(form.max_order_qty) : null, cost_price: form.cost_price ? Number(form.cost_price) : null, suitable_months: form.suitable_months, growing_type: form.growing_type || null, season_tags: form.season_tags, show_low_stock: form.show_low_stock };
+    const autoSeo = generateProductSeo({
+      name_bn: form.name_bn,
+      name_en: form.name_en,
+      slug: form.slug,
+      short_description: form.short_description,
+      description: form.description,
+      brand: form.brand,
+      image: form.image,
+      image_alt: form.image_alt,
+      image_alt_bn: form.image_alt_bn,
+      seo_title: form.seo_title,
+      meta_description: form.meta_description,
+    });
+    const payload = { ...form, ...autoSeo, translations: form.translations || {}, regular_price: Number(form.regular_price), sale_price: form.sale_price ? Number(form.sale_price) : null, stock: Number(form.stock), low_stock_threshold: Number(form.low_stock_threshold), images: form.images, related_product_ids: form.related_product_ids, min_order_qty: form.min_order_qty ? Number(form.min_order_qty) : null, max_order_qty: form.max_order_qty ? Number(form.max_order_qty) : null, cost_price: form.cost_price ? Number(form.cost_price) : null, suitable_months: form.suitable_months, growing_type: form.growing_type || null, season_tags: form.season_tags, show_low_stock: form.show_low_stock };
     onSave({ payload, faqs, variants, bulkTiers, removedFaqs, removedVariants, removedBulkTiers });
   };
 
