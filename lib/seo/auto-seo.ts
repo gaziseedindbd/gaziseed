@@ -74,3 +74,66 @@ export function generateProductAeoSummary(input: AutoSeoProductInput): string {
     .filter(Boolean)
     .join(' ');
 }
+
+
+export type AutoSeoCategoryInput = {
+  name_bn?: string | null;
+  name_en?: string | null;
+  slug?: string | null;
+  description?: string | null;
+  seo_title?: string | null;
+  meta_description?: string | null;
+};
+
+export function generateCategorySeo(input: AutoSeoCategoryInput) {
+  const name = cleanText(input.name_bn) || cleanText(input.name_en) || 'GAZI SEED Category';
+  const englishName = cleanText(input.name_en) || name;
+  const description = cleanText(input.description);
+  const slug = cleanText(input.slug) || slugify(englishName) || slugify(name);
+
+  const seoTitle = trimAt(
+    cleanText(input.seo_title) || `${name} | GAZI SEED`,
+    60,
+  );
+
+  const metaDescription = trimAt(
+    cleanText(input.meta_description) ||
+      `${name} — GAZI SEED-এর মানসম্মত বীজ ও কৃষি পণ্যের ক্যাটাগরি। ${description}`,
+    160,
+  );
+
+  return { slug, seo_title: seoTitle, meta_description: metaDescription };
+}
+
+export type AutoSeoBlogInput = {
+  title?: string | null;
+  slug?: string | null;
+  content?: string | null;
+  category?: string | null;
+  featured_image?: string | null;
+  seo_title?: string | null;
+  meta_description?: string | null;
+  translations?: Record<string, any> | null;
+};
+
+export function generateBlogSeo(input: AutoSeoBlogInput) {
+  const translations = input.translations || {};
+  const en = translations.en || translations.EN || {};
+  const title = cleanText(input.title) || cleanText(en.title) || 'GAZI SEED Garden Guide';
+  const englishTitle = cleanText(en.title) || title;
+  const content = cleanText(input.content) || cleanText(en.content);
+  const category = cleanText(input.category) || cleanText(en.category);
+  const slug = cleanText(input.slug) || slugify(englishTitle);
+
+  const seoTitle = trimAt(
+    cleanText(input.seo_title) || `${title} | GAZI SEED`,
+    60,
+  );
+  const metaDescription = trimAt(
+    cleanText(input.meta_description) ||
+      `${title} — ${content || 'বীজ, গাছ ও বাগান সম্পর্কিত তথ্য ও গাইড'}${category ? ` | ${category}` : ''}। GAZI SEED`,
+    160,
+  );
+
+  return { slug, seo_title: seoTitle, meta_description: metaDescription };
+}
