@@ -66,7 +66,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <link rel="stylesheet" href="/home-hero-responsive-standard-v1.css" />
         <link rel="stylesheet" href="/home-hero-layer-fix.css?v=2" />
-        <link rel="stylesheet" href="/home-product-grid-4.css?v=1" />
+        <link rel="stylesheet" href="/home-product-grid-4.css?v=1" media="print" onLoad="this.media=\'all\'" />
+        <noscript><link rel="stylesheet" href="/home-product-grid-4.css?v=1" /></noscript>
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p=window.location.pathname;var css=[];if(p==='/checkout')css.push('/checkout-premium-v1.css?v=2');if(p.indexOf('/combo/')===0)css.push('/combo-quick-checkout-v2.css?v=1');for(var i=0;i<css.length;i++){var l=document.createElement('link');l.rel='stylesheet';l.href=css[i];document.head.appendChild(l)}}catch(e){}})()` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){window.__GAZI_COUNTRY__='${visitorCountry}';})();` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{const theme=localStorage.getItem('admin_theme');if(theme==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')} }catch(e){}})()` }} />
