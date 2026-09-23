@@ -95,7 +95,7 @@ export async function getProductDetails(args: ProductRefArgs): Promise<WhatsAppT
   if (error) return { ok: false, error: `Product lookup failed: ${error.message}` };
   if (!data) return { ok: false, error: 'Product not found.' };
 
-  return { ok: true, data: mapProduct(data as Record<string, unknown>) };
+  return { ok: true, data: mapProduct(data as unknown as Record<string, unknown>) };
 }
 
 export async function getProductPrice(args: ProductRefArgs): Promise<WhatsAppToolResult<{
