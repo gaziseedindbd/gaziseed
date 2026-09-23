@@ -1,6 +1,10 @@
 import type { AISettings, AIFeatureFlags, AIProvider } from '@/lib/ai/types';
 import { createWhatsAppSupabase } from '@/lib/whatsapp/server';
 
+export function isWhatsAppAIEnvironmentEnabled(): boolean {
+  return process.env.WHATSAPP_AI_ENABLED === 'true';
+}
+
 const DEFAULT_FLAGS: AIFeatureFlags = {
   business_analysis: false,
   sales_analysis: false,
