@@ -12,11 +12,8 @@ const PRODUCT_FIELDS = [
   'name_en',
   'slug',
   'sku',
-  'short_description',
   'regular_price',
   'sale_price',
-  'offer_price',
-  'price',
   'stock',
   'min_order_qty',
   'max_order_qty',
@@ -41,11 +38,8 @@ function mapProduct(row: Record<string, unknown>): WhatsAppToolProduct {
     name_en: row.name_en as string | null,
     slug: row.slug as string | null,
     sku: row.sku as string | null,
-    short_description: row.short_description as string | null,
     regular_price: row.regular_price as number | null,
     sale_price: row.sale_price as number | null,
-    offer_price: row.offer_price as number | null,
-    price: row.price as number | null,
     stock: row.stock as number | null,
     min_order_qty: row.min_order_qty as number | null,
     max_order_qty: row.max_order_qty as number | null,
@@ -73,7 +67,7 @@ export async function searchProduct(args: ProductSearchArgs): Promise<WhatsAppTo
     .eq('is_active', true)
     .eq('is_ads_only', false)
     .eq('country_code', country)
-    .or(`name_bn.ilike.%${query}%,name_en.ilike.%${query}%,name.ilike.%${query}%,title.ilike.%${query}%,sku.ilike.%${query}%`)
+     .or(`name_bn.ilike.%${query}%,name_en.ilike.%${query}%,sku.ilike.%${query}%,slug.ilike.%${query}%`)
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -106,14 +100,13 @@ export async function getProductPrice(args: ProductRefArgs): Promise<WhatsAppToo
   price: number | null;
   regular_price: number | null;
   sale_price: number | null;
-  offer_price: number | null;
   currency: 'BDT' | 'INR';
 }>> {
   const result = await getProductDetails(args);
   if (!result.ok || !result.data) return { ok: false, error: result.error || 'Product not found.' };
 
   const p = result.data;
-  const price = p.sale_price ?? p.offer_price ?? p.price ?? p.regular_price ?? null;
+  const price = p.sale_price ?? p.regular_price ?? null;
 
   return {
     ok: true,
@@ -122,7 +115,6 @@ export async function getProductPrice(args: ProductRefArgs): Promise<WhatsAppToo
       price,
       regular_price: p.regular_price,
       sale_price: p.sale_price,
-      offer_price: p.offer_price,
       currency: args.country === 'BD' ? 'BDT' : 'INR',
     },
   };
