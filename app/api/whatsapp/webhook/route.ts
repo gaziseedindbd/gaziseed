@@ -67,7 +67,16 @@ export async function POST(req: NextRequest) {
     };
 
     const conversation = await getOrCreateWhatsAppConversation(message);
-    await recordWhatsAppUserMessage(conversation.id, message);
+    const accepted = await recordWhatsAppUserMessage(conversation.id, message);
+    if (!accepted) {
+      return NextResponse.json({
+        success: true,
+        conversation_id: conversation.id,
+        country_code: country,
+        accepted: true,
+        duplicate: true,
+      });
+    }
 
     const aiSettings = await getWhatsAppAISettings();
     const agent = await runWhatsAppAgent({
