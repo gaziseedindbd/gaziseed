@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Images, ZoomIn } from 'lucide-react';
 
 interface ProductGalleryProps {
@@ -95,11 +96,15 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
       >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(16,185,129,.12),transparent_30%),radial-gradient(circle_at_90%_85%,rgba(245,158,11,.10),transparent_32%)]" />
         {images[activeIdx] && (
-          <img
+          <Image
             key={activeIdx}
             src={images[activeIdx]}
             alt={alt}
-            className="relative h-full w-full object-contain p-3 sm:p-5 animate-[fadeIn_0.4s_ease-out] transition-transform duration-700 ease-out group-hover:scale-[1.015]"
+            fill
+            priority={activeIdx === 0}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 600px"
+            quality={82}
+            className="relative object-contain p-3 sm:p-5 animate-[fadeIn_0.4s_ease-out] transition-transform duration-700 ease-out group-hover:scale-[1.015]"
             draggable={false}
           />
         )}
@@ -160,7 +165,7 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
               className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 bg-white shadow-sm transition-all sm:h-[4.5rem] sm:w-[4.5rem] sm:rounded-2xl ${idx === activeIdx ? 'border-primary ring-4 ring-primary/10 -translate-y-0.5' : 'border-slate-200 hover:border-primary/40 hover:-translate-y-0.5'}`}
               aria-label={`Select image ${idx + 1}`}
             >
-              <img src={img} alt="" className="h-full w-full object-cover" draggable={false} />
+              <Image src={img} alt="" fill sizes="72px" quality={70} className="object-cover" draggable={false} />
               {idx === activeIdx && <span className="absolute inset-x-1 bottom-1 h-0.5 rounded-full bg-primary" />}
             </button>
           ))}
