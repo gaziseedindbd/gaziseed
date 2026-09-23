@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 import { Plus, Edit, Trash2, X, Upload, Link as LinkIcon, Star } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 import { processLocalImage, processUrlImage, uploadProcessedFile } from '@/lib/image-processing';
+import { generateCategorySeo } from '@/lib/seo/auto-seo';
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<any[]>([]);
@@ -95,8 +96,8 @@ function CategoryForm({ category, onSave, onClose }: { category: any; onSave: (d
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const slug = form.slug || form.name_en.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || form.name_bn;
-    onSave({ ...form, slug, display_order: Number(form.display_order) });
+    const autoSeo = generateCategorySeo(form);
+    onSave({ ...form, ...autoSeo, display_order: Number(form.display_order) });
   };
 
   return (
