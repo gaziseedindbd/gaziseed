@@ -170,3 +170,32 @@ html:not(.dark) main:has(#checkout-form) .text-primary { text-shadow: 0 1px 0 rg
 @media (max-width: 767px) {
   body { padding-bottom: 5.5rem !important; }
 }
+
+
+/* Homepage product grid: keep the existing 4-column desktop presentation without a separate blocking stylesheet. */
+.home-premium-scope.home-premium-scope .product-grid,
+.home-premium-scope.home-premium-scope .home-product-grid,
+.home-premium-scope.home-premium-scope .products-grid,
+.home-premium-scope.home-premium-scope [class*="product-grid"]{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:12px !important;
+}
+@media (min-width:640px){
+  .home-premium-scope.home-premium-scope .product-grid,
+  .home-premium-scope.home-premium-scope .home-product-grid,
+  .home-premium-scope.home-premium-scope .products-grid,
+  .home-premium-scope.home-premium-scope [class*="product-grid"]{
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    gap:16px !important;
+  }
+}
+@media (min-width:1024px){
+  .home-premium-scope.home-premium-scope .product-grid,
+  .home-premium-scope.home-premium-scope .home-product-grid,
+  .home-premium-scope.home-premium-scope .products-grid,
+  .home-premium-scope.home-premium-scope [class*="product-grid"]{
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    gap:20px !important;
+  }
+}
