@@ -13,8 +13,8 @@ function resolveCountry(message: NormalizedWhatsAppMessage): 'BD' | 'IN' {
 export async function getOrCreateWhatsAppConversation(
   message: NormalizedWhatsAppMessage,
 ): Promise<WhatsAppConversationContext> {
-  const supabase = createWhatsAppSupabase();
   const country = resolveCountry(message);
+  const supabase = createWhatsAppSupabase(country);
 
   const { data: existing, error: lookupError } = await supabase
     .from('ai_conversations')
@@ -73,8 +73,8 @@ export async function recordWhatsAppUserMessage(
   conversationId: string,
   message: NormalizedWhatsAppMessage,
 ): Promise<void> {
-  const supabase = createWhatsAppSupabase();
   const country = resolveCountry(message);
+  const supabase = createWhatsAppSupabase(country);
 
   if (message.externalMessageId) {
     const { data: duplicate, error: duplicateError } = await supabase
@@ -110,4 +110,88 @@ export async function recordWhatsAppUserMessage(
     .eq('id', conversationId);
 
   if (updateError) throw new Error(`WhatsApp conversation update failed: ${updateError.message}`);
+}
+
+function compactJson(value: unknown, max = 6000): string {
+  const json = JSON.stringify(value);
+  return json.length > max ? json.slice(0, max) + '…' : json;
+}
+
+export async function recordWhatsAppAssistantMessage(
+  conversationId: string,
+  country: 'BD' | 'IN',
+  content: string,
+  provider: string,
+  model: string,
+  toolCalls: Array<{ name: string; args: Record<string, unknown>; result: unknown }>,
+): Promise<void> {
+  const supabase = createWhatsAppSupabase(country);
+
+  for (const toolCall of toolCalls) {
+    const { error: toolError } = await supabase.from('ai_messages').insert({
+      conversation_id: conversationId,
+      role: 'tool',
+      content: compactJson(toolCall.result),
+      provider,
+      model,
+      tool_name: toolCall.name,
+      tool_args: toolCall.args,
+      tool_result: toolCall.result,
+      action_status: 'completed',
+      country_code: country,
+      source_context: { channel: 'whatsapp' },
+    });
+
+    if (toolError) throw new Error(`WhatsApp tool message persistence failed: ${toolError.message}`);
+  }
+
+  const { error: assistantError } = await supabase.from('ai_messages').insert({
+    conversation_id: conversationId,
+    role: 'assistant',
+    content,
+    provider,
+    model,
+    action_status: 'completed',
+    requires_confirmation: false,
+    source_context: {
+      channel: 'whatsapp',
+      tool_count: toolCalls.length,
+      tool_names: toolCalls.map((tool) => tool.name),
+    },
+    country_code: country,
+  });
+
+  if (assistantError) throw new Error(`WhatsApp assistant message persistence failed: ${assistantError.message}`);
+
+  const needsHuman = toolCalls.some((tool) => tool.name === 'request_human_support');
+  if (needsHuman) {
+    const { error: conversationError } = await supabase
+      .from('ai_conversations')
+      .update({ status: 'handoff', last_message_at: new Date().toISOString() })
+      .eq('id', conversationId);
+
+    if (conversationError) throw new Error(`WhatsApp handoff status update failed: ${conversationError.message}`);
+
+    const supportTool = toolCalls.find((tool) => tool.name === 'request_human_support');
+    const ticketId = supportTool && typeof supportTool.result === 'object' && supportTool.result !== null
+      ? (supportTool.result as { data?: { ticket_id?: string } }).data?.ticket_id
+      : undefined;
+
+    const { error: handoffError } = await supabase.from('ai_handoffs').insert({
+      conversation_id: conversationId,
+      reason: ticketId ? `WhatsApp human-support ticket ${ticketId}` : 'WhatsApp AI requested human support',
+      status: 'open',
+      notes: 'Created by WhatsApp AI support flow.',
+      country_code: country,
+    });
+
+    if (handoffError) throw new Error(`WhatsApp handoff creation failed: ${handoffError.message}`);
+  } else {
+    const { error: updateError } = await supabase
+      .from('ai_conversations')
+      .update({ last_message_at: new Date().toISOString() })
+      .eq('id', conversationId);
+
+    if (updateError) throw new Error(`WhatsApp assistant conversation update failed: ${updateError.message}`);
+  }
 }
