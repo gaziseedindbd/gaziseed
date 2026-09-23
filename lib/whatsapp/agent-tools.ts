@@ -6,6 +6,7 @@ import {
   searchProduct,
   trackOrder,
 } from './tools';
+import { createWhatsAppOrder } from './order-tools';
 
 export const WHATSAPP_TOOL_NAMES = [
   'search_product',
@@ -14,6 +15,7 @@ export const WHATSAPP_TOOL_NAMES = [
   'check_stock',
   'get_delivery_charge',
   'track_order',
+  'create_order',
 ] as const;
 
 export type WhatsAppToolName = (typeof WHATSAPP_TOOL_NAMES)[number];
@@ -39,7 +41,9 @@ export async function runWhatsAppTool(
         Boolean(args.free_delivery),
       );
     case 'track_order':
-      return trackOrder(String(args.order_number || ''), String(args.customer_phone || ''));
+      return trackOrder(String(args.order_number || ''), String(args.customer_phone || ''), country);
+    case 'create_order':
+      return createWhatsAppOrder(args, country);
     default:
       throw new Error(`Unsupported WhatsApp tool: ${name}`);
   }
