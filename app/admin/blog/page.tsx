@@ -6,6 +6,7 @@ import { Plus, Edit, Trash2, X, Wand2 } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 import { processUrlImage, uploadProcessedFile } from '@/lib/image-processing';
 import { MultilingualFields } from '@/components/admin/multilingual-fields';
+import { generateBlogSeo } from '@/lib/seo/auto-seo';
 
 export default function AdminBlogPage() {
   const [posts, setPosts] = useState<any[]>([]);
@@ -100,7 +101,7 @@ function BlogForm({ post, onSave, onClose }: any) {
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-background p-6">
         <div className="mb-4 flex items-center justify-between"><h2 className="text-xl font-bold">{post ? 'আর্টিকেল এডিট' : 'নতুন আর্টিকেল'}</h2><button onClick={onClose}><X className="h-6 w-6" /></button></div>
-        <form onSubmit={(e) => { e.preventDefault(); const slug = form.slug || form.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); onSave({ ...form, slug }); }} className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); const autoSeo = generateBlogSeo(form); onSave({ ...form, ...autoSeo }); }} className="space-y-4">
           <MultilingualFields value={form.translations || {}} onChange={(translations) => setForm({ ...form, translations })} title="🌐 Article Language Versions" fields={[{ key: 'title', label: 'Title' }, { key: 'content', label: 'Content', multiline: true }, { key: 'category', label: 'Category' }, { key: 'seo_title', label: 'SEO Title' }, { key: 'meta_description', label: 'Meta Description', multiline: true }]} />
           <div><label className="mb-1 block text-sm font-medium">শিরোনাম</label><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="input-bangla" required /></div>
           <div><label className="mb-1 block text-sm font-medium">Slug</label><input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className="input-bangla" placeholder="auto-generated" /></div>
@@ -114,7 +115,7 @@ function BlogForm({ post, onSave, onClose }: any) {
                 <Wand2 className="h-3.5 w-3.5" /> Watermark
               </div>
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">External image URL সেভ করলে existing Image Branding & Watermark settings অনুযায়ী image process হয়ে SEED BARI storage-এ সংরক্ষিত হবে।</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">External image URL সেভ করলে existing Image Branding & Watermark settings অনুযায়ী image process হয়ে GAZI SEED storage-এ সংরক্ষিত হবে।</p>
           </div>
           <div><label className="mb-1 block text-sm font-medium">কন্টেন্ট</label><textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} className="input-bangla min-h-[200px]" /></div>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_published} onChange={(e) => setForm({ ...form, is_published: e.target.checked })} className="accent-primary" /> প্রকাশিত</label>
