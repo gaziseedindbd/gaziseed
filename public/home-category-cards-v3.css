@@ -248,6 +248,12 @@
   .home-premium-scope .home-category-section .cat-grid .cat-card::after{right:8px!important;bottom:8px!important;width:27px!important;height:27px!important;font-size:14px!important}
 }
 
+.home-premium-scope .home-category-section .category-card-skeleton{pointer-events:none!important;cursor:default!important;overflow:hidden!important}
+.home-premium-scope .home-category-section .category-skeleton-image{width:100%!important;height:100%!important;background:linear-gradient(90deg,#edf4ef 25%,#f7faf8 50%,#edf4ef 75%)!important;background-size:200% 100%!important;animation:categorySkeletonPulse 1.5s ease-in-out infinite!important}
+.home-premium-scope .home-category-section .category-skeleton-label{display:block!important;width:68%!important;height:16px!important;border-radius:999px!important;background:#edf4ef!important}
+@keyframes categorySkeletonPulse{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){.home-premium-scope .home-category-section .category-skeleton-image{animation:none!important}}
+
 @media(prefers-reduced-motion:reduce){.home-premium-scope .cat-card{transition:none!important}}
 
 /* HOMEPAGE HERO FINAL FIX: use explicit semantic layers, never child-position guesses. */
