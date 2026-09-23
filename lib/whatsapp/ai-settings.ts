@@ -30,6 +30,16 @@ export async function getWhatsAppAISettings(): Promise<AISettings> {
     ...(data.feature_flags && typeof data.feature_flags === 'object' ? data.feature_flags : {}),
   } as AIFeatureFlags;
 
+  if (!data.api_key) {
+    throw new Error('WhatsApp AI API key is not configured.');
+  }
+  if (!model) {
+    throw new Error('WhatsApp AI model is not configured.');
+  }
+  if (!featureFlags.customer_support_ai) {
+    throw new Error('Customer Support AI is disabled.');
+  }
+
   return {
     is_enabled: Boolean(data.is_enabled),
     provider,
