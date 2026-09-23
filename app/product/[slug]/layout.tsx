@@ -26,11 +26,12 @@ type ProductSeo = {
   is_active?: boolean | null;
   brand?: string | null;
   category_id?: string | null;
+  country_code?: 'BD' | 'IN' | null;
 };
 
 async function getProduct(slug: string): Promise<ProductSeo | null> {
   const url = new URL('/rest/v1/products', SUPABASE_URL);
-  url.searchParams.set('select', 'id,name_bn,name_en,name,slug,description,short_description,seo_title,meta_description,image,images,image_alt,image_alt_bn,sku,regular_price,sale_price,price,offer_price,stock,is_active,brand,category_id');
+  url.searchParams.set('select', 'id,name_bn,name_en,name,slug,description,short_description,seo_title,meta_description,image,images,image_alt,image_alt_bn,sku,regular_price,sale_price,price,offer_price,stock,is_active,brand,category_id,country_code');
   url.searchParams.set('slug', `eq.${slug}`);
   url.searchParams.set('is_active', 'eq.true');
   url.searchParams.set('limit', '1');
@@ -102,6 +103,7 @@ export default async function ProductSeoLayout({
   const sale = Number(product.sale_price || product.offer_price || regular);
   const price = sale > 0 ? sale : regular;
   const availability = Number(product.stock || 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
+  const priceCurrency = product.country_code === 'IN' ? 'INR' : 'BDT';
 
   const breadcrumbLd = {
     '@context': 'https://schema.org',
@@ -122,10 +124,13 @@ export default async function ProductSeoLayout({
     brand: { '@type': 'Brand', name: product.brand || 'GAZI SEED' },
     image: product.images?.length ? product.images : [image],
     url,
+    category: 'Seeds and agricultural products',
+    inLanguage: 'bn-BD',
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
     offers: {
       '@type': 'Offer',
       url,
-      priceCurrency: 'BDT',
+      priceCurrency,
       price: price > 0 ? price.toFixed(2) : undefined,
       availability,
       itemCondition: 'https://schema.org/NewCondition',
