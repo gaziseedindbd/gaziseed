@@ -65,7 +65,7 @@ function parseToolCalls(content: string): ToolCall[] {
         const value = call as Record<string, unknown>;
         return ALLOWED_TOOLS.has(String(value.name)) && !!value.args && typeof value.args === 'object';
       })
-      .map((call) => ({ name: call.name, args: call.args }))
+      .map((call: ToolCall) => ({ name: call.name, args: call.args as Record<string, unknown> }))
       .slice(0, 3);
   } catch {
     return [];
