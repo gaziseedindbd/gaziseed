@@ -44,6 +44,17 @@ type ToolCall = {
   args: Record<string, unknown>;
 };
 
+const ALLOWED_TOOLS = new Set([
+  'search_product',
+  'get_product_details',
+  'get_product_price',
+  'check_stock',
+  'get_delivery_charge',
+  'track_order',
+  'get_customer_order_history',
+  'request_human_support',
+]);
+
 function parseToolCalls(content: string): ToolCall[] {
   try {
     const parsed = JSON.parse(content);
@@ -52,8 +63,9 @@ function parseToolCalls(content: string): ToolCall[] {
       .filter((call: unknown): call is ToolCall => {
         if (!call || typeof call !== 'object') return false;
         const value = call as Record<string, unknown>;
-        return typeof value.name === 'string' && !!value.args && typeof value.args === 'object';
+        return ALLOWED_TOOLS.has(String(value.name)) && !!value.args && typeof value.args === 'object';
       })
+      .map((call) => ({ name: call.name, args: call.args }))
       .slice(0, 3);
   } catch {
     return [];
@@ -85,8 +97,11 @@ async function runTool(
   const country = input.country;
 
   switch (call.name) {
-    case 'search_product':
-      return searchProduct({ query: String(call.args.query || ''), country, limit: Number(call.args.limit || 5) });
+    case 'search_product': {
+      const query = String(call.args.query || '').trim();
+      if (!query) return { ok: false, error: 'A product search query is required.' };
+      return searchProduct({ query: query.slice(0, 120), country, limit: Math.min(Math.max(Number(call.args.limit || 5), 1), 5) });
+    }
     case 'get_product_details':
       return getProductDetails({ productId: String(call.args.productId || ''), country });
     case 'get_product_price':
@@ -97,7 +112,8 @@ async function runTool(
       return getDeliveryCharge({
         orderValue: Number(call.args.orderValue),
         country,
-        freeDelivery: Boolean(call.args.freeDelivery),
+        // Free-delivery eligibility must come from trusted cart/business logic, not model-generated arguments.
+        freeDelivery: false,
       });
     case 'track_order':
       return trackOrder({
@@ -144,10 +160,6 @@ export async function runWhatsAppAgent(input: WhatsAppAgentInput): Promise<Whats
   );
 
   const toolCalls = parseToolCalls(first.content);
-  if (toolCalls.length === 0) {
-    return { content: first.content, model: first.model, toolCalls: [] };
-  }
-
   const executed: WhatsAppAgentResult['toolCalls'] = [];
   for (const call of toolCalls) {
     const result = await runTool(call, input);
@@ -167,7 +179,7 @@ export async function runWhatsAppAgent(input: WhatsAppAgentInput): Promise<Whats
           role: 'user',
           content: `Verified business tool results. Use ONLY these results for factual claims:
 ${JSON.stringify(executed.map(({ name, result }) => ({ name, result })))}
-Now answer the customer naturally and concisely.`,
+If no tools were used, answer from the customer's message and the system rules without inventing business facts. Now answer the customer naturally and concisely.`,
         },
       ],
       temperature: Math.min(input.aiSettings.temperature ?? 0.2, 0.4),
