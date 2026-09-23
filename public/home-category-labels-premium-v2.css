@@ -1,7 +1,6 @@
-@import url('./home-hero-layer-fix.css');
-
 /* GAZI SEED — Category section helpers V7
    Card layout is owned by home-category-cards-v3.css.
+   Hero hardening rules are already merged into the critical hero stylesheet.
    This file intentionally contains no card pseudo-elements so legacy mobile
    rules cannot override the approved 2x2 category-card design. */
 .home-premium-scope .home-category-section{
@@ -38,7 +37,6 @@
   transform:translateY(-2px)!important;
   box-shadow:0 14px 30px -20px rgba(5,80,48,.55)!important;
 }
-
 @media(max-width:767px){
   .home-premium-scope .home-category-section{
     background:linear-gradient(180deg,#f9fdfb 0%,#f2faf6 100%)!important;
@@ -80,7 +78,6 @@
     box-shadow:0 6px 16px -12px rgba(3,72,38,.45)!important;
   }
 }
-
 @media(prefers-reduced-motion:reduce){
   .home-premium-scope .view-all-link{transition:none!important}
 }
