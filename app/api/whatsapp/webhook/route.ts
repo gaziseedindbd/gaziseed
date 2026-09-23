@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrCreateWhatsAppConversation, recordWhatsAppAssistantMessage, recordWhatsAppUserMessage } from '@/lib/whatsapp/conversations';
-import { getWhatsAppAISettings } from '@/lib/whatsapp/ai-settings';
+import { getWhatsAppAISettings, isWhatsAppAIEnvironmentEnabled } from '@/lib/whatsapp/ai-settings';
 import { runWhatsAppAgent } from '@/lib/whatsapp/agent';
 import { resolveWhatsAppCountry } from '@/lib/whatsapp/branches';
 import type { NormalizedWhatsAppMessage } from '@/lib/whatsapp/types';
@@ -78,7 +78,43 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const aiSettings = await getWhatsAppAISettings();
+    if (!isWhatsAppAIEnvironmentEnabled()) {
+      return NextResponse.json({
+        success: true,
+        conversation_id: conversation.id,
+        country_code: country,
+        accepted: true,
+        ai_enabled: false,
+        response: null,
+        reason: 'environment_kill_switch',
+      });
+    }
+
+    let aiSettings;
+    try {
+      aiSettings = await getWhatsAppAISettings();
+    } catch (settingsError) {
+      const message = settingsError instanceof Error ? settingsError.message : 'AI settings unavailable';
+      if (message.includes('Customer Support AI is disabled')) {
+        return NextResponse.json({
+          success: true,
+          conversation_id: conversation.id,
+          country_code: country,
+          accepted: true,
+          ai_enabled: false,
+          response: null,
+          reason: 'customer_support_ai_disabled',
+        });
+      }
+      return NextResponse.json({
+        success: false,
+        conversation_id: conversation.id,
+        country_code: country,
+        accepted: true,
+        ai_enabled: false,
+        message: 'WhatsApp AI configuration is unavailable',
+      }, { status: 503 });
+    }
     if (!aiSettings.is_enabled) {
       return NextResponse.json({
         success: true,
@@ -89,13 +125,26 @@ export async function POST(req: NextRequest) {
         response: null,
       });
     }
-    const agent = await runWhatsAppAgent({
+    let agent;
+    try {
+      agent = await runWhatsAppAgent({
       text: message.text,
       country: country as 'BD' | 'IN',
       customerPhone: message.phone || message.externalUserId,
       customerName: typeof message.metadata?.customerName === 'string' ? message.metadata.customerName : null,
       aiSettings,
-    });
+      });
+    } catch (agentError) {
+      console.error('WhatsApp AI agent failed', agentError);
+      return NextResponse.json({
+        success: false,
+        conversation_id: conversation.id,
+        country_code: country,
+        accepted: true,
+        ai_enabled: true,
+        message: 'WhatsApp AI response could not be generated',
+      }, { status: 503 });
+    }
 
     await recordWhatsAppAssistantMessage(
       conversation.id,
