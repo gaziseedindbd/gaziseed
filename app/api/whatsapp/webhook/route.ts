@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getOrCreateWhatsAppConversation, recordWhatsAppUserMessage } from '@/lib/whatsapp/conversations';
+import { getOrCreateWhatsAppConversation, recordWhatsAppAssistantMessage, recordWhatsAppUserMessage } from '@/lib/whatsapp/conversations';
+import { getWhatsAppAISettings } from '@/lib/whatsapp/ai-settings';
+import { runWhatsAppAgent } from '@/lib/whatsapp/agent';
 import { resolveWhatsAppCountry } from '@/lib/whatsapp/branches';
 import type { NormalizedWhatsAppMessage } from '@/lib/whatsapp/types';
 
@@ -29,9 +31,13 @@ export async function POST(req: NextRequest) {
     }
 
     const body = (await req.json()) as Partial<NormalizedWhatsAppMessage>;
+    const text = body.text?.trim() || '';
 
-    if (body.channel !== 'whatsapp' || !body.externalUserId || !body.text?.trim()) {
+    if (body.channel !== 'whatsapp' || !body.externalUserId || !text) {
       return NextResponse.json({ success: false, message: 'Invalid normalized WhatsApp payload' }, { status: 400 });
+    }
+    if (text.length > 4000) {
+      return NextResponse.json({ success: false, message: 'WhatsApp message is too long' }, { status: 413 });
     }
 
     const businessNumber = String(body.metadata?.businessNumber || '');
@@ -51,7 +57,7 @@ export async function POST(req: NextRequest) {
       externalUserId: body.externalUserId,
       externalMessageId: body.externalMessageId || null,
       phone: body.phone || null,
-      text: body.text.trim(),
+      text,
       language: body.language || null,
       provider: body.provider || 'unknown',
       metadata: {
@@ -63,11 +69,32 @@ export async function POST(req: NextRequest) {
     const conversation = await getOrCreateWhatsAppConversation(message);
     await recordWhatsAppUserMessage(conversation.id, message);
 
+    const aiSettings = await getWhatsAppAISettings();
+    const agent = await runWhatsAppAgent({
+      text: message.text,
+      country: country as 'BD' | 'IN',
+      customerPhone: message.phone || message.externalUserId,
+      customerName: typeof message.metadata?.customerName === 'string' ? message.metadata.customerName : null,
+      aiSettings,
+    });
+
+    await recordWhatsAppAssistantMessage(
+      conversation.id,
+      country as 'BD' | 'IN',
+      agent.content,
+      aiSettings.provider,
+      agent.model,
+      agent.toolCalls,
+    );
+
     return NextResponse.json({
       success: true,
       conversation_id: conversation.id,
       country_code: country,
       accepted: true,
+      response: agent.content,
+      model: agent.model,
+      tool_calls: agent.toolCalls.map((tool) => ({ name: tool.name, args: tool.args })),
     });
   } catch (error) {
     return NextResponse.json(
