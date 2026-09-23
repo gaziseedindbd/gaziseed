@@ -30,6 +30,7 @@ import IndiaHomeCountry from '@/components/site/india-home-country';
 const hind = Hind({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'], variable: '--font-hind', display: 'swap' });
 
 const FAVICON_URL = '/favicon.svg?v=3';
+const SITE_URL = 'https://www.gaziseed.com';
 
 export const viewport: Viewport = {
   themeColor: '#047857',
@@ -38,14 +39,27 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
   description: 'GAZI SEED - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। ক্যাশ অন ডেলিভারি সারাদেশে।',
-  metadataBase: new URL('https://www.gaziseed.com'),
+  metadataBase: new URL(SITE_URL),
+  alternates: { canonical: SITE_URL + '/' },
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [{ url: FAVICON_URL, type: 'image/svg+xml' }],
     shortcut: [{ url: FAVICON_URL, type: 'image/svg+xml' }],
     apple: [{ url: FAVICON_URL, type: 'image/svg+xml' }],
   },
-  openGraph: { title: 'GAZI SEED', description: 'বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর', type: 'website' },
+  openGraph: {
+    title: 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
+    description: 'বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
+    url: SITE_URL + '/',
+    siteName: 'GAZI SEED',
+    type: 'website',
+    locale: 'bn_BD',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
+    description: 'বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
+  },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -61,10 +75,44 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ? cookieOverride
     : detectedCountry === 'IN' ? 'IN' : 'BD';
 
+  const organizationLd = {
+    '@type': 'Organization',
+    '@id': SITE_URL + '/#organization',
+    name: 'GAZI SEED',
+    url: SITE_URL + '/',
+    logo: SITE_URL + '/favicon.svg',
+  };
+
+  const websiteLd = {
+    '@type': 'WebSite',
+    '@id': SITE_URL + '/#website',
+    url: SITE_URL + '/',
+    name: 'GAZI SEED',
+    publisher: { '@id': SITE_URL + '/#organization' },
+    inLanguage: 'bn-BD',
+  };
+
+  const webpageLd = {
+    '@type': 'WebPage',
+    '@id': SITE_URL + '/#webpage',
+    url: SITE_URL + '/',
+    name: 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
+    description: 'GAZI SEED - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। ক্যাশ অন ডেলিভারি সারাদেশে।',
+    isPartOf: { '@id': SITE_URL + '/#website' },
+    about: { '@id': SITE_URL + '/#organization' },
+    inLanguage: 'bn-BD',
+  };
+
+  const homeLd = {
+    '@context': 'https://schema.org',
+    '@graph': [organizationLd, websiteLd, webpageLd],
+  };
+
   return (
     <html lang="bn" suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="/home-hero-responsive-standard-v1.css" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeLd) }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p=window.location.pathname;var css=[];if(p==='/checkout')css.push('/checkout-premium-v1.css?v=2');if(p.indexOf('/combo/')===0)css.push('/combo-quick-checkout-v2.css?v=1');for(var i=0;i<css.length;i++){var l=document.createElement('link');l.rel='stylesheet';l.href=css[i];document.head.appendChild(l)}}catch(e){}})()` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){window.__GAZI_COUNTRY__='${visitorCountry}';})();` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{const theme=localStorage.getItem('admin_theme');if(theme==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')} }catch(e){}})()` }} />
