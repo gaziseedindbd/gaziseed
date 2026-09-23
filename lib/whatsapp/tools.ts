@@ -9,7 +9,7 @@ export async function searchProduct(query: string, country: 'BD' | 'IN' = 'BD'):
   const q = query.trim();
   if (!q) return { found: false, products: [] };
 
-  const supabase = createWhatsAppSupabase();
+  const supabase = createWhatsAppSupabase(country);
   const pattern = `%${q.replace(/[%_]/g, '')}%`;
 
   const { data, error } = await supabase
@@ -28,7 +28,7 @@ export async function searchProduct(query: string, country: 'BD' | 'IN' = 'BD'):
 }
 
 export async function getProductDetails(productId: string, country: 'BD' | 'IN' = 'BD') {
-  const supabase = createWhatsAppSupabase();
+  const supabase = createWhatsAppSupabase(country);
 
   const { data, error } = await supabase
     .from('products')
@@ -78,13 +78,12 @@ export async function getDeliveryCharge(
   country: 'BD' | 'IN' = 'BD',
   freeDelivery = false,
 ) {
-  const supabase = createWhatsAppSupabase();
+  const supabase = createWhatsAppSupabase(country);
 
-  const { data, error } = await supabase
-    .rpc('calculate_delivery_charge', {
-      p_order_value: orderValue,
-      p_free_delivery: freeDelivery,
-    });
+  const { data, error } = await supabase.rpc('calculate_delivery_charge', {
+    p_order_value: orderValue,
+    p_free_delivery: freeDelivery,
+  });
 
   if (error) throw new Error(`Delivery charge calculation failed: ${error.message}`);
 
@@ -97,8 +96,8 @@ export async function getDeliveryCharge(
   };
 }
 
-export async function trackOrder(orderNumber: string, customerPhone: string) {
-  const supabase = createWhatsAppSupabase();
+export async function trackOrder(orderNumber: string, customerPhone: string, country: 'BD' | 'IN' = 'BD') {
+  const supabase = createWhatsAppSupabase(country);
 
   const { data, error } = await supabase.rpc('track_order', {
     p_order_number: orderNumber,
