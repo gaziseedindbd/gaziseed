@@ -14,11 +14,11 @@ import type { Banner, Category, Product, Service, Testimonial, BlogPost, SiteSet
 
 let memoryCache: { country?: 'BD' | 'IN'; banners?: Banner[]; categories?: Category[]; featuredProducts?: Product[]; bestSellers?: Product[]; newArrivals?: Product[]; seasonal?: Product[]; thisMonthSeeds?: Product[]; services?: Service[]; testimonials?: Testimonial[]; blogPosts?: BlogPost[]; settings?: SiteSettings | null; sections?: HomepageSection[]; timestamp?: number } = {};
 
-export default function Home({ initialBanners = [] }: { initialBanners?: Banner[] }) {
+export default function Home() {
   const { lang, t, tDb } = useLang();
   const visitorCountry = getVisitorCountry();
   const cached = memoryCache.country === visitorCountry ? memoryCache : {};
-  const [banners, setBanners] = useState<Banner[]>(cached.banners || initialBanners);
+  const [banners, setBanners] = useState<Banner[]>(cached.banners || []);
   const [categories, setCategories] = useState<Category[]>(cached.categories || []);
   const [categoriesLoaded, setCategoriesLoaded] = useState(Boolean(cached.categories));
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>(cached.featuredProducts || []);
@@ -56,8 +56,7 @@ export default function Home({ initialBanners = [] }: { initialBanners?: Banner[
     const loadHomepageData = async () => {
       try {
         const [bRes, cRes, fpRes] = await Promise.allSettled([
-          initialBanners.length > 0 ? Promise.resolve(initialBanners) : getBanners(),
-          getCategories(), getProducts({ is_featured: true, limit: 8 }),
+          getBanners(), getCategories(), getProducts({ is_featured: true, limit: 8 }),
         ]);
         const b = bRes.status === 'fulfilled' ? bRes.value : [];
         const c = cRes.status === 'fulfilled' ? cRes.value : [];
