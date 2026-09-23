@@ -76,7 +76,7 @@ export async function searchProduct(args: ProductSearchArgs): Promise<WhatsAppTo
 
   if (error) return { ok: false, error: `Product search failed: ${error.message}` };
 
-  return { ok: true, data: (data || []).map((row) => mapProduct(row as Record<string, unknown>)) };
+  return { ok: true, data: (data || []).map((row) => mapProduct(row as unknown as Record<string, unknown>)) };
 }
 
 export async function getProductDetails(args: ProductRefArgs): Promise<WhatsAppToolResult<WhatsAppToolProduct>> {
