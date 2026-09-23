@@ -15,4 +15,4 @@ server.listen(config.port, () => {
   console.log(`GAZI SEED WhatsApp gateway health server listening on :${config.port}`);
 });
 
-await startWhatsApp();
+void startWhatsApp();
