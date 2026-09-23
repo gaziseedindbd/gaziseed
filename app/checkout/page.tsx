@@ -114,7 +114,8 @@ export default function CheckoutPage() {
       setWalletLoading(false);
     });
 
-    return () => window.removeEventListener('cart-updated', handler);
+    return (
+    <link rel="stylesheet" href="/checkout-premium-v1.css?v=2" />) => window.removeEventListener('cart-updated', handler);
   }, []);
 
   useEffect(() => {
