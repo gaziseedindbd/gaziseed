@@ -196,11 +196,83 @@ export const customAdapter: AIAdapter = {
   },
 };
 
+
+function openAICompatibleAdapter(
+  label: string,
+  defaultBaseUrl: string,
+  defaultModel: string,
+): AIAdapter {
+  return {
+    async testConnection(settings: AISettings): Promise<AIConnectionTestResult> {
+      try {
+        const baseUrl = settings.base_url || defaultBaseUrl;
+        const res = await fetch(`${baseUrl}/models`, {
+          headers: { 'Authorization': `Bearer ${settings.api_key}` },
+        });
+        if (!res.ok) {
+          return { success: false, message: `${label} API error: ${res.status} ${res.statusText}` };
+        }
+        return { success: true, message: `${label} connection successful` };
+      } catch (err) {
+        return { success: false, message: `Connection failed: ${err instanceof Error ? err.message : 'Unknown error'}` };
+      }
+    },
+
+    async chat(request: AIChatRequest, settings: AISettings): Promise<AIChatResponse> {
+      const baseUrl = settings.base_url || defaultBaseUrl;
+      const model = settings.model || defaultModel;
+      const res = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${settings.api_key}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: request.messages,
+          temperature: request.temperature ?? settings.temperature ?? 0.7,
+          max_tokens: request.max_tokens ?? settings.max_tokens ?? undefined,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error(`${label} API error: ${res.status}`);
+      }
+      const data = await res.json();
+      return {
+        content: data.choices?.[0]?.message?.content || '',
+        model: data.model || model,
+        usage: data.usage,
+      };
+    },
+  };
+}
+
+export const groqAdapter = openAICompatibleAdapter(
+  'Groq',
+  'https://api.groq.com/openai/v1',
+  'llama-3.3-70b-versatile',
+);
+
+export const cerebrasAdapter = openAICompatibleAdapter(
+  'Cerebras',
+  'https://api.cerebras.ai/v1',
+  'llama-3.3-70b',
+);
+
+export const openrouterAdapter = openAICompatibleAdapter(
+  'OpenRouter',
+  'https://openrouter.ai/api/v1',
+  'meta-llama/llama-3.3-70b-instruct',
+);
+
 export function getAdapter(provider: string): AIAdapter {
   switch (provider) {
     case 'openai': return openaiAdapter;
     case 'gemini': return geminiAdapter;
     case 'claude': return claudeAdapter;
+    case 'groq': return groqAdapter;
+    case 'cerebras': return cerebrasAdapter;
+    case 'openrouter': return openrouterAdapter;
     case 'custom': return customAdapter;
     default: return openaiAdapter;
   }
