@@ -9,8 +9,8 @@ import {
   requestHumanSupport,
   searchProduct,
   trackOrder,
-} from '@/lib/whatsapp/tools';
-import type { WhatsAppToolCountry } from '@/lib/whatsapp/tools';
+} from './tools/index';
+import type { WhatsAppToolCountry } from './tools/types';
 
 const SYSTEM_PROMPT = `You are GAZI SEED WhatsApp customer support.
 
@@ -90,12 +90,8 @@ If no tool is needed, return:
 Do not invent tool names or arguments.`;
 }
 
-async function runTool(
-  call: ToolCall,
-  input: WhatsAppAgentInput,
-): Promise<unknown> {
+async function runTool(call: ToolCall, input: WhatsAppAgentInput): Promise<unknown> {
   const country = input.country;
-
   switch (call.name) {
     case 'search_product': {
       const query = String(call.args.query || '').trim();
@@ -109,24 +105,11 @@ async function runTool(
     case 'check_stock':
       return checkStock({ productId: String(call.args.productId || ''), country });
     case 'get_delivery_charge':
-      return getDeliveryCharge({
-        orderValue: Number(call.args.orderValue),
-        country,
-        // Free-delivery eligibility must come from trusted cart/business logic, not model-generated arguments.
-        freeDelivery: false,
-      });
+      return getDeliveryCharge({ orderValue: Number(call.args.orderValue), country, freeDelivery: false });
     case 'track_order':
-      return trackOrder({
-        orderNumber: String(call.args.orderNumber || ''),
-        customerPhone: String(call.args.customerPhone || input.customerPhone || ''),
-        country,
-      });
+      return trackOrder({ orderNumber: String(call.args.orderNumber || ''), customerPhone: String(call.args.customerPhone || input.customerPhone || ''), country });
     case 'get_customer_order_history':
-      return getCustomerOrderHistory({
-        customerPhone: String(call.args.customerPhone || input.customerPhone || ''),
-        country,
-        limit: Number(call.args.limit || 5),
-      });
+      return getCustomerOrderHistory({ customerPhone: String(call.args.customerPhone || input.customerPhone || ''), country, limit: Number(call.args.limit || 5) });
     case 'request_human_support':
       return requestHumanSupport({
         customerName: input.customerName,
@@ -171,16 +154,10 @@ export async function runWhatsAppAgent(input: WhatsAppAgentInput): Promise<Whats
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: input.text },
-        {
-          role: 'assistant',
-          content: JSON.stringify({ tool_calls: executed.map(({ name, args }) => ({ name, args })) }),
-        },
-        {
-          role: 'user',
-          content: `Verified business tool results. Use ONLY these results for factual claims:
+        { role: 'assistant', content: JSON.stringify({ tool_calls: executed.map(({ name, args }) => ({ name, args })) }) },
+        { role: 'user', content: `Verified business tool results. Use ONLY these results for factual claims:
 ${JSON.stringify(executed.map(({ name, result }) => ({ name, result })))}
-If no tools were used, answer from the customer's message and the system rules without inventing business facts. Now answer the customer naturally and concisely.`,
-        },
+If no tools were used, answer from the customer's message and the system rules without inventing business facts. Now answer the customer naturally and concisely.` },
       ],
       temperature: Math.min(input.aiSettings.temperature ?? 0.2, 0.4),
       max_tokens: input.aiSettings.max_tokens ?? 700,
@@ -188,9 +165,5 @@ If no tools were used, answer from the customer's message and the system rules w
     input.aiSettings,
   );
 
-  return {
-    content: second.content,
-    model: second.model,
-    toolCalls: executed,
-  };
+  return { content: second.content, model: second.model, toolCalls: executed };
 }
