@@ -258,23 +258,18 @@
 
 /* HOMEPAGE HERO FINAL FIX: use explicit semantic layers, never child-position guesses. */
 .home-premium-scope .hero-wrap{
+  position:relative!important;
+  width:100%!important;
   aspect-ratio:2048/366!important;
   min-height:0!important;
   max-height:none!important;
   height:auto!important;
   isolation:isolate!important;
-}
-.home-premium-scope .hero-wrap>div.block{
-  position:absolute!important;
-  inset:0!important;
-  width:100%!important;
-  height:100%!important;
-  margin:0!important;
-  padding:0!important;
   overflow:hidden!important;
 }
-.home-premium-scope .hero-wrap .hero-inner{
-  position:relative!important;
+.home-premium-scope .hero-wrap>div.hero-inner{
+  position:absolute!important;
+  inset:0!important;
   width:100%!important;
   height:100%!important;
   min-height:0!important;
