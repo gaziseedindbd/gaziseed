@@ -79,6 +79,16 @@ export async function POST(req: NextRequest) {
     }
 
     const aiSettings = await getWhatsAppAISettings();
+    if (!aiSettings.is_enabled) {
+      return NextResponse.json({
+        success: true,
+        conversation_id: conversation.id,
+        country_code: country,
+        accepted: true,
+        ai_enabled: false,
+        response: null,
+      });
+    }
     const agent = await runWhatsAppAgent({
       text: message.text,
       country: country as 'BD' | 'IN',
