@@ -1,26 +1,56 @@
 import { MetadataRoute } from 'next';
-import { supabase } from '@/lib/supabase/client';
+
 const BASE_URL = 'https://www.gaziseed.com';
 const FALLBACK_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
 const FALLBACK_KEY = 'sb_publishable_vCaz5OGrHocUTgpOXmE9xg_QVsuUJc0';
 
 type Country = 'BD' | 'IN';
 
-async function fetchCountryRows<T>(table: 'products' | 'categories', country: Country): Promise<T[]> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || FALLBACK_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || FALLBACK_KEY;
-  const params = new URLSearchParams({
+function getSupabaseConfig() {
+  return {
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || FALLBACK_URL,
+    key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || FALLBACK_KEY,
+  };
+}
+
+async function fetchRows<T>(
+  table: string,
+  params: Record<string, string>,
+  country?: Country,
+): Promise<T[]> {
+  const { url, key } = getSupabaseConfig();
+  const query = new URLSearchParams(params);
+
+  try {
+    const response = await fetch(url + '/rest/v1/' + table + '?' + query.toString(), {
+      headers: {
+        apikey: key,
+        Authorization: 'Bearer ' + key,
+        ...(country ? { 'x-gazi-country': country } : {}),
+      },
+      next: { revalidate: 3600 },
+    });
+
+    if (!response.ok) return [];
+    return (await response.json()) as T[];
+  } catch {
+    return [];
+  }
+}
+
+async function fetchCountryRows<T>(
+  table: 'products' | 'categories',
+  country: Country,
+): Promise<T[]> {
+  const params: Record<string, string> = {
     select: 'slug,updated_at,created_at',
     is_active: 'eq.true',
     country_code: 'eq.' + country,
-  });
-  if (table === 'products') params.set('is_ads_only', 'eq.false');
-  const response = await fetch(supabaseUrl + '/rest/v1/' + table + '?' + params.toString(), {
-    headers: { apikey: key, Authorization: 'Bearer ' + key, 'x-gazi-country': country },
-    cache: 'no-store',
-  });
-  if (!response.ok) return [];
-  return (await response.json()) as T[];
+  };
+
+  if (table === 'products') params.is_ads_only = 'eq.false';
+
+  return fetchRows<T>(table, params, country);
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -36,37 +66,75 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const country of ['BD', 'IN'] as const) {
     const products = await fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('products', country);
     products.forEach((p) => {
-      entries.push({ url: BASE_URL + '/product/' + p.slug, lastModified: new Date(p.updated_at || p.created_at || new Date()), changeFrequency: 'weekly', priority: 0.7 });
+      entries.push({
+        url: `${BASE_URL}/product/${p.slug}`,
+        lastModified: new Date(p.updated_at || p.created_at || new Date()),
+        changeFrequency: 'weekly',
+        priority: 0.7,
+      });
     });
 
     const categories = await fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('categories', country);
     categories.forEach((cat) => {
-      entries.push({ url: BASE_URL + '/category/' + cat.slug, lastModified: new Date(cat.updated_at || cat.created_at || new Date()), changeFrequency: 'weekly', priority: 0.6 });
+      entries.push({
+        url: `${BASE_URL}/category/${cat.slug}`,
+        lastModified: new Date(cat.updated_at || cat.created_at || new Date()),
+        changeFrequency: 'weekly',
+        priority: 0.6,
+      });
     });
   }
 
-  // combo_packs has no updated_at column; use created_at for sitemap freshness.
-  const { data: combos } = await supabase.from('combo_packs').select('slug, created_at').eq('is_active', true);
-  (combos || []).forEach((c: any) => {
-    entries.push({ url: `${BASE_URL}/combo/${c.slug}`, lastModified: new Date(c.created_at || new Date()), changeFrequency: 'weekly', priority: 0.6 });
+  const combos = await fetchRows<{ slug: string; created_at?: string }>(
+    'combo_packs',
+    { select: 'slug,created_at', is_active: 'eq.true' },
+  );
+  combos.forEach((c) => {
+    entries.push({
+      url: `${BASE_URL}/combo/${c.slug}`,
+      lastModified: new Date(c.created_at || new Date()),
+      changeFrequency: 'weekly',
+      priority: 0.6,
+    });
   });
 
-  const { data: posts } = await supabase.from('blog_posts').select('slug, updated_at, created_at').eq('is_published', true);
-  (posts || []).forEach((p: any) => {
-    entries.push({ url: `${BASE_URL}/blog/${p.slug}`, lastModified: new Date(p.updated_at || p.created_at || new Date()), changeFrequency: 'monthly', priority: 0.5 });
+  const posts = await fetchRows<{ slug: string; updated_at?: string; created_at?: string }>(
+    'blog_posts',
+    { select: 'slug,updated_at,created_at', is_published: 'eq.true' },
+  );
+  posts.forEach((p) => {
+    entries.push({
+      url: `${BASE_URL}/blog/${p.slug}`,
+      lastModified: new Date(p.updated_at || p.created_at || new Date()),
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    });
   });
 
-  const { data: pages } = await supabase.from('pages').select('slug, updated_at, created_at').eq('is_published', true);
-  (pages || []).forEach((p: any) => {
-    entries.push({ url: `${BASE_URL}/page/${p.slug}`, lastModified: new Date(p.updated_at || p.created_at || new Date()), changeFrequency: 'monthly', priority: 0.4 });
+  const pages = await fetchRows<{ slug: string; updated_at?: string; created_at?: string }>(
+    'pages',
+    { select: 'slug,updated_at,created_at', is_published: 'eq.true' },
+  );
+  pages.forEach((p) => {
+    entries.push({
+      url: `${BASE_URL}/page/${p.slug}`,
+      lastModified: new Date(p.updated_at || p.created_at || new Date()),
+      changeFrequency: 'monthly',
+      priority: 0.4,
+    });
   });
 
-  const { data: animatedLandings } = await supabase
-    .from('animated_landing_pages')
-    .select('slug, updated_at, created_at')
-    .eq('status', 'active');
-  (animatedLandings || []).forEach((p: any) => {
-    entries.push({ url: `${BASE_URL}/animated-landing/${p.slug}`, lastModified: new Date(p.updated_at || p.created_at || new Date()), changeFrequency: 'weekly', priority: 0.6 });
+  const animatedLandings = await fetchRows<{ slug: string; updated_at?: string; created_at?: string }>(
+    'animated_landing_pages',
+    { select: 'slug,updated_at,created_at', status: 'eq.active' },
+  );
+  animatedLandings.forEach((p) => {
+    entries.push({
+      url: `${BASE_URL}/animated-landing/${p.slug}`,
+      lastModified: new Date(p.updated_at || p.created_at || new Date()),
+      changeFrequency: 'weekly',
+      priority: 0.6,
+    });
   });
 
   const unique = new Map<string, MetadataRoute.Sitemap[number]>();
