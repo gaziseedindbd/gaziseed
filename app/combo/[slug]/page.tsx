@@ -95,7 +95,8 @@ export default function ComboLandingPage() {
     setCountry(getVisitorCountry());
     const onCountryChange = () => setCountry(getVisitorCountry());
     window.addEventListener('gazi-country-changed', onCountryChange);
-    return () => window.removeEventListener('gazi-country-changed', onCountryChange);
+    return (
+    <link rel="stylesheet" href="/combo-quick-checkout-v2.css?v=1" />) => window.removeEventListener('gazi-country-changed', onCountryChange);
   }, []);
 
   useEffect(() => {
