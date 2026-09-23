@@ -3,6 +3,7 @@ import { getOrCreateWhatsAppConversation, recordWhatsAppAssistantMessage, record
 import { getWhatsAppAISettings, isWhatsAppAIEnvironmentEnabled } from '@/lib/whatsapp/ai-settings';
 import { runWhatsAppAgent } from '@/lib/whatsapp/agent';
 import { resolveWhatsAppCountry } from '@/lib/whatsapp/branches';
+import { getWhatsAppGateway, isWhatsAppGatewayEnabled } from '@/lib/whatsapp/gateway';
 import type { NormalizedWhatsAppMessage } from '@/lib/whatsapp/types';
 
 export const runtime = 'nodejs';
@@ -60,10 +61,7 @@ export async function POST(req: NextRequest) {
       text,
       language: body.language || null,
       provider: body.provider || 'unknown',
-      metadata: {
-        ...(body.metadata || {}),
-        countryCode: country,
-      },
+      metadata: { ...(body.metadata || {}), countryCode: country },
     };
 
     const conversation = await getOrCreateWhatsAppConversation(message);
@@ -94,8 +92,8 @@ export async function POST(req: NextRequest) {
     try {
       aiSettings = await getWhatsAppAISettings();
     } catch (settingsError) {
-      const message = settingsError instanceof Error ? settingsError.message : 'AI settings unavailable';
-      if (message.includes('Customer Support AI is disabled')) {
+      const settingsMessage = settingsError instanceof Error ? settingsError.message : 'AI settings unavailable';
+      if (settingsMessage.includes('Customer Support AI is disabled')) {
         return NextResponse.json({
           success: true,
           conversation_id: conversation.id,
@@ -115,6 +113,7 @@ export async function POST(req: NextRequest) {
         message: 'WhatsApp AI configuration is unavailable',
       }, { status: 503 });
     }
+
     if (!aiSettings.is_enabled) {
       return NextResponse.json({
         success: true,
@@ -125,14 +124,15 @@ export async function POST(req: NextRequest) {
         response: null,
       });
     }
+
     let agent;
     try {
       agent = await runWhatsAppAgent({
-      text: message.text,
-      country: country as 'BD' | 'IN',
-      customerPhone: message.phone || message.externalUserId,
-      customerName: typeof message.metadata?.customerName === 'string' ? message.metadata.customerName : null,
-      aiSettings,
+        text: message.text,
+        country: country as 'BD' | 'IN',
+        customerPhone: message.phone || message.externalUserId,
+        customerName: typeof message.metadata?.customerName === 'string' ? message.metadata.customerName : null,
+        aiSettings,
       });
     } catch (agentError) {
       console.error('WhatsApp AI agent failed', agentError);
@@ -155,6 +155,27 @@ export async function POST(req: NextRequest) {
       agent.toolCalls,
     );
 
+    let outbound: { ok: boolean; provider?: string; messageId?: string; error?: string } | null = null;
+    if (isWhatsAppGatewayEnabled() && message.phone) {
+      try {
+        const gateway = getWhatsAppGateway();
+        outbound = await gateway.sendText({
+          to: message.phone,
+          text: agent.content,
+          country: country as 'BD' | 'IN',
+          businessNumber,
+          conversationId: conversation.id,
+        });
+      } catch (gatewayError) {
+        console.error('WhatsApp outbound gateway failed', gatewayError);
+        outbound = {
+          ok: false,
+          provider: process.env.WHATSAPP_GATEWAY_PROVIDER || 'unknown',
+          error: 'Outbound gateway unavailable',
+        };
+      }
+    }
+
     return NextResponse.json({
       success: true,
       conversation_id: conversation.id,
@@ -163,6 +184,7 @@ export async function POST(req: NextRequest) {
       response: agent.content,
       model: agent.model,
       tool_calls: agent.toolCalls.map((tool) => ({ name: tool.name, args: tool.args })),
+      outbound,
     });
   } catch (error) {
     return NextResponse.json(
