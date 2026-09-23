@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrCreateWhatsAppConversation, recordWhatsAppUserMessage } from '@/lib/whatsapp/conversations';
+import { resolveWhatsAppCountry } from '@/lib/whatsapp/branches';
 import type { NormalizedWhatsAppMessage } from '@/lib/whatsapp/types';
 
 export const runtime = 'nodejs';
@@ -33,6 +34,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Invalid normalized WhatsApp payload' }, { status: 400 });
     }
 
+    const businessNumber = String(body.metadata?.businessNumber || '');
+    const country = String(body.metadata?.countryCode || '').toUpperCase();
+
+    if (country !== 'BD' && country !== 'IN') {
+      return NextResponse.json({ success: false, message: 'WhatsApp branch country is required' }, { status: 400 });
+    }
+
+    const resolvedCountry = resolveWhatsAppCountry(businessNumber);
+    if (businessNumber && resolvedCountry && resolvedCountry !== country) {
+      return NextResponse.json({ success: false, message: 'WhatsApp business number does not match country' }, { status: 400 });
+    }
+
     const message: NormalizedWhatsAppMessage = {
       channel: 'whatsapp',
       externalUserId: body.externalUserId,
@@ -41,7 +54,10 @@ export async function POST(req: NextRequest) {
       text: body.text.trim(),
       language: body.language || null,
       provider: body.provider || 'unknown',
-      metadata: body.metadata || {},
+      metadata: {
+        ...(body.metadata || {}),
+        countryCode: country,
+      },
     };
 
     const conversation = await getOrCreateWhatsAppConversation(message);
@@ -50,6 +66,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       conversation_id: conversation.id,
+      country_code: country,
       accepted: true,
     });
   } catch (error) {
