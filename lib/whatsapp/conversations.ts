@@ -1,16 +1,27 @@
 import type { NormalizedWhatsAppMessage, WhatsAppConversationContext } from './types';
 import { createWhatsAppSupabase } from './server';
+import { getWhatsAppBranch, resolveWhatsAppCountry } from './branches';
+
+function resolveCountry(message: NormalizedWhatsAppMessage): 'BD' | 'IN' {
+  const fromMetadata = String(message.metadata?.countryCode || '').toUpperCase();
+  if (fromMetadata === 'IN' || fromMetadata === 'BD') return fromMetadata;
+
+  const businessNumber = String(message.metadata?.businessNumber || '');
+  return resolveWhatsAppCountry(businessNumber) || 'BD';
+}
 
 export async function getOrCreateWhatsAppConversation(
   message: NormalizedWhatsAppMessage,
 ): Promise<WhatsAppConversationContext> {
   const supabase = createWhatsAppSupabase();
+  const country = resolveCountry(message);
 
   const { data: existing, error: lookupError } = await supabase
     .from('ai_conversations')
     .select('id, channel, external_user_id, status, metadata')
     .eq('channel', 'whatsapp')
     .eq('external_user_id', message.externalUserId)
+    .eq('country_code', country)
     .maybeSingle();
 
   if (lookupError) throw new Error(`WhatsApp conversation lookup failed: ${lookupError.message}`);
@@ -25,6 +36,7 @@ export async function getOrCreateWhatsAppConversation(
     };
   }
 
+  const branch = getWhatsAppBranch(country);
   const { data: created, error: createError } = await supabase
     .from('ai_conversations')
     .insert({
@@ -34,9 +46,12 @@ export async function getOrCreateWhatsAppConversation(
         ...(message.metadata || {}),
         phone: message.phone || null,
         provider: message.provider || null,
+        country_code: country,
+        branch: branch.branch,
+        currency: branch.currency,
       },
       last_message_at: new Date().toISOString(),
-      country_code: 'BD',
+      country_code: country,
     })
     .select('id, channel, external_user_id, status, metadata')
     .single();
@@ -59,6 +74,7 @@ export async function recordWhatsAppUserMessage(
   message: NormalizedWhatsAppMessage,
 ): Promise<void> {
   const supabase = createWhatsAppSupabase();
+  const country = resolveCountry(message);
 
   if (message.externalMessageId) {
     const { data: duplicate, error: duplicateError } = await supabase
@@ -81,8 +97,9 @@ export async function recordWhatsAppUserMessage(
       phone: message.phone || null,
       provider: message.provider || null,
       language: message.language || null,
+      country_code: country,
     },
-    country_code: 'BD',
+    country_code: country,
   });
 
   if (error) throw new Error(`WhatsApp message persistence failed: ${error.message}`);
