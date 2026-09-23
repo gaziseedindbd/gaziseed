@@ -34,17 +34,7 @@ export async function getWhatsAppAISettings(): Promise<AISettings> {
     ...(data.feature_flags && typeof data.feature_flags === 'object' ? data.feature_flags : {}),
   } as AIFeatureFlags;
 
-  if (!data.api_key) {
-    throw new Error('WhatsApp AI API key is not configured.');
-  }
-  if (!model) {
-    throw new Error('WhatsApp AI model is not configured.');
-  }
-  if (!featureFlags.customer_support_ai) {
-    throw new Error('Customer Support AI is disabled.');
-  }
-
-  return {
+  const settings: AISettings = {
     is_enabled: Boolean(data.is_enabled),
     provider,
     api_key: String(data.api_key || ''),
@@ -54,4 +44,13 @@ export async function getWhatsAppAISettings(): Promise<AISettings> {
     max_tokens: data.max_tokens == null ? null : Number(data.max_tokens),
     feature_flags: featureFlags,
   };
+
+  if (!settings.is_enabled || !featureFlags.customer_support_ai) {
+    return settings;
+  }
+
+  if (!settings.api_key) throw new Error('WhatsApp AI API key is not configured.');
+  if (!settings.model) throw new Error('WhatsApp AI model is not configured.');
+
+  return settings;
 }
