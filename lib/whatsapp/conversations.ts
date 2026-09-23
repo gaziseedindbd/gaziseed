@@ -72,7 +72,7 @@ export async function getOrCreateWhatsAppConversation(
 export async function recordWhatsAppUserMessage(
   conversationId: string,
   message: NormalizedWhatsAppMessage,
-): Promise<void> {
+): Promise<boolean> {
   const country = resolveCountry(message);
   const supabase = createWhatsAppSupabase(country);
 
@@ -84,7 +84,7 @@ export async function recordWhatsAppUserMessage(
       .maybeSingle();
 
     if (duplicateError) throw new Error(`WhatsApp message idempotency check failed: ${duplicateError.message}`);
-    if (duplicate) return;
+    if (duplicate) return false;
   }
 
   const { error } = await supabase.from('ai_messages').insert({
@@ -110,6 +110,7 @@ export async function recordWhatsAppUserMessage(
     .eq('id', conversationId);
 
   if (updateError) throw new Error(`WhatsApp conversation update failed: ${updateError.message}`);
+  return true;
 }
 
 function compactJson(value: unknown, max = 6000): string {
