@@ -77,20 +77,15 @@ export default function CategoriesPage() {
                   </div>
 
                   <div className="flex flex-1 flex-col px-2.5 pb-2.5 pt-3 sm:px-4 sm:pb-4 sm:pt-4">
-                    <div className="mb-2 flex items-start gap-2.5">
-                      <span className="mt-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 sm:h-8 sm:w-8">
-                        <Leaf className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                      </span>
-                      <div className="min-w-0">
-                        <h3 className="line-clamp-2 break-words text-[16px] font-black leading-[1.25] tracking-[-0.01em] text-[#073c2c] transition-colors duration-300 group-hover:text-[#08704a] sm:text-[20px]">
-                          {catName}
-                        </h3>
-                        {((lang === 'en' ? cat.name_bn : cat.name_en) || '').trim() && (
-                          <p className="mt-1 text-[11px] font-bold leading-snug text-emerald-700/70 sm:text-[12px]">
-                            {lang === 'en' ? cat.name_bn : cat.name_en}
-                          </p>
-                        )}
-                      </div>
+                    <div className="mb-2 min-w-0">
+                      <h3 className="truncate font-serif text-[15px] font-bold leading-[1.2] tracking-[-0.015em] text-[#073c2c] transition-colors duration-300 group-hover:text-[#08704a] sm:text-[18px]">
+                        {catName}
+                      </h3>
+                      {((lang === 'en' ? cat.name_bn : cat.name_en) || '').trim() && (
+                        <p className="mt-1 truncate text-[10px] font-semibold leading-snug text-emerald-700/70 sm:text-[11px]">
+                          {lang === 'en' ? cat.name_bn : cat.name_en}
+                        </p>
+                      )}
                     </div>
 
                     <div className="min-h-[3.35rem] sm:min-h-[3.8rem]">
