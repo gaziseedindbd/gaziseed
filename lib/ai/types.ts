@@ -1,4 +1,4 @@
-export type AIProvider = 'openai' | 'gemini' | 'claude' | 'custom';
+export type AIProvider = 'openai' | 'gemini' | 'claude' | 'groq' | 'cerebras' | 'openrouter' | 'custom';
 
 export interface AISettings {
   is_enabled: boolean;
@@ -63,6 +63,9 @@ export const AI_PROVIDER_OPTIONS: { value: AIProvider; label: string }[] = [
   { value: 'openai', label: 'OpenAI' },
   { value: 'gemini', label: 'Gemini' },
   { value: 'claude', label: 'Claude' },
+  { value: 'groq', label: 'Groq' },
+  { value: 'cerebras', label: 'Cerebras' },
+  { value: 'openrouter', label: 'OpenRouter' },
   { value: 'custom', label: 'Custom/Other' },
 ];
 
