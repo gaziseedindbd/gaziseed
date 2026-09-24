@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
+import { RichTextEditor } from '@/components/admin/rich-text-editor';
 
 export type MultilingualValue = Record<string, Record<string, string>>;
 
-type Field = { key: string; label: string; multiline?: boolean; placeholder?: string };
+type Field = { key: string; label: string; multiline?: boolean; richText?: boolean; placeholder?: string };
 
 const LANGS = [
   { key: 'en', label: 'English', flag: '🇬🇧' },
@@ -55,7 +56,9 @@ export function MultilingualFields({
         {fields.map((field) => (
           <div key={field.key}>
             <label className="mb-1 block text-sm font-medium">{field.label}</label>
-            {field.multiline ? (
+            {field.richText ? (
+              <RichTextEditor value={current[field.key] || ''} onChange={(next) => setField(field.key, next)} placeholder={field.placeholder} />
+            ) : field.multiline ? (
               <textarea value={current[field.key] || ''} onChange={(e) => setField(field.key, e.target.value)} placeholder={field.placeholder} className="input-bangla min-h-[100px]" />
             ) : (
               <input value={current[field.key] || ''} onChange={(e) => setField(field.key, e.target.value)} placeholder={field.placeholder} className="input-bangla" />
