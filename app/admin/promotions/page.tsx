@@ -10,11 +10,12 @@ export default function AdminPromotionsPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+  const [adminCountry, setAdminCountry] = useState<'BD' | 'IN'>('BD');
 
-  useEffect(() => { loadPromos(); }, []);
+  useEffect(() => { const init = async () => { const { data, error } = await supabase.rpc('current_admin_country'); if (error) { toast('Admin branch নির্ধারণ ব্যর্থ', 'error'); return; } const country = String(data).toUpperCase() === 'IN' ? 'IN' : 'BD'; setAdminCountry(country); await loadPromos(country); }; void init(); }, []);
 
-  const loadPromos = async () => {
-    const { data } = await supabase.from('promotions').select('*, promotion_gifts(*)').order('created_at', { ascending: false });
+  const loadPromos = async (country = adminCountry) => {
+    const { data } = await supabase.from('promotions').select('*, promotion_gifts(*)').eq('country_code', country).order('created_at', { ascending: false });
     setPromos(data || []);
     setLoading(false);
   };
@@ -24,17 +25,17 @@ export default function AdminPromotionsPage() {
     let promoId = editing?.id;
 
     if (editing) {
-      const { error } = await supabase.from('promotions').update(payload).eq('id', editing.id);
+      const { error } = await supabase.from('promotions').update({ ...payload, country_code: adminCountry }).eq('id', editing.id).eq('country_code', adminCountry);
       if (error) { toast('আপডেট ব্যর্থ', 'error'); return; }
-      await supabase.from('promotion_gifts').delete().eq('promotion_id', editing.id);
+      await supabase.from('promotion_gifts').delete().eq('promotion_id', editing.id).eq('country_code', adminCountry);
     } else {
-      const { data: newPromo, error } = await supabase.from('promotions').insert(payload).select('id').single();
+      const { data: newPromo, error } = await supabase.from('promotions').insert({ ...payload, country_code: adminCountry }).select('id').single();
       if (error) { toast('যোগ করা ব্যর্থ', 'error'); return; }
       promoId = newPromo?.id;
     }
 
     if (promoId && gift_product_ids?.length > 0) {
-      await supabase.from('promotion_gifts').insert(gift_product_ids.map((id: string) => ({ promotion_id: promoId, product_id: id })));
+      await supabase.from('promotion_gifts').insert(gift_product_ids.map((id: string) => ({ promotion_id: promoId, product_id: id, country_code: adminCountry })));
     }
 
     toast(editing ? 'প্রমোশন আপডেট হয়েছে' : 'প্রমোশন তৈরি হয়েছে');
@@ -45,7 +46,7 @@ export default function AdminPromotionsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('মুছতে চান?')) return;
-    await supabase.from('promotions').delete().eq('id', id);
+    await supabase.from('promotions').delete().eq('id', id).eq('country_code', adminCountry);
     toast('প্রমোশন মুছে ফেলা হয়েছে');
     loadPromos();
   };
@@ -117,8 +118,8 @@ function PromoForm({ promo, onSave, onClose }: { promo: any; onSave: (data: any)
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    supabase.from('products').select('id, name_bn, name_en').eq('is_active', true).eq('is_ads_only', false).order('name_bn').then(({ data }) => setAllProducts(data || []));
-    supabase.from('categories').select('id, name_en').eq('is_active', true).order('name_en').then(({ data }) => setAllCategories(data || []));
+    supabase.from('products').select('id, name_bn, name_en').eq('is_active', true).eq('is_ads_only', false).eq('country_code', (await supabase.rpc('current_admin_country')).data || 'BD').order('name_bn').then(({ data }) => setAllProducts(data || []));
+    supabase.from('categories').select('id, name_en').eq('is_active', true).eq('country_code', (await supabase.rpc('current_admin_country')).data || 'BD').order('name_en').then(({ data }) => setAllCategories(data || []));
     if (promo?.id) {
       supabase.from('promotion_gifts').select('product_id').eq('promotion_id', promo.id).then(({ data }) => setGiftProductIds((data || []).map((g: any) => g.product_id)));
       setEligibleProductIds(promo.eligible_product_ids || []);
