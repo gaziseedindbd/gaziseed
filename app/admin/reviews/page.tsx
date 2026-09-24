@@ -12,37 +12,38 @@ export default function AdminReviewsPage() {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [editingReply, setEditingReply] = useState<string | null>(null);
+  const [adminCountry, setAdminCountry] = useState<'BD' | 'IN'>('BD');
 
-  useEffect(() => { loadReviews(); }, []);
+  useEffect(() => { const init = async () => { const { data, error } = await supabase.rpc('current_admin_country'); if (error) { toast('Admin branch নির্ধারণ ব্যর্থ', 'error'); return; } const country = String(data).toUpperCase() === 'IN' ? 'IN' : 'BD'; setAdminCountry(country); await loadReviews(country); }; void init(); }, []);
 
-  const loadReviews = async () => {
-    const { data } = await supabase.from('reviews').select('*, products(name_bn, name_en)').order('created_at', { ascending: false });
+  const loadReviews = async (country = adminCountry) => {
+    const { data } = await supabase.from('reviews').select('*, products(name_bn, name_en)').eq('country_code', country).order('created_at', { ascending: false });
     setReviews(data || []);
     setLoading(false);
   };
 
   const approve = async (id: string) => {
-    await supabase.from('reviews').update({ is_approved: true, status: 'approved' }).eq('id', id);
+    await supabase.from('reviews').update({ is_approved: true, status: 'approved' }).eq('id', id).eq('country_code', adminCountry);
     toast('রিভিউ অনুমোদিত');
     loadReviews();
   };
 
   const reject = async (id: string) => {
-    await supabase.from('reviews').update({ is_approved: false, status: 'rejected' }).eq('id', id);
+    await supabase.from('reviews').update({ is_approved: false, status: 'rejected' }).eq('id', id).eq('country_code', adminCountry);
     toast('রিভিউ অননুমোদিত');
     loadReviews();
   };
 
   const remove = async (id: string) => {
     if (!confirm('রিভিউ মুছতে চান?')) return;
-    await supabase.from('reviews').delete().eq('id', id);
+    await supabase.from('reviews').delete().eq('id', id).eq('country_code', adminCountry);
     toast('রিভিউ মুছে ফেলা হয়েছে');
     loadReviews();
   };
 
   const saveReply = async (id: string) => {
     if (!replyText.trim()) { toast('উত্তর লিখুন', 'error'); return; }
-    await supabase.from('reviews').update({ admin_reply: replyText.trim() }).eq('id', id);
+    await supabase.from('reviews').update({ admin_reply: replyText.trim() }).eq('id', id).eq('country_code', adminCountry);
     toast('উত্তর সংরক্ষিত হয়েছে');
     setReplyingTo(null);
     setEditingReply(null);
@@ -51,7 +52,7 @@ export default function AdminReviewsPage() {
   };
 
   const deleteReply = async (id: string) => {
-    await supabase.from('reviews').update({ admin_reply: null }).eq('id', id);
+    await supabase.from('reviews').update({ admin_reply: null }).eq('id', id).eq('country_code', adminCountry);
     toast('উত্তর মুছে ফেলা হয়েছে');
     loadReviews();
   };
