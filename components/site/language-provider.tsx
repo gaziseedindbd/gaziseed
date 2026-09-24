@@ -83,6 +83,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         if (parsed && typeof parsed === 'object') {
           if (lang === 'en' && parsed.en) return parsed.en as string;
           if (lang === 'bn' && parsed.bn) return parsed.bn as string;
+          if (lang === 'hi' && parsed.hi) return parsed.hi as string;
+          // Graceful fallback when a language version is not present.
+          if (lang === 'en' && parsed.bn) return parsed.bn as string;
+          if (lang === 'bn' && parsed.en) return parsed.en as string;
+          if (lang === 'hi' && parsed.en) return parsed.en as string;
         }
       } catch {
         // not valid JSON, fall through to dictionary lookup
