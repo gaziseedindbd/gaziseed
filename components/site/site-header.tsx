@@ -163,12 +163,9 @@ export function SiteHeader() {
   const renderNav = (compact = false) => (
     <nav
       aria-label="Primary navigation"
-      className={`flex items-center rounded-full border border-emerald-100/90 bg-white/95 backdrop-blur-md ${
-        compact
-          ? 'gap-0.5 p-0.5 shadow-[0_8px_24px_-15px_rgba(5,46,22,.35)] lg:gap-0.5 lg:p-1 xl:gap-1 xl:p-1 2xl:gap-1.5 2xl:p-1.5'
-          : 'gap-1.5 p-1.5 shadow-[0_12px_35px_-18px_rgba(5,46,22,.45)]'
-      }`}
+      className={`relative flex items-center rounded-[22px] border border-white/80 bg-white/80 p-1 shadow-[0_14px_35px_-22px_rgba(4,62,40,.45)] ring-1 ring-emerald-950/5 backdrop-blur-2xl ${compact ? 'gap-0.5 lg:gap-1 2xl:gap-1.5' : 'gap-1.5'}`}
     >
+      <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/70 to-transparent" />
       {navLinks.map((link) => {
         const Icon = link.icon;
         const active = isActive(link.href);
@@ -176,26 +173,36 @@ export function SiteHeader() {
           <Link
             key={link.href}
             href={link.href}
-            className={`group relative flex shrink-0 items-center rounded-full font-extrabold transition-all duration-200 ${
-              compact
-                ? 'gap-0.5 px-1.5 py-1.5 text-[9px] leading-none lg:gap-0.5 lg:px-1.5 lg:py-1.5 xl:gap-1 xl:px-2 xl:py-1.5 xl:text-[10px] 2xl:gap-2 2xl:px-3 2xl:py-2 2xl:text-[11px]'
-                : 'gap-2 px-4 py-2.5 text-[13px] leading-none'
-            } ${
-              active
-                ? 'bg-emerald-800 text-white shadow-[0_6px_16px_-8px_rgba(6,78,59,.7)]'
-                : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-800'
+            className={`group relative flex shrink-0 items-center rounded-[16px] font-extrabold transition-all duration-250 ${compact
+              ? 'gap-1.5 px-2 py-1.5 text-[9px] leading-none lg:px-2 lg:text-[9.5px] xl:gap-1.5 xl:px-2.5 xl:py-2 xl:text-[10px] 2xl:gap-2 2xl:px-3 2xl:py-2 2xl:text-[11px]'
+              : 'gap-2 px-4 py-2.5 text-[13px] leading-none'
+            } ${active
+              ? 'bg-gradient-to-r from-emerald-950 via-emerald-800 to-emerald-700 text-white shadow-[0_9px_22px_-13px_rgba(4,88,57,.8)] ring-1 ring-emerald-700/50'
+              : 'text-slate-700 hover:-translate-y-0.5 hover:bg-emerald-50/90 hover:text-emerald-900'
             }`}
           >
-            <Icon
-              className={`${compact ? 'h-2.5 w-2.5 lg:h-3 lg:w-3 xl:h-3.5 xl:w-3.5 2xl:h-4 2xl:w-4' : 'h-4 w-4'} transition-transform duration-200 group-hover:scale-110 ${
-                active ? 'text-white' : 'text-emerald-700'
+            <span
+              className={`flex shrink-0 items-center justify-center rounded-[10px] transition-all duration-250 ${compact ? 'h-5 w-5 xl:h-5.5 xl:w-5.5' : 'h-7 w-7'} ${active
+                ? 'bg-white/12 text-white ring-1 ring-white/15'
+                : 'bg-emerald-50 text-emerald-700 group-hover:bg-white group-hover:shadow-sm'
               }`}
-            />
-            <span>{link.label}</span>
+            >
+              <Icon
+                className={`${compact ? 'h-2.5 w-2.5 xl:h-3 xl:w-3 2xl:h-3.5 2xl:w-3.5' : 'h-4 w-4'} transition-transform duration-250 group-hover:scale-110`}
+              />
+            </span>
+
+            <span className="whitespace-nowrap">{link.label}</span>
+
+            {active && (
+              <span className="absolute inset-x-3 bottom-0.5 h-0.5 rounded-full bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-300 opacity-95" />
+            )}
+
             {link.badge && (
               <span
-                className={`absolute -right-1.5 -top-1.5 rounded-full px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wide shadow-sm ${
-                  active ? 'bg-lime-300 text-emerald-950' : 'bg-amber-400 text-amber-950'
+                className={`absolute -right-1.5 -top-1.5 z-10 rounded-full border px-1.5 py-0.5 text-[6.5px] font-black uppercase tracking-[0.08em] shadow-sm ${active
+                  ? 'border-amber-200/60 bg-amber-300 text-emerald-950'
+                  : 'border-white/80 bg-amber-400 text-amber-950'
                 }`}
               >
                 {link.badge}
