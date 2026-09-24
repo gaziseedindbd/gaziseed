@@ -11,21 +11,22 @@ export default function AdminBannersPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
+  const [adminCountry, setAdminCountry] = useState<'BD' | 'IN'>('BD');
 
-  useEffect(() => { loadBanners(); }, []);
+  useEffect(() => { const init = async () => { const { data, error } = await supabase.rpc('current_admin_country'); if (error) { toast('Admin branch নির্ধারণ ব্যর্থ', 'error'); return; } const country = String(data).toUpperCase() === 'IN' ? 'IN' : 'BD'; setAdminCountry(country); await loadBanners(country); }; void init(); }, []);
 
-  const loadBanners = async () => {
-    const { data } = await supabase.from('banners').select('*').order('display_order');
+  const loadBanners = async (country = adminCountry) => {
+    const { data } = await supabase.from('banners').select('*').eq('country_code', country).order('display_order');
     setBanners(data || []);
     setLoading(false);
   };
 
   const handleSave = async (formData: any) => {
     if (editing) {
-      await supabase.from('banners').update(formData).eq('id', editing.id);
+      await supabase.from('banners').update({ ...formData, country_code: adminCountry }).eq('id', editing.id).eq('country_code', adminCountry);
       toast('ব্যানার আপডেট হয়েছে');
     } else {
-      await supabase.from('banners').insert(formData);
+      await supabase.from('banners').insert({ ...formData, country_code: adminCountry });
       toast('ব্যানার যোগ হয়েছে');
     }
     setShowForm(false); setEditing(null); loadBanners();
@@ -33,7 +34,7 @@ export default function AdminBannersPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('ব্যানার মুছতে চান?')) return;
-    await supabase.from('banners').delete().eq('id', id);
+    await supabase.from('banners').delete().eq('id', id).eq('country_code', adminCountry);
     toast('ব্যানার মুছে ফেলা হয়েছে');
     loadBanners();
   };
