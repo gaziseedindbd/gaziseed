@@ -26,6 +26,7 @@ import {
   Loader2,
   ArrowUpRight,
   ChevronDown,
+  Languages,
   Truck,
 } from 'lucide-react';
 import { getSiteSettings, getProducts } from '@/lib/data';
@@ -46,6 +47,9 @@ export function SiteHeader() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const languageDesktopRef = useRef<HTMLDivElement>(null);
+  const languageMobileRef = useRef<HTMLDivElement>(null);
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const { lang, setLang, t } = useLang();
 
   useEffect(() => {
@@ -67,6 +71,7 @@ export function SiteHeader() {
   useEffect(() => {
     setMobileMenuOpen(false);
     setSearchOpen(false);
+    setLanguageMenuOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -81,6 +86,30 @@ export function SiteHeader() {
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [searchOpen]);
+
+  useEffect(() => {
+    if (!languageMenuOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      const insideDesktop = languageDesktopRef.current?.contains(target);
+      const insideMobile = languageMobileRef.current?.contains(target);
+      if (!insideDesktop && !insideMobile) {
+        setLanguageMenuOpen(false);
+      }
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setLanguageMenuOpen(false);
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [languageMenuOpen]);
 
   useEffect(() => {
     const query = searchQuery.trim();
@@ -160,9 +189,9 @@ export function SiteHeader() {
 
   const isActive = (href: string) => pathname === href || (href !== '/' && pathname.startsWith(href + '/'));
 
-  const mobileLanguageOptions = country === 'IN'
-    ? ([['bn', 'বাংলা'], ['en', 'EN'], ['hi', 'हिन्दी']] as const)
-    : ([['bn', 'বাংলা'], ['en', 'EN']] as const);
+  const languageOptions = country === 'IN'
+    ? ([['en', 'EN', 'English'], ['bn', 'বাংলা', 'বাংলা'], ['hi', 'हिन्दी', 'हिन्दी']] as const)
+    : ([['en', 'EN', 'English'], ['bn', 'বাংলা', 'বাংলা']] as const);
 
   const renderNav = (compact = false) => (
     <nav
@@ -257,29 +286,78 @@ export function SiteHeader() {
             {searchLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin text-emerald-700" />}
             {searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="mr-1 rounded-full p-1 text-slate-400 hover:bg-slate-100" aria-label="Clear search"><X className="h-3.5 w-3.5" /></button>}
           </div>
-          <div className="flex items-center gap-px rounded-lg border border-emerald-100 bg-emerald-50/70 p-px lg:rounded-lg" role="group" aria-label="Language">
-            {(country === 'IN'
-              ? ([
-                  ['bn', 'বাংলা'],
-                  ['en', 'EN'],
-                  ['hi', 'हिन्दी'],
-                ] as const)
-              : ([
-                  ['bn', 'বাংলা'],
-                  ['en', 'EN'],
-                ] as const)
-            ).map(([code, label]) => (
-              <button key={code} type="button" onClick={() => setLang(code)} className={`rounded-md px-1.5 py-1.5 text-[9px] font-black transition xl:rounded-lg xl:px-2 xl:text-[10px] ${lang === code ? 'bg-emerald-800 text-white shadow-sm' : 'text-emerald-900 hover:bg-white'}`} aria-pressed={lang === code}>{label}</button>
-            ))}
-          </div>
           <Link href="/wishlist" title={t('প্রিয় তালিকা', 'Wishlist')} className={`rounded-lg p-1.5 transition hover:bg-emerald-50 hover:text-emerald-700 ${isActive('/wishlist') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700'}`}><Heart className="h-5 w-5" /></Link>
           <Link href="/account" title={t('অ্যাকাউন্ট', 'Account')} className={`flex items-center gap-1 rounded-lg px-1.5 py-1.5 text-sm font-bold transition hover:bg-emerald-50 hover:text-emerald-700 ${isActive('/account') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700'}`}><User className="h-5 w-5" /><span className="hidden 2xl:inline">GAZI SEED</span><ChevronDown className="hidden h-3.5 w-3.5 2xl:block" /></Link>
           <Link href="/cart" title={t('কার্ট', 'Cart')} className={`relative rounded-lg p-1.5 transition hover:bg-emerald-50 hover:text-emerald-700 ${isActive('/cart') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700'}`}><ShoppingCart className="h-5 w-5" />{cartCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-700 px-1 text-[9px] font-black text-white ring-2 ring-white">{cartCount > 99 ? '99+' : cartCount}</span>}</Link>
+          <div ref={languageDesktopRef} className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setLanguageMenuOpen((open) => !open)}
+              aria-haspopup="menu"
+              aria-expanded={languageMenuOpen}
+              aria-label={t('ভাষা নির্বাচন', 'Select language')}
+              title={t('ভাষা', 'Language')}
+              className={`flex items-center gap-1.5 rounded-xl border px-2 py-1.5 text-[10px] font-black transition-all xl:px-2.5 ${languageMenuOpen ? 'border-emerald-300 bg-emerald-800 text-white shadow-md' : 'border-emerald-100 bg-emerald-50/70 text-emerald-900 hover:border-emerald-200 hover:bg-white'}`}
+            >
+              <Languages className="h-4 w-4" />
+              <span>{lang === 'hi' ? 'हिन्दी' : lang === 'bn' ? 'বাংলা' : 'EN'}</span>
+              <ChevronDown className={`h-3 w-3 transition-transform ${languageMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {languageMenuOpen && (
+              <div role="menu" className="absolute right-0 top-full z-[80] mt-2 w-40 overflow-hidden rounded-2xl border border-emerald-100 bg-white p-1.5 shadow-[0_20px_45px_-18px_rgba(4,62,40,.42)] ring-1 ring-emerald-950/5">
+                <div className="px-2.5 pb-1.5 pt-2 text-[9px] font-black uppercase tracking-[0.14em] text-slate-400">{t('ভাষা', 'Language')}</div>
+                {languageOptions.map(([code, shortLabel, label]) => (
+                  <button
+                    key={code}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={lang === code}
+                    onClick={() => { setLang(code); setLanguageMenuOpen(false); }}
+                    className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2.5 text-left text-xs font-black transition ${lang === code ? 'bg-emerald-50 text-emerald-900' : 'text-slate-700 hover:bg-emerald-50/70 hover:text-emerald-900'}`}
+                  >
+                    <span>{label}</span>
+                    <span className={`text-[10px] ${lang === code ? 'text-emerald-700' : 'text-slate-400'}`}>{lang === code ? '✓' : shortLabel}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5 lg:hidden">
           <button type="button" onClick={() => setSearchOpen((value) => !value)} aria-label={t('অনুসন্ধান খুলুন', 'Open search')} className={`rounded-xl p-2.5 transition ${searchOpen ? 'bg-emerald-800 text-white' : 'bg-emerald-50 text-emerald-800'}`}>{searchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}</button>
           <Link href="/account" className={`rounded-xl p-2.5 transition ${isActive('/account') ? 'bg-emerald-800 text-white' : 'bg-emerald-50 text-emerald-800'}`} aria-label={t('অ্যাকাউন্ট / লগইন', 'Account / Login')} title={t('অ্যাকাউন্ট / লগইন', 'Account / Login')}><User className="h-5 w-5" /></Link>
           <Link href="/cart" className="relative rounded-xl p-2.5 text-slate-700 hover:bg-emerald-50" aria-label={t('কার্ট', 'Cart')}><ShoppingCart className="h-5 w-5" />{cartCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-700 px-1 text-[9px] font-black text-white ring-2 ring-white">{cartCount > 99 ? '99+' : cartCount}</span>}</Link>
+          <div ref={languageMobileRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setLanguageMenuOpen((open) => !open)}
+              aria-haspopup="menu"
+              aria-expanded={languageMenuOpen}
+              aria-label={t('ভাষা নির্বাচন', 'Select language')}
+              title={t('ভাষা', 'Language')}
+              className={`flex items-center gap-1 rounded-xl px-2 py-2.5 text-[10px] font-black transition ${languageMenuOpen ? 'bg-emerald-800 text-white' : 'bg-emerald-50 text-emerald-900'}`}
+            >
+              <Languages className="h-[18px] w-[18px]" />
+              <span>{lang === 'hi' ? 'हिन्दी' : lang === 'bn' ? 'বাংলা' : 'EN'}</span>
+            </button>
+            {languageMenuOpen && (
+              <div role="menu" className="absolute right-0 top-full z-[80] mt-2 w-36 overflow-hidden rounded-2xl border border-emerald-100 bg-white p-1.5 shadow-[0_20px_45px_-18px_rgba(4,62,40,.42)] ring-1 ring-emerald-950/5">
+                {languageOptions.map(([code, shortLabel, label]) => (
+                  <button
+                    key={code}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={lang === code}
+                    onClick={() => { setLang(code); setLanguageMenuOpen(false); }}
+                    className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2.5 text-xs font-black transition ${lang === code ? 'bg-emerald-50 text-emerald-900' : 'text-slate-700 hover:bg-emerald-50/70 hover:text-emerald-900'}`}
+                  >
+                    <span>{label}</span>
+                    <span className={`text-[10px] font-black ${lang === code ? 'text-emerald-700' : 'text-slate-400'}`}>{lang === code ? '✓' : shortLabel}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button type="button" onClick={() => setMobileMenuOpen((value) => !value)} aria-label={mobileMenuOpen ? 'মেনু বন্ধ করুন' : 'মেনু খুলুন'} className="rounded-xl p-2.5 text-slate-700 transition hover:bg-slate-100 hover:text-emerald-700">{mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
         </div>
       </div>
@@ -305,7 +383,7 @@ export function SiteHeader() {
         </>
       )}
       <nav className="hidden border-t border-slate-100/80 bg-white/95 py-2.5 shadow-[0_8px_24px_-20px_rgba(5,46,22,.4)] md:block lg:hidden"><div className="mx-auto flex max-w-[1220px] items-center justify-center px-4">{renderNav(false)}</div></nav>
-      {mobileMenuOpen && <div className="border-t border-slate-100 bg-white shadow-2xl md:hidden"><div className="p-3"><div className="mb-2 flex items-center gap-2 px-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-400">Menu<span className="h-px flex-1 bg-slate-100" /></div><button type="button" onClick={() => { setMobileMenuOpen(false); setSearchOpen(true); }} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-left text-sm font-bold text-emerald-900"><Search className="h-5 w-5 text-emerald-700" />{t('পণ্য ও বীজ খুঁজুন...', 'Search products & seeds...')}</button><Link href="/account" onClick={() => setMobileMenuOpen(false)} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-left text-sm font-black text-emerald-900"><User className="h-5 w-5 text-emerald-700" />{t('অ্যাকাউন্ট / লগইন', 'Account / Login')}</Link>{!isAdminRoute && <div className="mb-3"><CountrySelector mobile /></div>}<div className="mb-3 rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/90 to-white p-3 shadow-sm"><div className="mb-2 flex items-center justify-between"><span className="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-900">Language</span><span className="text-[9px] font-bold text-slate-400">{country === 'IN' ? 'বাংলা · English · हिन्दी' : 'বাংলা · English'}</span></div><div className="flex items-center gap-1.5 rounded-xl border border-emerald-100 bg-white p-1">{mobileLanguageOptions.map(([code, label]) => (<button key={code} type="button" onClick={() => setLang(code)} className={lang === code ? 'flex-1 rounded-lg bg-emerald-800 px-3 py-2 text-xs font-black text-white shadow-sm' : 'flex-1 rounded-lg px-3 py-2 text-xs font-black text-emerald-900 transition hover:bg-emerald-50'} aria-pressed={lang === code}>{label}</button>))}</div></div><div className="grid grid-cols-2 gap-2">{navLinks.map((link) => { const Icon = link.icon; const active = isActive(link.href); return (<Link key={link.href} href={link.href} className={`flex items-center gap-2 rounded-2xl border p-3 text-sm font-bold transition ${active ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-100 bg-slate-50 text-slate-700 hover:border-emerald-100 hover:bg-emerald-50/50'}`}><Icon className="h-5 w-5 text-emerald-700" />{link.label}</Link>); })}</div></div></div>}
+      {mobileMenuOpen && <div className="border-t border-slate-100 bg-white shadow-2xl md:hidden"><div className="p-3"><div className="mb-2 flex items-center gap-2 px-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-400">Menu<span className="h-px flex-1 bg-slate-100" /></div><button type="button" onClick={() => { setMobileMenuOpen(false); setSearchOpen(true); }} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-left text-sm font-bold text-emerald-900"><Search className="h-5 w-5 text-emerald-700" />{t('পণ্য ও বীজ খুঁজুন...', 'Search products & seeds...')}</button><Link href="/account" onClick={() => setMobileMenuOpen(false)} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-left text-sm font-black text-emerald-900"><User className="h-5 w-5 text-emerald-700" />{t('অ্যাকাউন্ট / লগইন', 'Account / Login')}</Link>{!isAdminRoute && <div className="mb-3"><CountrySelector mobile /></div>}<div className="grid grid-cols-2 gap-2">{navLinks.map((link) => { const Icon = link.icon; const active = isActive(link.href); return (<Link key={link.href} href={link.href} className={`flex items-center gap-2 rounded-2xl border p-3 text-sm font-bold transition ${active ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-100 bg-slate-50 text-slate-700 hover:border-emerald-100 hover:bg-emerald-50/50'}`}><Icon className="h-5 w-5 text-emerald-700" />{link.label}</Link>); })}</div></div></div>}
     </header>
   );
 }
