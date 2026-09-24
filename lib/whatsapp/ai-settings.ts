@@ -28,7 +28,21 @@ export async function getWhatsAppAISettings(): Promise<AISettings> {
   if (!data) throw new Error('AI settings are not configured.');
 
   const provider = String(data.provider || 'openai') as AIProvider;
-  const model = String(data.model || data.model_name || '').trim();
+  const providerEnvKey =
+    provider === 'gemini' ? process.env.GEMINI_API_KEY :
+    provider === 'groq' ? process.env.GROQ_API_KEY :
+    provider === 'cerebras' ? process.env.CEREBRAS_API_KEY :
+    provider === 'openrouter' ? process.env.OPENROUTER_API_KEY :
+    provider === 'claude' ? process.env.ANTHROPIC_API_KEY :
+    provider === 'openai' ? process.env.OPENAI_API_KEY :
+    undefined;
+  const modelEnvKey =
+    provider === 'gemini' ? process.env.GEMINI_MODEL :
+    provider === 'groq' ? process.env.GROQ_MODEL :
+    provider === 'cerebras' ? process.env.CEREBRAS_MODEL :
+    provider === 'openrouter' ? process.env.OPENROUTER_MODEL :
+    undefined;
+  const model = String(data.model || data.model_name || modelEnvKey || '').trim();
   const featureFlags = {
     ...DEFAULT_FLAGS,
     ...(data.feature_flags && typeof data.feature_flags === 'object' ? data.feature_flags : {}),
@@ -37,7 +51,7 @@ export async function getWhatsAppAISettings(): Promise<AISettings> {
   const settings: AISettings = {
     is_enabled: Boolean(data.is_enabled),
     provider,
-    api_key: String(data.api_key || ''),
+    api_key: String(data.api_key || providerEnvKey || ''),
     model,
     base_url: String(data.base_url || ''),
     temperature: data.temperature == null ? null : Number(data.temperature),
