@@ -11,7 +11,7 @@ import { useLang } from '@/components/site/language-provider';
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const { lang, t, tDb } = useLang();
+  const { t, tDb, tCategoryName } = useLang();
 
   useEffect(() => {
     getCategories().then((c) => {
@@ -50,7 +50,7 @@ export default function CategoriesPage() {
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
             {categories.map((cat, idx) => {
-              const catName = lang === 'en' && (cat as any).name_en ? (cat as any).name_en : cat.name_bn;
+              const catName = tCategoryName(cat.name_bn, (cat as any).name_en || cat.name_bn);
 
               return (
                 <Link
