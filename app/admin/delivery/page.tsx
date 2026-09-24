@@ -56,11 +56,15 @@ export default function AdminDeliveryPage() {
   const [showZoneForm, setShowZoneForm] = useState(false);
 
   useEffect(() => {
-    const sync = () => {
-      const saved = localStorage.getItem('gazi_admin_branch');
-      if (saved === 'BD' || saved === 'IN') setCountry(saved);
+    const sync = async () => {
+      const { data, error } = await supabase.rpc('current_admin_country');
+      if (error) {
+        console.error('Admin delivery branch check failed:', error);
+        return;
+      }
+      setCountry(String(data).toUpperCase() === 'IN' ? 'IN' : 'BD');
     };
-    sync();
+    void sync();
     window.addEventListener('gazi-branch-change', sync);
     return () => window.removeEventListener('gazi-branch-change', sync);
   }, []);
@@ -95,7 +99,7 @@ export default function AdminDeliveryPage() {
       is_active: editingRule.is_active !== false,
     };
     const result = editingRule.id
-      ? await supabase.from('delivery_charge_rules').update(payload).eq('id', editingRule.id)
+      ? await supabase.from('delivery_charge_rules').update(payload).eq('id', editingRule.id).eq('country_code', country)
       : await supabase.from('delivery_charge_rules').insert(payload);
     if (result.error) return toast('চার্জ rule save হয়নি', 'error');
     toast('ডেলিভারি চার্জ আপডেট হয়েছে');
@@ -104,7 +108,7 @@ export default function AdminDeliveryPage() {
 
   const deleteRule = async (id: string) => {
     if (!confirm('এই delivery charge rule মুছতে চান?')) return;
-    const { error } = await supabase.from('delivery_charge_rules').delete().eq('id', id);
+    const { error } = await supabase.from('delivery_charge_rules').delete().eq('id', id).eq('country_code', country);
     if (error) return toast('মুছতে সমস্যা হয়েছে', 'error');
     toast('Rule মুছে ফেলা হয়েছে'); loadData();
   };
@@ -132,7 +136,7 @@ export default function AdminDeliveryPage() {
   const saveZone = async (formData: any) => {
     const payload = { ...formData, country_code: country, charge: Number(formData.charge), display_order: Number(formData.display_order) };
     const result = editingZone?.id
-      ? await supabase.from('delivery_zones').update(payload).eq('id', editingZone.id)
+      ? await supabase.from('delivery_zones').update(payload).eq('id', editingZone.id).eq('country_code', country)
       : await supabase.from('delivery_zones').insert(payload);
     if (result.error) return toast('Delivery zone save হয়নি', 'error');
     toast(editingZone ? 'Delivery zone আপডেট হয়েছে' : 'Delivery zone যোগ হয়েছে');
@@ -141,7 +145,7 @@ export default function AdminDeliveryPage() {
 
   const deleteZone = async (id: string) => {
     if (!confirm('এই delivery zone মুছতে চান?')) return;
-    const { error } = await supabase.from('delivery_zones').delete().eq('id', id);
+    const { error } = await supabase.from('delivery_zones').delete().eq('id', id).eq('country_code', country);
     if (error) return toast('মুছতে সমস্যা হয়েছে', 'error');
     toast('Delivery zone মুছে ফেলা হয়েছে'); loadData();
   };
