@@ -82,18 +82,18 @@ export default function CategoriesPage() {
                         <Leaf className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </span>
                       <div className="min-w-0">
-                        <h3 className="line-clamp-2 text-[17px] font-black leading-[1.25] tracking-[-0.015em] text-[#073c2c] transition-colors duration-300 group-hover:text-[#08704a] sm:text-[21px]">
+                        <h3 className="line-clamp-2 text-[17px] font-black uppercase leading-[1.2] tracking-[0.01em] text-[#073c2c] transition-colors duration-300 group-hover:text-[#08704a] sm:text-[21px]">
                           {catName}
                         </h3>
                         {((lang === 'en' ? cat.name_bn : cat.name_en) || '').trim() && (
-                          <p className="mt-1 text-[10px] font-semibold leading-snug text-slate-400 sm:text-[12px]">
+                          <p className="mt-1 text-[11px] font-bold leading-snug text-emerald-700/70 sm:text-[12px]">
                             {lang === 'en' ? cat.name_bn : cat.name_en}
                           </p>
                         )}
                       </div>
                     </div>
 
-                    <div className="min-h-[2.7rem]">
+                    <div className="min-h-[3.35rem] sm:min-h-[3.8rem]">
                       {cat.description && (
                         <p className="line-clamp-2 text-[11px] font-medium leading-[1.55] text-slate-500 sm:text-[13px] sm:leading-[1.6]">
                           {tDb(cat.description)}
@@ -102,7 +102,7 @@ export default function CategoriesPage() {
                     </div>
 
                     <div className="mt-3.5 sm:mt-4">
-                      <span className="flex w-full items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-[10px] font-black text-emerald-800 transition-all duration-300 group-hover:border-emerald-700 group-hover:bg-emerald-700 group-hover:text-white sm:rounded-2xl sm:px-4 sm:py-3 sm:text-[11px]">
+                      <span className="flex min-h-11 w-full items-center justify-center rounded-2xl border border-emerald-500/60 bg-gradient-to-b from-emerald-500 via-emerald-600 to-emerald-700 px-3 py-3 text-[10px] font-black uppercase tracking-[0.04em] text-white shadow-[0_5px_0_#075c3e,0_10px_18px_-8px_rgba(5,92,62,.65)] transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[0_6px_0_#075c3e,0_13px_22px_-8px_rgba(5,92,62,.7)] group-active:translate-y-1 group-active:shadow-[0_2px_0_#075c3e,0_5px_10px_-6px_rgba(5,92,62,.6)] sm:min-h-12 sm:rounded-2xl sm:px-4 sm:py-3.5 sm:text-[11px]">
                         {t('পণ্য দেখুন', 'Explore Products')}
                       </span>
                     </div>
