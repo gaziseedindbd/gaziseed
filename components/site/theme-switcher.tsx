@@ -85,6 +85,7 @@ export function setStoredSiteTheme(theme: SiteTheme) {
 export function ThemeSwitcher({ defaultTheme }: { defaultTheme?: HomePageTheme }) {
   const pathname = usePathname();
   const isCategoryPage = pathname === '/categories' || pathname.startsWith('/category/');
+  const isHomePage = pathname === '/';
   const [siteTheme, setSiteTheme] = useState<SiteTheme>('emerald');
   const [open, setOpen] = useState(false);
 
@@ -109,7 +110,7 @@ export function ThemeSwitcher({ defaultTheme }: { defaultTheme?: HomePageTheme }
     setOpen(false);
   };
 
-  if (isCategoryPage) return null;
+  if (isCategoryPage || isHomePage) return null;
 
   return (
     <>
