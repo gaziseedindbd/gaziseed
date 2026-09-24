@@ -4,6 +4,21 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 
 export type Lang = 'bn' | 'en' | 'hi';
 
+const CATEGORY_HI_TRANSLATIONS: Record<string, string> = {
+  'ফুল': 'फूल',
+  'তরমুজ': 'तरबूज',
+  'মরিচ': 'मिर्च',
+  'কুমড়া': 'कद्दू और स्क्वैश',
+  'বেগুন': 'बैंगन',
+  'সবজি': 'सब्ज़ियाँ',
+  'শসা-করলা': 'खीरा और करेला',
+  'টমেটো': 'टमाटर',
+  'কৃষি টুল': 'कृषि उपकरण',
+  'কম্বো প্যাকেজ': 'कॉम्बो पैकेज',
+  'শীতকালীন': 'शीतकालीन',
+  'ঔষধি': 'औषधीय पौधे',
+};
+
 const DB_TRANSLATIONS: Record<string, string> = {
   'হোম': 'Home',
   'সকল প্রোডাক্ট': 'All Products',
@@ -37,6 +52,7 @@ type LangContextType = {
   setLang: (l: Lang) => void;
   t: (bn: string, en: string, hi?: string) => string;
   tDb: (text: string) => string;
+  tCategoryName: (bn: string, en: string) => string;
   content: (translations: any, fallback: any) => any;
 };
 
@@ -45,6 +61,7 @@ const LangContext = createContext<LangContextType>({
   setLang: () => {},
   t: (_bn, en, hi) => hi || en,
   tDb: (text) => text,
+  tCategoryName: (bn, en) => en || bn,
   content: (_translations, fallback) => fallback,
 });
 
@@ -74,6 +91,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (typeof fallback === 'string') return current.value || fallback;
     return { ...fallback, ...current };
   };
+  const tCategoryName = (bn: string, en: string) => {
+    if (lang === 'en') return en || bn;
+    if (lang === 'hi') return CATEGORY_HI_TRANSLATIONS[bn] || en || bn;
+    return bn;
+  };
+
   const tDb = (text: string) => {
     if (!text) return text;
     const trimmed = text.trim();
@@ -97,7 +120,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <LangContext.Provider value={{ lang, setLang, t, tDb, content }}>
+    <LangContext.Provider value={{ lang, setLang, t, tDb, tCategoryName, content }}>
       {children}
     </LangContext.Provider>
   );
