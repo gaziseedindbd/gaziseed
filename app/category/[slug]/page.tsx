@@ -237,7 +237,7 @@ export default function CategoryPage() {
             </div>
             <div className="space-y-3 pb-8">
               {categories.map((cat) => {
-                const catTitle = lang === 'en' && (cat as any).name_en ? (cat as any).name_en : cat.name_bn;
+                const catTitle = tCategoryName(cat.name_bn, (cat as any).name_en || cat.name_bn);
                 return (
                   <Link
                     key={cat.id}
