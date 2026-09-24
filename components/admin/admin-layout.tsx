@@ -118,20 +118,16 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     setAdminCountry(ownCountry);
 
     if (master) {
-      const { data: branchRow, error: branchError } = await supabase
-        .from('admin_branch_context')
-        .select('country_code')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
+      // Read the active master-admin branch through the SECURITY DEFINER RPC.
+      // This avoids client-side RLS/session-context issues when reading admin_branch_context.
+      const { data: branchCountry, error: branchError } = await supabase.rpc('current_admin_country');
 
-      if (branchError) console.error('Admin branch context check failed:', branchError);
-
-      const branch = branchRow?.country_code === 'IN' ? 'IN' : 'BD';
-      setSelectedBranch(branch);
-
-      if (!branchRow) {
-        const { error } = await supabase.rpc('set_admin_branch', { p_country: 'BD' });
-        if (error) console.error('Default admin branch setup failed:', error);
+      if (branchError) {
+        console.error('Admin branch context check failed:', branchError);
+        setSelectedBranch('BD');
+      } else {
+        const branch = String(branchCountry).toUpperCase() === 'IN' ? 'IN' : 'BD';
+        setSelectedBranch(branch);
       }
     } else {
       setSelectedBranch(ownCountry);
@@ -149,7 +145,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       console.error('Branch update failed:', error);
       return;
     }
-    window.dispatchEvent(new CustomEvent('gazi-branch-change', { detail: branch }));
+    // The reload re-runs checkAdmin(), which reads the persisted branch from current_admin_country().
     window.location.reload();
   };
 
