@@ -45,7 +45,7 @@ export default function AdminSettingsPage() {
       ]);
       setSiteForm(site.data || {});
       setMarketingForm(mkt.data || {});
-      const aiData = ai.data || {};
+      const aiData = (ai.data || {}) as Record<string, any>;
       setAiForm({
         ...aiData,
         api_key: '',
