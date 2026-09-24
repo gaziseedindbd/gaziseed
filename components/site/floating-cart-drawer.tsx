@@ -18,6 +18,7 @@ type CartFlyEvent = CustomEvent<{
 export default function FloatingCartDrawer() {
   const pathname = usePathname();
   const isCategoryListing = pathname === '/categories' || pathname.startsWith('/category/');
+  const isHomePage = pathname === '/';
   const { items, total, count, refresh } = useCart();
   const { t } = useLang();
   const [open, setOpen] = useState(false);
@@ -169,7 +170,7 @@ export default function FloatingCartDrawer() {
         </div>
       )}
 
-{!isCategoryListing && (
+{!isCategoryListing && !isHomePage && (
       <button ref={cartButtonRef} type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label={t('কার্ট দেখুন', 'View cart')} className={`fixed right-3 z-[90] inline-flex min-h-11 items-center gap-2 rounded-full border border-emerald-300/70 bg-emerald-600 px-3.5 py-2 text-white shadow-[0_12px_34px_-12px_rgba(5,150,105,.65)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-700 active:scale-[.97] bottom-[5.5rem] sm:bottom-5 sm:right-5 sm:px-4 ${cartBump ? 'animate-[gaziCartBump_.5s_ease-out]' : ''}`}><span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-white/15"><ShoppingCart className="h-3.5 w-3.5" />{count > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[8px] font-black text-emerald-700">{count}</span>}</span><span className="text-[11px] font-black">{t('কার্ট দেখুন', 'View cart')}</span>{count > 0 && <span className="border-l border-white/20 pl-2 text-[10px] font-extrabold text-emerald-50">{formatPrice(total)}</span>}</button>
       )}
 
