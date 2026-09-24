@@ -732,3 +732,39 @@
     font-size:.57rem!important;
   }
 }
+
+
+/* HOMEPAGE CATEGORY OVERLAY CLEANUP — mobile-safe final pass */
+@media(max-width:767px){
+  .home-premium-scope .home-category-section{
+    padding-bottom:112px!important;
+  }
+  .home-premium-scope .home-category-section .cat-card-content{
+    min-height:112px!important;
+  }
+  .home-premium-scope .home-category-section .cat-label{
+    min-height:20px!important;
+    max-width:calc(100% - 34px)!important;
+  }
+  .home-premium-scope .home-category-section .cat-description{
+    color:#64756e!important;
+    font-weight:650!important;
+  }
+  .home-premium-scope .home-category-section .cat-explore{
+    position:relative!important;
+    z-index:5!important;
+  }
+}
+@media(max-width:420px){
+  .home-premium-scope .home-category-section{
+    padding-bottom:108px!important;
+  }
+  .home-premium-scope .home-category-section .cat-card-content{
+    min-height:108px!important;
+  }
+}
+
+/* Keep the homepage section from being visually trapped under the sticky site header. */
+.home-premium-scope .home-category-section{
+  scroll-margin-top:96px!important;
+}
