@@ -40,8 +40,25 @@ export default function AdminOrdersPage() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const [duplicateOrders, setDuplicateOrders] = useState<Record<string, any[]>>({});
+  const [adminCountry, setAdminCountry] = useState<'BD' | 'IN'>('BD');
 
-  useEffect(() => { loadOrders(); }, []);
+  const formatAdminPrice = (price: number) =>
+    adminCountry === 'IN'
+      ? '₹ ' + Number(price).toLocaleString('en-IN')
+      : '৳ ' + Number(price).toLocaleString('bn-BD');
+
+  useEffect(() => {
+    const loadAdminCountry = async () => {
+      const { data, error } = await supabase.rpc('current_admin_country');
+      if (error) {
+        console.error('Orders admin branch check failed:', error);
+        return;
+      }
+      setAdminCountry(String(data).toUpperCase() === 'IN' ? 'IN' : 'BD');
+    };
+    loadAdminCountry();
+    loadOrders();
+  }, []);
 
   const loadOrders = async () => {
     let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
@@ -175,7 +192,7 @@ export default function AdminOrdersPage() {
       return;
     }
 
-    toast(`COD due ${formatPrice(dueAmount)} collected successfully`);
+    toast(`COD due ${formatAdminPrice(dueAmount)} collected successfully`);
     setSelectedOrder({
       ...selectedOrder,
       payment_status: 'paid',
@@ -193,7 +210,12 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-4 pb-12">
-      <h1 className="text-xl sm:text-2xl font-bold text-gray-900">অর্ডার ম্যানেজমেন্ট</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">অর্ডার ম্যানেজমেন্ট</h1>
+        <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
+          {adminCountry === 'IN' ? '🇮🇳 India Branch • ₹' : '🇧🇩 Bangladesh Branch • ৳'}
+        </span>
+      </div>
 
       {/* Filters */}
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
@@ -261,7 +283,7 @@ export default function AdminOrdersPage() {
                       <User className="h-3.5 w-3.5 text-primary" /> {o.customer_name}
                     </span>
                     <span className="text-primary font-bold text-sm">
-                      {formatPrice(o.final_amount ?? o.grand_total ?? o.total_amount ?? 0)}
+                      {formatAdminPrice(o.final_amount ?? o.grand_total ?? o.total_amount ?? 0)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -314,7 +336,7 @@ export default function AdminOrdersPage() {
                     <td className="p-3.5 whitespace-nowrap">{o.customer_name}</td>
                     <td className="p-3.5 whitespace-nowrap">{o.customer_phone}</td>
                     <td className="p-3.5 capitalize whitespace-nowrap">{o.order_source}</td>
-                    <td className="p-3.5 font-bold text-primary whitespace-nowrap">{formatPrice(o.final_amount ?? o.grand_total ?? o.total_amount ?? 0)}</td>
+                    <td className="p-3.5 font-bold text-primary whitespace-nowrap">{formatAdminPrice(o.final_amount ?? o.grand_total ?? o.total_amount ?? 0)}</td>
                     <td className="p-3.5 whitespace-nowrap">
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         o.status === 'delivered' ? 'bg-green-100 text-green-700' :
@@ -373,9 +395,9 @@ export default function AdminOrdersPage() {
               <div><span className="text-muted-foreground">পেমেন্ট মেথড: </span><span className="font-semibold uppercase">{selectedOrder.payment_method || 'COD'}</span></div>
               <div><span className="text-muted-foreground">পেমেন্ট স্ট্যাটাস: </span><span className="font-semibold uppercase">{selectedOrder.payment_status || 'unpaid'}</span></div>
               <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-2 rounded-xl border border-border/60 bg-background/70 p-2.5">
-                <div><span className="text-muted-foreground">মোট: </span><span className="font-bold">{formatPrice(selectedOrder.final_amount ?? selectedOrder.grand_total ?? selectedOrder.total_amount ?? 0)}</span></div>
-                <div><span className="text-muted-foreground">পেইড: </span><span className="font-bold text-green-600">{formatPrice(Math.max(0, Number(selectedOrder.final_amount ?? selectedOrder.grand_total ?? selectedOrder.total_amount ?? 0) - Number(selectedOrder.payment_due_amount || 0)))}</span></div>
-                <div><span className="text-muted-foreground">বাকি: </span><span className="font-bold text-orange-600">{formatPrice(Math.max(0, Number(selectedOrder.payment_due_amount || 0)))}</span></div>
+                <div><span className="text-muted-foreground">মোট: </span><span className="font-bold">{formatAdminPrice(selectedOrder.final_amount ?? selectedOrder.grand_total ?? selectedOrder.total_amount ?? 0)}</span></div>
+                <div><span className="text-muted-foreground">পেইড: </span><span className="font-bold text-green-600">{formatAdminPrice(Math.max(0, Number(selectedOrder.final_amount ?? selectedOrder.grand_total ?? selectedOrder.total_amount ?? 0) - Number(selectedOrder.payment_due_amount || 0)))}</span></div>
+                <div><span className="text-muted-foreground">বাকি: </span><span className="font-bold text-orange-600">{formatAdminPrice(Math.max(0, Number(selectedOrder.payment_due_amount || 0)))}</span></div>
               </div>
               <div className="sm:col-span-2"><span className="text-muted-foreground">ঠিকানা: </span><span className="font-semibold">{selectedOrder.delivery_address}</span></div>
               <div><span className="text-muted-foreground">এলাকা: </span><span className="font-semibold">{selectedOrder.delivery_zone_name || selectedOrder.thana || selectedOrder.district || '-'}</span></div>
@@ -422,12 +444,12 @@ export default function AdminOrdersPage() {
                             </p>
                             {item.variant_name && <p className="text-[11px] text-muted-foreground">ভেরিয়েন্ট: {item.variant_name}</p>}
                             <p className="text-[11px] text-muted-foreground">
-                              {item.quantity} × {item.is_free_gift ? 'FREE' : formatPrice(item.unit_price)}
+                              {item.quantity} × {item.is_free_gift ? 'FREE' : formatAdminPrice(item.unit_price)}
                             </p>
                           </div>
                         </div>
                         <span className="font-bold text-primary shrink-0">
-                          {item.is_free_gift ? '৳0' : formatPrice(item.total_price || (item.unit_price * item.quantity))}
+                          {item.is_free_gift ? '৳0' : formatAdminPrice(item.total_price || (item.unit_price * item.quantity))}
                         </span>
                       </div>
                     );
@@ -439,21 +461,21 @@ export default function AdminOrdersPage() {
               <div className="mt-3.5 space-y-1.5 border-t border-border pt-3 text-xs sm:text-sm">
                 <div className="flex justify-between text-muted-foreground">
                   <span>সাবটোটাল</span>
-                  <span>{formatPrice(selectedOrder.subtotal ?? selectedOrder.total_amount ?? 0)}</span>
+                  <span>{formatAdminPrice(selectedOrder.subtotal ?? selectedOrder.total_amount ?? 0)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>ডেলিভারি চার্জ</span>
-                  <span>{formatPrice(selectedOrder.delivery_charge ?? 0)}</span>
+                  <span>{formatAdminPrice(selectedOrder.delivery_charge ?? 0)}</span>
                 </div>
                 {Number(selectedOrder.discount || selectedOrder.discount_amount || 0) > 0 && (
                   <div className="flex justify-between text-green-600 font-medium">
                     <span>ডিসকাউন্ট</span>
-                    <span>-{formatPrice(selectedOrder.discount || selectedOrder.discount_amount)}</span>
+                    <span>-{formatAdminPrice(selectedOrder.discount || selectedOrder.discount_amount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm sm:text-base font-bold pt-2 border-t border-border mt-2">
                   <span>মোট বিল</span>
-                  <span className="text-primary">{formatPrice(selectedOrder.final_amount ?? selectedOrder.grand_total ?? selectedOrder.total_amount ?? 0)}</span>
+                  <span className="text-primary">{formatAdminPrice(selectedOrder.final_amount ?? selectedOrder.grand_total ?? selectedOrder.total_amount ?? 0)}</span>
                 </div>
               </div>
             </div>
@@ -465,10 +487,10 @@ export default function AdminOrdersPage() {
                     <p className="text-sm font-bold text-orange-800">COD বাকি সংগ্রহ</p>
                     <p className="mt-0.5 text-xs text-orange-700">ডেলিভারি সম্পন্ন। এখন বাকি টাকা সংগ্রহ করে Paid করা যাবে।</p>
                   </div>
-                  <span className="text-sm font-bold text-orange-800">{formatPrice(selectedOrder.payment_due_amount)}</span>
+                  <span className="text-sm font-bold text-orange-800">{formatAdminPrice(selectedOrder.payment_due_amount)}</span>
                 </div>
                 <button onClick={collectCodDue} disabled={settlingDue} className="mt-3 w-full rounded-xl bg-orange-600 py-2.5 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-60">
-                  {settlingDue ? 'সংগ্রহ হচ্ছে...' : `বাকি ${formatPrice(selectedOrder.payment_due_amount)} Paid করুন`}
+                  {settlingDue ? 'সংগ্রহ হচ্ছে...' : `বাকি ${formatAdminPrice(selectedOrder.payment_due_amount)} Paid করুন`}
                 </button>
               </div>
             )}
