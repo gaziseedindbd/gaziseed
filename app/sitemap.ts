@@ -22,6 +22,8 @@ async function fetchRows<T>(
   const query = new URLSearchParams(params);
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
     const response = await fetch(url + '/rest/v1/' + table + '?' + query.toString(), {
       headers: {
         apikey: key,
@@ -29,7 +31,9 @@ async function fetchRows<T>(
         ...(country ? { 'x-gazi-country': country } : {}),
       },
       next: { revalidate: 3600 },
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
 
     if (!response.ok) return [];
     return (await response.json()) as T[];
@@ -63,32 +67,38 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/track-order`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.4 },
   ];
 
-  for (const country of ['BD', 'IN'] as const) {
-    const products = await fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('products', country);
-    products.forEach((p) => {
-      entries.push({
-        url: `${BASE_URL}/product/${p.slug}`,
-        lastModified: new Date(p.updated_at || p.created_at || new Date()),
-        changeFrequency: 'weekly',
-        priority: 0.7,
-      });
-    });
+  const [bdProducts, inProducts, bdCategories, inCategories, combos, posts, pages, animatedLandings] =
+    await Promise.all([
+      fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('products', 'BD'),
+      fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('products', 'IN'),
+      fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('categories', 'BD'),
+      fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('categories', 'IN'),
+      fetchRows<{ slug: string; created_at?: string }>('combo_packs', { select: 'slug,created_at', is_active: 'eq.true' }),
+      fetchRows<{ slug: string; updated_at?: string; created_at?: string }>('blog_posts', { select: 'slug,updated_at,created_at', is_published: 'eq.true' }),
+      fetchRows<{ slug: string; updated_at?: string; created_at?: string }>('pages', { select: 'slug,updated_at,created_at', is_published: 'eq.true' }),
+      fetchRows<{ slug: string; updated_at?: string; created_at?: string }>('animated_landing_pages', { select: 'slug,updated_at,created_at', status: 'eq.active' }),
+    ]);
 
-    const categories = await fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('categories', country);
-    categories.forEach((cat) => {
-      entries.push({
-        url: `${BASE_URL}/category/${cat.slug}`,
-        lastModified: new Date(cat.updated_at || cat.created_at || new Date()),
-        changeFrequency: 'weekly',
-        priority: 0.6,
-      });
+  const products = [...bdProducts, ...inProducts];
+  products.forEach((p) => {
+    entries.push({
+      url: `${BASE_URL}/product/${p.slug}`,
+      lastModified: new Date(p.updated_at || p.created_at || new Date()),
+      changeFrequency: 'weekly',
+      priority: 0.7,
     });
-  }
+  });
 
-  const combos = await fetchRows<{ slug: string; created_at?: string }>(
-    'combo_packs',
-    { select: 'slug,created_at', is_active: 'eq.true' },
-  );
+  const categories = [...bdCategories, ...inCategories];
+  categories.forEach((cat) => {
+    entries.push({
+      url: `${BASE_URL}/category/${cat.slug}`,
+      lastModified: new Date(cat.updated_at || cat.created_at || new Date()),
+      changeFrequency: 'weekly',
+      priority: 0.6,
+    });
+  });
+
   combos.forEach((c) => {
     entries.push({
       url: `${BASE_URL}/combo/${c.slug}`,
@@ -98,10 +108,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   });
 
-  const posts = await fetchRows<{ slug: string; updated_at?: string; created_at?: string }>(
-    'blog_posts',
-    { select: 'slug,updated_at,created_at', is_published: 'eq.true' },
-  );
   posts.forEach((p) => {
     entries.push({
       url: `${BASE_URL}/blog/${p.slug}`,
@@ -111,10 +117,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   });
 
-  const pages = await fetchRows<{ slug: string; updated_at?: string; created_at?: string }>(
-    'pages',
-    { select: 'slug,updated_at,created_at', is_published: 'eq.true' },
-  );
   pages.forEach((p) => {
     entries.push({
       url: `${BASE_URL}/page/${p.slug}`,
@@ -124,10 +126,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   });
 
-  const animatedLandings = await fetchRows<{ slug: string; updated_at?: string; created_at?: string }>(
-    'animated_landing_pages',
-    { select: 'slug,updated_at,created_at', status: 'eq.active' },
-  );
   animatedLandings.forEach((p) => {
     entries.push({
       url: `${BASE_URL}/animated-landing/${p.slug}`,
