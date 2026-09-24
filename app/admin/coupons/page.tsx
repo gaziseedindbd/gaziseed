@@ -11,21 +11,22 @@ export default function AdminCouponsPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
+  const [adminCountry, setAdminCountry] = useState<'BD' | 'IN'>('BD');
 
-  useEffect(() => { loadCoupons(); }, []);
+  useEffect(() => { const init = async () => { const { data, error } = await supabase.rpc('current_admin_country'); if (error) { toast('Admin branch নির্ধারণ ব্যর্থ', 'error'); return; } const country = String(data).toUpperCase() === 'IN' ? 'IN' : 'BD'; setAdminCountry(country); await loadCoupons(country); }; void init(); }, []);
 
-  const loadCoupons = async () => {
-    const { data } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+  const loadCoupons = async (country = adminCountry) => {
+    const { data } = await supabase.from('coupons').select('*').eq('country_code', country).order('created_at', { ascending: false });
     setCoupons(data || []);
     setLoading(false);
   };
 
   const handleSave = async (formData: any) => {
     if (editing) {
-      await supabase.from('coupons').update(formData).eq('id', editing.id);
+      await supabase.from('coupons').update({ ...formData, country_code: adminCountry }).eq('id', editing.id).eq('country_code', adminCountry);
       toast('কুপন আপডেট হয়েছে');
     } else {
-      await supabase.from('coupons').insert(formData);
+      await supabase.from('coupons').insert({ ...formData, country_code: adminCountry });
       toast('কুপন যোগ হয়েছে');
     }
     setShowForm(false);
@@ -35,7 +36,7 @@ export default function AdminCouponsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('কুপন মুছতে চান?')) return;
-    await supabase.from('coupons').delete().eq('id', id);
+    await supabase.from('coupons').delete().eq('id', id).eq('country_code', adminCountry);
     toast('কুপন মুছে ফেলা হয়েছে');
     loadCoupons();
   };
