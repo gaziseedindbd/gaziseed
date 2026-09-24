@@ -20,6 +20,7 @@ export default function AdminPopupsPage() {
   const [editing, setEditing] = useState<PromotionalPopup | null>(null);
   const [uploading, setUploading] = useState(false);
   const [urlInput, setUrlInput] = useState('');
+  const [adminCountry, setAdminCountry] = useState<'BD' | 'IN'>('BD');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadImage = async (file: File) => {
@@ -46,16 +47,16 @@ export default function AdminPopupsPage() {
     finally { setUploading(false); }
   };
 
-  const fetchPopups = async () => {
-    const { data } = await supabase.from('promotional_popups').select('*').order('created_at', { ascending: false });
+  const fetchPopups = async (country = adminCountry) => {
+    const { data } = await supabase.from('promotional_popups').select('*').eq('country_code', country).order('created_at', { ascending: false });
     setPopups((data || []) as PromotionalPopup[]);
     setLoading(false);
   };
 
-  useEffect(() => { fetchPopups(); }, []);
+  useEffect(() => { const init = async () => { const { data, error } = await supabase.rpc('current_admin_country'); if (error) { toast('Admin branch নির্ধারণ ব্যর্থ', 'error'); return; } const country = String(data).toUpperCase() === 'IN' ? 'IN' : 'BD'; setAdminCountry(country); await fetchPopups(country); }; void init(); }, []);
 
   const newPopup = (): PromotionalPopup => ({
-    id: '', title: '', description: '', image: '', offer: '', cta_text: '', cta_link: '',
+    id: '', country_code: adminCountry, title: '', description: '', image: '', offer: '', cta_text: '', cta_link: '',
     start_date: new Date().toISOString().slice(0, 16),
     end_date: null, is_active: false, show_on_main: true, show_on_offers: false,
     show_close_button: true, auto_close: false, auto_close_seconds: 10,
@@ -80,13 +81,13 @@ export default function AdminPopupsPage() {
   };
 
   const toggleActive = async (p: PromotionalPopup) => {
-    await supabase.from('promotional_popups').update({ is_active: !p.is_active }).eq('id', p.id);
+    await supabase.from('promotional_popups').update({ is_active: !p.is_active }).eq('id', p.id).eq('country_code', adminCountry);
     fetchPopups();
   };
 
   const del = async (id: string) => {
     if (!confirm('Delete this popup?')) return;
-    await supabase.from('promotional_popups').delete().eq('id', id);
+    await supabase.from('promotional_popups').delete().eq('id', id).eq('country_code', adminCountry);
     fetchPopups();
     toast('Popup deleted');
   };
