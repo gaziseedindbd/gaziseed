@@ -18,7 +18,7 @@ export default function CategoryPage() {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('default');
   const [showFilters, setShowFilters] = useState(false);
-  const { lang, t, tDb } = useLang();
+  const { t, tDb, tCategoryName } = useLang();
 
   useEffect(() => {
     Promise.all([
@@ -49,7 +49,7 @@ export default function CategoryPage() {
     return result;
   }, [products, category, sortBy]);
 
-  const categoryName = category ? (lang === 'en' && (category as any).name_en ? (category as any).name_en : category.name_bn) : '';
+  const categoryName = category ? tCategoryName(category.name_bn, (category as any).name_en || category.name_bn) : '';
   const categoryDesc = category ? tDb(category.description || '') : '';
 
   if (!loading && !category) {
@@ -108,7 +108,7 @@ export default function CategoryPage() {
             <Layers className="h-4 w-4 text-primary" /> {t('ক্যাটাগরি:', 'Category:')}
           </span>
           {categories.map((cat) => {
-            const catTitle = lang === 'en' && (cat as any).name_en ? (cat as any).name_en : cat.name_bn;
+            const catTitle = tCategoryName(cat.name_bn, (cat as any).name_en || cat.name_bn);
             return (
               <Link
                 key={cat.id}
