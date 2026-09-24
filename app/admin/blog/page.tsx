@@ -13,11 +13,12 @@ export default function AdminBlogPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
+  const [adminCountry, setAdminCountry] = useState<'BD' | 'IN'>('BD');
 
-  useEffect(() => { loadPosts(); }, []);
+  useEffect(() => { const init = async () => { const { data, error } = await supabase.rpc('current_admin_country'); if (error) { toast('Admin branch নির্ধারণ ব্যর্থ', 'error'); return; } const country = String(data).toUpperCase() === 'IN' ? 'IN' : 'BD'; setAdminCountry(country); await loadPosts(country); }; void init(); }, []);
 
-  const loadPosts = async () => {
-    const { data } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
+  const loadPosts = async (country = adminCountry) => {
+    const { data } = await supabase.from('blog_posts').select('*').eq('country_code', country).order('created_at', { ascending: false });
     setPosts(data || []);
     setLoading(false);
   };
@@ -38,11 +39,11 @@ export default function AdminBlogPage() {
       }
 
       if (editing) {
-        const { error } = await supabase.from('blog_posts').update(nextFormData).eq('id', editing.id);
+        const { error } = await supabase.from('blog_posts').update({ ...nextFormData, country_code: adminCountry }).eq('id', editing.id).eq('country_code', adminCountry);
         if (error) throw error;
         toast('আর্টিকেল আপডেট হয়েছে');
       } else {
-        const { error } = await supabase.from('blog_posts').insert(nextFormData);
+        const { error } = await supabase.from('blog_posts').insert({ ...nextFormData, country_code: adminCountry });
         if (error) throw error;
         toast('আর্টিকেল যোগ হয়েছে');
       }
@@ -54,7 +55,7 @@ export default function AdminBlogPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('আর্টিকেল মুছতে চান?')) return;
-    await supabase.from('blog_posts').delete().eq('id', id);
+    await supabase.from('blog_posts').delete().eq('id', id).eq('country_code', adminCountry);
     toast('আর্টিকেল মুছে ফেলা হয়েছে');
     loadPosts();
   };
