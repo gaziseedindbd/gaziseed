@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Palette, Check, Moon, Sparkles, Sun, Droplets, Crown } from 'lucide-react';
 
 export type HomePageTheme = 'theme1' | 'theme2' | 'theme3';
@@ -82,6 +83,8 @@ export function setStoredSiteTheme(theme: SiteTheme) {
 }
 
 export function ThemeSwitcher({ defaultTheme }: { defaultTheme?: HomePageTheme }) {
+  const pathname = usePathname();
+  const isCategoryPage = pathname === '/categories' || pathname.startsWith('/category/');
   const [siteTheme, setSiteTheme] = useState<SiteTheme>('emerald');
   const [open, setOpen] = useState(false);
 
@@ -105,6 +108,8 @@ export function ThemeSwitcher({ defaultTheme }: { defaultTheme?: HomePageTheme }
     setStoredSiteTheme(t);
     setOpen(false);
   };
+
+  if (isCategoryPage) return null;
 
   return (
     <>
