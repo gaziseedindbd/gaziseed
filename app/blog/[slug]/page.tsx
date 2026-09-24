@@ -7,6 +7,34 @@ import type { BlogPost } from '@/lib/supabase/types';
 import Link from 'next/link';
 import { useLang } from '@/components/site/language-provider';
 
+function safeBlogHtml(input: string) {
+  const allowed = new Set(['strong', 'b', 'em', 'i', 'u', 'h2', 'h3', 'p', 'ul', 'ol', 'li', 'br', 'a']);
+  const tokens = input.split(/(<\/?[a-z0-9]+(?:\s[^>]*)?>)/gi);
+
+  return tokens.map((token) => {
+    const match = token.match(/^<\/?([a-z0-9]+)(?:\s[^>]*)?>$/i);
+    if (!match) {
+      return token.replace(/[&<>]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[char] || char));
+    }
+
+    const tag = match[1].toLowerCase();
+    if (!allowed.has(tag)) {
+      return token.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    if (/^<a\b/i.test(token)) return '<a>';
+    return token.replace(/\s+[^>]*?(?=>)/, '');
+  }).join('');
+}
+
+function renderBlogContent(content: string) {
+  const trimmed = String(content || '').trim();
+  if (!trimmed) return '';
+  const looksLikeHtml = /<\/?(strong|b|em|i|u|h2|h3|p|ul|ol|li|br|a)(?:\s[^>]*)?>/i.test(trimmed);
+  if (looksLikeHtml) return safeBlogHtml(trimmed);
+  return trimmed.replace(/\n/g, '<br />');
+}
+
 export default function BlogPostPage() {
   const { lang, t } = useLang();
   const params = useParams();
@@ -55,7 +83,8 @@ export default function BlogPostPage() {
   const postTitle = translatedPost.title || post.title || '';
   const postContent = translatedPost.content || post.content || '';
   const postCategory = translatedPost.category || post.category || '';
-  const readingMinutes = Math.max(3, Math.ceil(postContent.trim().split(/\s+/).filter(Boolean).length / 180));
+  const readingText = postContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const readingMinutes = Math.max(3, Math.ceil(readingText.split(/\s+/).filter(Boolean).length / 180));
   const publishDate = new Date(post.publish_date).toLocaleDateString('bn-BD', {
     day: 'numeric',
     month: 'long',
@@ -134,9 +163,10 @@ export default function BlogPostPage() {
                   </div>
                 </div>
 
-                <div className="prose prose-green max-w-none whitespace-pre-line text-[16px] leading-8 text-muted-foreground sm:text-[17px] sm:leading-9">
-                  {postContent}
-                </div>
+                <div
+                  className="blog-article-content prose prose-green max-w-none text-[16px] leading-8 text-muted-foreground sm:text-[17px] sm:leading-9"
+                  dangerouslySetInnerHTML={{ __html: renderBlogContent(postContent) }}
+                />
 
                 <div className="mt-10 border-t border-border/70 pt-6">
                   <div className="flex flex-wrap items-center justify-between gap-4">
