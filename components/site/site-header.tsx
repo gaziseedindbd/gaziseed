@@ -165,7 +165,7 @@ export function SiteHeader() {
       aria-label="Primary navigation"
       className={`flex items-center rounded-full border border-emerald-100/90 bg-white/95 backdrop-blur-md ${
         compact
-          ? 'gap-1 p-1 shadow-[0_8px_26px_-16px_rgba(5,46,22,.45)] 2xl:gap-1.5'
+          ? 'gap-1.5 p-1.5 shadow-[0_10px_28px_-16px_rgba(5,46,22,.38)] 2xl:gap-2'
           : 'gap-1.5 p-1.5 shadow-[0_12px_35px_-18px_rgba(5,46,22,.45)]'
       }`}
     >
@@ -178,8 +178,8 @@ export function SiteHeader() {
             href={link.href}
             className={`group relative flex shrink-0 items-center rounded-full font-extrabold transition-all duration-200 ${
               compact
-                ? 'gap-1 px-2 py-1.5 text-[10px] 2xl:gap-1.5 2xl:px-2.5 2xl:text-[11px]'
-                : 'gap-2 px-4 py-2.5 text-[13px]'
+                ? 'gap-1.5 px-3 py-2 text-[11px] leading-none 2xl:gap-2 2xl:px-3.5 2xl:py-2.5 2xl:text-[11.5px]'
+                : 'gap-2 px-4 py-2.5 text-[13px] leading-none'
             } ${
               active
                 ? 'bg-emerald-800 text-white shadow-[0_6px_16px_-8px_rgba(6,78,59,.7)]'
@@ -187,7 +187,7 @@ export function SiteHeader() {
             }`}
           >
             <Icon
-              className={`${compact ? 'h-3 w-3 2xl:h-3.5 2xl:w-3.5' : 'h-4 w-4'} transition-transform duration-200 group-hover:scale-110 ${
+              className={`${compact ? 'h-3.5 w-3.5 2xl:h-4 2xl:w-4' : 'h-4 w-4'} transition-transform duration-200 group-hover:scale-110 ${
                 active ? 'text-white' : 'text-emerald-700'
               }`}
             />
@@ -238,7 +238,7 @@ export function SiteHeader() {
             <div className="flex items-center gap-2.5"><SproutMark large /><div><div className="text-2xl font-black leading-none tracking-tight text-emerald-950">GAZI SEED</div><div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">Better Seeds · Better Future</div></div></div>
           )}
         </Link>
-        <div className="hidden min-w-0 flex-1 xl:block"><div className="flex min-w-0 justify-center 2xl:justify-start">{renderNav(true)}</div></div>
+        <div className="hidden min-w-0 flex-1 2xl:block"><div className="flex min-w-0 justify-start">{renderNav(true)}</div></div>
         <div className="ml-auto hidden shrink-0 items-center gap-1.5 lg:flex">
           <div className={`relative flex items-center overflow-hidden rounded-2xl border transition-all duration-200 ${searchOpen ? 'border-emerald-400 bg-white ring-4 ring-emerald-600/10 shadow-sm' : 'border-emerald-100 bg-emerald-50/65 hover:border-emerald-200 hover:bg-white'}`}>
             <button type="button" onClick={() => setSearchOpen(true)} aria-label={t('খুঁজুন', 'Search')} className="flex shrink-0 items-center justify-center pl-2.5 text-emerald-700"><Search className="h-4.5 w-4.5" /></button>
@@ -293,7 +293,7 @@ export function SiteHeader() {
           </div>
         </>
       )}
-      <nav className="hidden border-t border-slate-100/80 bg-white/90 py-2 lg:block xl:hidden"><div className="mx-auto flex max-w-[1100px] items-center justify-center px-4">{renderNav(false)}</div></nav>
+      <nav className="hidden border-t border-slate-100/80 bg-white/95 py-2.5 shadow-[0_8px_24px_-20px_rgba(5,46,22,.4)] lg:block 2xl:hidden"><div className="mx-auto flex max-w-[1220px] items-center justify-center px-4">{renderNav(false)}</div></nav>
       {mobileMenuOpen && <div className="border-t border-slate-100 bg-white shadow-2xl md:hidden"><div className="p-3"><div className="mb-2 flex items-center gap-2 px-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-400">Menu<span className="h-px flex-1 bg-slate-100" /></div><button type="button" onClick={() => { setMobileMenuOpen(false); setSearchOpen(true); }} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-left text-sm font-bold text-emerald-900"><Search className="h-5 w-5 text-emerald-700" />{t('পণ্য ও বীজ খুঁজুন...', 'Search products & seeds...')}</button><Link href="/account" onClick={() => setMobileMenuOpen(false)} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-left text-sm font-black text-emerald-900"><User className="h-5 w-5 text-emerald-700" />{t('অ্যাকাউন্ট / লগইন', 'Account / Login')}</Link>{!isAdminRoute && <div className="mb-3"><CountrySelector mobile /></div>}<div className="grid grid-cols-2 gap-2">{navLinks.map((link) => { const Icon = link.icon; const active = isActive(link.href); return (<Link key={link.href} href={link.href} className={`flex items-center gap-2 rounded-2xl border p-3 text-sm font-bold transition ${active ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-100 bg-slate-50 text-slate-700 hover:border-emerald-100 hover:bg-emerald-50/50'}`}><Icon className="h-5 w-5 text-emerald-700" />{link.label}</Link>); })}</div></div></div>}
     </header>
   );
