@@ -90,12 +90,12 @@ export default function AdminPromotionsPage() {
         {promos.length === 0 && <p className="p-8 text-center text-muted-foreground">কোন প্রমোশন নেই</p>}
       </div>
 
-      {showForm && <PromoForm promo={editing} onSave={handleSave} onClose={() => { setShowForm(false); setEditing(null); }} />}
+      {showForm && <PromoForm promo={editing} country={adminCountry} onSave={handleSave} onClose={() => { setShowForm(false); setEditing(null); }} />}
     </div>
   );
 }
 
-function PromoForm({ promo, onSave, onClose }: { promo: any; onSave: (data: any) => void; onClose: () => void }) {
+function PromoForm({ promo, country, onSave, onClose }: { promo: any; country: 'BD' | 'IN'; onSave: (data: any) => void; onClose: () => void }) {
   const [form, setForm] = useState({
     name: promo?.name || '',
     is_active: promo?.is_active ?? true,
@@ -118,14 +118,14 @@ function PromoForm({ promo, onSave, onClose }: { promo: any; onSave: (data: any)
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    supabase.from('products').select('id, name_bn, name_en').eq('is_active', true).eq('is_ads_only', false).eq('country_code', (await supabase.rpc('current_admin_country')).data || 'BD').order('name_bn').then(({ data }) => setAllProducts(data || []));
-    supabase.from('categories').select('id, name_en').eq('is_active', true).eq('country_code', (await supabase.rpc('current_admin_country')).data || 'BD').order('name_en').then(({ data }) => setAllCategories(data || []));
+    supabase.from('products').select('id, name_bn, name_en').eq('is_active', true).eq('is_ads_only', false).eq('country_code', country).order('name_bn').then(({ data }) => setAllProducts(data || []));
+    supabase.from('categories').select('id, name_en').eq('is_active', true).eq('country_code', country).order('name_en').then(({ data }) => setAllCategories(data || []));
     if (promo?.id) {
       supabase.from('promotion_gifts').select('product_id').eq('promotion_id', promo.id).then(({ data }) => setGiftProductIds((data || []).map((g: any) => g.product_id)));
       setEligibleProductIds(promo.eligible_product_ids || []);
       setEligibleCategoryIds(promo.eligible_category_ids || []);
     }
-  }, [promo]);
+  }, [promo, country]);
 
   const toggleGift = (id: string) => setGiftProductIds(giftProductIds.includes(id) ? giftProductIds.filter((x) => x !== id) : [...giftProductIds, id]);
   const toggleEligibleProduct = (id: string) => setEligibleProductIds(eligibleProductIds.includes(id) ? eligibleProductIds.filter((x) => x !== id) : [...eligibleProductIds, id]);
