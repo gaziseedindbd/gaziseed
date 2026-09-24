@@ -206,13 +206,13 @@ export default function AdminProductsPage() {
       )}
 
       {showForm && (
-        <ProductForm product={editing} categories={categories} allProducts={allProducts} onSave={handleSave} onClose={() => { setShowForm(false); setEditing(null); }} />
+        <ProductForm product={editing} categories={categories} allProducts={allProducts} adminBranch={adminBranch} onSave={handleSave} onClose={() => { setShowForm(false); setEditing(null); }} />
       )}
     </div>
   );
 }
 
-function ProductForm({ product, categories, allProducts, onSave, onClose, onSaved }: { product: any; categories: any[]; allProducts: any[]; onSave: (data: any) => void; onClose: () => void; onSaved?: () => void }) {
+function ProductForm({ product, categories, allProducts, adminBranch, onSave, onClose, onSaved }: { product: any; categories: any[]; allProducts: any[]; adminBranch: 'BD' | 'IN'; onSave: (data: any) => void; onClose: () => void; onSaved?: () => void }) {
   const [faqs, setFaqs] = useState<any[]>([]);
   const [removedFaqs, setRemovedFaqs] = useState<string[]>([]);
   const [faqForm, setFaqForm] = useState({ question_bn: '', answer_bn: '', question_en: '', answer_en: '', display_order: 0, is_active: true });
