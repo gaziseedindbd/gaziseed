@@ -7,7 +7,7 @@ import { Save, Sparkles, Zap, Users, Upload, Image as ImageIcon } from 'lucide-r
 import { AI_PROVIDER_OPTIONS, AI_FEATURE_FLAG_LIST, maskApiKey, isApiKeyMasked, DEFAULT_FEATURE_FLAGS } from '@/lib/ai';
 
 export default function AdminSettingsPage() {
-  const [tab, setTab] = useState<'general' | 'marketing' | 'features' | 'integrations' | 'ai' | 'referral'>('general');
+  const [tab, setTab] = useState<'general' | 'marketing' | 'features' | 'ai' | 'referral'>('general');
   const [adminCountry, setAdminCountry] = useState<'BD' | 'IN'>('BD');
   const [siteForm, setSiteForm] = useState<any>(null);
   const [marketingForm, setMarketingForm] = useState<any>(null);
@@ -20,15 +20,6 @@ export default function AdminSettingsPage() {
   const [referralForm, setReferralForm] = useState<any>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const watermarkInputRef = useRef<HTMLInputElement>(null);
-
-  const getSelectedBranch = (): 'BD' | 'IN' => {
-    if (typeof window === 'undefined') return 'BD';
-    try {
-      return localStorage.getItem('gazi_admin_branch') === 'IN' ? 'IN' : 'BD';
-    } catch {
-      return 'BD';
-    }
-  };
 
   useEffect(() => {
     const loadSettings = async () => {
