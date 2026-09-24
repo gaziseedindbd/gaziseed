@@ -604,3 +604,131 @@
     max-width:88%!important;
   }
 }
+
+
+/* GAZI SEED — Homepage category cards final polish */
+.home-premium-scope .home-category-section .cat-card{
+  border:1px solid #d8e9df!important;
+  border-radius:22px!important;
+  background:linear-gradient(180deg,#fff 0%,#fbfefc 100%)!important;
+  box-shadow:0 12px 30px -24px rgba(4,72,39,.46)!important;
+}
+.home-premium-scope .home-category-section .cat-card-content{
+  position:relative!important;
+  z-index:3!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  gap:5px!important;
+  min-width:0!important;
+  padding:14px 15px 15px!important;
+  background:linear-gradient(180deg,#fff 0%,#f8fcfa 100%)!important;
+}
+.home-premium-scope .home-category-section .cat-label{
+  display:block!important;
+  width:100%!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0 42px 0 0!important;
+  background:transparent!important;
+  color:#0b4733!important;
+  font-size:clamp(.95rem,1.35vw,1.12rem)!important;
+  font-weight:900!important;
+  line-height:1.2!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.home-premium-scope .home-category-section .cat-description{
+  width:100%!important;
+  min-height:2.35em!important;
+  margin:0!important;
+  padding:0 0 0 0!important;
+  color:#71817a!important;
+  font-size:.76rem!important;
+  font-weight:600!important;
+  line-height:1.45!important;
+  display:-webkit-box!important;
+  -webkit-line-clamp:2!important;
+  -webkit-box-orient:vertical!important;
+  overflow:hidden!important;
+}
+.home-premium-scope .home-category-section .cat-explore{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-height:30px!important;
+  margin-top:3px!important;
+  padding:5px 12px!important;
+  border:1px solid #b9ddc9!important;
+  border-radius:999px!important;
+  background:#eef9f2!important;
+  color:#087b43!important;
+  font-size:.68rem!important;
+  font-weight:900!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+  transition:background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease!important;
+}
+.home-premium-scope .home-category-section .cat-card:hover .cat-explore{
+  background:#087b43!important;
+  border-color:#087b43!important;
+  color:#fff!important;
+  transform:translateY(-1px)!important;
+}
+@media(max-width:767px){
+  .home-premium-scope .home-category-section .cat-card{
+    border-radius:17px!important;
+    box-shadow:0 9px 24px -20px rgba(4,72,39,.44)!important;
+  }
+  .home-premium-scope .home-category-section .cat-card-content{
+    gap:4px!important;
+    padding:11px 11px 12px!important;
+  }
+  .home-premium-scope .home-category-section .cat-label{
+    font-size:.84rem!important;
+    line-height:1.18!important;
+    padding-right:34px!important;
+  }
+  .home-premium-scope .home-category-section .cat-description{
+    min-height:2.15em!important;
+    font-size:.66rem!important;
+    line-height:1.42!important;
+  }
+  .home-premium-scope .home-category-section .cat-explore{
+    min-height:27px!important;
+    margin-top:2px!important;
+    padding:4px 9px!important;
+    font-size:.6rem!important;
+  }
+  .home-premium-scope .home-category-section .cat-card::after{
+    right:9px!important;
+    bottom:9px!important;
+    top:auto!important;
+    width:28px!important;
+    height:28px!important;
+    font-size:14px!important;
+    background:#edf8f1!important;
+    color:#087b43!important;
+  }
+}
+@media(max-width:420px){
+  .home-premium-scope .home-category-section .cat-icon-wrap{
+    height:108px!important;
+    min-height:108px!important;
+  }
+  .home-premium-scope .home-category-section .cat-card-content{
+    padding:10px 10px 11px!important;
+  }
+  .home-premium-scope .home-category-section .cat-label{
+    font-size:.8rem!important;
+  }
+  .home-premium-scope .home-category-section .cat-description{
+    font-size:.62rem!important;
+  }
+  .home-premium-scope .home-category-section .cat-explore{
+    min-height:25px!important;
+    padding:4px 8px!important;
+    font-size:.57rem!important;
+  }
+}
