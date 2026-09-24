@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { formatPrice } from '@/lib/data';
 import { Search, Eye, X, Package } from 'lucide-react';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -16,12 +15,34 @@ export default function AdminInventoryPage() {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<any>(null);
   const [newStock, setNewStock] = useState(0);
+  const [adminBranch, setAdminBranch] = useState<'BD' | 'IN'>('BD');
 
-  useEffect(() => { loadProducts(); }, []);
+  useEffect(() => {
+    const init = async () => {
+      const { data, error } = await supabase.rpc('current_admin_country');
+      if (error) {
+        console.error('Inventory admin branch check failed:', error);
+        toast('ব্রাঞ্চ তথ্য লোড ব্যর্থ', 'error');
+        setLoading(false);
+        return;
+      }
+      const branch: 'BD' | 'IN' = String(data).toUpperCase() === 'IN' ? 'IN' : 'BD';
+      setAdminBranch(branch);
+      await loadProducts(branch);
+    };
+    init();
+  }, []);
 
-  const loadProducts = async () => {
-    const { data } = await supabase.from('products').select('id, name_bn, name_en, sku, stock, low_stock_threshold, is_ads_only, is_active').order('created_at', { ascending: false });
-    setProducts(data || []);
+  const loadProducts = async (branch: 'BD' | 'IN' = adminBranch) => {
+    const { data, error } = await supabase.from('products')
+      .select('id, name_bn, name_en, sku, stock, low_stock_threshold, is_ads_only, is_active')
+      .eq('country_code', branch)
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Inventory products load failed:', error);
+      toast('ইনভেন্টরি লোড ব্যর্থ', 'error');
+      setProducts([]);
+    } else setProducts(data || []);
     setLoading(false);
   };
 
@@ -35,13 +56,22 @@ export default function AdminInventoryPage() {
     if (!editing) return;
     const oldStock = editing.stock;
     const change = newStock - oldStock;
-    await supabase.from('products').update({ stock: newStock }).eq('id', editing.id);
+    const { error } = await supabase.from('products').update({ stock: newStock }).eq('id', editing.id).eq('country_code', adminBranch);
+    if (error) {
+      console.error('Inventory stock update failed:', error);
+      toast('স্টক আপডেট ব্যর্থ', 'error');
+      return;
+    }
     if (change !== 0) {
-      await supabase.from('inventory_history').insert({ product_id: editing.id, quantity_change: change, reason: 'Manual adjustment' });
+      const { error: historyError } = await supabase.from('inventory_history').insert({ product_id: editing.id, quantity_change: change, reason: 'Manual adjustment' });
+      if (historyError) {
+        console.error('Inventory history insert failed:', historyError);
+        toast('স্টক আপডেট হয়েছে, কিন্তু হিস্ট্রি লেখা যায়নি', 'error');
+      }
     }
     toast('স্টক আপডেট হয়েছে');
     setEditing(null);
-    loadProducts();
+    loadProducts(adminBranch);
   };
 
   if (loading) return <div className="h-64 animate-pulse rounded-2xl bg-secondary" />;
