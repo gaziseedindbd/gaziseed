@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { Plus, X, Copy, Check, Mail, ShieldCheck, Shield, Loader2, RefreshCw, Trash2, Power, AlertTriangle, UserCog, Lock, History, Globe2 } from 'lucide-react';
+import { Plus, X, Copy, Check, ShieldCheck, Shield, Loader2, RefreshCw, Trash2, Power, AlertTriangle, UserCog, Lock, History, Globe2 } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 
 const FUNCTION_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-management`;
@@ -118,37 +118,6 @@ export default function AdminManagementPage() {
     }
   };
 
-  const handleResetPassword = async (admin: any) => {
-    const isMaster = admin.role === 'master_admin';
-    if (isMaster) {
-      if (!confirm(`"${admin.email}" এর পাসওয়ার্ড রিসেট করতে চান? নতুন টেম্পোরারি পাসওয়ার্ড তৈরি হবে।`)) return;
-      setActionLoading(`reset-${admin.id}`);
-      try {
-        const result = await callAdminApi('force_reset_master_admin', { admin_id: admin.id });
-        if (result?.temp_password) {
-          setTempPassword(result.temp_password);
-          setTempPasswordEmail(admin.email);
-        }
-        toast('পাসওয়ার্ড রিসেট করা হয়েছে');
-      } catch (err: any) {
-        toast(err.message, 'error');
-      } finally {
-        setActionLoading(null);
-      }
-    } else {
-      if (!confirm(`"${admin.email}" এ পাসওয়ার্ড রিসেট লিংক পাঠাতে চান?`)) return;
-      setActionLoading(`reset-${admin.id}`);
-      try {
-        await callAdminApi('send_password_reset', { email: admin.email });
-        toast('পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে');
-      } catch (err: any) {
-        toast(err.message, 'error');
-      } finally {
-        setActionLoading(null);
-      }
-    }
-  };
-
   const copyPassword = () => {
     if (tempPassword) {
       navigator.clipboard.writeText(tempPassword);
@@ -256,9 +225,6 @@ export default function AdminManagementPage() {
                     </button>
                     <button onClick={() => handleToggleActive(a)} disabled={actionLoading === `toggle-${a.id}`} className="rounded-lg p-1.5 hover:bg-secondary" title={a.is_active ? 'নিষ্ক্রিয় করুন' : 'সক্রিয় করুন'}>
                       {actionLoading === `toggle-${a.id}` ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
-                    </button>
-                    <button onClick={() => handleResetPassword(a)} disabled={actionLoading === `reset-${a.id}`} className="rounded-lg p-1.5 hover:bg-secondary" title="পাসওয়ার্ড রিসেট">
-                      {actionLoading === `reset-${a.id}` ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
                     </button>
                     {a.role !== 'master_admin' && (
                       <button onClick={() => handleRevoke(a)} disabled={actionLoading === `revoke-${a.id}`} className="rounded-lg p-1.5 text-destructive hover:bg-destructive/10" title="অ্যাডমিন অ্যাক্সেস বাতিল করুন">
@@ -523,7 +489,7 @@ function AuditLogModal({ onClose }: { onClose: () => void }) {
     } catch { toast('অডিট লগ লোড ব্যর্থ', 'error'); }
     setLoading(false);
   };
-  const actionLabels: Record<string, string> = { master_admin_created: 'মাস্টার অ্যাডমিন তৈরি', master_admin_enabled: 'মাস্টার অ্যাডমিন সক্রিয়', master_admin_disabled: 'মাস্টার অ্যাডমিন নিষ্ক্রিয়', master_admin_updated: 'মাস্টার অ্যাডমিন আপডেট', master_admin_password_reset: 'মাস্টার অ্যাডমিন পাসওয়ার্ড রিসেট', admin_created: 'অ্যাডমিন তৈরি', admin_enabled: 'অ্যাডমিন সক্রিয়', admin_disabled: 'অ্যাডমিন নিষ্ক্রিয়', admin_revoked: 'অ্যাডমিন অ্যাক্সেস বাতিল', password_reset_requested: 'পাসওয়ার্ড রিসেট অনুরোধ', role_changed: 'রোল পরিবর্তন', permission_changed: 'পারমিশন পরিবর্তন' };
+  const actionLabels: Record<string, string> = { master_admin_created: 'মাস্টার অ্যাডমিন তৈরি', master_admin_enabled: 'মাস্টার অ্যাডমিন সক্রিয়', master_admin_disabled: 'মাস্টার অ্যাডমিন নিষ্ক্রিয়', master_admin_updated: 'মাস্টার অ্যাডমিন আপডেট', admin_created: 'অ্যাডমিন তৈরি', admin_enabled: 'অ্যাডমিন সক্রিয়', admin_disabled: 'অ্যাডমিন নিষ্ক্রিয়', admin_revoked: 'অ্যাডমিন অ্যাক্সেস বাতিল', role_changed: 'রোল পরিবর্তন', permission_changed: 'পারমিশন পরিবর্তন' };
   const formatDateTime = (d: string) => d ? new Date(d).toLocaleString('bn-BD', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
