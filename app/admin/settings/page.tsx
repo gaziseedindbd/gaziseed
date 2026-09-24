@@ -43,14 +43,13 @@ export default function AdminSettingsPage() {
       const requestedTab = params.get('tab');
       if (requestedTab === 'marketing') setTab('marketing');
       else if (requestedTab === 'features') setTab('features');
-      else if (requestedTab === 'integrations') setTab('integrations');
       else if (requestedTab === 'ai') setTab('ai');
       else if (requestedTab === 'referral') setTab('referral');
 
       const [site, mkt, ai, ref] = await Promise.all([
         supabase.from('site_settings').select('*').eq('country_code', branch).maybeSingle(),
         supabase.from('marketing_settings').select('*').eq('id', 1).eq('country_code', branch).maybeSingle(),
-        supabase.from('ai_settings').select('*').eq('id', 1).eq('country_code', branch).maybeSingle(),
+        supabase.from('ai_settings').select('id,is_enabled,provider,model,base_url,temperature,max_tokens,feature_flags,country_code').eq('id', 1).eq('country_code', branch).maybeSingle(),
         supabase.from('referral_settings').select('*').eq('id', 1).eq('country_code', branch).maybeSingle(),
       ]);
       setSiteForm(site.data || {});
@@ -95,7 +94,7 @@ export default function AdminSettingsPage() {
 
   const saveSite = async () => {
     setSaving(true);
-    const branch = getSelectedBranch();
+    const branch = adminCountry;
     const { error } = await supabase.from('site_settings').update({
       ...siteForm,
       country_code: branch,
@@ -196,7 +195,6 @@ export default function AdminSettingsPage() {
         <button onClick={() => setTab('general')} className={`rounded-lg px-4 py-2 text-sm font-medium ${tab === 'general' ? 'bg-primary text-primary-foreground' : 'border border-border hover:bg-secondary'}`}>সাধারণ</button>
         <button onClick={() => setTab('marketing')} className={`rounded-lg px-4 py-2 text-sm font-medium ${tab === 'marketing' ? 'bg-primary text-primary-foreground' : 'border border-border hover:bg-secondary'}`}>মার্কেটিং</button>
         <button onClick={() => setTab('features')} className={`rounded-lg px-4 py-2 text-sm font-medium ${tab === 'features' ? 'bg-primary text-primary-foreground' : 'border border-border hover:bg-secondary'}`}>ফিচার টগল</button>
-        <button onClick={() => setTab('integrations')} className={`rounded-lg px-4 py-2 text-sm font-medium ${tab === 'integrations' ? 'bg-primary text-primary-foreground' : 'border border-border hover:bg-secondary'}`}>ইন্টিগ্রেশন</button>
         <button onClick={() => setTab('ai')} className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium ${tab === 'ai' ? 'bg-primary text-primary-foreground' : 'border border-border hover:bg-secondary'}`}><Sparkles className="h-4 w-4" /> AI</button>
         <button onClick={() => setTab('referral')} className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium ${tab === 'referral' ? 'bg-primary text-primary-foreground' : 'border border-border hover:bg-secondary'}`}><Users className="h-4 w-4" /> রেফারেল</button>
       </div>
@@ -347,26 +345,6 @@ export default function AdminSettingsPage() {
           <div><label className="mb-1 block text-sm font-medium">ডুপ্লিকেট অর্ডার সতর্কতা (ঘণ্টা)</label><input type="number" value={siteForm.duplicate_order_hours ?? 24} onChange={(e) => setSiteForm({ ...siteForm, duplicate_order_hours: Number(e.target.value) })} className="input-bangla" /></div>
           <div><label className="mb-1 block text-sm font-medium">AdSense Client ID</label><input value={siteForm.adsense_client_id || ''} onChange={(e) => setSiteForm({ ...siteForm, adsense_client_id: e.target.value })} className="input-bangla" placeholder="ca-pub-XXXX" /></div>
           <div><label className="mb-1 block text-sm font-medium">AdSense Slot ID</label><input value={siteForm.adsense_slot_id || ''} onChange={(e) => setSiteForm({ ...siteForm, adsense_slot_id: e.target.value })} className="input-bangla" /></div>
-          <button onClick={saveSite} disabled={saving} className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer"><Save className="h-4 w-4" /> সেভ করুন</button>
-        </div>
-      )}
-
-      {tab === 'integrations' && (
-        <div className="max-w-2xl space-y-4 rounded-2xl border border-border bg-card p-6">
-          <h3 className="font-semibold">কুরিয়ার</h3>
-          <div><label className="mb-1 block text-sm font-medium">কুরিয়ার প্রোভাইডার</label><input value={siteForm.courier_provider || ''} onChange={(e) => setSiteForm({ ...siteForm, courier_provider: e.target.value })} className="input-bangla" placeholder="Future" /></div>
-          <div><label className="mb-1 block text-sm font-medium">কুরিয়ার API Key</label><input value={siteForm.courier_api_key || ''} onChange={(e) => setSiteForm({ ...siteForm, courier_api_key: e.target.value })} className="input-bangla" placeholder="Future" /></div>
-          <h3 className="mt-4 font-semibold">SMS</h3>
-          <div><label className="mb-1 block text-sm font-medium">SMS প্রোভাইডার</label><input value={siteForm.sms_provider || ''} onChange={(e) => setSiteForm({ ...siteForm, sms_provider: e.target.value })} className="input-bangla" placeholder="Future" /></div>
-          <div><label className="mb-1 block text-sm font-medium">SMS API Key</label><input value={siteForm.sms_api_key || ''} onChange={(e) => setSiteForm({ ...siteForm, sms_api_key: e.target.value })} className="input-bangla" placeholder="Future" /></div>
-          <h3 className="mt-4 font-semibold">WhatsApp API</h3>
-          <div><label className="mb-1 block text-sm font-medium">WhatsApp API Key</label><input value={siteForm.whatsapp_api_key || ''} onChange={(e) => setSiteForm({ ...siteForm, whatsapp_api_key: e.target.value })} className="input-bangla" placeholder="Future" /></div>
-          <h3 className="mt-4 font-semibold">পেমেন্ট গেটওয়ে</h3>
-          <div><label className="mb-1 block text-sm font-medium">পেমেন্ট প্রোভাইডার</label><input value={siteForm.payment_provider || ''} onChange={(e) => setSiteForm({ ...siteForm, payment_provider: e.target.value })} className="input-bangla" placeholder="Future" /></div>
-          <div><label className="mb-1 block text-sm font-medium">পেমেন্ট API Key</label><input value={siteForm.payment_api_key || ''} onChange={(e) => setSiteForm({ ...siteForm, payment_api_key: e.target.value })} className="input-bangla" placeholder="Future" /></div>
-          <h3 className="mt-4 font-semibold">Google Ads</h3>
-          <div><label className="mb-1 block text-sm font-medium">Google Ads ID</label><input value={siteForm.google_ads_id || ''} onChange={(e) => setSiteForm({ ...siteForm, google_ads_id: e.target.value })} className="input-bangla" placeholder="AW-XXXX" /></div>
-          <p className="text-xs text-muted-foreground">এই ফিল্ডগুলো ভবিষ্যৎ ইন্টিগ্রেশনের জন্য। এখন কোন API কানেক্ট করা হবে না।</p>
           <button onClick={saveSite} disabled={saving} className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer"><Save className="h-4 w-4" /> সেভ করুন</button>
         </div>
       )}
