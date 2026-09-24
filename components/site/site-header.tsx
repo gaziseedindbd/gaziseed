@@ -165,7 +165,7 @@ export function SiteHeader() {
       aria-label="Primary navigation"
       className={`flex items-center rounded-full border border-emerald-100/90 bg-white/95 backdrop-blur-md ${
         compact
-          ? 'gap-1 p-1 shadow-[0_8px_24px_-15px_rgba(5,46,22,.35)] 2xl:gap-1.5 2xl:p-1.5'
+          ? 'gap-0.5 p-0.5 shadow-[0_8px_24px_-15px_rgba(5,46,22,.35)] lg:gap-0.5 lg:p-1 xl:gap-1 xl:p-1 2xl:gap-1.5 2xl:p-1.5'
           : 'gap-1.5 p-1.5 shadow-[0_12px_35px_-18px_rgba(5,46,22,.45)]'
       }`}
     >
@@ -178,7 +178,7 @@ export function SiteHeader() {
             href={link.href}
             className={`group relative flex shrink-0 items-center rounded-full font-extrabold transition-all duration-200 ${
               compact
-                ? 'gap-1 px-2.5 py-1.5 text-[10px] leading-none xl:gap-1.5 xl:px-2.5 2xl:gap-2 2xl:px-3 2xl:py-2 2xl:text-[11px]'
+                ? 'gap-0.5 px-1.5 py-1.5 text-[9px] leading-none lg:gap-0.5 lg:px-1.5 lg:py-1.5 xl:gap-1 xl:px-2 xl:py-1.5 xl:text-[10px] 2xl:gap-2 2xl:px-3 2xl:py-2 2xl:text-[11px]'
                 : 'gap-2 px-4 py-2.5 text-[13px] leading-none'
             } ${
               active
@@ -187,7 +187,7 @@ export function SiteHeader() {
             }`}
           >
             <Icon
-              className={`${compact ? 'h-3 w-3 xl:h-3.5 xl:w-3.5 2xl:h-4 2xl:w-4' : 'h-4 w-4'} transition-transform duration-200 group-hover:scale-110 ${
+              className={`${compact ? 'h-2.5 w-2.5 lg:h-3 lg:w-3 xl:h-3.5 xl:w-3.5 2xl:h-4 2xl:w-4' : 'h-4 w-4'} transition-transform duration-200 group-hover:scale-110 ${
                 active ? 'text-white' : 'text-emerald-700'
               }`}
             />
@@ -230,23 +230,23 @@ export function SiteHeader() {
           </div>
         </div>
       </div>
-      <div className="mx-auto flex max-w-[1680px] items-center gap-2.5 px-4 py-2 sm:px-5 lg:gap-3 lg:px-7 lg:py-2.5 xl:gap-3 2xl:gap-4">
+      <div className="mx-auto flex max-w-[1760px] items-center gap-1.5 px-3 py-2 sm:px-5 lg:gap-1.5 lg:px-6 lg:py-2 xl:gap-3 2xl:gap-4">
         <Link href="/" className="group flex shrink-0 items-center rounded-2xl px-1 py-0.5 transition-transform duration-200 hover:scale-[1.015]" aria-label="GAZI SEED Home">
           {settings?.logo ? (
-            <img src={logoSrc} alt={settings.website_name || 'GAZI SEED'} className="h-10 w-auto max-w-[175px] object-contain sm:h-11 sm:max-w-[185px] lg:h-12 lg:max-w-[195px] 2xl:h-[52px] 2xl:max-w-[220px]" />
+            <img src={logoSrc} alt={settings.website_name || 'GAZI SEED'} className="h-9 w-auto max-w-[145px] object-contain sm:h-10 sm:max-w-[160px] lg:h-10 lg:max-w-[165px] xl:h-11 xl:max-w-[185px] 2xl:h-[52px] 2xl:max-w-[220px]" />
           ) : (
             <div className="flex items-center gap-2.5"><SproutMark large /><div><div className="text-2xl font-black leading-none tracking-tight text-emerald-950">GAZI SEED</div><div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">Better Seeds · Better Future</div></div></div>
           )}
         </Link>
-        <div className="hidden min-w-0 flex-1 xl:block"><div className="flex min-w-0 justify-center 2xl:justify-start">{renderNav(true)}</div></div>
-        <div className="ml-auto hidden shrink-0 items-center gap-1 xl:gap-1.5 lg:flex">
-          <div className={`relative flex items-center overflow-hidden rounded-2xl border transition-all duration-200 ${searchOpen ? 'border-emerald-400 bg-white ring-4 ring-emerald-600/10 shadow-sm' : 'border-emerald-100 bg-emerald-50/65 hover:border-emerald-200 hover:bg-white'}`}>
-            <button type="button" onClick={() => setSearchOpen(true)} aria-label={t('খুঁজুন', 'Search')} className="flex shrink-0 items-center justify-center pl-2.5 text-emerald-700"><Search className="h-4.5 w-4.5" /></button>
-            <input ref={searchInputRef} value={searchQuery} onFocus={() => setSearchOpen(true)} onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }} onKeyDown={(e) => { if (e.key === 'Enter') submitSearch(); if (e.key === 'Escape') setSearchOpen(false); }} type="search" placeholder={t('পণ্য খুঁজুন...', 'Search products...')} className="w-[88px] bg-transparent px-1.5 py-2.5 text-[10px] font-semibold text-slate-800 outline-none placeholder:text-slate-400 xl:w-[92px] 2xl:w-[120px]" aria-label={t('পণ্য খুঁজুন', 'Search products')} />
+        <div className="hidden min-w-0 flex-1 lg:block"><div className="flex min-w-0 justify-center 2xl:justify-start">{renderNav(true)}</div></div>
+        <div className="ml-auto hidden shrink-0 items-center gap-0.5 lg:flex xl:gap-1.5">
+          <div className={`relative flex items-center overflow-hidden rounded-xl border transition-all duration-200 ${searchOpen ? 'border-emerald-400 bg-white ring-4 ring-emerald-600/10 shadow-sm' : 'border-emerald-100 bg-emerald-50/65 hover:border-emerald-200 hover:bg-white'}`}>
+            <button type="button" onClick={() => setSearchOpen(true)} aria-label={t('খুঁজুন', 'Search')} className="flex shrink-0 items-center justify-center px-2 text-emerald-700"><Search className="h-4.5 w-4.5" /></button>
+            <input ref={searchInputRef} value={searchQuery} onFocus={() => setSearchOpen(true)} onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }} onKeyDown={(e) => { if (e.key === 'Enter') submitSearch(); if (e.key === 'Escape') setSearchOpen(false); }} type="search" placeholder={t('পণ্য খুঁজুন...', 'Search products...')} className="hidden w-[92px] bg-transparent px-1.5 py-2.5 text-[10px] font-semibold text-slate-800 outline-none placeholder:text-slate-400 xl:block 2xl:w-[120px]" aria-label={t('পণ্য খুঁজুন', 'Search products')} />
             {searchLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin text-emerald-700" />}
             {searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="mr-1 rounded-full p-1 text-slate-400 hover:bg-slate-100" aria-label="Clear search"><X className="h-3.5 w-3.5" /></button>}
           </div>
-          <div className="flex items-center gap-0.5 rounded-xl border border-emerald-100 bg-emerald-50/70 p-0.5" role="group" aria-label="Language">
+          <div className="flex items-center gap-px rounded-lg border border-emerald-100 bg-emerald-50/70 p-px lg:rounded-lg" role="group" aria-label="Language">
             {(country === 'IN'
               ? ([
                   ['bn', 'বাংলা'],
@@ -258,12 +258,12 @@ export function SiteHeader() {
                   ['en', 'EN'],
                 ] as const)
             ).map(([code, label]) => (
-              <button key={code} type="button" onClick={() => setLang(code)} className={`rounded-lg px-2 py-1.5 text-[10px] font-black transition ${lang === code ? 'bg-emerald-800 text-white shadow-sm' : 'text-emerald-900 hover:bg-white'}`} aria-pressed={lang === code}>{label}</button>
+              <button key={code} type="button" onClick={() => setLang(code)} className={`rounded-md px-1.5 py-1.5 text-[9px] font-black transition xl:rounded-lg xl:px-2 xl:text-[10px] ${lang === code ? 'bg-emerald-800 text-white shadow-sm' : 'text-emerald-900 hover:bg-white'}`} aria-pressed={lang === code}>{label}</button>
             ))}
           </div>
-          <Link href="/wishlist" title={t('প্রিয় তালিকা', 'Wishlist')} className={`rounded-xl p-2 transition hover:bg-emerald-50 hover:text-emerald-700 ${isActive('/wishlist') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700'}`}><Heart className="h-5 w-5" /></Link>
-          <Link href="/account" title={t('অ্যাকাউন্ট', 'Account')} className={`flex items-center gap-1 rounded-xl px-2 py-2 text-sm font-bold transition hover:bg-emerald-50 hover:text-emerald-700 ${isActive('/account') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700'}`}><User className="h-5 w-5" /><span className="hidden 2xl:inline">GAZI SEED</span><ChevronDown className="hidden h-3.5 w-3.5 2xl:block" /></Link>
-          <Link href="/cart" title={t('কার্ট', 'Cart')} className={`relative rounded-xl p-2 transition hover:bg-emerald-50 hover:text-emerald-700 ${isActive('/cart') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700'}`}><ShoppingCart className="h-5 w-5" />{cartCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-700 px-1 text-[9px] font-black text-white ring-2 ring-white">{cartCount > 99 ? '99+' : cartCount}</span>}</Link>
+          <Link href="/wishlist" title={t('প্রিয় তালিকা', 'Wishlist')} className={`rounded-lg p-1.5 transition hover:bg-emerald-50 hover:text-emerald-700 ${isActive('/wishlist') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700'}`}><Heart className="h-5 w-5" /></Link>
+          <Link href="/account" title={t('অ্যাকাউন্ট', 'Account')} className={`flex items-center gap-1 rounded-lg px-1.5 py-1.5 text-sm font-bold transition hover:bg-emerald-50 hover:text-emerald-700 ${isActive('/account') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700'}`}><User className="h-5 w-5" /><span className="hidden 2xl:inline">GAZI SEED</span><ChevronDown className="hidden h-3.5 w-3.5 2xl:block" /></Link>
+          <Link href="/cart" title={t('কার্ট', 'Cart')} className={`relative rounded-lg p-1.5 transition hover:bg-emerald-50 hover:text-emerald-700 ${isActive('/cart') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700'}`}><ShoppingCart className="h-5 w-5" />{cartCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-700 px-1 text-[9px] font-black text-white ring-2 ring-white">{cartCount > 99 ? '99+' : cartCount}</span>}</Link>
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5 lg:hidden">
           <button type="button" onClick={() => setSearchOpen((value) => !value)} aria-label={t('অনুসন্ধান খুলুন', 'Open search')} className={`rounded-xl p-2.5 transition ${searchOpen ? 'bg-emerald-800 text-white' : 'bg-emerald-50 text-emerald-800'}`}>{searchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}</button>
@@ -293,7 +293,7 @@ export function SiteHeader() {
           </div>
         </>
       )}
-      <nav className="hidden border-t border-slate-100/80 bg-white/95 py-2.5 shadow-[0_8px_24px_-20px_rgba(5,46,22,.4)] lg:block xl:hidden"><div className="mx-auto flex max-w-[1220px] items-center justify-center px-4">{renderNav(false)}</div></nav>
+      <nav className="hidden border-t border-slate-100/80 bg-white/95 py-2.5 shadow-[0_8px_24px_-20px_rgba(5,46,22,.4)] md:block lg:hidden"><div className="mx-auto flex max-w-[1220px] items-center justify-center px-4">{renderNav(false)}</div></nav>
       {mobileMenuOpen && <div className="border-t border-slate-100 bg-white shadow-2xl md:hidden"><div className="p-3"><div className="mb-2 flex items-center gap-2 px-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-400">Menu<span className="h-px flex-1 bg-slate-100" /></div><button type="button" onClick={() => { setMobileMenuOpen(false); setSearchOpen(true); }} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-left text-sm font-bold text-emerald-900"><Search className="h-5 w-5 text-emerald-700" />{t('পণ্য ও বীজ খুঁজুন...', 'Search products & seeds...')}</button><Link href="/account" onClick={() => setMobileMenuOpen(false)} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-left text-sm font-black text-emerald-900"><User className="h-5 w-5 text-emerald-700" />{t('অ্যাকাউন্ট / লগইন', 'Account / Login')}</Link>{!isAdminRoute && <div className="mb-3"><CountrySelector mobile /></div>}<div className="grid grid-cols-2 gap-2">{navLinks.map((link) => { const Icon = link.icon; const active = isActive(link.href); return (<Link key={link.href} href={link.href} className={`flex items-center gap-2 rounded-2xl border p-3 text-sm font-bold transition ${active ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-100 bg-slate-50 text-slate-700 hover:border-emerald-100 hover:bg-emerald-50/50'}`}><Icon className="h-5 w-5 text-emerald-700" />{link.label}</Link>); })}</div></div></div>}
     </header>
   );
