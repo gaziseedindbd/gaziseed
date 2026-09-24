@@ -41,9 +41,17 @@ export default function AdminProductsPage() {
     if (!user) return;
     const { data: admin } = await supabase.from('admin_users').select('role,country_code').eq('user_id', user.id).maybeSingle();
     if (!admin) return;
+
     if (admin.role === 'master_admin') {
-      const { data: context } = await supabase.from('admin_branch_context').select('country_code').maybeSingle();
-      setAdminBranch(context?.country_code === 'IN' ? 'IN' : 'BD');
+      // Master Admin branch is controlled only by the central branch context RPC.
+      // Do not read admin_branch_context directly here; that can diverge from the
+      // authoritative branch selected in AdminLayout because of RLS/session timing.
+      const { data: branchCountry, error: branchError } = await supabase.rpc('current_admin_country');
+      if (branchError) {
+        console.error('Products admin branch check failed:', branchError);
+        return;
+      }
+      setAdminBranch(String(branchCountry).toUpperCase() === 'IN' ? 'IN' : 'BD');
     } else {
       setAdminBranch(admin.country_code === 'IN' ? 'IN' : 'BD');
     }
