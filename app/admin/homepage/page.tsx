@@ -16,13 +16,14 @@ export default function AdminHomepagePage() {
   const [promos, setPromos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingPromo, setSavingPromo] = useState<string | null>(null);
+  const [adminCountry, setAdminCountry] = useState<'BD' | 'IN'>('BD');
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => { const init = async () => { const { data, error } = await supabase.rpc('current_admin_country'); if (error) { toast('Admin branch নির্ধারণ ব্যর্থ', 'error'); return; } const country = String(data).toUpperCase() === 'IN' ? 'IN' : 'BD'; setAdminCountry(country); await loadAll(country); }; void init(); }, []);
 
-  const loadAll = async () => {
+  const loadAll = async (country = adminCountry) => {
     const [sectionRes, promoRes] = await Promise.all([
-      supabase.from('homepage_sections').select('*').order('display_order'),
-      supabase.from('homepage_promos').select('*').order('display_order'),
+      supabase.from('homepage_sections').select('*').eq('country_code', country).order('display_order'),
+      supabase.from('homepage_promos').select('*').eq('country_code', country).order('display_order'),
     ]);
     setSections(sectionRes.data || []);
     setPromos(promoRes.data || []);
@@ -30,13 +31,13 @@ export default function AdminHomepagePage() {
   };
 
   const toggleSection = async (s: any) => {
-    await supabase.from('homepage_sections').update({ is_enabled: !s.is_enabled }).eq('id', s.id);
+    await supabase.from('homepage_sections').update({ is_enabled: !s.is_enabled }).eq('id', s.id).eq('country_code', adminCountry);
     toast(s.is_enabled ? 'সেকশন বন্ধ হয়েছে' : 'সেকশন চালু হয়েছে');
     loadAll();
   };
 
   const updateTitle = async (id: string, title: string, subtitle: string) => {
-    await supabase.from('homepage_sections').update({ title, subtitle }).eq('id', id);
+    await supabase.from('homepage_sections').update({ title, subtitle }).eq('id', id).eq('country_code', adminCountry);
   };
 
   const moveOrder = async (section: any, direction: 'up' | 'down') => {
@@ -45,8 +46,8 @@ export default function AdminHomepagePage() {
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= sorted.length) return;
     const swapItem = sorted[swapIdx];
-    await supabase.from('homepage_sections').update({ display_order: swapItem.display_order }).eq('id', section.id);
-    await supabase.from('homepage_sections').update({ display_order: section.display_order }).eq('id', swapItem.id);
+    await supabase.from('homepage_sections').update({ display_order: swapItem.display_order }).eq('id', section.id).eq('country_code', adminCountry);
+    await supabase.from('homepage_sections').update({ display_order: section.display_order }).eq('id', swapItem.id).eq('country_code', adminCountry);
     loadAll();
   };
 
@@ -64,7 +65,7 @@ export default function AdminHomepagePage() {
       is_active: Boolean(promo.is_active),
       display_order: Number(promo.display_order) || 0,
       updated_at: new Date().toISOString(),
-    }).eq('id', promo.id);
+    }).eq('id', promo.id).eq('country_code', adminCountry);
     if (error) toast(`সেভ ব্যর্থ: ${error.message}`, 'error');
     else toast(`${promo.title || 'প্রোমো'} আপডেট হয়েছে`);
     setSavingPromo(null);
