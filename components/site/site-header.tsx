@@ -57,6 +57,14 @@ export function SiteHeader() {
   }, []);
 
   useEffect(() => {
+    // Bangladesh branch supports Bengali + English.
+    // India branch supports Bengali + English + Hindi.
+    if (country === 'BD' && lang === 'hi') {
+      setLang('bn');
+    }
+  }, [country, lang, setLang]);
+
+  useEffect(() => {
     setMobileMenuOpen(false);
     setSearchOpen(false);
   }, [pathname]);
@@ -239,11 +247,17 @@ export function SiteHeader() {
             {searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="mr-1 rounded-full p-1 text-slate-400 hover:bg-slate-100" aria-label="Clear search"><X className="h-3.5 w-3.5" /></button>}
           </div>
           <div className="flex items-center gap-0.5 rounded-xl border border-emerald-100 bg-emerald-50/70 p-0.5" role="group" aria-label="Language">
-            {([
-              ['bn', 'বাংলা'],
-              ['en', 'EN'],
-              ['hi', 'हिन्दी'],
-            ] as const).map(([code, label]) => (
+            {(country === 'IN'
+              ? ([
+                  ['bn', 'বাংলা'],
+                  ['en', 'EN'],
+                  ['hi', 'हिन्दी'],
+                ] as const)
+              : ([
+                  ['bn', 'বাংলা'],
+                  ['en', 'EN'],
+                ] as const)
+            ).map(([code, label]) => (
               <button key={code} type="button" onClick={() => setLang(code)} className={`rounded-lg px-2 py-1.5 text-[10px] font-black transition ${lang === code ? 'bg-emerald-800 text-white shadow-sm' : 'text-emerald-900 hover:bg-white'}`} aria-pressed={lang === code}>{label}</button>
             ))}
           </div>
