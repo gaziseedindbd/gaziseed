@@ -8,6 +8,7 @@ import { AI_PROVIDER_OPTIONS, AI_FEATURE_FLAG_LIST, maskApiKey, isApiKeyMasked, 
 
 export default function AdminSettingsPage() {
   const [tab, setTab] = useState<'general' | 'marketing' | 'features' | 'integrations' | 'ai' | 'referral'>('general');
+  const [adminCountry, setAdminCountry] = useState<'BD' | 'IN'>('BD');
   const [siteForm, setSiteForm] = useState<any>(null);
   const [marketingForm, setMarketingForm] = useState<any>(null);
   const [aiForm, setAiForm] = useState<any>(null);
@@ -30,13 +31,28 @@ export default function AdminSettingsPage() {
   };
 
   useEffect(() => {
-    const branch = getSelectedBranch();
-    Promise.all([
-      supabase.from('site_settings').select('*').eq('country_code', branch).maybeSingle(),
-      supabase.from('marketing_settings').select('*').eq('id', 1).maybeSingle(),
-      supabase.from('ai_settings').select('*').eq('id', 1).maybeSingle(),
-      supabase.from('referral_settings').select('*').eq('id', 1).maybeSingle(),
-    ]).then(([site, mkt, ai, ref]) => {
+    const loadSettings = async () => {
+      const { data: countryData, error: countryError } = await supabase.rpc('current_admin_country');
+      if (countryError) {
+        console.error('Admin settings branch check failed:', countryError);
+        return;
+      }
+      const branch: 'BD' | 'IN' = String(countryData).toUpperCase() === 'IN' ? 'IN' : 'BD';
+      setAdminCountry(branch);
+      const params = new URLSearchParams(window.location.search);
+      const requestedTab = params.get('tab');
+      if (requestedTab === 'marketing') setTab('marketing');
+      else if (requestedTab === 'features') setTab('features');
+      else if (requestedTab === 'integrations') setTab('integrations');
+      else if (requestedTab === 'ai') setTab('ai');
+      else if (requestedTab === 'referral') setTab('referral');
+
+      const [site, mkt, ai, ref] = await Promise.all([
+        supabase.from('site_settings').select('*').eq('country_code', branch).maybeSingle(),
+        supabase.from('marketing_settings').select('*').eq('id', 1).eq('country_code', branch).maybeSingle(),
+        supabase.from('ai_settings').select('*').eq('id', 1).eq('country_code', branch).maybeSingle(),
+        supabase.from('referral_settings').select('*').eq('id', 1).eq('country_code', branch).maybeSingle(),
+      ]);
       setSiteForm(site.data || {});
       setMarketingForm(mkt.data || {});
       const aiData = ai.data || {};
@@ -47,7 +63,8 @@ export default function AdminSettingsPage() {
       });
       setReferralForm(ref.data || { enabled: false, reward_type: 'fixed', reward_value: 0, min_order_amount: 0, max_reward_per_referral: null, terms: '' });
       setLoading(false);
-    });
+    };
+    loadSettings();
   }, []);
 
   const uploadLogo = async (file: File) => {
@@ -91,7 +108,7 @@ export default function AdminSettingsPage() {
 
   const saveMarketing = async () => {
     setSaving(true);
-    const { error } = await supabase.from('marketing_settings').update(marketingForm).eq('id', 1);
+    const { error } = await supabase.from('marketing_settings').update({ ...marketingForm, country_code: adminCountry }).eq('id', 1).eq('country_code', adminCountry);
     setSaving(false);
     if (error) { toast('সেভ ব্যর্থ', 'error'); return; }
     toast('মার্কেটিং সেটিংস সেভ হয়েছে');
@@ -112,7 +129,7 @@ export default function AdminSettingsPage() {
     if (aiKeyEdited && aiForm.api_key && !isApiKeyMasked(aiForm.api_key)) {
       payload.api_key = aiForm.api_key;
     }
-    const { error } = await supabase.from('ai_settings').update(payload).eq('id', 1);
+    const { error } = await supabase.from('ai_settings').update({ ...payload, country_code: adminCountry }).eq('id', 1).eq('country_code', adminCountry);
     setSaving(false);
     if (error) { toast('AI settings save failed', 'error'); return; }
     toast('AI settings saved');
@@ -131,7 +148,7 @@ export default function AdminSettingsPage() {
       terms: referralForm.terms || null,
       updated_by: userData.user?.id || null,
     };
-    const { error } = await supabase.from('referral_settings').update(payload).eq('id', 1);
+    const { error } = await supabase.from('referral_settings').update({ ...payload, country_code: adminCountry }).eq('id', 1).eq('country_code', adminCountry);
     setSaving(false);
     if (error) { toast('সেভ ব্যর্থ', 'error'); return; }
     toast('রেফারেল সেটিংস সেভ হয়েছে');
