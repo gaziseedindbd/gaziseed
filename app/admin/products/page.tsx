@@ -37,7 +37,9 @@ export default function AdminProductsPage() {
   }, []);
 
   const loadAdminBranch = async () => {
-    const { data: admin } = await supabase.from('admin_users').select('role,country_code').maybeSingle();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data: admin } = await supabase.from('admin_users').select('role,country_code').eq('user_id', user.id).maybeSingle();
     if (!admin) return;
     if (admin.role === 'master_admin') {
       const { data: context } = await supabase.from('admin_branch_context').select('country_code').maybeSingle();
