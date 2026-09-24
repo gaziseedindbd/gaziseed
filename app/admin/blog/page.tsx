@@ -6,6 +6,7 @@ import { Plus, Edit, Trash2, X, Wand2 } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 import { processUrlImage, uploadProcessedFile } from '@/lib/image-processing';
 import { MultilingualFields } from '@/components/admin/multilingual-fields';
+import { RichTextEditor } from '@/components/admin/rich-text-editor';
 import { generateBlogSeo } from '@/lib/seo/auto-seo';
 
 export default function AdminBlogPage() {
@@ -103,7 +104,7 @@ function BlogForm({ post, onSave, onClose }: any) {
       <div className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-background p-6">
         <div className="mb-4 flex items-center justify-between"><h2 className="text-xl font-bold">{post ? 'আর্টিকেল এডিট' : 'নতুন আর্টিকেল'}</h2><button onClick={onClose}><X className="h-6 w-6" /></button></div>
         <form onSubmit={(e) => { e.preventDefault(); const autoSeo = generateBlogSeo(form); onSave({ ...form, ...autoSeo }); }} className="space-y-4">
-          <MultilingualFields value={form.translations || {}} onChange={(translations) => setForm({ ...form, translations })} title="🌐 Article Language Versions" fields={[{ key: 'title', label: 'Title' }, { key: 'content', label: 'Content', multiline: true }, { key: 'category', label: 'Category' }, { key: 'seo_title', label: 'SEO Title' }, { key: 'meta_description', label: 'Meta Description', multiline: true }]} />
+          <MultilingualFields value={form.translations || {}} onChange={(translations) => setForm({ ...form, translations })} title="🌐 Article Language Versions" fields={[{ key: 'title', label: 'Title' }, { key: 'content', label: 'Content', richText: true, placeholder: 'Write the article content with headings, bold text and lists...' }, { key: 'category', label: 'Category' }, { key: 'seo_title', label: 'SEO Title' }, { key: 'meta_description', label: 'Meta Description', multiline: true }]} />
           <div><label className="mb-1 block text-sm font-medium">শিরোনাম</label><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="input-bangla" required /></div>
           <div><label className="mb-1 block text-sm font-medium">Slug</label><input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className="input-bangla" placeholder="auto-generated" /></div>
           <div><label className="mb-1 block text-sm font-medium">ক্যাটাগরি</label><input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input-bangla" /></div>
@@ -118,7 +119,7 @@ function BlogForm({ post, onSave, onClose }: any) {
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground">External image URL সেভ করলে existing Image Branding & Watermark settings অনুযায়ী image process হয়ে GAZI SEED storage-এ সংরক্ষিত হবে।</p>
           </div>
-          <div><label className="mb-1 block text-sm font-medium">কন্টেন্ট</label><textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} className="input-bangla min-h-[200px]" /></div>
+          <div><label className="mb-1 block text-sm font-medium">কন্টেন্ট</label><RichTextEditor value={form.content} onChange={(content) => setForm({ ...form, content })} placeholder="বাংলা/English/Hindi article content লিখুন..." minHeight="260px" /><p className="mt-1 text-[11px] text-muted-foreground">Bold/Italic/Underline, H2/H3 এবং bullet/numbered list দিয়ে screenshot-এর মতো structured article তৈরি করতে পারবেন।</p></div>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_published} onChange={(e) => setForm({ ...form, is_published: e.target.checked })} className="accent-primary" /> প্রকাশিত</label>
           <button type="submit" className="w-full rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90">সেভ করুন</button>
         </form>
