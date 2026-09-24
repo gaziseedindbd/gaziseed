@@ -5,13 +5,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getCategories } from '@/lib/data';
 import type { Category } from '@/lib/supabase/types';
-import { ArrowUpRight, Leaf, Sparkles } from 'lucide-react';
+import { Leaf, Sparkles } from 'lucide-react';
 import { useLang } from '@/components/site/language-provider';
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const { t, tDb, tCategoryName } = useLang();
+  const { lang, t, tDb, tCategoryName } = useLang();
 
   useEffect(() => {
     getCategories().then((c) => {
@@ -56,9 +56,9 @@ export default function CategoriesPage() {
                 <Link
                   key={cat.id}
                   href={`/category/${cat.slug}`}
-                  className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-[1.55rem] border border-[#dfe9e2] bg-[#fffdf8] p-2 shadow-[0_10px_30px_-20px_rgba(6,64,43,.45)] transition-all duration-500 hover:-translate-y-2 hover:border-[#c8aa58]/70 hover:shadow-[0_24px_50px_-24px_rgba(6,64,43,.48)] sm:rounded-[1.8rem] sm:p-2.5"
+                  className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-[1.6rem] border border-[#dfe9e2] bg-white p-1.5 shadow-[0_10px_30px_-20px_rgba(6,64,43,.42)] transition-all duration-500 hover:-translate-y-1.5 hover:border-[#c8aa58]/70 hover:shadow-[0_24px_50px_-24px_rgba(6,64,43,.42)] sm:rounded-[1.9rem] sm:p-2"
                 >
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-[1.2rem] bg-[#edf6ef] sm:rounded-[1.4rem]">
+                  <div className="relative aspect-square overflow-hidden rounded-[1.25rem] bg-[#edf6ef] sm:rounded-[1.5rem]">
                     {cat.image ? (
                       <Image
                         src={cat.image}
@@ -66,53 +66,45 @@ export default function CategoriesPage() {
                         fill
                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                         priority={idx < 4}
-                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.07]"
+                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-50 to-lime-50 text-emerald-700">
-                        <Leaf className="h-10 w-10 sm:h-12 sm:w-12" />
+                        <Leaf className="h-11 w-11 sm:h-14 sm:w-14" />
                       </div>
                     )}
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#062f22]/55 via-transparent to-white/5 opacity-80 transition-opacity duration-500 group-hover:opacity-95" />
-
-                    <span className="absolute left-3 top-3 inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-white/70 bg-white/90 px-2 text-[9px] font-black tracking-[0.12em] text-emerald-900 shadow-lg backdrop-blur-md sm:left-4 sm:top-4 sm:h-8 sm:min-w-8 sm:text-[10px]">
-                      {String(idx + 1).padStart(2, '0')}
-                    </span>
-
-                    <span className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full border border-white/70 bg-[#fffdf8]/95 text-emerald-800 shadow-lg backdrop-blur-md transition-all duration-500 group-hover:rotate-45 group-hover:bg-[#0b6b48] group-hover:text-white sm:bottom-4 sm:right-4 sm:h-10 sm:w-10">
-                      <ArrowUpRight className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
-                    </span>
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#062f22]/45 via-[#062f22]/5 to-transparent" />
                   </div>
 
-                  <div className="relative flex flex-1 flex-col px-2.5 pb-2.5 pt-3 sm:px-3.5 sm:pb-3.5 sm:pt-4">
-                    <div className="mb-2 flex items-center gap-2">
-                      <span className="h-1 w-7 rounded-full bg-gradient-to-r from-[#0a6b48] to-[#d6b65d] sm:w-9" />
-                      <span className="text-[8px] font-black uppercase tracking-[0.16em] text-[#9a8040] sm:text-[9px]">
-                        {t('প্রিমিয়াম কালেকশন', 'Premium Collection')}
+                  <div className="flex flex-1 flex-col px-2.5 pb-2.5 pt-3 sm:px-4 sm:pb-4 sm:pt-4">
+                    <div className="mb-2 flex items-start gap-2.5">
+                      <span className="mt-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 sm:h-8 sm:w-8">
+                        <Leaf className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </span>
+                      <div className="min-w-0">
+                        <h3 className="line-clamp-2 text-[17px] font-black leading-[1.25] tracking-[-0.015em] text-[#073c2c] transition-colors duration-300 group-hover:text-[#08704a] sm:text-[21px]">
+                          {catName}
+                        </h3>
+                        {((lang === 'en' ? cat.name_bn : cat.name_en) || '').trim() && (
+                          <p className="mt-1 text-[10px] font-semibold leading-snug text-slate-400 sm:text-[12px]">
+                            {lang === 'en' ? cat.name_bn : cat.name_en}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
-                    <h3 className="line-clamp-2 text-[15px] font-black leading-snug tracking-[-0.01em] text-[#073c2c] transition-colors duration-300 group-hover:text-[#08704a] sm:text-lg">
-                      {catName}
-                    </h3>
+                    <div className="min-h-[2.7rem]">
+                      {cat.description && (
+                        <p className="line-clamp-2 text-[11px] font-medium leading-[1.55] text-slate-500 sm:text-[13px] sm:leading-[1.6]">
+                          {tDb(cat.description)}
+                        </p>
+                      )}
+                    </div>
 
-                    {cat.description && (
-                      <p className="mt-1.5 line-clamp-2 text-[10px] font-medium leading-relaxed text-slate-500 sm:text-xs">
-                        {tDb(cat.description)}
-                      </p>
-                    )}
-
-                    <div className="mt-auto pt-3 sm:pt-4">
-                      <div className="flex items-center justify-between gap-2 border-t border-[#e8ece7] pt-2.5 sm:pt-3">
-                        <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-[#d9e8dc] bg-[#eff8f0] px-2.5 py-1.5 text-[9px] font-extrabold text-[#096440] transition-all duration-300 group-hover:border-[#0b6b48] group-hover:bg-[#0b6b48] group-hover:text-white sm:px-3 sm:text-[10px]">
-                          <span className="truncate">{t('পণ্য দেখুন', 'Explore products')}</span>
-                          <ArrowUpRight className="h-3 w-3 shrink-0" />
-                        </span>
-                        <span className="shrink-0 text-[8px] font-bold uppercase tracking-[0.1em] text-slate-400 transition-colors group-hover:text-[#a7893f] sm:text-[9px]">
-                          {t('ক্যাটাগরি', 'Collection')}
-                        </span>
-                      </div>
+                    <div className="mt-3.5 sm:mt-4">
+                      <span className="flex w-full items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-[10px] font-black text-emerald-800 transition-all duration-300 group-hover:border-emerald-700 group-hover:bg-emerald-700 group-hover:text-white sm:rounded-2xl sm:px-4 sm:py-3 sm:text-[11px]">
+                        {t('পণ্য দেখুন', 'Explore Products')}
+                      </span>
                     </div>
                   </div>
                 </Link>
