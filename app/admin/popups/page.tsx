@@ -56,7 +56,7 @@ export default function AdminPopupsPage() {
   useEffect(() => { const init = async () => { const { data, error } = await supabase.rpc('current_admin_country'); if (error) { toast('Admin branch নির্ধারণ ব্যর্থ', 'error'); return; } const country = String(data).toUpperCase() === 'IN' ? 'IN' : 'BD'; setAdminCountry(country); await fetchPopups(country); }; void init(); }, []);
 
   const newPopup = (): PromotionalPopup => ({
-    id: '', country_code: adminCountry, title: '', description: '', image: '', offer: '', cta_text: '', cta_link: '',
+    id: '', title: '', description: '', image: '', offer: '', cta_text: '', cta_link: '',
     start_date: new Date().toISOString().slice(0, 16),
     end_date: null, is_active: false, show_on_main: true, show_on_offers: false,
     show_close_button: true, auto_close: false, auto_close_seconds: 10,
