@@ -18,16 +18,42 @@ export default function AdminProductsPage() {
   const [showForm, setShowForm] = useState(false);
 
   const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [adminBranch, setAdminBranch] = useState<'BD' | 'IN'>('BD');
 
-  useEffect(() => { loadProducts(); loadCategories(); loadAllProducts(); }, []);
+  useEffect(() => {
+    loadAdminBranch();
+    loadCategories();
+  }, []);
+
+  useEffect(() => {
+    loadProducts();
+    loadAllProducts();
+  }, [adminBranch]);
+
+  useEffect(() => {
+    const handler = () => loadAdminBranch();
+    window.addEventListener('gazi-branch-change', handler);
+    return () => window.removeEventListener('gazi-branch-change', handler);
+  }, []);
+
+  const loadAdminBranch = async () => {
+    const { data: admin } = await supabase.from('admin_users').select('role,country_code').maybeSingle();
+    if (!admin) return;
+    if (admin.role === 'master_admin') {
+      const { data: context } = await supabase.from('admin_branch_context').select('country_code').maybeSingle();
+      setAdminBranch(context?.country_code === 'IN' ? 'IN' : 'BD');
+    } else {
+      setAdminBranch(admin.country_code === 'IN' ? 'IN' : 'BD');
+    }
+  };
 
   const loadAllProducts = async () => {
-    const { data } = await supabase.from('products').select('id, name_bn, name_en, slug').eq('is_ads_only', false).order('name_bn');
+    const { data } = await supabase.from('products').select('id, name_bn, name_en, slug').eq('is_ads_only', false).eq('country_code', adminBranch).order('name_bn');
     setAllProducts(data || []);
   };
 
   const loadProducts = async () => {
-    const { data } = await supabase.from('products').select('*').eq('is_ads_only', false).order('created_at', { ascending: false });
+    const { data } = await supabase.from('products').select('*').eq('is_ads_only', false).eq('country_code', adminBranch).order('created_at', { ascending: false });
     setProducts(data || []);
     setLoading(false);
   };
@@ -322,7 +348,7 @@ function ProductForm({ product, categories, allProducts, onSave, onClose, onSave
       seo_title: form.seo_title,
       meta_description: form.meta_description,
     });
-    const payload = { ...form, ...autoSeo, translations: form.translations || {}, regular_price: Number(form.regular_price), sale_price: form.sale_price ? Number(form.sale_price) : null, stock: Number(form.stock), low_stock_threshold: Number(form.low_stock_threshold), images: form.images, related_product_ids: form.related_product_ids, min_order_qty: form.min_order_qty ? Number(form.min_order_qty) : null, max_order_qty: form.max_order_qty ? Number(form.max_order_qty) : null, cost_price: form.cost_price ? Number(form.cost_price) : null, suitable_months: form.suitable_months, growing_type: form.growing_type || null, season_tags: form.season_tags, show_low_stock: form.show_low_stock };
+    const payload = { ...form, ...autoSeo, country_code: adminBranch, translations: form.translations || {}, regular_price: Number(form.regular_price), sale_price: form.sale_price ? Number(form.sale_price) : null, stock: Number(form.stock), low_stock_threshold: Number(form.low_stock_threshold), images: form.images, related_product_ids: form.related_product_ids, min_order_qty: form.min_order_qty ? Number(form.min_order_qty) : null, max_order_qty: form.max_order_qty ? Number(form.max_order_qty) : null, cost_price: form.cost_price ? Number(form.cost_price) : null, suitable_months: form.suitable_months, growing_type: form.growing_type || null, season_tags: form.season_tags, show_low_stock: form.show_low_stock };
     onSave({ payload, faqs, variants, bulkTiers, removedFaqs, removedVariants, removedBulkTiers });
   };
 
