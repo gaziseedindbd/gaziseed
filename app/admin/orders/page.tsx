@@ -12,7 +12,7 @@ const STATUS_LABELS: Record<string, string> = {
   shipped: 'শিপড', delivered: 'ডেলিভারড', cancelled: 'বাতিল', returned: 'ফেরত',
 };
 
-const SOURCE_FILTERS = ['all', 'website', 'facebook', 'instagram', 'google', 'tiktok'];
+const SOURCE_FILTERS = ['all', 'website', 'ads', 'facebook', 'instagram', 'google', 'tiktok'];
 
 const STATUS_TRANSITIONS: Record<string, string[]> = {
   pending: ['pending', 'confirmed', 'cancelled'],
@@ -56,6 +56,8 @@ export default function AdminOrdersPage() {
       }
       setAdminCountry(String(data).toUpperCase() === 'IN' ? 'IN' : 'BD');
     };
+    const sourceFromUrl = new URLSearchParams(window.location.search).get('source');
+    if (sourceFromUrl && SOURCE_FILTERS.includes(sourceFromUrl)) setSourceFilter(sourceFromUrl);
     loadAdminCountry();
     loadOrders();
   }, []);
