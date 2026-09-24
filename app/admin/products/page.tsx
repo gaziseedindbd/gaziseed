@@ -26,6 +26,7 @@ export default function AdminProductsPage() {
   }, []);
 
   useEffect(() => {
+    loadCategories();
     loadProducts();
     loadAllProducts();
   }, [adminBranch]);
@@ -69,7 +70,16 @@ export default function AdminProductsPage() {
   };
 
   const loadCategories = async () => {
-    const { data } = await supabase.from('categories').select('*').order('display_order');
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('country_code', adminBranch)
+      .order('display_order');
+    if (error) {
+      console.error('Products category load failed:', error);
+      toast('ক্যাটাগরি লোড ব্যর্থ', 'error');
+      return;
+    }
     setCategories(data || []);
   };
 
@@ -144,7 +154,16 @@ export default function AdminProductsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('প্রোডাক্ট মুছে ফেলতে চান?')) return;
-    await supabase.from('products').delete().eq('id', id);
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id)
+      .eq('country_code', adminBranch);
+    if (error) {
+      toast('প্রোডাক্ট মুছে ফেলা ব্যর্থ', 'error');
+      console.error('Product delete failed:', error);
+      return;
+    }
     toast('প্রোডাক্ট মুছে ফেলা হয়েছে');
     loadProducts();
   };
