@@ -21,7 +21,7 @@ export default function CategoriesPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#f7faf7] pb-16">
+    <div className="min-h-screen bg-[#f7faf7] pb-32 md:pb-16">
       <section className="relative mb-10 overflow-hidden bg-gradient-to-br from-[#063d2b] via-[#075b3d] to-[#043326] py-14 text-white shadow-[0_18px_55px_-35px_rgba(4,70,48,.9)] sm:py-18">
         <div className="absolute -left-24 -top-28 h-80 w-80 rounded-full bg-lime-300/10 blur-3xl" />
         <div className="absolute -bottom-36 -right-20 h-96 w-96 rounded-full bg-emerald-300/10 blur-3xl" />
@@ -82,7 +82,7 @@ export default function CategoriesPage() {
                         <Leaf className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       </span>
                       <div className="min-w-0">
-                        <h3 className="line-clamp-2 text-[17px] font-black uppercase leading-[1.2] tracking-[0.01em] text-[#073c2c] transition-colors duration-300 group-hover:text-[#08704a] sm:text-[21px]">
+                        <h3 className="line-clamp-2 break-words text-[16px] font-black leading-[1.25] tracking-[-0.01em] text-[#073c2c] transition-colors duration-300 group-hover:text-[#08704a] sm:text-[20px]">
                           {catName}
                         </h3>
                         {((lang === 'en' ? cat.name_bn : cat.name_en) || '').trim() && (
@@ -102,7 +102,7 @@ export default function CategoriesPage() {
                     </div>
 
                     <div className="mt-3.5 sm:mt-4">
-                      <span className="flex min-h-11 w-full items-center justify-center rounded-2xl border border-emerald-500/60 bg-gradient-to-b from-emerald-500 via-emerald-600 to-emerald-700 px-3 py-3 text-[10px] font-black uppercase tracking-[0.04em] text-white shadow-[0_5px_0_#075c3e,0_10px_18px_-8px_rgba(5,92,62,.65)] transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[0_6px_0_#075c3e,0_13px_22px_-8px_rgba(5,92,62,.7)] group-active:translate-y-1 group-active:shadow-[0_2px_0_#075c3e,0_5px_10px_-6px_rgba(5,92,62,.6)] sm:min-h-12 sm:rounded-2xl sm:px-4 sm:py-3.5 sm:text-[11px]">
+                      <span className="flex min-h-11 w-full items-center justify-center whitespace-nowrap rounded-2xl border border-emerald-400/70 bg-gradient-to-b from-emerald-500 via-emerald-600 to-emerald-700 px-2.5 py-3 text-[9px] font-black tracking-[-0.01em] text-white shadow-[0_4px_0_#075c3e,0_9px_17px_-8px_rgba(5,92,62,.62),inset_0_1px_0_rgba(255,255,255,.28)] transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[0_5px_0_#075c3e,0_12px_20px_-8px_rgba(5,92,62,.68),inset_0_1px_0_rgba(255,255,255,.3)] group-active:translate-y-1 group-active:shadow-[0_1px_0_#075c3e,0_4px_9px_-6px_rgba(5,92,62,.58)] sm:min-h-12 sm:rounded-2xl sm:px-4 sm:py-3.5 sm:text-[11px]">
                         {t('পণ্য দেখুন', 'Explore Products')}
                       </span>
                     </div>
