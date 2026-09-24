@@ -10,21 +10,22 @@ export default function AdminPagesPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
+  const [adminCountry, setAdminCountry] = useState<'BD' | 'IN'>('BD');
 
-  useEffect(() => { loadPages(); }, []);
+  useEffect(() => { const init = async () => { const { data, error } = await supabase.rpc('current_admin_country'); if (error) { toast('Admin branch নির্ধারণ ব্যর্থ', 'error'); return; } const country = String(data).toUpperCase() === 'IN' ? 'IN' : 'BD'; setAdminCountry(country); await loadPages(country); }; void init(); }, []);
 
-  const loadPages = async () => {
-    const { data } = await supabase.from('pages').select('*').order('created_at', { ascending: false });
+  const loadPages = async (country = adminCountry) => {
+    const { data } = await supabase.from('pages').select('*').eq('country_code', country).order('created_at', { ascending: false });
     setPages(data || []);
     setLoading(false);
   };
 
   const handleSave = async (formData: any) => {
     if (editing) {
-      await supabase.from('pages').update(formData).eq('id', editing.id);
+      await supabase.from('pages').update({ ...formData, country_code: adminCountry }).eq('id', editing.id).eq('country_code', adminCountry);
       toast('পেজ আপডেট হয়েছে');
     } else {
-      await supabase.from('pages').insert(formData);
+      await supabase.from('pages').insert({ ...formData, country_code: adminCountry });
       toast('পেজ যোগ হয়েছে');
     }
     setShowForm(false); setEditing(null); loadPages();
@@ -32,7 +33,7 @@ export default function AdminPagesPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('পেজ মুছতে চান?')) return;
-    await supabase.from('pages').delete().eq('id', id);
+    await supabase.from('pages').delete().eq('id', id).eq('country_code', adminCountry);
     toast('পেজ মুছে ফেলা হয়েছে');
     loadPages();
   };
