@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Facebook, Instagram, Youtube, Phone, Mail, MapPin, ArrowUpRight, ShieldCheck, Truck } from 'lucide-react';
 import { getSiteSettings, getNavigation } from '@/lib/data';
 import type { SiteSettings, Navigation } from '@/lib/supabase/types';
@@ -9,6 +10,10 @@ import { useLang } from './language-provider';
 import { getVisitorCountry } from '@/lib/supabase/client';
 
 export function SiteFooter() {
+  const pathname = usePathname();
+  const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/allahmohammad/admin/');
+  if (isAdminRoute) return null;
+
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [nav, setNav] = useState<Navigation[]>([]);
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
