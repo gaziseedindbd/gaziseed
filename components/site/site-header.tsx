@@ -148,6 +148,7 @@ export function SiteHeader() {
   ];
 
   const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/allahmohammad/admin/');
+  if (isAdminRoute) return null;
 
   const isActive = (href: string) => pathname === href || (href !== '/' && pathname.startsWith(href + '/'));
 
