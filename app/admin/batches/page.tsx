@@ -11,24 +11,52 @@ export default function AdminBatchesPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<string>('');
+  const [adminBranch, setAdminBranch] = useState<'BD' | 'IN'>('BD');
 
-  useEffect(() => { loadProducts(); }, []);
+  useEffect(() => {
+    const init = async () => {
+      const { data, error } = await supabase.rpc('current_admin_country');
+      if (error) {
+        console.error('Batches admin branch check failed:', error);
+        toast('ব্রাঞ্চ তথ্য লোড ব্যর্থ', 'error');
+        setLoading(false);
+        return;
+      }
+      const branch: 'BD' | 'IN' = String(data).toUpperCase() === 'IN' ? 'IN' : 'BD';
+      setAdminBranch(branch);
+      await loadProducts(branch);
+    };
+    init();
+  }, []);
 
-  const loadProducts = async () => {
-    const { data } = await supabase.from('products').select('id, name_bn, name_en, stock').eq('is_ads_only', false).order('name_bn');
-    setProducts(data || []);
+  const loadProducts = async (branch: 'BD' | 'IN' = adminBranch) => {
+    const { data, error } = await supabase.from('products').select('id, name_bn, name_en, stock').eq('country_code', branch).eq('is_ads_only', false).order('name_bn');
+    if (error) {
+      console.error('Batches products load failed:', error);
+      toast('প্রোডাক্ট লোড ব্যর্থ', 'error');
+      setProducts([]);
+    } else setProducts(data || []);
     setLoading(false);
   };
 
   const loadBatches = async (productId: string) => {
     setSelectedProduct(productId);
-    const { data } = await supabase.from('product_batches').select('*').eq('product_id', productId).order('received_date', { ascending: false });
-    setBatches(data || []);
+    const { data, error } = await supabase.from('product_batches').select('*').eq('product_id', productId).order('received_date', { ascending: false });
+    if (error) {
+      console.error('Batches load failed:', error);
+      toast('ব্যাচ লোড ব্যর্থ', 'error');
+      setBatches([]);
+    } else setBatches(data || []);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('ব্যাচ মুছতে চান?')) return;
-    await supabase.from('product_batches').delete().eq('id', id);
+    const { error } = await supabase.from('product_batches').delete().eq('id', id);
+    if (error) {
+      console.error('Batch delete failed:', error);
+      toast('ব্যাচ মুছে ফেলা ব্যর্থ', 'error');
+      return;
+    }
     toast('ব্যাচ মুছে ফেলা হয়েছে');
     if (selectedProduct) loadBatches(selectedProduct);
   };
