@@ -79,6 +79,8 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
   const [walletLoading, setWalletLoading] = useState(false);
   const [freeDeliveryProductIds, setFreeDeliveryProductIds] = useState<Set<string>>(new Set());
+  const [deliveryRules, setDeliveryRules] = useState<Array<{ min_order: number; max_order: number | null; charge: number; is_free: boolean }>>([]);
+  const [deliveryCharge, setDeliveryCharge] = useState(0);
 
   useEffect(() => {
     const visitorCountry = getVisitorCountry();
@@ -210,9 +212,46 @@ export default function CheckoutPage() {
   const subtotal = cart.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
   const savingsTotal = Math.max(0, originalTotal - subtotal);
   const discountPercent = originalTotal > 0 ? Math.round((savingsTotal / originalTotal) * 100) : 0;
-  const deliveryCharge = country === 'IN'
-    ? freeDeliveryProductIds.size > 0 ? 0 : subtotal >= 999 ? 0 : subtotal >= 499 ? 60 : 90
-    : subtotal >= 600 ? 0 : subtotal >= 400 ? 50 : subtotal >= 200 ? 70 : 120;
+  useEffect(() => {
+    let cancelled = false;
+    const syncDeliveryCharge = async () => {
+      if (cart.length === 0) {
+        setDeliveryRules([]);
+        setDeliveryCharge(0);
+        return;
+      }
+
+      const [{ data: rulesData }, { data: chargeData, error: chargeError }] = await Promise.all([
+        supabase
+          .from('delivery_charge_rules')
+          .select('min_order, max_order, charge, is_free')
+          .eq('country_code', country)
+          .eq('is_active', true)
+          .order('min_order', { ascending: false }),
+        supabase.rpc('calculate_delivery_charge', {
+          p_order_value: subtotal,
+          p_free_delivery: freeDeliveryProductIds.size > 0,
+        }),
+      ]);
+
+      if (cancelled) return;
+      if (chargeError) {
+        console.error('Delivery charge calculation failed:', chargeError);
+        setDeliveryCharge(0);
+      } else {
+        setDeliveryCharge(Number(chargeData || 0));
+      }
+      setDeliveryRules((rulesData || []).map((rule) => ({
+        min_order: Number(rule.min_order || 0),
+        max_order: rule.max_order == null ? null : Number(rule.max_order),
+        charge: Number(rule.charge || 0),
+        is_free: Boolean(rule.is_free),
+      })));
+    };
+
+    void syncDeliveryCharge();
+    return () => { cancelled = true; };
+  }, [cart.length, country, subtotal, freeDeliveryProductIds]);
   const couponDiscount = appliedCoupon
     ? appliedCoupon.type === 'percentage'
       ? Math.min(subtotal * (appliedCoupon.value / 100), appliedCoupon.max_discount || Infinity)
@@ -229,13 +268,25 @@ export default function CheckoutPage() {
   const codDue = country === 'IN' && paymentMethod === 'cod' ? Math.max(0, payableTotal - codAdvance) : 0;
 
   const deliveryMessage = useMemo(() => {
-    if (country === 'IN') {
-      return freeDeliveryProductIds.size > 0
-        ? t('ফ্রি ডেলিভারি যোগ হয়েছে', 'Free delivery unlocked')
-        : subtotal >= 999 ? t('ফ্রি ডেলিভারি যোগ হয়েছে', 'Free delivery unlocked') : t('₹৯৯৯+ অর্ডারে ফ্রি ডেলিভারি', 'Free delivery on ₹999+');
+    if (freeDeliveryProductIds.size > 0 || deliveryCharge === 0) {
+      return t('ফ্রি ডেলিভারি যোগ হয়েছে', 'Free delivery unlocked');
     }
-    return subtotal >= 600 ? t('ফ্রি ডেলিভারি যোগ হয়েছে', 'Free delivery unlocked') : t('৳৬০০+ অর্ডারে ফ্রি ডেলিভারি', 'Free delivery on ৳600+');
-  }, [country, subtotal, freeDeliveryProductIds, t]);
+
+    const nextFreeRule = deliveryRules
+      .filter((rule) => rule.is_free && rule.min_order > subtotal)
+      .sort((a, b) => a.min_order - b.min_order)[0];
+
+    if (nextFreeRule) {
+      const sign = country === 'IN' ? '₹' : '৳';
+      const formatted = nextFreeRule.min_order.toLocaleString(country === 'IN' ? 'en-IN' : 'bn-BD');
+      return t(
+        `${sign}${formatted}+ অর্ডারে ফ্রি ডেলিভারি`,
+        `Free delivery on ${sign}${formatted}+`,
+      );
+    }
+
+    return t('প্রযোজ্য ডেলিভারি চার্জ যোগ হয়েছে', 'Applicable delivery charge added');
+  }, [country, subtotal, deliveryCharge, deliveryRules, freeDeliveryProductIds, t]);
 
   const applyCoupon = async () => {
     const normalizedCode = couponCode.trim().toUpperCase();
