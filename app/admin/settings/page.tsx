@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from '@/components/site/toast-provider';
 import { Save, Sparkles, Zap, Users, Upload, Image as ImageIcon } from 'lucide-react';
-import { AI_PROVIDER_OPTIONS, AI_FEATURE_FLAG_LIST, maskApiKey, isApiKeyMasked, DEFAULT_FEATURE_FLAGS } from '@/lib/ai';
+import { AI_PROVIDER_OPTIONS, AI_FEATURE_FLAG_LIST, isApiKeyMasked, DEFAULT_FEATURE_FLAGS } from '@/lib/ai';
 
 export default function AdminSettingsPage() {
   const [tab, setTab] = useState<'general' | 'marketing' | 'features' | 'ai' | 'referral'>('general');
@@ -48,7 +48,7 @@ export default function AdminSettingsPage() {
       const aiData = ai.data || {};
       setAiForm({
         ...aiData,
-        api_key: aiData.api_key ? maskApiKey(aiData.api_key) : '',
+        api_key: '',
         feature_flags: { ...DEFAULT_FEATURE_FLAGS, ...(aiData.feature_flags || {}) },
       });
       setReferralForm(ref.data || { enabled: false, reward_type: 'fixed', reward_value: 0, min_order_amount: 0, max_reward_per_referral: null, terms: '' });
