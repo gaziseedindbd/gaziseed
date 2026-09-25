@@ -28,8 +28,19 @@ export async function GET(request: Request) {
     );
   }
 
-  const query = new URL(request.url).searchParams.get('q')?.trim() ||
+  const params = new URL(request.url).searchParams;
+  const query = params.get('q')?.trim() ||
     'Messenger AI টেস্ট বীজের দাম কত এবং কতটি স্টকে আছে?';
+  const skipProviders = Array.from(
+    new Set(
+      (params.get('skip') || '')
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  ).filter((value): value is 'gemini' | 'groq' | 'cerebras' | 'openrouter' =>
+    ['gemini', 'groq', 'cerebras', 'openrouter'].includes(value),
+  );
 
   const sb = createClient(url, serviceRole, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -56,6 +67,7 @@ export async function GET(request: Request) {
       ],
       temperature: 0.2,
       max_tokens: 300,
+      skipProviders,
     });
 
     return NextResponse.json({
@@ -67,6 +79,7 @@ export async function GET(request: Request) {
       provider: result.provider,
       model: result.model,
       attempts: result.attempts,
+      skipped_providers: skipProviders,
     });
   } catch (error) {
     if (error instanceof Error && 'attempts' in error) {
@@ -77,6 +90,7 @@ export async function GET(request: Request) {
         products,
         error: error.message,
         attempts: (error as { attempts: unknown[] }).attempts,
+        skipped_providers: skipProviders,
       });
     }
     throw error;
