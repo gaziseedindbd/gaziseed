@@ -30,7 +30,7 @@ const PROVIDER_ORDER: MessengerProvider[] = ['gemini', 'groq', 'cerebras', 'open
 
 const DEFAULT_MODELS: Record<MessengerProvider, string> = {
   gemini: 'gemini-3.8-flash',
-  groq: 'llama-3.3-70b-versatile',
+  groq: 'openai/gpt-oss-120b',
   cerebras: 'llama-3.3-70b',
   openrouter: 'openrouter/free',
 };
