@@ -84,14 +84,48 @@ function normaliseContent(value: unknown): string {
 function cleanMessengerAnswer(content: string): string {
   let cleaned = content.trim();
 
-  cleaned = cleaned.replace(/<think>[\\s\\S]*?<\\/think>/gi, '').trim();
+  while (true) {
+    const lower = cleaned.toLowerCase();
+    const open = lower.indexOf('<think>');
+    if (open < 0) break;
 
-  const thinkingStart = /^(?:here(?:'|’)s\\s+a\\s+)?(?:thinking\\s+process|reasoning|analysis)\\s*:/i.test(cleaned);
-  if (thinkingStart) {
-    const finalMarker = /(?:^|\\n)\\s*(?:draft\\s+response|final\\s+answer)\\s*:?\\s*/i;
-    const match = finalMarker.exec(cleaned);
-    if (match && match.index >= 0) {
-      cleaned = cleaned.slice(match.index + match[0].length).trim();
+    const close = lower.indexOf('</think>', open + 7);
+    if (close < 0) {
+      cleaned = cleaned.slice(0, open).trim();
+      break;
+    }
+
+    cleaned = (cleaned.slice(0, open) + cleaned.slice(close + 8)).trim();
+  }
+
+  const lower = cleaned.toLowerCase();
+  const thinkingPrefixes = [
+    "thinking process:",
+    "reasoning:",
+    "analysis:",
+    "here's a thinking process:",
+    "here’s a thinking process:",
+  ];
+
+  const hasThinkingPrefix = thinkingPrefixes.some((prefix) =>
+    lower.startsWith(prefix),
+  );
+
+  if (hasThinkingPrefix) {
+    const markers = ["draft response", "final answer"];
+    let markerIndex = -1;
+    let markerLength = 0;
+
+    for (const marker of markers) {
+      const index = lower.indexOf(marker);
+      if (index >= 0 && (markerIndex < 0 || index < markerIndex)) {
+        markerIndex = index;
+        markerLength = marker.length;
+      }
+    }
+
+    if (markerIndex >= 0) {
+      cleaned = cleaned.slice(markerIndex + markerLength).replace(/^\s*[:\-]\s*/, '').trim();
     } else {
       return 'দুঃখিত, এই মুহূর্তে উত্তর দিতে সমস্যা হচ্ছে।';
     }
