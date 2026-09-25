@@ -79,7 +79,7 @@ export async function GET(request: Request) {
       max_tokens: 300,
       skipProviders,
       forceFailProviders,
-      });
+    });
 
     return NextResponse.json({
       success: true,
@@ -103,6 +103,7 @@ export async function GET(request: Request) {
         error: error.message,
         attempts: (error as { attempts: unknown[] }).attempts,
         skipped_providers: skipProviders,
+        forced_failures: forceFailProviders,
       });
     }
     throw error;
