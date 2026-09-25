@@ -61,6 +61,55 @@ function getCountryQuestion() {
   );
 }
 
+type MetaProfileSignal = {
+  locale: string | null;
+  countryHint: CountryCode | null;
+};
+
+function inferCountryFromLocale(locale: string | null): CountryCode | null {
+  if (!locale) return null;
+  const normalized = locale.toLowerCase().replace('-', '_');
+
+  const inLocale = normalized.endsWith('_in');
+  const bdLocale = normalized.endsWith('_bd');
+
+  if (inLocale === bdLocale) return null;
+  return inLocale ? 'IN' : 'BD';
+}
+
+async function getMetaProfileSignal(senderId: string): Promise<MetaProfileSignal> {
+  if (!META_PAGE_ACCESS_TOKEN) {
+    return { locale: null, countryHint: null };
+  }
+
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/${META_GRAPH_VERSION}/${encodeURIComponent(senderId)}?fields=locale`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${META_PAGE_ACCESS_TOKEN}`,
+        },
+        cache: 'no-store',
+      },
+    );
+
+    if (!response.ok) {
+      return { locale: null, countryHint: null };
+    }
+
+    const body = (await response.json()) as { locale?: unknown };
+    const locale = typeof body.locale === 'string' ? body.locale : null;
+
+    return {
+      locale,
+      countryHint: inferCountryFromLocale(locale),
+    };
+  } catch {
+    return { locale: null, countryHint: null };
+  }
+}
+
 function safeEqual(expected: string, actual: string): boolean {
   const expectedBuffer = Buffer.from(expected);
   const actualBuffer = Buffer.from(actual);
@@ -390,9 +439,24 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   if (existingMessage) return;
 
+  const profileSignal = await getMetaProfileSignal(senderId);
   const detectedCountry = detectExplicitCountry(text);
   const currentCountry = getVerifiedCountry(conversation);
   const resolvedCountry = detectedCountry || currentCountry;
+
+  if (profileSignal.locale || profileSignal.countryHint) {
+    await markConversation(
+      sb,
+      conversation.id,
+      conversation.status,
+      {
+        meta_profile_locale: profileSignal.locale,
+        meta_country_hint: profileSignal.countryHint,
+        meta_country_hint_source: 'messenger_profile_locale',
+        meta_country_hint_checked_at: new Date().toISOString(),
+      },
+    );
+  }
 
   await saveMessage(sb, conversation.id, {
     role: 'user',
@@ -409,6 +473,8 @@ async function processMessengerEvent(event: MessengerEvent) {
         : currentCountry
           ? 'conversation'
           : 'unknown',
+      meta_profile_locale: profileSignal.locale,
+      meta_country_hint: profileSignal.countryHint,
     },
   });
 
@@ -439,7 +505,11 @@ async function processMessengerEvent(event: MessengerEvent) {
   }
 
   if (!activeCountry) {
-    const countryQuestion = getCountryQuestion();
+    const hintText =
+      profileSignal.countryHint
+        ? 'আপনার Messenger profile থেকে একটি country/language signal পাওয়া গেছে, তবে নিশ্চিত করার জন্য '
+        : '';
+    const countryQuestion = hintText + getCountryQuestion();
     await saveMessage(sb, conversation.id, {
       role: 'assistant',
       content: countryQuestion,
