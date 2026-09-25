@@ -81,6 +81,32 @@ function normaliseContent(value: unknown): string {
   return '';
 }
 
+function cleanMessengerAnswer(content: string): string {
+  let cleaned = content.trim();
+
+  cleaned = cleaned.replace(/<think>[\\s\\S]*?<\\/think>/gi, '').trim();
+
+  const thinkingStart = cleaned.match(
+    /^(?:here(?:'|’)s\\s+a\\s+)?(?:thinking\\s+process|reasoning|analysis)\\s*:/i,
+  );
+
+  if (thinkingStart) {
+    const finalMarker = cleaned.match(
+      /(?:^|\\n)\\s*(?:draft\\s+response|final\\s+answer)\\s*:?\\s*/i,
+    );
+
+    if (finalMarker?.index != null) {
+      cleaned = cleaned
+        .slice(finalMarker.index + finalMarker[0].length)
+        .trim();
+    } else {
+      return 'দুঃখিত, এই মুহূর্তে উত্তর দিতে সমস্যা হচ্ছে।';
+    }
+  }
+
+  return cleaned || 'দুঃখিত, এই মুহূর্তে উত্তর দিতে সমস্যা হচ্ছে।';
+}
+
 class ProviderHTTPError extends Error {
   readonly status: number;
 
@@ -262,7 +288,7 @@ export async function messengerAIChat(args: {
       }
       const response = await withTimeout(callProvider(provider, args.messages, args.temperature, args.max_tokens), timeout);
       attempts.push({ provider, model, ok: true, duration_ms: Date.now() - startedAt });
-      return { ...response, provider, attempts };
+      return { ...response, content: cleanMessengerAnswer(response.content), provider, attempts };
     } catch (error) {
       attempts.push({
         provider,
