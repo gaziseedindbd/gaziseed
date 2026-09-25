@@ -31,7 +31,7 @@ const PROVIDER_ORDER: MessengerProvider[] = ['gemini', 'groq', 'cerebras', 'open
 const DEFAULT_MODELS: Record<MessengerProvider, string> = {
   gemini: 'gemini-3.8-flash',
   groq: 'openai/gpt-oss-120b',
-  cerebras: 'llama-3.3-70b',
+  cerebras: 'gpt-oss-120b',
   openrouter: 'openrouter/free',
 };
 
@@ -238,10 +238,14 @@ export async function messengerAIChat(args: {
   messages: AIChatMessage[];
   temperature?: number;
   max_tokens?: number;
+  skipProviders?: MessengerProvider[];
 }): Promise<MessengerProviderResult> {
   if (!isMessengerAIEnabled()) throw new MessengerAIProviderError('Messenger AI is disabled', []);
 
-  const providers = getConfiguredMessengerProviders();
+  const skipped = new Set(args.skipProviders || []);
+  const providers = getConfiguredMessengerProviders().filter(
+    (provider) => !skipped.has(provider),
+  );
   if (providers.length === 0) throw new MessengerAIProviderError('No Messenger AI providers are configured', []);
 
   const attempts: MessengerProviderAttempt[] = [];
