@@ -35,7 +35,7 @@ const DEFAULT_MODELS: Record<MessengerProvider, string> = {
   openrouter: 'openrouter/free',
 };
 
-const DEFAULT_TIMEOUT_MS = 12_000;
+const DEFAULT_TIMEOUT_MS = 30_000;
 
 function modelFor(provider: MessengerProvider): string {
   const envName = provider.toUpperCase() + '_MODEL';
