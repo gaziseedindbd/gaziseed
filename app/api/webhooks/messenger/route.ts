@@ -532,7 +532,10 @@ async function processMessengerEvent(event: MessengerEvent) {
         country_required: true,
       },
     });
-    await sendMessengerText(senderId, countryQuestion, [\n      { title: '🇮🇳 India', payload: 'COUNTRY_IN' },\n      { title: '🇧🇩 Bangladesh', payload: 'COUNTRY_BD' },\n    ]);
+    await sendMessengerText(senderId, countryQuestion, [
+      { title: '🇮🇳 India', payload: 'COUNTRY_IN' },
+      { title: '🇧🇩 Bangladesh', payload: 'COUNTRY_BD' },
+    ]);
     return;
   }
 
