@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import {
   MessengerAIProviderError,
   messengerAIChat,
@@ -470,11 +470,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    for (const entry of payload.entry || []) {
-      for (const event of entry.messaging || []) {
-        await processMessengerEvent(event);
+    const events = (payload.entry || []).flatMap((entry) => entry.messaging || []);
+
+    after(async () => {
+      for (const event of events) {
+        try {
+          await processMessengerEvent(event);
+        } catch (error) {
+          console.error(
+            'Messenger event processing failed:',
+            error instanceof Error ? error.message : 'Unknown error',
+          );
+        }
       }
-    }
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
