@@ -127,7 +127,7 @@ function getIndiaHumanSupportMessage(): string {
 
 function isKnowledgeFallbackResponse(text: string): boolean {
   const normalized = text.toLocaleLowerCase().replace(/\\s+/g, ' ').trim();
-  return /(দুঃখিত.*(তথ্য|সুনির্দিষ্ট|জানা|নেই)|তথ্য নেই|সুনির্দিষ্ট তথ্য নেই|জানাতে পারছি না|বিস্তারিত জানতে.*মানব|human support|human representative|cannot (provide|verify)|don't have (the )?information|no (specific|exact) information)/i.test(normalized);
+  return /(দুঃখিত.*(তথ্য|সুনির্দিষ্ট|জানা|নেই)|তথ্য.*(নেই|অন্তর্ভুক্ত নেই)|তথ্যতালিকায়.*(নেই|অন্তর্ভুক্ত)|সুনির্দিষ্ট তথ্য নেই|জানাতে পারছি না|বিস্তারিত জানতে.*(মানব|সহায়তা)|মানব (সহায়তা|প্রতিনিধি)|human support|human representative|cannot (provide|verify)|don't have (the )?information|no (specific|exact) information)/i.test(normalized);
 }
 
 function getCountryQuestion() {
@@ -563,6 +563,16 @@ async function processMessengerEvent(event: MessengerEvent) {
   if (savedUserMessage.duplicate) return;
 
   if (conversation.status === 'handoff') {
+    if (resolvedCountry === 'IN') {
+      const supportMessage = getIndiaHumanSupportMessage();
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: supportMessage,
+        actionStatus: 'human_support_contact',
+        countryCode: 'IN',
+      });
+      await sendMessengerText(senderId, supportMessage);
+    }
     return;
   }
 
