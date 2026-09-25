@@ -31,6 +31,16 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const query = params.get('q')?.trim() ||
     'Messenger AI টেস্ট বীজের দাম কত এবং কতটি স্টকে আছে?';
+  const forceFailProviders = Array.from(
+    new Set(
+      (params.get('forceFail') || '')
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  ).filter((value): value is 'gemini' | 'groq' | 'cerebras' | 'openrouter' =>
+    ['gemini', 'groq', 'cerebras', 'openrouter'].includes(value),
+  );
   const skipProviders = Array.from(
     new Set(
       (params.get('skip') || '')
@@ -68,7 +78,8 @@ export async function GET(request: Request) {
       temperature: 0.2,
       max_tokens: 300,
       skipProviders,
-    });
+      forceFailProviders,
+      });
 
     return NextResponse.json({
       success: true,
@@ -80,6 +91,7 @@ export async function GET(request: Request) {
       model: result.model,
       attempts: result.attempts,
       skipped_providers: skipProviders,
+      forced_failures: forceFailProviders,
     });
   } catch (error) {
     if (error instanceof Error && 'attempts' in error) {
