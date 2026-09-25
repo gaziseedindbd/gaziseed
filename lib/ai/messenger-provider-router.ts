@@ -84,21 +84,14 @@ function normaliseContent(value: unknown): string {
 function cleanMessengerAnswer(content: string): string {
   let cleaned = content.trim();
 
-  cleaned = cleaned.replace(/<think>[\s\S]*?<\\/think>/gi, '').trim();
+  cleaned = cleaned.replace(/<think>[\\s\\S]*?<\\/think>/gi, '').trim();
 
-  const thinkingStart = cleaned.match(
-    /^(?:here(?:'|’)s\s+a\s+)?(?:thinking\s+process|reasoning|analysis)\s*:/i,
-  );
-
+  const thinkingStart = /^(?:here(?:'|’)s\\s+a\\s+)?(?:thinking\\s+process|reasoning|analysis)\\s*:/i.test(cleaned);
   if (thinkingStart) {
-    const finalMarker = cleaned.match(
-      /(?:^|\\n)\s*(?:draft\s+response|final\s+answer)\s*:?\s*/i,
-    );
-
-    if (finalMarker?.index != null) {
-      cleaned = cleaned
-        .slice(finalMarker.index + finalMarker[0].length)
-        .trim();
+    const finalMarker = /(?:^|\\n)\\s*(?:draft\\s+response|final\\s+answer)\\s*:?\\s*/i;
+    const match = finalMarker.exec(cleaned);
+    if (match && match.index >= 0) {
+      cleaned = cleaned.slice(match.index + match[0].length).trim();
     } else {
       return 'দুঃখিত, এই মুহূর্তে উত্তর দিতে সমস্যা হচ্ছে।';
     }
