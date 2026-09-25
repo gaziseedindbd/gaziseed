@@ -125,12 +125,14 @@ async function getWebSeedContext(text: string): Promise<string> {
 }
 
 function getIndiaHumanSupportMessage(): string {
-  return (
-    'এই বিষয়ে বিস্তারিত তথ্য জানতে আমাদের customer support team-এর সাথে সরাসরি যোগাযোগ করুন।\\n\\n' +
-    '📱 WhatsApp: https://wa.me/918876981780\\n' +
-    '📞 Direct Call: +91 8876981780\\n\\n' +
-    'উপরের WhatsApp link-এ ক্লিক করে মেসেজ করতে পারেন অথবা সরাসরি কল করতে পারেন।'
-  );
+  return [
+    'এই বিষয়ে বিস্তারিত তথ্য জানতে আমাদের customer support team-এর সাথে সরাসরি যোগাযোগ করুন।',
+    '',
+    '📱 WhatsApp: https://wa.me/918876981780',
+    '📞 Direct Call: +91 8876981780',
+    '',
+    'উপরের WhatsApp link-এ ক্লিক করে মেসেজ করতে পারেন অথবা সরাসরি কল করতে পারেন।',
+  ].join('\n');
 }
 
 function isKnowledgeFallbackResponse(text: string): boolean {
