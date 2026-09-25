@@ -607,10 +607,6 @@ async function processMessengerEvent(event: MessengerEvent) {
     return;
   }
 
-  if (process.env.AI_MESSENGER_ENABLED !== 'true') {
-    return;
-  }
-
   const profileSignal = await getMetaProfileSignal(senderId);
 
   if (profileSignal.locale || profileSignal.countryHint) {
@@ -629,7 +625,7 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   let activeCountry = resolvedCountry;
 
-  if (detectedCountry && detectedCountry !== currentCountry) {
+  if (detectedCountry) {
     await markConversation(
       sb,
       conversation.id,
@@ -643,6 +639,22 @@ async function processMessengerEvent(event: MessengerEvent) {
       detectedCountry,
     );
     activeCountry = detectedCountry;
+
+    const countrySelection = normalizedActionText.toLocaleLowerCase().trim();
+    if (countrySelection === 'india' || countrySelection === 'bangladesh') {
+      const confirmation =
+        activeCountry === 'IN'
+          ? 'ঠিক আছে। আপনার জন্য India 🇮🇳 সাপোর্ট তথ্য ব্যবহার করা হবে। এখন আপনার প্রশ্নটি লিখুন।'
+          : 'ঠিক আছে। আপনার জন্য Bangladesh 🇧🇩 সাপোর্ট তথ্য ব্যবহার করা হবে। এখন আপনার প্রশ্নটি লিখুন।';
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: confirmation,
+        actionStatus: 'country_confirmed',
+        countryCode: activeCountry,
+      });
+      await sendMessengerText(senderId, confirmation);
+      return;
+    }
   }
 
   if (!activeCountry) {
@@ -663,6 +675,21 @@ async function processMessengerEvent(event: MessengerEvent) {
       { title: '🇮🇳 India', payload: 'COUNTRY_IN' },
       { title: '🇧🇩 Bangladesh', payload: 'COUNTRY_BD' },
     ]);
+    return;
+  }
+
+  if (activeCountry === 'IN' && isGeneralSeedAdviceRequest(normalizedActionText)) {
+    const supportMessage = getIndiaHumanSupportMessage();
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: supportMessage,
+      actionStatus: 'knowledge_fallback_support',
+      countryCode: 'IN',
+      sourceContext: {
+        deterministic_seed_advice_fallback: true,
+      },
+    });
+    await sendMessengerText(senderId, supportMessage);
     return;
   }
 
@@ -724,21 +751,6 @@ async function processMessengerEvent(event: MessengerEvent) {
     });
 
     await sendMessengerText(senderId, orderErrorMessage);
-    return;
-  }
-
-  if (activeCountry === 'IN' && isGeneralSeedAdviceRequest(normalizedActionText)) {
-    const supportMessage = getIndiaHumanSupportMessage();
-    await saveMessage(sb, conversation.id, {
-      role: 'assistant',
-      content: supportMessage,
-      actionStatus: 'knowledge_fallback_support',
-      countryCode: 'IN',
-      sourceContext: {
-        deterministic_seed_advice_fallback: true,
-      },
-    });
-    await sendMessengerText(senderId, supportMessage);
     return;
   }
 
