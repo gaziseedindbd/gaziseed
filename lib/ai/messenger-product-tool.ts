@@ -88,6 +88,42 @@ function effectivePrice(product: MessengerProduct): number | null {
   return valid[0] ?? null;
 }
 
+export async function listMessengerProducts(
+  supabase: SupabaseClient,
+  country: MessengerCountry,
+  limit = 12,
+): Promise<MessengerProduct[]> {
+  const safeLimit = Math.max(1, Math.min(limit, 20));
+  const { data, error } = await supabase
+    .from('products')
+    .select(PRODUCT_FIELDS)
+    .eq('country_code', country)
+    .eq('is_active', true)
+    .order('stock', { ascending: false })
+    .limit(safeLimit);
+
+  if (error) throw error;
+
+  const rows = data as unknown as MessengerProduct[] | null;
+  return (rows || [])
+    .sort((a, b) => {
+      const aStock = Number(a.stock || 0) > 0 ? 1 : 0;
+      const bStock = Number(b.stock || 0) > 0 ? 1 : 0;
+      if (aStock !== bStock) return bStock - aStock;
+
+      const aPrice = effectivePrice(a);
+      const bPrice = effectivePrice(b);
+      if (aPrice === null && bPrice !== null) return 1;
+      if (aPrice !== null && bPrice === null) return -1;
+
+      return (a.name_bn || a.name_en || a.slug || '').localeCompare(
+        b.name_bn || b.name_en || b.slug || '',
+        'bn',
+      );
+    })
+    .slice(0, safeLimit);
+}
+
 export async function searchMessengerProducts(
   supabase: SupabaseClient,
   country: MessengerCountry,
