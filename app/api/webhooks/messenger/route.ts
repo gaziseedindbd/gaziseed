@@ -159,6 +159,9 @@ type MessengerEvent = {
   message?: {
     mid?: string;
     text?: string;
+    quick_reply?: {
+      payload?: string;
+    };
   };
   postback?: {
     mid?: string;
@@ -436,6 +439,13 @@ async function processMessengerEvent(event: MessengerEvent) {
     (event.postback
       ? event.postback.title || event.postback.payload || ''
       : '');
+
+  const quickReplyCountry =
+    event.message?.quick_reply?.payload === 'COUNTRY_IN'
+      ? 'IN'
+      : event.message?.quick_reply?.payload === 'COUNTRY_BD'
+        ? 'BD'
+        : null;
 
   if (!senderId || senderId === META_PAGE_ID || !messageId || !text) {
     return;
