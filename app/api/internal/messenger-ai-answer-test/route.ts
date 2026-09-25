@@ -48,23 +48,37 @@ export async function GET(request: Request) {
     'PRODUCT DATA:\n' +
     JSON.stringify(products);
 
-  const result = await messengerAIChat({
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: query },
-    ],
-    temperature: 0.2,
-    max_tokens: 300,
-  });
+  try {
+    const result = await messengerAIChat({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: query },
+      ],
+      temperature: 0.2,
+      max_tokens: 300,
+    });
 
-  return NextResponse.json({
-    success: true,
-    question: query,
-    product_count: products.length,
-    products,
-    answer: result.content,
-    provider: result.provider,
-    model: result.model,
-    attempts: result.attempts,
-  });
+    return NextResponse.json({
+      success: true,
+      question: query,
+      product_count: products.length,
+      products,
+      answer: result.content,
+      provider: result.provider,
+      model: result.model,
+      attempts: result.attempts,
+    });
+  } catch (error) {
+    if (error instanceof Error && 'attempts' in error) {
+      return NextResponse.json({
+        success: false,
+        question: query,
+        product_count: products.length,
+        products,
+        error: error.message,
+        attempts: (error as { attempts: unknown[] }).attempts,
+      });
+    }
+    throw error;
+  }
 }
