@@ -266,6 +266,7 @@ async function callProvider(
   maxTokens?: number,
 ): Promise<AIChatResponse> {
   // Safety-gated failover test: only active on Vercel Preview when explicitly enabled.
+// Preview-only test rebuild marker: 2026-09-25.
   // Production deployments can never be forced into this path.
   if (
     process.env.VERCEL_ENV === 'preview' &&
