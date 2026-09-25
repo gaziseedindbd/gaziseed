@@ -443,20 +443,6 @@ async function processMessengerEvent(event: MessengerEvent) {
   const currentCountry = getVerifiedCountry(conversation);
   const resolvedCountry = detectedCountry || currentCountry;
 
-  if (profileSignal.locale || profileSignal.countryHint) {
-    await markConversation(
-      sb,
-      conversation.id,
-      conversation.status,
-      {
-        meta_profile_locale: profileSignal.locale,
-        meta_country_hint: profileSignal.countryHint,
-        meta_country_hint_source: 'messenger_profile_locale',
-        meta_country_hint_checked_at: new Date().toISOString(),
-      },
-    );
-  }
-
   await saveMessage(sb, conversation.id, {
     role: 'user',
     content: text,
@@ -472,8 +458,6 @@ async function processMessengerEvent(event: MessengerEvent) {
         : currentCountry
           ? 'conversation'
           : 'unknown',
-      meta_profile_locale: profileSignal.locale,
-      meta_country_hint: profileSignal.countryHint,
     },
   });
 
