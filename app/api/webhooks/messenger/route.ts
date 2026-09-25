@@ -439,7 +439,6 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   if (existingMessage) return;
 
-  const profileSignal = await getMetaProfileSignal(senderId);
   const detectedCountry = detectExplicitCountry(text);
   const currentCountry = getVerifiedCountry(conversation);
   const resolvedCountry = detectedCountry || currentCountry;
@@ -484,6 +483,22 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   if (process.env.AI_MESSENGER_ENABLED !== 'true') {
     return;
+  }
+
+  const profileSignal = await getMetaProfileSignal(senderId);
+
+  if (profileSignal.locale || profileSignal.countryHint) {
+    await markConversation(
+      sb,
+      conversation.id,
+      conversation.status,
+      {
+        meta_profile_locale: profileSignal.locale,
+        meta_country_hint: profileSignal.countryHint,
+        meta_country_hint_source: 'messenger_profile_locale',
+        meta_country_hint_checked_at: new Date().toISOString(),
+      },
+    );
   }
 
   let activeCountry = resolvedCountry;
