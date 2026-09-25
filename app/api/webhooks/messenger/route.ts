@@ -175,7 +175,7 @@ type MessengerPayload = {
   }>;
 };
 
-async function sendMessengerText(recipientId: string, text: string) {
+async function sendMessengerText(\n  recipientId: string,\n  text: string,\n  quickReplies?: Array<{ title: string; payload: string }>,\n) {
   if (!META_PAGE_ACCESS_TOKEN) {
     throw new Error('META_PAGE_ACCESS_TOKEN is not configured');
   }
@@ -190,7 +190,7 @@ async function sendMessengerText(recipientId: string, text: string) {
       },
       body: JSON.stringify({
         recipient: { id: recipientId },
-        message: { text: text.slice(0, 2000) },
+        message: {\n          text: text.slice(0, 2000),\n          ...(quickReplies?.length\n            ? {\n                quick_replies: quickReplies.map((reply) => ({\n                  content_type: 'text',\n                  title: reply.title,\n                  payload: reply.payload,\n                })),\n              }\n            : {}),\n        },
       }),
     },
   );
@@ -437,7 +437,7 @@ async function processMessengerEvent(event: MessengerEvent) {
     last_event_at: new Date().toISOString(),
   });
 
-  const detectedCountry = detectExplicitCountry(text);
+  const detectedCountry = quickReplyCountry || detectExplicitCountry(text);
   const currentCountry = getVerifiedCountry(conversation);
   const resolvedCountry = detectedCountry || currentCountry;
 
@@ -517,7 +517,7 @@ async function processMessengerEvent(event: MessengerEvent) {
         country_required: true,
       },
     });
-    await sendMessengerText(senderId, countryQuestion);
+    await sendMessengerText(senderId, countryQuestion, [\n      { title: '🇮🇳 India', payload: 'COUNTRY_IN' },\n      { title: '🇧🇩 Bangladesh', payload: 'COUNTRY_BD' },\n    ]);
     return;
   }
 
