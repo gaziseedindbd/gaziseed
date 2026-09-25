@@ -239,10 +239,12 @@ export async function messengerAIChat(args: {
   temperature?: number;
   max_tokens?: number;
   skipProviders?: MessengerProvider[];
+  forceFailProviders?: MessengerProvider[];
 }): Promise<MessengerProviderResult> {
   if (!isMessengerAIEnabled()) throw new MessengerAIProviderError('Messenger AI is disabled', []);
 
   const skipped = new Set(args.skipProviders || []);
+  const forcedFailures = new Set(args.forceFailProviders || []);
   const providers = getConfiguredMessengerProviders().filter(
     (provider) => !skipped.has(provider),
   );
@@ -255,6 +257,9 @@ export async function messengerAIChat(args: {
     const model = modelFor(provider);
     const startedAt = Date.now();
     try {
+      if (forcedFailures.has(provider)) {
+        throw new ProviderHTTPError('Forced preview test failure', 503);
+      }
       const response = await withTimeout(callProvider(provider, args.messages, args.temperature, args.max_tokens), timeout);
       attempts.push({ provider, model, ok: true, duration_ms: Date.now() - startedAt });
       return { ...response, provider, attempts };
