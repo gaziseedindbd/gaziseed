@@ -8,6 +8,8 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+// Preview runtime validation after enabling AI_MESSENGER_ENABLED.
+
 export async function GET(request: Request) {
   if (process.env.VERCEL_ENV !== 'preview') {
     return NextResponse.json(
