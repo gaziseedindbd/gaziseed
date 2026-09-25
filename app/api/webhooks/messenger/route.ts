@@ -344,6 +344,7 @@ async function createHumanHandoff(
   sb: ReturnType<typeof adminSupabase>,
   conversationId: string,
   reason: string,
+  countryCode: CountryCode,
 ) {
   if (!sb) throw new Error('Supabase service configuration is incomplete');
 
@@ -369,7 +370,7 @@ async function createHumanHandoff(
       reason,
       status: 'open',
       notes: 'Automatic AI failover exhausted. Automatic replies stopped.',
-      country_code: 'BD',
+      country_code: countryCode,
     })
     .select('id')
     .single();
@@ -576,7 +577,7 @@ async function processMessengerEvent(event: MessengerEvent) {
           ? error.message
           : 'Unknown Messenger AI error';
 
-    await createHumanHandoff(sb, conversation.id, reason);
+    await createHumanHandoff(sb, conversation.id, reason, activeCountry);
 
     const handoffMessage =
       'দুঃখিত, এই মুহূর্তে স্বয়ংক্রিয় সহায়তা পাওয়া যাচ্ছে না। ' +
