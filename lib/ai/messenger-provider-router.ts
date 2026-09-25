@@ -265,6 +265,15 @@ async function callProvider(
   temperature?: number,
   maxTokens?: number,
 ): Promise<AIChatResponse> {
+  // Safety-gated failover test: only active on Vercel Preview when explicitly enabled.
+  // Production deployments can never be forced into this path.
+  if (
+    process.env.VERCEL_ENV === 'preview' &&
+    process.env.AI_MESSENGER_FORCE_ALL_FAIL === 'true'
+  ) {
+    throw new Error('Preview-only forced provider failure test');
+  }
+
   const apiKey = keyFor(provider);
   const model = modelFor(provider);
   if (!apiKey) throw new Error('Provider API key is not configured');
