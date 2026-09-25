@@ -5,6 +5,10 @@ import {
   MessengerAIProviderError,
   messengerAIChat,
 } from '@/lib/ai/messenger-provider-router';
+import {
+  searchMessengerProducts,
+  serializeMessengerProducts,
+} from '@/lib/ai/messenger-product-tool';
 
 export const dynamic = 'force-dynamic';
 
@@ -371,21 +375,12 @@ async function createHumanHandoff(
 async function getProductContext(
   sb: ReturnType<typeof adminSupabase>,
   country: CountryCode,
+  searchTerm: string,
 ) {
   if (!sb) return [];
 
-  const { data, error } = await sb
-    .from('products')
-    .select(
-      'id,name_bn,name_en,slug,short_description,description,regular_price,sale_price,offer_price,price,stock,is_active,seed_type,variety,season,planting_season,packet_weight,germination_time,germination_rate,harvest_time,cultivation_instructions,storage_instructions,country_code',
-    )
-    .eq('country_code', country)
-    .eq('is_active', true)
-    .limit(80);
-
-  if (error) throw error;
-
-  return data || [];
+  const products = await searchMessengerProducts(sb, country, searchTerm, 12);
+  return serializeMessengerProducts(products);
 }
 
 async function getRecentMessages(
@@ -523,7 +518,7 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   const [recentMessages, products] = await Promise.all([
     getRecentMessages(sb, conversation.id),
-    getProductContext(sb, activeCountry),
+    getProductContext(sb, activeCountry, text),
   ]);
 
   const productContext = JSON.stringify(products);
