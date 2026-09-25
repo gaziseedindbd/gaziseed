@@ -79,6 +79,14 @@ function isSeedKnowledgeRequest(text: string): boolean {
   );
 }
 
+function isGeneralSeedAdviceRequest(text: string): boolean {
+  if (!isSeedKnowledgeRequest(text)) return false;
+  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+  return /(কীভাবে|কিভাবে|কখন|কতদিন|কত দিনে|অঙ্কুর|বপন|রোপণ|পরিচর্যা|মাটি|সার|পানি|জল|watering|how to|when to|how long|germination|sow|sowing|plant|planting|care|soil|fertilizer)/i.test(
+    normalized,
+  );
+}
+
 async function getWebSeedContext(text: string): Promise<string> {
   if (!isSeedKnowledgeRequest(text)) return '';
 
@@ -716,6 +724,21 @@ async function processMessengerEvent(event: MessengerEvent) {
     });
 
     await sendMessengerText(senderId, orderErrorMessage);
+    return;
+  }
+
+  if (activeCountry === 'IN' && isGeneralSeedAdviceRequest(normalizedActionText)) {
+    const supportMessage = getIndiaHumanSupportMessage();
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: supportMessage,
+      actionStatus: 'knowledge_fallback_support',
+      countryCode: 'IN',
+      sourceContext: {
+        deterministic_seed_advice_fallback: true,
+      },
+    });
+    await sendMessengerText(senderId, supportMessage);
     return;
   }
 
