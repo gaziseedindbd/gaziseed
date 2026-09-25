@@ -101,7 +101,8 @@ export async function searchMessengerProducts(
   for (const result of results) {
     if (result.error) throw result.error;
 
-    for (const row of (result.data || []) as MessengerProduct[]) {
+    const rows = result.data as unknown as MessengerProduct[] | null;
+    for (const row of rows || []) {
       merged.set(row.id, row);
     }
   }
