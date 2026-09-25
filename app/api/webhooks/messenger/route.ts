@@ -257,20 +257,8 @@ async function saveMessage(
     sourceContext?: Record<string, unknown> | null;
     countryCode?: CountryCode | null;
   },
-) {
+): Promise<{ id: string; duplicate: boolean }> {
   if (!sb) throw new Error('Supabase service configuration is incomplete');
-
-  if (args.externalMessageId) {
-    const { data: existing, error: existingError } = await sb
-      .from('ai_messages')
-      .select('id')
-      .eq('external_message_id', args.externalMessageId)
-      .limit(1)
-      .maybeSingle();
-
-    if (existingError) throw existingError;
-    if (existing) return existing;
-  }
 
   const { data, error } = await sb
     .from('ai_messages')
@@ -289,8 +277,26 @@ async function saveMessage(
     .select('id')
     .single();
 
+  if (!error && data) {
+    return { id: data.id, duplicate: false };
+  }
+
+  if (error?.code === '23505' && args.externalMessageId) {
+    const { data: existing, error: existingError } = await sb
+      .from('ai_messages')
+      .select('id')
+      .eq('external_message_id', args.externalMessageId)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingError) throw existingError;
+    if (existing) {
+      return { id: existing.id, duplicate: true };
+    }
+  }
+
   if (error) throw error;
-  return data;
+  throw new Error('Messenger message insert returned no row');
 }
 
 async function markConversation(
@@ -425,20 +431,11 @@ async function processMessengerEvent(event: MessengerEvent) {
     last_event_at: new Date().toISOString(),
   });
 
-  const { data: existingMessage } = await sb
-    .from('ai_messages')
-    .select('id')
-    .eq('external_message_id', messageId)
-    .limit(1)
-    .maybeSingle();
-
-  if (existingMessage) return;
-
   const detectedCountry = detectExplicitCountry(text);
   const currentCountry = getVerifiedCountry(conversation);
   const resolvedCountry = detectedCountry || currentCountry;
 
-  await saveMessage(sb, conversation.id, {
+  const savedUserMessage = await saveMessage(sb, conversation.id, {
     role: 'user',
     content: text,
     externalMessageId: messageId,
@@ -455,6 +452,8 @@ async function processMessengerEvent(event: MessengerEvent) {
           : 'unknown',
     },
   });
+
+  if (savedUserMessage.duplicate) return;
 
   if (conversation.status === 'handoff') {
     return;
