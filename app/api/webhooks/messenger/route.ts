@@ -175,7 +175,11 @@ type MessengerPayload = {
   }>;
 };
 
-async function sendMessengerText(\n  recipientId: string,\n  text: string,\n  quickReplies?: Array<{ title: string; payload: string }>,\n) {
+async function sendMessengerText(
+  recipientId: string,
+  text: string,
+  quickReplies?: Array<{ title: string; payload: string }>,
+) {
   if (!META_PAGE_ACCESS_TOKEN) {
     throw new Error('META_PAGE_ACCESS_TOKEN is not configured');
   }
@@ -190,7 +194,18 @@ async function sendMessengerText(\n  recipientId: string,\n  text: string,\n  qu
       },
       body: JSON.stringify({
         recipient: { id: recipientId },
-        message: {\n          text: text.slice(0, 2000),\n          ...(quickReplies?.length\n            ? {\n                quick_replies: quickReplies.map((reply) => ({\n                  content_type: 'text',\n                  title: reply.title,\n                  payload: reply.payload,\n                })),\n              }\n            : {}),\n        },
+        message: {
+          text: text.slice(0, 2000),
+          ...(quickReplies?.length
+            ? {
+                quick_replies: quickReplies.map((reply) => ({
+                  content_type: 'text',
+                  title: reply.title,
+                  payload: reply.payload,
+                })),
+              }
+            : {}),
+        },
       }),
     },
   );
