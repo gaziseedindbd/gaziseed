@@ -35,7 +35,7 @@ const DEFAULT_MODELS: Record<MessengerProvider, string> = {
   openrouter: 'nvidia/nemotron-3-ultra-550b-a55b:free',
 };
 
-const DEFAULT_TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 12_000;
 
 function modelFor(provider: MessengerProvider): string {
   const envName = provider.toUpperCase() + '_MODEL';
@@ -291,16 +291,10 @@ export async function messengerAIChat(args: {
   messages: AIChatMessage[];
   temperature?: number;
   max_tokens?: number;
-  skipProviders?: MessengerProvider[];
-  forceFailProviders?: MessengerProvider[];
 }): Promise<MessengerProviderResult> {
   if (!isMessengerAIEnabled()) throw new MessengerAIProviderError('Messenger AI is disabled', []);
 
-  const skipped = new Set(args.skipProviders || []);
-  const forcedFailures = new Set(args.forceFailProviders || []);
-  const providers = getConfiguredMessengerProviders().filter(
-    (provider) => !skipped.has(provider),
-  );
+  const providers = getConfiguredMessengerProviders();
   if (providers.length === 0) throw new MessengerAIProviderError('No Messenger AI providers are configured', []);
 
   const attempts: MessengerProviderAttempt[] = [];
@@ -310,9 +304,6 @@ export async function messengerAIChat(args: {
     const model = modelFor(provider);
     const startedAt = Date.now();
     try {
-      if (forcedFailures.has(provider)) {
-        throw new ProviderHTTPError('Forced preview test failure', 503);
-      }
       const response = await withTimeout(callProvider(provider, args.messages, args.temperature, args.max_tokens), timeout);
       attempts.push({ provider, model, ok: true, duration_ms: Date.now() - startedAt });
       return { ...response, content: cleanMessengerAnswer(response.content), provider, attempts };
