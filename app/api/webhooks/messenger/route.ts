@@ -96,6 +96,73 @@ function isGeneralSeedAdviceRequest(text: string): boolean {
   );
 }
 
+function isProductListRequest(text: string): boolean {
+  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+  return /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে)/i.test(
+    normalized,
+  );
+}
+
+function formatMessengerCurrency(country: CountryCode): string {
+  return country === 'IN' ? '₹' : '৳';
+}
+
+function formatMessengerProductName(product: Record<string, unknown>): string {
+  return (
+    (typeof product.name_bn === 'string' && product.name_bn) ||
+    (typeof product.name_en === 'string' && product.name_en) ||
+    (typeof product.slug === 'string' && product.slug) ||
+    'পণ্য'
+  );
+}
+
+function formatMessengerCatalogReply(
+  text: string,
+  products: Array<Record<string, unknown>>,
+  country: CountryCode,
+): string {
+  const currency = formatMessengerCurrency(country);
+
+  if (!products.length) {
+    return 'দুঃখিত, এই country-তে matching কোনো active product পাওয়া যায়নি।';
+  }
+
+  if (!isProductListRequest(text) && products.length === 1) {
+    const product = products[0];
+    const name = formatMessengerProductName(product);
+    const price = typeof product.effective_price === 'number'
+      ? product.effective_price
+      : 0;
+    const stock = typeof product.stock === 'number' ? product.stock : 0;
+
+    return (
+      `🌱 ${name}\\n\\n` +
+      `💰 দাম: ${currency}${price} প্রতি প্যাকেট\\n` +
+      `📦 স্টক: ${stock} প্যাকেট`
+    );
+  }
+
+  const lines = products.slice(0, 12).map((product) => {
+    const name = formatMessengerProductName(product);
+    const price =
+      typeof product.effective_price === 'number'
+        ? `${currency}${product.effective_price}`
+        : 'দাম জানা নেই';
+    const stock =
+      typeof product.stock === 'number'
+        ? `${product.stock} প্যাকেট`
+        : 'স্টক তথ্য নেই';
+
+    return `• ${name} — ${price} — স্টক: ${stock}`;
+  });
+
+  return (
+    '🌱 GAZI SEED-এর available products:\\n\\n' +
+    lines.join('\\n') +
+    '\\n\\nকোনো পণ্য সম্পর্কে দাম, স্টক বা অর্ডার জানতে পণ্যের নাম লিখুন।'
+  );
+}
+
 async function getWebSeedContext(text: string): Promise<string> {
   if (!isSeedKnowledgeRequest(text)) return '';
 
@@ -581,18 +648,20 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   if (savedUserMessage.duplicate) return;
 
+  // A previous provider failure or human-support request may have left this
+  // conversation in handoff. A new customer message must be allowed to resume
+  // the automated router unless the customer explicitly asks for human support.
   if (conversation.status === 'handoff') {
-    if (resolvedCountry === 'IN') {
-      const supportMessage = getIndiaHumanSupportMessage();
-      await saveMessage(sb, conversation.id, {
-        role: 'assistant',
-        content: supportMessage,
-        actionStatus: 'human_support_contact',
-        countryCode: 'IN',
-      });
-      await sendMessengerText(senderId, supportMessage);
-    }
-    return;
+    await markConversation(
+      sb,
+      conversation.id,
+      'active',
+      {
+        handoff_resumed_at: new Date().toISOString(),
+        handoff_resume_reason: 'new_customer_message',
+      },
+      resolvedCountry || undefined,
+    );
   }
 
   // Human-support requests are handled deterministically, before AI or order logic.
@@ -611,10 +680,6 @@ async function processMessengerEvent(event: MessengerEvent) {
       countryCode: 'IN',
     });
     await sendMessengerText(senderId, supportMessage);
-    return;
-  }
-
-  if (conversation.status === 'handoff') {
     return;
   }
 
@@ -767,14 +832,53 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   const [recentMessages, products, deliveryPolicy, webSeedContext] = await Promise.all([
     getRecentMessages(sb, conversation.id),
-    isProductCatalogRequest(normalizedActionText)
+    isProductListRequest(normalizedActionText)
       ? listMessengerProducts(sb, activeCountry, 12).then(serializeMessengerProducts)
-      : getProductContext(sb, activeCountry, normalizedActionText),
+      : isProductCatalogRequest(normalizedActionText)
+        ? getProductContext(sb, activeCountry, normalizedActionText)
+        : getProductContext(sb, activeCountry, normalizedActionText),
     isMessengerDeliveryPolicyQuestion(normalizedActionText)
       ? getMessengerDeliveryPolicy(sb, activeCountry)
       : Promise.resolve(null),
     Promise.resolve(''),
   ]);
+
+  if (isProductCatalogRequest(normalizedActionText)) {
+    const catalogReply = formatMessengerCatalogReply(
+      normalizedActionText,
+      products as Array<Record<string, unknown>>,
+      activeCountry,
+    );
+
+    if (products.length === 1) {
+      const product = products[0] as Record<string, unknown>;
+      await markConversation(sb, conversation.id, 'active', {
+        last_messenger_product: {
+          id: typeof product.id === 'string' ? product.id : null,
+          name: formatMessengerProductName(product),
+          price:
+            typeof product.effective_price === 'number'
+              ? product.effective_price
+              : 0,
+          stock: typeof product.stock === 'number' ? product.stock : 0,
+        },
+      }, activeCountry);
+    }
+
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: catalogReply,
+      actionStatus: 'product_catalog',
+      countryCode: activeCountry,
+      sourceContext: {
+        deterministic_catalog_reply: true,
+        product_count: products.length,
+      },
+    });
+    await sendMessengerText(senderId, catalogReply);
+    return;
+  }
+
 
   if (products.length === 1) {
     const product = products[0] as Record<string, unknown>;
