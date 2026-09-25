@@ -18,6 +18,49 @@ const META_PAGE_ACCESS_TOKEN = process.env.META_PAGE_ACCESS_TOKEN || '';
 const META_PAGE_ID = process.env.META_PAGE_ID || '';
 const META_GRAPH_VERSION = process.env.META_GRAPH_VERSION || 'v26.0';
 
+type CountryCode = 'IN' | 'BD';
+
+type ConversationRecord = {
+  id: string;
+  status: 'active' | 'handoff' | 'closed';
+  metadata?: Record<string, unknown> | null;
+};
+
+function detectExplicitCountry(text: string): CountryCode | null {
+  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+
+  const mentionsIndia =
+    /\b(india|indian|bharat)\b/.test(normalized) ||
+    normalized.includes('ভারত') ||
+    normalized.includes('ভারতীয়') ||
+    normalized.includes('ভারতীয়');
+
+  const mentionsBangladesh =
+    /\b(bangladesh|bangladeshi)\b/.test(normalized) ||
+    normalized.includes('বাংলাদেশ') ||
+    normalized.includes('বাংলাদেশি') ||
+    normalized.includes('বাংলাদেশী');
+
+  if (mentionsIndia === mentionsBangladesh) return null;
+  return mentionsIndia ? 'IN' : 'BD';
+}
+
+function getVerifiedCountry(conversation: ConversationRecord): CountryCode | null {
+  const metadata = conversation.metadata || {};
+  if (metadata.country_verified !== true) return null;
+
+  return metadata.country_code === 'IN' || metadata.country_code === 'BD'
+    ? metadata.country_code
+    : null;
+}
+
+function getCountryQuestion() {
+  return (
+    'আপনাকে সঠিক পণ্য, দাম, স্টক ও ডেলিভারি তথ্য দিতে আগে জানাবেন—' +
+    'আপনি India থেকে নাকি Bangladesh থেকে? 🇮🇳 🇧🇩'
+  );
+}
+
 function safeEqual(expected: string, actual: string): boolean {
   const expectedBuffer = Buffer.from(expected);
   const actualBuffer = Buffer.from(actual);
@@ -133,7 +176,12 @@ async function ensureConversation(
       external_user_id: externalUserId,
       page_id: META_PAGE_ID || null,
       status: 'active',
-      metadata: { source: 'facebook_messenger' },
+      metadata: {
+        source: 'facebook_messenger',
+        country_verified: false,
+      },
+      // ai_conversations.country_code is currently non-null; keep the
+      // legacy default but do not treat it as verified at runtime.
       country_code: 'BD',
     })
     .select('id,status,metadata')
@@ -154,6 +202,7 @@ async function saveMessage(
     model?: string | null;
     actionStatus?: string | null;
     sourceContext?: Record<string, unknown> | null;
+    countryCode?: CountryCode | null;
   },
 ) {
   if (!sb) throw new Error('Supabase service configuration is incomplete');
@@ -182,7 +231,7 @@ async function saveMessage(
       action_status: args.actionStatus || null,
       requires_confirmation: false,
       source_context: args.sourceContext || null,
-      country_code: 'BD',
+      country_code: args.countryCode || 'BD',
     })
     .select('id')
     .single();
@@ -196,6 +245,7 @@ async function markConversation(
   conversationId: string,
   status: 'active' | 'handoff' | 'closed',
   metadata?: Record<string, unknown>,
+  countryCode?: CountryCode,
 ) {
   if (!sb) return;
 
@@ -212,14 +262,20 @@ async function markConversation(
     ...(metadata || {}),
   };
 
+  const updatePayload: Record<string, unknown> = {
+    status,
+    metadata: mergedMetadata,
+    last_message_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  if (countryCode) {
+    updatePayload.country_code = countryCode;
+  }
+
   const { error } = await sb
     .from('ai_conversations')
-    .update({
-      status,
-      metadata: mergedMetadata,
-      last_message_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq('id', conversationId);
 
   if (error) throw error;
@@ -263,7 +319,10 @@ async function createHumanHandoff(
   return data;
 }
 
-async function getProductContext(sb: ReturnType<typeof adminSupabase>) {
+async function getProductContext(
+  sb: ReturnType<typeof adminSupabase>,
+  country: CountryCode,
+) {
   if (!sb) return [];
 
   const { data, error } = await sb
@@ -271,7 +330,7 @@ async function getProductContext(sb: ReturnType<typeof adminSupabase>) {
     .select(
       'id,name_bn,name_en,slug,short_description,description,regular_price,sale_price,offer_price,price,stock,is_active,seed_type,variety,season,planting_season,packet_weight,germination_time,germination_rate,harvest_time,cultivation_instructions,storage_instructions,country_code',
     )
-    .eq('country_code', 'BD')
+    .eq('country_code', country)
     .eq('is_active', true)
     .limit(80);
 
@@ -331,13 +390,25 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   if (existingMessage) return;
 
+  const detectedCountry = detectExplicitCountry(text);
+  const currentCountry = getVerifiedCountry(conversation);
+  const resolvedCountry = detectedCountry || currentCountry;
+
   await saveMessage(sb, conversation.id, {
     role: 'user',
     content: text,
     externalMessageId: messageId,
+    countryCode: resolvedCountry,
     sourceContext: {
       timestamp: event.timestamp || null,
       postback: event.postback || null,
+      country_detected: detectedCountry,
+      country_verified: Boolean(resolvedCountry),
+      country_source: detectedCountry
+        ? 'customer_message'
+        : currentCountry
+          ? 'conversation'
+          : 'unknown',
     },
   });
 
@@ -349,15 +420,48 @@ async function processMessengerEvent(event: MessengerEvent) {
     return;
   }
 
+  let activeCountry = resolvedCountry;
+
+  if (detectedCountry && detectedCountry !== currentCountry) {
+    await markConversation(
+      sb,
+      conversation.id,
+      'active',
+      {
+        country_code: detectedCountry,
+        country_verified: true,
+        country_source: 'customer_message',
+        country_confirmed_at: new Date().toISOString(),
+      },
+      detectedCountry,
+    );
+    activeCountry = detectedCountry;
+  }
+
+  if (!activeCountry) {
+    const countryQuestion = getCountryQuestion();
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: countryQuestion,
+      actionStatus: 'country_selection_required',
+      sourceContext: {
+        country_required: true,
+      },
+    });
+    await sendMessengerText(senderId, countryQuestion);
+    return;
+  }
+
   const [recentMessages, products] = await Promise.all([
     getRecentMessages(sb, conversation.id),
-    getProductContext(sb),
+    getProductContext(sb, activeCountry),
   ]);
 
   const productContext = JSON.stringify(products);
   const systemPrompt =
     'You are GAZI SEED customer support AI on Facebook Messenger. ' +
     'Answer in natural Bengali unless the customer uses another language. ' +
+    `The verified customer country is ${activeCountry}. Only use the catalog data for that country. ` +
     'Use ONLY the supplied GAZI SEED product data for prices, stock, and product facts. ' +
     'Never invent prices, stock, offers, delivery terms, or order status. ' +
     'You cannot create or modify an order yet; for an actual order request, collect the required details and say a secure order action will be handled in the next step. ' +
@@ -387,6 +491,7 @@ async function processMessengerEvent(event: MessengerEvent) {
       provider: result.provider,
       model: result.model,
       actionStatus: 'sent',
+      countryCode: activeCountry,
       sourceContext: {
         attempts: result.attempts,
       },
@@ -419,6 +524,7 @@ async function processMessengerEvent(event: MessengerEvent) {
         role: 'assistant',
         content: handoffMessage,
         actionStatus: 'handoff',
+        countryCode: activeCountry,
         sourceContext: {
           error: reason,
         },
