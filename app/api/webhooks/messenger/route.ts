@@ -64,6 +64,21 @@ function getVerifiedCountry(conversation: ConversationRecord): CountryCode | nul
     : null;
 }
 
+function isHumanSupportRequest(text: string): boolean {
+  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+  return /(human|agent|support|representative|talk to (a )?person|speak to (a )?person|customer care|customer service|মানুষের সাথে|মানুষের সঙ্গে|মানুষের সাথে কথা|কথা বলতে চাই|কথা বলতে চান|কাস্টমার কেয়ার|কাস্টমার কেয়ার|কাস্টমার সার্ভিস|সাপোর্টে কথা)/i.test(
+    normalized,
+  );
+}
+
+function getIndiaHumanSupportMessage(): string {
+  return (
+    'অবশ্যই। একজন মানব প্রতিনিধির সাথে কথা বলতে চাইলে Indian customer support-এ যোগাযোগ করুন।\\n\\n' +
+    '📱 WhatsApp / Direct Call: +91 8876981780\\n\\n' +
+    'WhatsApp-এ মেসেজ করতে বা সরাসরি কল করতে পারবেন।'
+  );
+}
+
 function getCountryQuestion() {
   return (
     'আপনাকে সঠিক পণ্য, দাম, স্টক ও ডেলিভারি তথ্য দিতে আগে জানাবেন—' +
@@ -435,11 +450,19 @@ async function getRecentMessages(
 async function processMessengerEvent(event: MessengerEvent) {
   const senderId = event.sender?.id;
   const messageId = event.message?.mid || event.postback?.mid;
+  const quickReplyPayload = event.message?.quick_reply?.payload || event.postback?.payload || '';
   const text =
     event.message?.text?.trim() ||
     (event.postback
       ? event.postback.title || event.postback.payload || ''
       : '');
+
+  const normalizedActionText =
+    quickReplyPayload === 'ORDER_CONFIRM' || quickReplyPayload === 'ORDER_CONFIRM_YES'
+      ? 'হ্যাঁ'
+      : quickReplyPayload === 'ORDER_CANCEL' || quickReplyPayload === 'ORDER_CANCEL_NO'
+        ? 'না'
+        : text;
 
   const quickReplyCountry =
     event.message?.quick_reply?.payload === 'COUNTRY_IN'
@@ -463,13 +486,14 @@ async function processMessengerEvent(event: MessengerEvent) {
     last_event_at: new Date().toISOString(),
   });
 
-  const detectedCountry = quickReplyCountry || detectExplicitCountry(text);
   const currentCountry = getVerifiedCountry(conversation);
+  const detectedCountry = quickReplyCountry || detectExplicitCountry(normalizedActionText);
   const resolvedCountry = detectedCountry || currentCountry;
+
 
   const savedUserMessage = await saveMessage(sb, conversation.id, {
     role: 'user',
-    content: text,
+    content: normalizedActionText,
     externalMessageId: messageId,
     countryCode: resolvedCountry,
     sourceContext: {
@@ -486,6 +510,29 @@ async function processMessengerEvent(event: MessengerEvent) {
   });
 
   if (savedUserMessage.duplicate) return;
+
+  if (conversation.status === 'handoff') {
+    return;
+  }
+
+  // Human-support requests are handled deterministically, before AI or order logic.
+  // India customers receive the configured WhatsApp/direct-call number.
+  if (resolvedCountry === 'IN' && isHumanSupportRequest(normalizedActionText)) {
+    const supportMessage = getIndiaHumanSupportMessage();
+    await markConversation(sb, conversation.id, 'handoff', {
+      handoff_reason: 'customer_requested_human_support',
+      handoff_at: new Date().toISOString(),
+      support_contact: '+91 8876981780',
+    }, 'IN');
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: supportMessage,
+      actionStatus: 'human_support_contact',
+      countryCode: 'IN',
+    });
+    await sendMessengerText(senderId, supportMessage);
+    return;
+  }
 
   if (conversation.status === 'handoff') {
     return;
@@ -580,7 +627,15 @@ async function processMessengerEvent(event: MessengerEvent) {
         },
       });
 
-      await sendMessengerText(senderId, orderFlow.reply);
+      const confirmationQuickReplies =
+        orderFlow.pending?.step === 'confirmation'
+          ? [
+              { title: '✅ হ্যাঁ, অর্ডার নিশ্চিত করুন', payload: 'ORDER_CONFIRM' },
+              { title: '❌ না, অর্ডার বাতিল করুন', payload: 'ORDER_CANCEL' },
+            ]
+          : undefined;
+
+      await sendMessengerText(senderId, orderFlow.reply, confirmationQuickReplies);
       return;
     }
   } catch (error) {
