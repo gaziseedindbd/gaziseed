@@ -56,6 +56,23 @@ function normalizeSearchTerm(value: string): string {
     .slice(0, 80);
 }
 
+function searchTokens(value: string): string[] {
+  const stopWords = new Set([
+    'দাম', 'কত', 'আছে', 'স্টক', 'স্টকে', 'টি', 'টা', 'টি', 'এর', 'র', 'জন্য',
+    'এবং', 'ও', 'কি', 'কী', 'কোন', 'কোনটা', 'আমার', 'চাই', 'দিবেন', 'দাও',
+    'price', 'how', 'much', 'stock', 'available', 'is', 'are', 'the', 'a', 'an',
+    'and', 'of', 'for', 'please', 'tell', 'me',
+  ]);
+
+  return Array.from(
+    new Set(
+      (value.match(/[A-Za-z0-9\u0980-\u09FF]+/g) || [])
+        .map((token) => token.trim())
+        .filter((token) => token.length >= 2 && !stopWords.has(token.toLocaleLowerCase())),
+    ),
+  ).slice(0, 6);
+}
+
 function effectivePrice(product: MessengerProduct): number | null {
   const prices = [
     product.offer_price,
@@ -81,19 +98,39 @@ export async function searchMessengerProducts(
   if (!term) return [];
 
   const safeLimit = Math.max(1, Math.min(limit, 20));
-  const pattern = `%${term}%`;
-
   const columns = ['name_bn', 'name_en', 'slug'] as const;
+  const queries = [term];
+
+  if (!term.toLocaleLowerCase().includes('messenger')) {
+    const tokens = searchTokens(term);
+    for (const token of tokens) {
+      if (!queries.some((query) => query.toLocaleLowerCase() === token.toLocaleLowerCase())) {
+        queries.push(token);
+      }
+    }
+  } else {
+    const tokens = searchTokens(term);
+    for (const token of tokens) {
+      if (queries.length >= 6) break;
+      if (!queries.some((query) => query.toLocaleLowerCase() === token.toLocaleLowerCase())) {
+        queries.push(token);
+      }
+    }
+  }
+
   const results = await Promise.all(
-    columns.map((column) =>
-      supabase
-        .from('products')
-        .select(PRODUCT_FIELDS)
-        .eq('country_code', country)
-        .eq('is_active', true)
-        .ilike(column, pattern)
-        .limit(safeLimit),
-    ),
+    queries.flatMap((query) => {
+      const pattern = `%${query}%`;
+      return columns.map((column) =>
+        supabase
+          .from('products')
+          .select(PRODUCT_FIELDS)
+          .eq('country_code', country)
+          .eq('is_active', true)
+          .ilike(column, pattern)
+          .limit(safeLimit),
+      );
+    }),
   );
 
   const merged = new Map<string, MessengerProduct>();
