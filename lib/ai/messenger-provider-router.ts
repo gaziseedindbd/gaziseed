@@ -32,7 +32,7 @@ const DEFAULT_MODELS: Record<MessengerProvider, string> = {
   gemini: 'gemini-3.8-flash',
   groq: 'openai/gpt-oss-120b',
   cerebras: 'qwen-3.8-27b',
-  openrouter: 'openrouter/free',
+  openrouter: 'nvidia/nemotron-3-ultra-550b-a55b:free',
 };
 
 const DEFAULT_TIMEOUT_MS = 30_000;
