@@ -1,3 +1,4 @@
+// Controlled Messenger delivery-policy source.
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type MessengerDeliveryCountry = 'IN' | 'BD';
