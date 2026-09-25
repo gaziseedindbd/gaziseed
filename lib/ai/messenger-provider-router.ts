@@ -29,7 +29,7 @@ export class MessengerAIProviderError extends Error {
 const PROVIDER_ORDER: MessengerProvider[] = ['gemini', 'groq', 'cerebras', 'openrouter'];
 
 const DEFAULT_MODELS: Record<MessengerProvider, string> = {
-  gemini: 'gemini-2.5-flash',
+  gemini: 'gemini-3.8-flash',
   groq: 'llama-3.3-70b-versatile',
   cerebras: 'llama-3.3-70b',
   openrouter: 'openrouter/free',
