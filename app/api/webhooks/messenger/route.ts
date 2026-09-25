@@ -14,6 +14,7 @@ import {
   isMessengerDeliveryPolicyQuestion,
   serializeMessengerDeliveryPolicy,
 } from '@/lib/ai/messenger-delivery-tool';
+import { handleMessengerOrderFlow } from '@/lib/ai/messenger-order-tool';
 
 export const dynamic = 'force-dynamic';
 
@@ -549,6 +550,59 @@ async function processMessengerEvent(event: MessengerEvent) {
     return;
   }
 
+  try {
+    const orderFlow = await handleMessengerOrderFlow({
+      supabase: sb,
+      country: activeCountry,
+      text,
+      metadata: conversation.metadata,
+    });
+
+    if (orderFlow.handled) {
+      await markConversation(
+        sb,
+        conversation.id,
+        'active',
+        {
+          pending_messenger_order: orderFlow.pending || null,
+        },
+        activeCountry,
+      );
+
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: orderFlow.reply,
+        actionStatus: 'order_flow',
+        countryCode: activeCountry,
+        sourceContext: {
+          order_flow: true,
+          pending_step: orderFlow.pending?.step || null,
+        },
+      });
+
+      await sendMessengerText(senderId, orderFlow.reply);
+      return;
+    }
+  } catch (error) {
+    console.error(
+      'Messenger order flow failed:',
+      error instanceof Error ? error.message : 'Unknown order flow error',
+    );
+
+    const orderErrorMessage =
+      'দুঃখিত, অর্ডার সিস্টেমে সাময়িক সমস্যা হচ্ছে। একটু পরে আবার চেষ্টা করুন।';
+
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: orderErrorMessage,
+      actionStatus: 'order_error',
+      countryCode: activeCountry,
+    });
+
+    await sendMessengerText(senderId, orderErrorMessage);
+    return;
+  }
+
   const [recentMessages, products, deliveryPolicy] = await Promise.all([
     getRecentMessages(sb, conversation.id),
     getProductContext(sb, activeCountry, text),
@@ -556,6 +610,28 @@ async function processMessengerEvent(event: MessengerEvent) {
       ? getMessengerDeliveryPolicy(sb, activeCountry)
       : Promise.resolve(null),
   ]);
+
+  if (products.length === 1) {
+    const product = products[0] as Record<string, unknown>;
+    await markConversation(sb, conversation.id, 'active', {
+      last_messenger_product: {
+        id: typeof product.id === 'string' ? product.id : null,
+        name:
+          typeof product.name_bn === 'string' && product.name_bn
+            ? product.name_bn
+            : typeof product.name_en === 'string'
+              ? product.name_en
+              : typeof product.slug === 'string'
+                ? product.slug
+                : null,
+        price:
+          typeof product.effective_price === 'number'
+            ? product.effective_price
+            : 0,
+        stock: typeof product.stock === 'number' ? product.stock : 0,
+      },
+    }, activeCountry);
+  }
 
   const productContext = JSON.stringify(products);
   const deliveryPolicyContext = deliveryPolicy
