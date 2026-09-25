@@ -84,15 +84,15 @@ function normaliseContent(value: unknown): string {
 function cleanMessengerAnswer(content: string): string {
   let cleaned = content.trim();
 
-  cleaned = cleaned.replace(/<think>[\\s\\S]*?<\\/think>/gi, '').trim();
+  cleaned = cleaned.replace(/<think>[\s\S]*?<\\/think>/gi, '').trim();
 
   const thinkingStart = cleaned.match(
-    /^(?:here(?:'|’)s\\s+a\\s+)?(?:thinking\\s+process|reasoning|analysis)\\s*:/i,
+    /^(?:here(?:'|’)s\s+a\s+)?(?:thinking\s+process|reasoning|analysis)\s*:/i,
   );
 
   if (thinkingStart) {
     const finalMarker = cleaned.match(
-      /(?:^|\\n)\\s*(?:draft\\s+response|final\\s+answer)\\s*:?\\s*/i,
+      /(?:^|\\n)\s*(?:draft\s+response|final\s+answer)\s*:?\s*/i,
     );
 
     if (finalMarker?.index != null) {
