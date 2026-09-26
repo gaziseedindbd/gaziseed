@@ -249,7 +249,7 @@ function getSafeGeneralAgricultureReply(): string {
     'ভালো রোদ এবং গাছ ওঠার জন্য উপযুক্ত মাচা বা সহায়তার ব্যবস্থা রাখুন।',
     '',
     'সঠিক বীজের গভীরতা, দূরত্ব, সার ও সেচের পরিমাণ জাত, মাটি ও স্থানীয় আবহাওয়ার ওপর নির্ভর করতে পারে। তাই বীজের প্যাকেটের নির্দেশনা বা স্থানীয় কৃষি বিশেষজ্ঞের পরামর্শ অনুসরণ করুন।',
-  ].join('\\n');
+  ].join('\n');
 }
 
 function getCountryQuestion() {
@@ -1198,11 +1198,3 @@ export async function POST(request: NextRequest) {
     console.error(
       'Messenger webhook processing failed:',
       error instanceof Error ? error.message : 'Unknown error',
-    );
-
-    return NextResponse.json(
-      { success: false, message: 'Webhook processing failed' },
-      { status: 500 },
-    );
-  }
-}
