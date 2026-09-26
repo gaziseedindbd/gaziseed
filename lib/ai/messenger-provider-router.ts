@@ -36,6 +36,42 @@ const DEFAULT_MODELS: Record<MessengerProvider, string> = {
 };
 
 const DEFAULT_TIMEOUT_MS = 12_000;
+const DEFAULT_PROVIDER_COOLDOWN_MS = 5 * 60 * 1000;
+const providerCooldownUntil = new Map<MessengerProvider, number>();
+
+function providerCooldownMs(): number {
+  const raw = Number(
+    process.env.MESSENGER_AI_PROVIDER_COOLDOWN_MS ||
+      DEFAULT_PROVIDER_COOLDOWN_MS,
+  );
+  if (!Number.isFinite(raw)) return DEFAULT_PROVIDER_COOLDOWN_MS;
+  return Math.max(15_000, Math.min(raw, 60 * 60 * 1000));
+}
+
+function isProviderInCooldown(provider: MessengerProvider): boolean {
+  const until = providerCooldownUntil.get(provider) || 0;
+  if (until <= Date.now()) {
+    providerCooldownUntil.delete(provider);
+    return false;
+  }
+  return true;
+}
+
+function markProviderCooldown(provider: MessengerProvider, error: unknown): void {
+  const message = error instanceof Error ? error.message : '';
+  const retryMatch = message.match(/retry in ([0-9]+(?:\\.[0-9]+)?)s/i);
+  const retryMs = retryMatch ? Math.ceil(Number(retryMatch[1]) * 1000) + 1000 : 0;
+  const duration = Math.max(retryMs, providerCooldownMs());
+  providerCooldownUntil.set(provider, Date.now() + duration);
+}
+
+function isProviderRateLimited(error: unknown): boolean {
+  if (error instanceof ProviderHTTPError && error.status === 429) return true;
+  const message = error instanceof Error ? error.message : '';
+  return /(429|rate[ -]?limit|quota exceeded|too many requests|resource exhausted|requests per minute|requests per day)/i.test(
+    message,
+  );
+}
 
 function modelFor(provider: MessengerProvider): string {
   const envName = provider.toUpperCase() + '_MODEL';
@@ -312,12 +348,29 @@ export async function messengerAIChat(args: {
 
   for (const provider of providers) {
     const model = modelFor(provider);
+
+    if (isProviderInCooldown(provider)) {
+      attempts.push({
+        provider,
+        model,
+        ok: false,
+        status: 429,
+        error: 'Provider temporarily skipped after a recent rate-limit/quota failure',
+        duration_ms: 0,
+      });
+      continue;
+    }
+
     const startedAt = Date.now();
     try {
       const response = await withTimeout(callProvider(provider, args.messages, args.temperature, args.max_tokens), timeout);
       attempts.push({ provider, model, ok: true, duration_ms: Date.now() - startedAt });
       return { ...response, content: cleanMessengerAnswer(response.content), provider, attempts };
     } catch (error) {
+      if (isProviderRateLimited(error)) {
+        markProviderCooldown(provider, error);
+      }
+
       attempts.push({
         provider,
         model,
