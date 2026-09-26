@@ -126,11 +126,35 @@ function normalizeText(value: string): string {
 }
 
 function tokenize(value: string): string[] {
+  const rawTokens =
+    value.match(/[A-Za-z0-9\u0980-\u09FF]+/g) || [];
+
+  const variants = rawTokens.flatMap((token) => {
+    const normalized = token.toLocaleLowerCase().trim();
+    const candidates = [normalized];
+
+    // Common Bengali possessive/genitive endings can hide the actual
+    // product noun (e.g. "গোলাপের" -> "গোলাপ", "বীজের" -> "বীজ").
+    if (normalized.length >= 4 && normalized.endsWith('ের')) {
+      candidates.push(normalized.slice(0, -2));
+    }
+
+    if (normalized.length >= 5 && normalized.endsWith('দের')) {
+      candidates.push(normalized.slice(0, -3));
+    }
+
+    if (normalized.length >= 5 && normalized.endsWith('গুলোর')) {
+      candidates.push(normalized.slice(0, -5));
+    }
+
+    return candidates;
+  });
+
   return Array.from(
     new Set(
-      (value.match(/[A-Za-z0-9\u0980-\u09FF]+/g) || [])
-        .map((token) => token.toLocaleLowerCase().trim())
-        .filter((token) => token.length >= 2 && !STOP_WORDS.has(token)),
+      variants.filter(
+        (token) => token.length >= 2 && !STOP_WORDS.has(token),
+      ),
     ),
   ).slice(0, 12);
 }
@@ -493,27 +517,40 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
     return { handled: false };
   }
 
+  // Prefer an exact field-level answer first. This prevents a generic
+  // FAQ containing overlapping words from hijacking questions such as
+  // "ব্র্যান্ড কী?" or "মাটি কেমন?".
+  const fieldReply = buildFieldReply(fullProduct, text);
+  if (fieldReply) {
+    return {
+      handled: true,
+      productId: candidate.id,
+      reply: fieldReply,
+    };
+  }
+
   const faq = await findFaq(supabase, candidate.id, text);
   if (faq) {
     const answer = firstNonEmpty(faq.answer_bn, faq.answer_en);
     if (answer) {
-      const name = firstNonEmpty(fullProduct.name_bn, fullProduct.name_en, fullProduct.slug) || 'এই পণ্য';
+      const name =
+        firstNonEmpty(
+          fullProduct.name_bn,
+          fullProduct.name_en,
+          fullProduct.slug,
+        ) || 'এই পণ্য';
+
       return {
         handled: true,
         productId: candidate.id,
-        reply: `🌱 ${name}\n\n❓ ${firstNonEmpty(faq.question_bn, faq.question_en) || 'FAQ'}\n\n${answer}`,
+        reply:
+          `🌱 ${name}\n\n❓ ${firstNonEmpty(
+            faq.question_bn,
+            faq.question_en,
+          ) || 'FAQ'}\n\n${answer}`,
       };
     }
   }
 
-  const fieldReply = buildFieldReply(fullProduct, text);
-  if (!fieldReply) {
-    return { handled: false, productId: candidate.id };
-  }
-
-  return {
-    handled: true,
-    productId: candidate.id,
-    reply: fieldReply,
-  };
+  return { handled: false, productId: candidate.id };
 }
