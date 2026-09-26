@@ -107,6 +107,16 @@ function formatMessengerCurrency(country: CountryCode): string {
   return country === 'IN' ? '₹' : '৳';
 }
 
+function messengerProductReplyTitle(product: Record<string, unknown>): string {
+  const name = formatMessengerProductName(product).replace(/\s+/g, ' ').trim();
+  return name.length > 20 ? name.slice(0, 19) + '…' : name;
+}
+
+function parseMessengerProductSelection(payload: string): string | null {
+  const match = payload.match(/^PRODUCT_SELECT:([0-9a-f-]{36})$/i);
+  return match?.[1] || null;
+}
+
 function formatMessengerProductName(product: Record<string, unknown>): string {
   return (
     (typeof product.name_bn === 'string' && product.name_bn) ||
@@ -754,6 +764,92 @@ async function processMessengerEvent(event: MessengerEvent) {
     return;
   }
 
+  const selectedProductId = parseMessengerProductSelection(quickReplyPayload);
+  if (selectedProductId) {
+    const { data: selectedProduct, error: selectedProductError } = await sb
+      .from('products')
+      .select(
+        'id,name_bn,name_en,slug,regular_price,sale_price,offer_price,price,stock,is_active,country_code',
+      )
+      .eq('id', selectedProductId)
+      .eq('country_code', activeCountry)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (selectedProductError) throw selectedProductError;
+
+    if (!selectedProduct) {
+      const unavailableMessage =
+        'দুঃখিত, এই productটি এখন আর available নেই। আবার product list দেখতে চাইলে বলুন।';
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: unavailableMessage,
+        actionStatus: 'product_selection_unavailable',
+        countryCode: activeCountry,
+      });
+      await sendMessengerText(senderId, unavailableMessage);
+      return;
+    }
+
+    const selectedPrice = [
+      selectedProduct.offer_price,
+      selectedProduct.sale_price,
+      selectedProduct.price,
+      selectedProduct.regular_price,
+    ].find((value): value is number => typeof value === 'number' && value > 0) ?? 0;
+
+    const selectedStock = Number(selectedProduct.stock || 0);
+    const selectedName =
+      selectedProduct.name_bn ||
+      selectedProduct.name_en ||
+      selectedProduct.slug ||
+      'পণ্য';
+
+    const selectedMessage =
+      selectedStock > 0 && selectedPrice > 0
+        ? `✅ আপনি নির্বাচন করেছেন: ${selectedName}\n💰 দাম: ${formatMessengerCurrency(activeCountry)}${selectedPrice} প্রতি প্যাকেট\n📦 স্টক: ${selectedStock} প্যাকেট\n\nকত প্যাকেট অর্ডার করতে চান? সংখ্যা লিখুন।`
+        : `দুঃখিত, ${selectedName} বর্তমানে অর্ডারযোগ্য নয়।`;
+
+    await markConversation(
+      sb,
+      conversation.id,
+      'active',
+      {
+        last_messenger_product: {
+          id: selectedProduct.id,
+          name: selectedName,
+          price: selectedPrice,
+          stock: selectedStock,
+        },
+        pending_messenger_order:
+          selectedStock > 0 && selectedPrice > 0
+            ? {
+                step: 'quantity',
+                product_id: selectedProduct.id,
+                product_name: selectedName,
+                unit_price: selectedPrice,
+                stock: selectedStock,
+              }
+            : null,
+        product_selection_at: new Date().toISOString(),
+      },
+      activeCountry,
+    );
+
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: selectedMessage,
+      actionStatus: 'product_selected',
+      countryCode: activeCountry,
+      sourceContext: {
+        deterministic_product_selection: true,
+        product_id: selectedProduct.id,
+      },
+    });
+    await sendMessengerText(senderId, selectedMessage);
+    return;
+  }
+
   if (activeCountry === 'IN' && isGeneralSeedAdviceRequest(normalizedActionText)) {
     const supportMessage = getIndiaHumanSupportMessage();
     await saveMessage(sb, conversation.id, {
@@ -865,6 +961,15 @@ async function processMessengerEvent(event: MessengerEvent) {
       }, activeCountry);
     }
 
+    const productQuickReplies = isProductListRequest(normalizedActionText)
+      ? (products as Array<Record<string, unknown>>)
+          .slice(0, 13)
+          .map((product) => ({
+            title: messengerProductReplyTitle(product),
+            payload: `PRODUCT_SELECT:${String(product.id)}`,
+          }))
+      : undefined;
+
     await saveMessage(sb, conversation.id, {
       role: 'assistant',
       content: catalogReply,
@@ -873,9 +978,10 @@ async function processMessengerEvent(event: MessengerEvent) {
       sourceContext: {
         deterministic_catalog_reply: true,
         product_count: products.length,
+        selectable_product_count: productQuickReplies?.length || 0,
       },
     });
-    await sendMessengerText(senderId, catalogReply);
+    await sendMessengerText(senderId, catalogReply, productQuickReplies);
     return;
   }
 
