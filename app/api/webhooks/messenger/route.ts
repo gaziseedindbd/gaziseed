@@ -498,7 +498,6 @@ async function markConversation(
     .select('metadata')
     .eq('id', conversationId)
     .maybeSingle();
-
   if (readError) throw readError;
 
   const mergedMetadata = {
@@ -998,7 +997,6 @@ async function processMessengerEvent(event: MessengerEvent) {
       },
     }, activeCountry);
   }
-
   const productContext = JSON.stringify(products);
   const deliveryPolicyContext = deliveryPolicy
     ? JSON.stringify(serializeMessengerDeliveryPolicy(deliveryPolicy))
@@ -1055,9 +1053,13 @@ async function processMessengerEvent(event: MessengerEvent) {
       last_model: result.model,
     });
 
-    const finalReply = isKnowledgeFallbackResponse(result.content)
-      ? getIndiaHumanSupportMessage()
-      : result.content;
+    const isGeneralAgricultureMessage =
+      isGeneralSeedAdviceRequest(normalizedActionText);
+
+    const finalReply =
+      isKnowledgeFallbackResponse(result.content) && !isGeneralAgricultureMessage
+        ? getIndiaHumanSupportMessage()
+        : result.content;
 
     await saveMessage(sb, conversation.id, {
       role: 'assistant',
