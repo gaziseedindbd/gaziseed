@@ -89,7 +89,6 @@ function isProductCatalogRequest(text: string): boolean {
 
 function isGeneralSeedAdviceRequest(text: string): boolean {
   if (!isSeedKnowledgeRequest(text)) return false;
-  if (isProductCatalogRequest(text)) return false;
   const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
   return /(কীভাবে|কিভাবে|কখন|কতদিন|কত দিনে|অঙ্কুর|বপন|রোপণ|পরিচর্যা|মাটি|সার|পানি|জল|watering|how to|when to|how long|germination|sow|sowing|plant|planting|care|soil|fertilizer)/i.test(
     normalized,
