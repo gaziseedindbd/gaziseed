@@ -85,15 +85,15 @@ function isProductAvailabilityQuestion(text: string): boolean {
   const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
 
   return /(
-    \\b(?:ki|kono|kon|what|which|any|anything)\\s+(?:products?|product)\\s+(?:ache|ase|ache\\?|ase\\?|nei|naie|available|there)\\b|
-    (?:ki|kono|kon|কী|কি|কোনো|কোন)\\s*(?:কি\\s*)?(?:প্রোডাক্ট|পণ্য|products?|product)\\s*(?:আছে|আছেন|নেই|নাই|naie|nei|ache|ase|available|there)?|
-    (?:কোনো|কোন)\\s*(?:প্রোডাক্ট|পণ্য|products?|product)\\s*(?:নেই|নাই|আছে|আছেন)|
-    \\b(?:anything|any)\\s+(?:available|in stock|there)\\b
+    \b(?:ki|kono|kon|what|which|any|anything)\s+(?:products?|product)\s+(?:ache|ase|ache\?|ase\?|nei|naie|available|there)\b|
+    (?:ki|kono|kon|কী|কি|কোনো|কোন)\s*(?:কি\s*)?(?:প্রোডাক্ট|পণ্য|products?|product)\s*(?:আছে|আছেন|নেই|নাই|naie|nei|ache|ase|available|there)?|
+    (?:কোনো|কোন)\s*(?:প্রোডাক্ট|পণ্য|products?|product)\s*(?:নেই|নাই|আছে|আছেন)|
+    \b(?:anything|any)\s+(?:available|in stock|there)\b
   )/ix.test(normalized);
 }
 
 function isProductCatalogRequest(text: string): boolean {
-  const normalized = text.toLocaleLowerCase().replace(/\\s+/g, ' ').trim();
+  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
   return (
     isProductAvailabilityQuestion(normalized) ||
     /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে|দাম|price|স্টক|stock|available|উপলব্ধ)/i.test(
@@ -104,14 +104,14 @@ function isProductCatalogRequest(text: string): boolean {
 
 function isGeneralSeedAdviceRequest(text: string): boolean {
   if (!isSeedKnowledgeRequest(text)) return false;
-  const normalized = text.toLocaleLowerCase().replace(/\\s+/g, ' ').trim();
+  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
   return /(কীভাবে|কিভাবে|কখন|কতদিন|কত দিনে|অঙ্কুর|বপন|রোপণ|পরিচর্যা|মাটি|সার|পানি|জল|watering|how to|when to|how long|germination|sow|sowing|plant|planting|care|soil|fertilizer)/i.test(
     normalized,
   );
 }
 
 function isProductListRequest(text: string): boolean {
-  const normalized = text.toLocaleLowerCase().replace(/\\s+/g, ' ').trim();
+  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
   return (
     isProductAvailabilityQuestion(normalized) ||
     /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে)/i.test(
