@@ -258,6 +258,23 @@ function getSafeGeneralAgricultureReply(): string {
   ].join('\n\n');
 }
 
+function isDeterministicAgricultureFaqRequest(text: string): boolean {
+  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+
+  const isLauQuestion = /(লাউ|bottle\\s*gourd|lau)/i.test(normalized);
+  const isSeedSowingQuestion =
+    isSeedKnowledgeRequest(text) &&
+    /(কীভাবে|কিভাবে|কী ভাবে|কি ভাবে|কী করে|কি করে|বপন|রোপণ|sow|sowing|plant|planting)/i.test(
+      normalized,
+    );
+  const isTransactionalQuestion =
+    /(দাম|price|স্টক|stock|অর্ডার|order|delivery|ডেলিভারি|available|উপলব্ধ)/i.test(
+      normalized,
+    );
+
+  return isLauQuestion && isSeedSowingQuestion && !isTransactionalQuestion;
+}
+
 function getCountryQuestion() {
   return (
     'আপনাকে সঠিক পণ্য, দাম, স্টক ও ডেলিভারি তথ্য দিতে আগে জানাবেন—' +
@@ -937,6 +954,24 @@ async function processMessengerEvent(event: MessengerEvent) {
     });
 
     await sendMessengerText(senderId, orderErrorMessage);
+    return;
+  }
+
+  if (isDeterministicAgricultureFaqRequest(normalizedActionText)) {
+    const agricultureReply = getSafeGeneralAgricultureReply();
+
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: agricultureReply,
+      actionStatus: 'general_agriculture_faq',
+      countryCode: activeCountry,
+      sourceContext: {
+        deterministic_agriculture_faq: true,
+        ai_call_skipped: true,
+      },
+    });
+
+    await sendMessengerText(senderId, agricultureReply);
     return;
   }
 
