@@ -136,8 +136,8 @@ function formatMessengerCatalogReply(
     const stock = typeof product.stock === 'number' ? product.stock : 0;
 
     return (
-      `🌱 ${name}\\n\\n` +
-      `💰 দাম: ${currency}${price} প্রতি প্যাকেট\\n` +
+      `🌱 ${name}\n\n` +
+      `💰 দাম: ${currency}${price} প্রতি প্যাকেট\n` +
       `📦 স্টক: ${stock} প্যাকেট`
     );
   }
@@ -157,9 +157,9 @@ function formatMessengerCatalogReply(
   });
 
   return (
-    '🌱 GAZI SEED-এর available products:\\n\\n' +
-    lines.join('\\n') +
-    '\\n\\nকোনো পণ্য সম্পর্কে দাম, স্টক বা অর্ডার জানতে পণ্যের নাম লিখুন।'
+    '🌱 GAZI SEED-এর available products:\n\n' +
+    lines.join('\n') +
+    '\n\nকোনো পণ্য সম্পর্কে দাম, স্টক বা অর্ডার জানতে পণ্যের নাম লিখুন।'
   );
 }
 
