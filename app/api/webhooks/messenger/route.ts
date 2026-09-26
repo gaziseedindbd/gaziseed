@@ -84,12 +84,7 @@ function isSeedKnowledgeRequest(text: string): boolean {
 function isProductAvailabilityQuestion(text: string): boolean {
   const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
 
-  return /(
-    \b(?:ki|kono|kon|what|which|any|anything)\s+(?:products?|product)\s+(?:ache|ase|ache\?|ase\?|nei|naie|available|there)\b|
-    (?:ki|kono|kon|কী|কি|কোনো|কোন)\s*(?:কি\s*)?(?:প্রোডাক্ট|পণ্য|products?|product)\s*(?:আছে|আছেন|নেই|নাই|naie|nei|ache|ase|available|there)?|
-    (?:কোনো|কোন)\s*(?:প্রোডাক্ট|পণ্য|products?|product)\s*(?:নেই|নাই|আছে|আছেন)|
-    \b(?:anything|any)\s+(?:available|in stock|there)\b
-  )/ix.test(normalized);
+  return /(?:\b(?:ki|kono|kon|what|which|any|anything)\s+(?:products?|product)\s+(?:(?:is|are)\s+)?(?:ache|ase|nei|naie|available|there)\b|(?:ki|kono|kon|কী|কি|কোনো|কোন)\s*(?:কি\s*)?(?:প্রোডাক্ট|পণ্য|products?|product)\s*(?:আছে|আছেন|নেই|নাই|naie|nei|ache|ase|available|there)|(?:কোনো|কোন)\s*(?:প্রোডাক্ট|পণ্য|products?|product)\s*(?:নেই|নাই|আছে|আছেন)|\b(?:anything|any)\s+(?:available|in stock|there)\b)/i.test(normalized);
 }
 
 function isProductCatalogRequest(text: string): boolean {
