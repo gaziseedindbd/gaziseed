@@ -4,7 +4,17 @@ import { searchMessengerProducts, type MessengerProduct } from './messenger-prod
 export type MessengerOrderCountry = 'IN' | 'BD';
 
 export type PendingMessengerOrder = {
-  step: 'quantity' | 'name' | 'phone' | 'address' | 'confirmation';
+  step:
+    | 'quantity'
+    | 'name'
+    | 'phone'
+    | 'address'
+    | 'india_pincode'
+    | 'india_address'
+    | 'india_city'
+    | 'india_thana'
+    | 'india_state'
+    | 'confirmation';
   product_id: string;
   product_name: string;
   unit_price: number;
@@ -13,6 +23,11 @@ export type PendingMessengerOrder = {
   customer_name?: string;
   customer_phone?: string;
   delivery_address?: string;
+  india_pincode?: string;
+  india_address?: string;
+  india_city?: string;
+  india_thana?: string;
+  india_state?: string;
 };
 
 function getConfig() {
@@ -100,7 +115,18 @@ export function parsePendingMessengerOrder(value: unknown): PendingMessengerOrde
   if (!value || typeof value !== 'object') return null;
 
   const input = value as Record<string, unknown>;
-  const steps = new Set(['quantity', 'name', 'phone', 'address', 'confirmation']);
+  const steps = new Set([
+    'quantity',
+    'name',
+    'phone',
+    'address',
+    'india_pincode',
+    'india_address',
+    'india_city',
+    'india_thana',
+    'india_state',
+    'confirmation',
+  ]);
   const step = typeof input.step === 'string' && steps.has(input.step)
     ? (input.step as PendingMessengerOrder['step'])
     : null;
@@ -130,6 +156,16 @@ export function parsePendingMessengerOrder(value: unknown): PendingMessengerOrde
       typeof input.delivery_address === 'string'
         ? input.delivery_address
         : undefined,
+    india_pincode:
+      typeof input.india_pincode === 'string' ? input.india_pincode : undefined,
+    india_address:
+      typeof input.india_address === 'string' ? input.india_address : undefined,
+    india_city:
+      typeof input.india_city === 'string' ? input.india_city : undefined,
+    india_thana:
+      typeof input.india_thana === 'string' ? input.india_thana : undefined,
+    india_state:
+      typeof input.india_state === 'string' ? input.india_state : undefined,
   };
 }
 
@@ -298,12 +334,145 @@ export async function handleMessengerOrderFlow(args: {
       const next = {
         ...pending,
         customer_phone: phone,
-        step: 'address' as const,
+        step: args.country === 'IN' ? ('india_pincode' as const) : ('address' as const),
       };
 
       return {
         handled: true,
-        reply: 'আপনার সম্পূর্ণ delivery address লিখুন।',
+        reply:
+          args.country === 'IN'
+            ? 'আপনার ৬ সংখ্যার PIN Code লিখুন।'
+            : 'আপনার সম্পূর্ণ delivery address লিখুন।',
+        pending: next,
+      };
+    }
+
+    if (pending.step === 'india_pincode') {
+      const pincode = normalizeMessengerDigits(args.text).replace(/\D/g, '');
+      if (!/^\d{6}$/.test(pincode)) {
+        return {
+          handled: true,
+          reply: 'দয়া করে সঠিক ৬ সংখ্যার PIN Code লিখুন।',
+          pending,
+        };
+      }
+
+      return {
+        handled: true,
+        reply: 'আপনার বিস্তারিত delivery address ও কাছাকাছি landmark একসাথে লিখুন।',
+        pending: {
+          ...pending,
+          india_pincode: pincode,
+          step: 'india_address' as const,
+        },
+      };
+    }
+
+    if (pending.step === 'india_address') {
+      const address = args.text.trim().slice(0, 500);
+      if (address.length < 8) {
+        return {
+          handled: true,
+          reply: 'দয়া করে বিস্তারিত address ও landmark লিখুন।',
+          pending,
+        };
+      }
+
+      return {
+        handled: true,
+        reply: 'আপনার City-এর নাম লিখুন।',
+        pending: {
+          ...pending,
+          india_address: address,
+          step: 'india_city' as const,
+        },
+      };
+    }
+
+    if (pending.step === 'india_city') {
+      const city = args.text.trim().slice(0, 120);
+      if (city.length < 2) {
+        return {
+          handled: true,
+          reply: 'দয়া করে সঠিক City-এর নাম লিখুন।',
+          pending,
+        };
+      }
+
+      return {
+        handled: true,
+        reply: 'আপনার Thana / Police Station-এর নাম লিখুন।',
+        pending: {
+          ...pending,
+          india_city: city,
+          step: 'india_thana' as const,
+        },
+      };
+    }
+
+    if (pending.step === 'india_thana') {
+      const thana = args.text.trim().slice(0, 120);
+      if (thana.length < 2) {
+        return {
+          handled: true,
+          reply: 'দয়া করে সঠিক Thana / Police Station-এর নাম লিখুন।',
+          pending,
+        };
+      }
+
+      return {
+        handled: true,
+        reply: 'আপনার State-এর নাম লিখুন।',
+        pending: {
+          ...pending,
+          india_thana: thana,
+          step: 'india_state' as const,
+        },
+      };
+    }
+
+    if (pending.step === 'india_state') {
+      const state = args.text.trim().slice(0, 120);
+      if (state.length < 2) {
+        return {
+          handled: true,
+          reply: 'দয়া করে সঠিক State-এর নাম লিখুন।',
+          pending,
+        };
+      }
+
+      const deliveryAddress = [
+        `PIN Code: ${pending.india_pincode || ''}`,
+        `Detailed Address + Landmark: ${pending.india_address || ''}`,
+        `City: ${pending.india_city || ''}`,
+        `Thana: ${pending.india_thana || ''}`,
+        `State: ${state}`,
+      ].join('\n');
+
+      const next = {
+        ...pending,
+        india_state: state,
+        delivery_address: deliveryAddress,
+        step: 'confirmation' as const,
+      };
+
+      const subtotal = (pending.quantity || 0) * pending.unit_price;
+
+      return {
+        handled: true,
+        reply:
+          `অর্ডারটি নিশ্চিত করার আগে বিস্তারিত দেখে নিন:\n\n` +
+          `পণ্য: ${pending.product_name}\n` +
+          `পরিমাণ: ${pending.quantity || 0} প্যাকেট\n` +
+          `পণ্যের মূল্য: ${currency}${subtotal.toFixed(0)}\n` +
+          `নাম: ${next.customer_name}\n` +
+          `মোবাইল: ${next.customer_phone}\n` +
+          `PIN Code: ${next.india_pincode}\n` +
+          `Detailed Address + Landmark: ${next.india_address}\n` +
+          `City: ${next.india_city}\n` +
+          `Thana: ${next.india_thana}\n` +
+          `State: ${next.india_state}\n\n` +
+          'সব ঠিক থাকলে “হ্যাঁ” লিখুন; অর্ডার বাতিল করতে “না” লিখুন।',
         pending: next,
       };
     }
