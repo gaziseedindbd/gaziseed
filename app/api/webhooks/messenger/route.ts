@@ -244,12 +244,18 @@ function hasUnsafeGeneralAgricultureSpecifics(text: string): boolean {
 
 function getSafeGeneralAgricultureReply(): string {
   return [
+    '🌱 বীজ বপন:',
     'লাউয়ের বীজ উর্বর ও পানি নিষ্কাশনযুক্ত মাটিতে হালকা গভীরে বপন করুন।',
+    '',
+    '💧 পানি ও যত্ন:',
     'পর্যাপ্ত জায়গা রাখুন, বপনের পর মাটি আর্দ্র রাখুন কিন্তু জলাবদ্ধ করবেন না।',
+    '',
+    '☀️ আলো ও মাচা:',
     'ভালো রোদ এবং গাছ ওঠার জন্য উপযুক্ত মাচা বা সহায়তার ব্যবস্থা রাখুন।',
     '',
+    '📌 গুরুত্বপূর্ণ:',
     'সঠিক বীজের গভীরতা, দূরত্ব, সার ও সেচের পরিমাণ জাত, মাটি ও স্থানীয় আবহাওয়ার ওপর নির্ভর করতে পারে। তাই বীজের প্যাকেটের নির্দেশনা বা স্থানীয় কৃষি বিশেষজ্ঞের পরামর্শ অনুসরণ করুন।',
-  ].join('\n');
+  ].join('\n\n');
 }
 
 function getCountryQuestion() {
@@ -397,8 +403,7 @@ async function sendMessengerText(
               }
             : {}),
         },
-      }),
-    },
+      }),    },
   );
 
   if (!response.ok) {
@@ -798,7 +803,6 @@ async function processMessengerEvent(event: MessengerEvent) {
       .maybeSingle();
 
     if (selectedProductError) throw selectedProductError;
-
     if (!selectedProduct) {
       const unavailableMessage =
         'দুঃখিত, এই productটি এখন আর available নেই। আবার product list দেখতে চাইলে বলুন।';
@@ -1197,8 +1201,7 @@ export async function POST(request: NextRequest) {
       error instanceof Error ? error.message : 'Unknown error',
     );
 
-    return NextResponse.json(
-      { success: false, message: 'Webhook processing failed' },
+    return NextResponse.json(      { success: false, message: 'Webhook processing failed' },
       { status: 500 },
     );
   }
