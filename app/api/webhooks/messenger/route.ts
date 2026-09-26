@@ -17,6 +17,7 @@ import {
   serializeMessengerDeliveryPolicy,
 } from '@/lib/ai/messenger-delivery-tool';
 import { handleMessengerOrderFlow } from '@/lib/ai/messenger-order-tool';
+import { getMessengerWebsiteKnowledgeAnswer } from '@/lib/ai/messenger-knowledge-tool';
 
 export const dynamic = 'force-dynamic';
 
@@ -955,6 +956,45 @@ async function processMessengerEvent(event: MessengerEvent) {
 
     await sendMessengerText(senderId, orderErrorMessage);
     return;
+  }
+
+  // Prefer verified website/catalog knowledge before generic agriculture AI.
+  // Product data and product FAQs are answered deterministically when matched.
+  try {
+    const knowledgeResult = await getMessengerWebsiteKnowledgeAnswer({
+      supabase: sb,
+      country: activeCountry,
+      text: normalizedActionText,
+      metadata: conversation.metadata,
+    });
+
+    if (knowledgeResult.handled && knowledgeResult.reply) {
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: knowledgeResult.reply,
+        actionStatus: 'website_knowledge',
+        countryCode: activeCountry,
+        sourceContext: {
+          deterministic_website_knowledge: true,
+          ai_call_skipped: true,
+          product_id: knowledgeResult.productId || null,
+        },
+      });
+
+      await markConversation(sb, conversation.id, 'active', {
+        last_knowledge_source: 'products/product_faqs',
+        last_knowledge_product_id: knowledgeResult.productId || null,
+      }, activeCountry);
+
+      await sendMessengerText(senderId, knowledgeResult.reply);
+      return;
+    }
+  } catch (error) {
+    console.error(
+      'Messenger website knowledge lookup failed:',
+      error instanceof Error ? error.message : 'Unknown knowledge lookup error',
+    );
+    // Fall through to the existing deterministic/AI router.
   }
 
   if (isDeterministicAgricultureFaqRequest(normalizedActionText)) {
