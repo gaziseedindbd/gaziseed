@@ -225,6 +225,33 @@ function isKnowledgeFallbackResponse(text: string): boolean {
   return /(দুঃখিত.*(তথ্য|সুনির্দিষ্ট|জানা|নেই)|তথ্য.*(নেই|অন্তর্ভুক্ত নেই)|তথ্যতালিকায়.*(নেই|অন্তর্ভুক্ত)|সুনির্দিষ্ট তথ্য নেই|জানাতে পারছি না|বিস্তারিত জানতে.*(মানব|সহায়তা)|মানব (সহায়তা|প্রতিনিধি)|human support|human representative|cannot (provide|verify)|don't have (the )?information|no (specific|exact) information)/i.test(normalized);
 }
 
+
+function hasUnsafeGeneralAgricultureSpecifics(text: string): boolean {
+  const normalized = text.toLocaleLowerCase();
+
+  const numericMeasurement =
+    /(?:\d|[০-৯])[\d০-৯]*(?:[.,][\d০-৯]+)?\s*(?:[-–]\s*[\d০-৯]+(?:[.,][\d০-৯]+)?)?\s*(?:ঘণ্টা|ঘন্টা|দিন|সপ্তাহ|সেমি|cm|মিটার|meter|m\\b|গ্রাম|g\\b|কেজি|kg|মিলি|ml|লিটার|l\\b|%|ph|n\\s*[-–]?\\s*p\\s*[-–]?\\s*k)/i.test(
+      normalized,
+    );
+
+  const agricultureNumberContext =
+    /(?:বীজ|গর্ত|গাছ|চারা|সার|পানি|সেচ|দূরত্ব|গভীর|ভিজ|রোপণ|বপন|মাটি)[^\\n]{0,80}[\d০-৯]|[\d০-৯][^\\n]{0,80}(?:বীজ|গর্ত|গাছ|চারা|সার|পানি|সেচ|দূরত্ব|গভীর|ভিজ|রোপণ|বপন|মাটি)/i.test(
+      normalized,
+    );
+
+  return numericMeasurement || agricultureNumberContext;
+}
+
+function getSafeGeneralAgricultureReply(): string {
+  return [
+    'লাউয়ের বীজ উর্বর ও পানি নিষ্কাশনযুক্ত মাটিতে হালকা গভীরে বপন করুন।',
+    'পর্যাপ্ত জায়গা রাখুন, বপনের পর মাটি আর্দ্র রাখুন কিন্তু জলাবদ্ধ করবেন না।',
+    'ভালো রোদ এবং গাছ ওঠার জন্য উপযুক্ত মাচা বা সহায়তার ব্যবস্থা রাখুন।',
+    '',
+    'সঠিক বীজের গভীরতা, দূরত্ব, সার ও সেচের পরিমাণ জাত, মাটি ও স্থানীয় আবহাওয়ার ওপর নির্ভর করতে পারে। তাই বীজের প্যাকেটের নির্দেশনা বা স্থানীয় কৃষি বিশেষজ্ঞের পরামর্শ অনুসরণ করুন।',
+  ].join('\\n');
+}
+
 function getCountryQuestion() {
   return (
     'আপনাকে সঠিক পণ্য, দাম, স্টক ও ডেলিভারি তথ্য দিতে আগে জানাবেন—' +
@@ -1054,8 +1081,13 @@ async function processMessengerEvent(event: MessengerEvent) {
     const isGeneralAgricultureMessage =
       isGeneralSeedAdviceRequest(normalizedActionText);
 
-    const finalReply =
-      isKnowledgeFallbackResponse(result.content) && !isGeneralAgricultureMessage
+    const unsafeGeneralAgricultureReply =
+      isGeneralAgricultureMessage &&
+      hasUnsafeGeneralAgricultureSpecifics(result.content);
+
+    const finalReply = unsafeGeneralAgricultureReply
+      ? getSafeGeneralAgricultureReply()
+      : isKnowledgeFallbackResponse(result.content) && !isGeneralAgricultureMessage
         ? getIndiaHumanSupportMessage()
         : result.content;
 
