@@ -234,9 +234,16 @@ function hasUnsafeGeneralAgricultureSpecifics(text: string): boolean {
       normalized,
     );
 
+  // Ignore ordinary numbered-list markers such as “১.” or “2)”.
+  // They are structure, not agricultural measurements or prescriptions.
+  const contentWithoutListMarkers = normalized.replace(
+    /(^|\\n)\\s*[\d০-৯]+[.)]\\s*/g,
+    '$1',
+  );
+
   const agricultureNumberContext =
     /(?:বীজ|গর্ত|গাছ|চারা|সার|পানি|সেচ|দূরত্ব|গভীর|ভিজ|রোপণ|বপন|মাটি)[^\\n]{0,80}[\d০-৯]|[\d০-৯][^\\n]{0,80}(?:বীজ|গর্ত|গাছ|চারা|সার|পানি|সেচ|দূরত্ব|গভীর|ভিজ|রোপণ|বপন|মাটি)/i.test(
-      normalized,
+      contentWithoutListMarkers,
     );
 
   return numericMeasurement || agricultureNumberContext;
