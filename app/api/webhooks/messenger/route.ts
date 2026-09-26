@@ -347,8 +347,7 @@ type MessengerEvent = {
   timestamp?: number;
   message?: {
     mid?: string;
-    text?: string;
-    quick_reply?: {
+    text?: string;    quick_reply?: {
       payload?: string;
     };
   };
@@ -697,7 +696,6 @@ async function processMessengerEvent(event: MessengerEvent) {
       resolvedCountry || undefined,
     );
   }
-
   // Human-support requests are handled deterministically, before AI or order logic.
   // India customers receive the configured WhatsApp/direct-call number.
   if (resolvedCountry === 'IN' && isHumanSupportRequest(normalizedActionText)) {
@@ -1047,8 +1045,7 @@ async function processMessengerEvent(event: MessengerEvent) {
     (webSeedContext ? '\nWEB SEED RESEARCH (REFERENCE ONLY):\n' + webSeedContext : '');
 
   const chatMessages = [
-    { role: 'system' as const, content: systemPrompt },
-    ...recentMessages.map((message) => ({
+    { role: 'system' as const, content: systemPrompt },    ...recentMessages.map((message) => ({
       role: message.role as 'user' | 'assistant' | 'system',
       content: message.content || '',
     })),
@@ -1198,3 +1195,11 @@ export async function POST(request: NextRequest) {
     console.error(
       'Messenger webhook processing failed:',
       error instanceof Error ? error.message : 'Unknown error',
+    );
+
+    return NextResponse.json(
+      { success: false, message: 'Webhook processing failed' },
+      { status: 500 },
+    );
+  }
+}
