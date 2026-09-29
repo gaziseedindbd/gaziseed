@@ -108,6 +108,8 @@ export function isMessengerOrderInterruptRequest(text: string): boolean {
   if (isMessengerDeliveryIntent(normalized)) return true;
   if (isMessengerHumanSupportIntent(normalized)) return true;
   if (isMessengerSeedKnowledgeQuestion(normalized)) return true;
+  if (isMessengerCustomerProfileRequest(normalized)) return true;
+  if (isMessengerOrderHistoryRequest(normalized)) return true;
   if (isMessengerOrderTrackingRequest(normalized)) return true;
 
   return /\b(?:help|information|info|details|about)\b/i.test(normalized);
@@ -133,6 +135,25 @@ export function isMessengerAddAnotherProductRequest(text: string): boolean {
 export function isMessengerCheckoutRequest(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
   return /(\b(?:checkout|check\s*out|finish|complete\s+order|proceed)\b|অর্ডার\s+(?:শেষ|complete|করুন)|চেকআউট|এখন\s+অর্ডার|আর\s+কিছু\s+নেই|আর\s+কিছু\s+না)/i.test(
+    normalized,
+  );
+}
+
+
+export function isMessengerCustomerProfileRequest(text: string): boolean {
+  const normalized = normalizeMessengerIntentText(text);
+  return /(?:\b(?:my|show\s+my|view\s+my)\s+(?:profile|details|information|info|account)\b|my\s+(?:name|phone|mobile|address)|(?:আমার|আমার\s+গাজী\s+সিড)\s*(?:প্রোফাইল|তথ্য|ইনফো|ডিটেইলস|অ্যাকাউন্ট|নাম|ফোন|মোবাইল|ঠিকানা)|saved\s+(?:details|address))/i.test(
+    normalized,
+  );
+}
+
+export function isMessengerOrderHistoryRequest(text: string): boolean {
+  const normalized = normalizeMessengerIntentText(text);
+  if (/(?:order\s+status|track(?:ing)?|delivery\s+status|অর্ডার\s+স্ট্যাটাস|অর্ডার\s+ট্র্যাক|অর্ডারের\s+অবস্থা)/i.test(normalized)) {
+    return false;
+  }
+
+  return /(?:\border\s+(?:history|histories|list|records|archive)\b|previous\s+orders?|past\s+orders?|order\s+history|my\s+purchases?|orders?\s+i\s+(?:made|placed)|আগের\s+অর্ডার(?:গুলো|গুলি|গুলি)?|পূর্বের\s+অর্ডার|পুরনো\s+অর্ডার|অর্ডার\s+হিস্টোরি|অর্ডার\s+লিস্ট|অর্ডার\s+গুলোর\s+তথ্য|আমার\s+আগের\s+অর্ডার)/i.test(
     normalized,
   );
 }

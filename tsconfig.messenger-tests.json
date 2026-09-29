@@ -18,6 +18,7 @@
     "lib/ai/messenger-intents.ts",
     "lib/ai/messenger-monitoring.ts",
     "lib/ai/messenger-order-tool.ts",
-    "lib/ai/messenger-product-tool.ts"
+    "lib/ai/messenger-product-tool.ts",
+    "lib/ai/messenger-customer-tool.ts"
   ]
 }
