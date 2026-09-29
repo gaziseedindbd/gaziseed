@@ -46,6 +46,10 @@ import {
   isProductListRequest,
 } from '@/lib/ai/messenger-intents';
 import { getMessengerWebsiteKnowledgeAnswer } from '@/lib/ai/messenger-knowledge-tool';
+import {
+  getBangladeshHumanSupportAcknowledgement,
+  getBangladeshHumanSupportWaitingReply,
+} from '@/lib/ai/messenger-human-support';
 
 export const dynamic = 'force-dynamic';
 
@@ -638,7 +642,7 @@ async function createHumanHandoff(
   await markConversation(sb, conversationId, 'handoff', {
     handoff_reason: reason,
     handoff_at: new Date().toISOString(),
-  });
+  }, countryCode);
 
   const { data: existing } = await sb
     .from('ai_handoffs')
@@ -650,16 +654,21 @@ async function createHumanHandoff(
 
   if (existing) return existing;
 
+  const notes =
+    reason === 'customer_requested_human_support'
+      ? 'Customer requested human support. AI replies are blocked until an admin closes the handoff.'
+      : 'Automatic AI failover exhausted. Automatic replies may resume on a new customer message.';
+
   const { data, error } = await sb
     .from('ai_handoffs')
     .insert({
       conversation_id: conversationId,
       reason,
       status: 'open',
-      notes: 'Automatic AI failover exhausted. Automatic replies stopped.',
+      notes,
       country_code: countryCode,
     })
-    .select('id')
+    .select('id,status,assigned_to,created_at')
     .single();
 
   if (error) throw error;
@@ -762,9 +771,39 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   if (savedUserMessage.duplicate) return;
 
-  // A previous provider failure or human-support request may have left this
-  // conversation in handoff. A new customer message must be allowed to resume
-  // the automated router unless the customer explicitly asks for human support.
+  const conversationMetadata = conversation.metadata || {};
+  const humanTakeoverActive = conversationMetadata.human_takeover === true;
+
+  // A Bangladesh human-support takeover is a hard AI stop. Customer messages
+  // are still stored for the agent, but the automated router must not resume.
+  if (humanTakeoverActive && conversation.status === 'handoff') {
+    await markConversation(
+      sb,
+      conversation.id,
+      'handoff',
+      {
+        human_support_last_customer_message_at: new Date().toISOString(),
+      },
+      resolvedCountry || undefined,
+    );
+
+    const waitingReply = getBangladeshHumanSupportWaitingReply();
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: waitingReply,
+      actionStatus: 'human_support_queue_waiting',
+      countryCode: resolvedCountry || 'BD',
+      sourceContext: {
+        human_takeover_block: true,
+        ai_call_skipped: true,
+      },
+    });
+    await sendMessengerText(senderId, waitingReply);
+    return;
+  }
+
+  // Existing provider-failure handoffs can still resume automatically, preserving
+  // the Phase 1 fallback behavior. Only explicit human takeover is sticky.
   if (conversation.status === 'handoff') {
     await markConversation(
       sb,
@@ -777,14 +816,57 @@ async function processMessengerEvent(event: MessengerEvent) {
       resolvedCountry || undefined,
     );
   }
+
   // Human-support requests are handled deterministically, before AI or order logic.
-  // India customers receive the configured WhatsApp/direct-call number.
+  // Bangladesh requests create a real support-queue handoff and hard-stop the AI.
+  if (resolvedCountry === 'BD' && isHumanSupportRequest(normalizedActionText)) {
+    const handoff = await createHumanHandoff(
+      sb,
+      conversation.id,
+      'customer_requested_human_support',
+      'BD',
+    );
+
+    await markConversation(
+      sb,
+      conversation.id,
+      'handoff',
+      {
+        human_takeover: true,
+        human_support_state: 'pending',
+        human_support_handoff_id: handoff.id,
+        human_support_requested_at: new Date().toISOString(),
+        human_support_last_customer_message_at: new Date().toISOString(),
+        human_support_request_text: normalizedActionText.slice(0, 500),
+        handoff_reason: 'customer_requested_human_support',
+        handoff_at: new Date().toISOString(),
+      },
+      'BD',
+    );
+
+    const supportMessage = getBangladeshHumanSupportAcknowledgement();
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: supportMessage,
+      actionStatus: 'human_support_queue_created',
+      countryCode: 'BD',
+      sourceContext: {
+        human_takeover: true,
+        ai_call_skipped: true,
+        handoff_id: handoff.id,
+        queue_state: 'pending',
+      },
+    });
+    await sendMessengerText(senderId, supportMessage);
+    return;
+  }
+
+  // India customers retain the existing external WhatsApp/direct-call support flow.
   if (resolvedCountry === 'IN' && isHumanSupportRequest(normalizedActionText)) {
     const supportMessage = getIndiaHumanSupportMessage();
     await markConversation(sb, conversation.id, 'handoff', {
       handoff_reason: 'customer_requested_human_support',
       handoff_at: new Date().toISOString(),
-      support_contact: '+91 8876981780',
     }, 'IN');
     await saveMessage(sb, conversation.id, {
       role: 'assistant',
