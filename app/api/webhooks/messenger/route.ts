@@ -38,6 +38,7 @@ import {
   isMessengerCheckoutRequest,
   isMessengerCustomerProfileRequest,
   isMessengerOrderHistoryRequest,
+  isMessengerOrderLinkRequest,
   isMessengerOrderInterruptRequest,
   isMessengerOrderResumeRequest,
   isMessengerOrderTrackingRequest,
@@ -1489,7 +1490,8 @@ async function processMessengerEvent(event: MessengerEvent) {
   // or require Order Number + phone once to securely link the account.
   if (
     isMessengerCustomerProfileRequest(normalizedActionText) ||
-    isMessengerOrderHistoryRequest(normalizedActionText)
+    isMessengerOrderHistoryRequest(normalizedActionText) ||
+    isMessengerOrderLinkRequest(normalizedActionText)
   ) {
     try {
       if (isMessengerOrderHistoryRequest(normalizedActionText)) {

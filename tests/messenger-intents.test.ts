@@ -20,6 +20,7 @@ import {
   isMessengerOrderInterruptRequest,
   isMessengerOrderResumeRequest,
   isMessengerOrderTrackingRequest,
+  isMessengerOrderLinkRequest,
   isMessengerDeliveryIntent,
   isMessengerHumanSupportIntent,
   isMessengerSeedKnowledgeQuestion,
@@ -114,6 +115,13 @@ test('routes previous-order history away from tracking unless an order number is
   assert.equal(isMessengerOrderHistoryRequest('আমার আগের অর্ডারগুলো দেখান'), true);
   assert.equal(isMessengerOrderTrackingRequest('আমার আগের অর্ডারগুলো দেখান'), false);
   assert.equal(isMessengerOrderTrackingRequest('track GS-BD-ABCDEFGH'), true);
+});
+
+test('routes Order Number + mobile-number linking into customer history instead of tracking', () => {
+  const linkText = 'GS-BD-14B96466 01994098536';
+  assert.equal(isMessengerOrderLinkRequest(linkText), true);
+  assert.equal(isMessengerOrderTrackingRequest(linkText), false);
+  assert.equal(isMessengerOrderTrackingRequest('track GS-BD-14B96466 01994098536'), true);
 });
 
 test('classifies delivery, support, and seed knowledge questions independently', () => {
