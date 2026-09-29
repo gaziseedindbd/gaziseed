@@ -154,19 +154,47 @@ function formatMessengerCatalogReply(
   if (!isProductListRequest(text) && products.length === 1) {
     const product = products[0];
     const name = formatMessengerProductName(product);
-    const price = typeof product.effective_price === 'number'
-      ? product.effective_price
-      : 0;
-    const stock = typeof product.stock === 'number' ? product.stock : 0;
+    const price =
+      typeof product.effective_price === 'number'
+        ? product.effective_price
+        : 0;
+    const stock =
+      typeof product.stock === 'number'
+        ? product.stock
+        : 0;
+    const matchType =
+      typeof product.search_match_type === 'string'
+        ? product.search_match_type
+        : 'strong';
+
+    const prefix =
+      matchType === 'similar'
+        ? '🔎 আপনি সম্ভবত এই পণ্যটি খুঁজছেন:'
+        : '🌱';
 
     return (
-      `🌱 ${name}\n\n` +
+      `${prefix} ${name}\n\n` +
       `💰 দাম: ${currency}${price} প্রতি প্যাকেট\n` +
       `📦 স্টক: ${stock} প্যাকেট`
     );
   }
 
-  const lines = products.slice(0, 12).map((product) => {
+  const primaryProducts = products.filter((product) => {
+    const matchType =
+      typeof product.search_match_type === 'string'
+        ? product.search_match_type
+        : 'strong';
+    return matchType !== 'similar';
+  });
+  const similarProducts = products.filter((product) => {
+    const matchType =
+      typeof product.search_match_type === 'string'
+        ? product.search_match_type
+        : 'strong';
+    return matchType === 'similar';
+  });
+
+  const formatLine = (product: Record<string, unknown>) => {
     const name = formatMessengerProductName(product);
     const price =
       typeof product.effective_price === 'number'
@@ -178,11 +206,23 @@ function formatMessengerCatalogReply(
         : 'স্টক তথ্য নেই';
 
     return `• ${name} — ${price} — স্টক: ${stock}`;
-  });
+  };
+
+  const sections: string[] = [];
+  if (primaryProducts.length) {
+    sections.push(primaryProducts.slice(0, 12).map(formatLine).join('\n'));
+  }
+
+  if (similarProducts.length) {
+    sections.push(
+      '🔎 সম্ভাব্য similar products:\n' +
+      similarProducts.slice(0, 6).map(formatLine).join('\n'),
+    );
+  }
 
   return (
-    '🌱 GAZI SEED-এর available products:\n\n' +
-    lines.join('\n') +
+    '🌱 GAZI SEED-এর matching products:\n\n' +
+    sections.join('\n\n') +
     '\n\nকোনো পণ্য সম্পর্কে দাম, স্টক বা অর্ডার জানতে পণ্যের নাম লিখুন।'
   );
 }
