@@ -499,15 +499,21 @@ export async function handleMessengerOrderFlow(args: {
         };
       }
 
-      const next: PendingMessengerOrder = {
-        ...pending,
-        quantity,
-        step: 'name',
-      };
+      const next = applyMessengerCustomerProfileToPending(
+        {
+          ...pending,
+          quantity,
+          step: 'name',
+        },
+        args.customerProfile,
+      );
 
       return {
         handled: true,
-        reply: 'অর্ডারের জন্য আপনার নামটি লিখুন।',
+        reply:
+          next.step === 'saved_details_confirmation'
+            ? getMessengerSavedDetailsReply(next, cartItems, currency)
+            : 'অর্ডারের জন্য আপনার নামটি লিখুন।',
         pending: next,
       };
     }
