@@ -174,8 +174,9 @@ export async function upsertMessengerCustomerProfile(args: {
 
   if (existingError) throw existingError;
 
-  const previousOrderNumbers = Array.isArray(existing?.order_numbers)
-    ? existing.order_numbers.filter(
+  const existingOrderNumbers = existing?.order_numbers;
+  const previousOrderNumbers = Array.isArray(existingOrderNumbers)
+    ? existingOrderNumbers.filter(
         (value: unknown): value is string => typeof value === 'string',
       )
     : [];
