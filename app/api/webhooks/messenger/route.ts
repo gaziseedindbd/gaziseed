@@ -867,6 +867,7 @@ async function processMessengerEvent(event: MessengerEvent) {
     await markConversation(sb, conversation.id, 'handoff', {
       handoff_reason: 'customer_requested_human_support',
       handoff_at: new Date().toISOString(),
+      support_contact: '+91 8876981780',
     }, 'IN');
     await saveMessage(sb, conversation.id, {
       role: 'assistant',
