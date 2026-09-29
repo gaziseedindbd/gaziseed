@@ -108,6 +108,8 @@ export function isMessengerOrderInterruptRequest(text: string): boolean {
   if (isMessengerDeliveryIntent(normalized)) return true;
   if (isMessengerHumanSupportIntent(normalized)) return true;
   if (isMessengerSeedKnowledgeQuestion(normalized)) return true;
+  if (isMessengerCustomerProfileRequest(normalized)) return true;
+  if (isMessengerOrderHistoryRequest(normalized)) return true;
   if (isMessengerOrderTrackingRequest(normalized)) return true;
 
   return /\b(?:help|information|info|details|about)\b/i.test(normalized);
