@@ -303,7 +303,7 @@ function hasUnsafeGeneralAgricultureSpecifics(text: string): boolean {
   const normalized = text.toLocaleLowerCase();
 
   const numericMeasurement =
-    /(?:\d|[০-৯])[\d০-৯]*(?:[.,][\d০-৯]+)?\s*(?:[-–]\s*[\d০-৯]+(?:[.,][\d০-৯]+)?)?\s*(?:ঘণ্টা|ঘন্টা|দিন|সপ্তাহ|সেমি|cm|মিটার|meter|m\b|গ্রাম|g\b|কেজি|kg|মিলি|ml|লিটার|l\b|%|ph|n\s*[-–]?\\s*p\\s*[-–]?\\s*k)/i.test(
+    /(?:\d|[০-৯])[\d০-৯]*(?:[.,][\d০-৯]+)?\s*(?:[-–]\s*[\d০-৯]+(?:[.,][\d০-৯]+)?)?\s*(?:ঘণ্টা|ঘন্টা|দিন|সপ্তাহ|সেমি|cm|মিটার|meter|m\b|গ্রাম|g\b|কেজি|kg|মিলি|ml|লিটার|l\b|%|ph|n\s*[-–]?\s*p\s*[-–]?\s*k)/i.test(
       normalized,
     );
 
