@@ -962,18 +962,28 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   // A new product/catalog request starts a new intent. Never let an older
   // quantity/name/address order step hijack a fresh product question.
+  const freshProductBrowseIntent = isOtherProductRequest(normalizedActionText);
   const startsNewProductIntent = isProductCatalogRequest(normalizedActionText);
   if (startsNewProductIntent && conversation.metadata?.pending_messenger_order) {
+    const resetMetadata = freshProductBrowseIntent
+      ? {
+          pending_messenger_order: null,
+          last_messenger_product: null,
+        }
+      : {
+          pending_messenger_order: null,
+        };
+
     await markConversation(
       sb,
       conversation.id,
       'active',
-      { pending_messenger_order: null },
+      resetMetadata,
       activeCountry,
     );
     conversation.metadata = {
       ...(conversation.metadata || {}),
-      pending_messenger_order: null,
+      ...resetMetadata,
     };
   }
 
@@ -1045,9 +1055,11 @@ async function processMessengerEvent(event: MessengerEvent) {
   }
 
   // Prefer verified website/catalog knowledge before generic agriculture AI.
-  // Product data and product FAQs are answered deterministically when matched.
-  try {
-    const knowledgeResult = await getMessengerWebsiteKnowledgeAnswer({
+  // A fresh "other product" browse request must go directly to the catalog so
+  // stale last_messenger_product context cannot answer for the previous item.
+  if (!freshProductBrowseIntent) {
+    try {
+      const knowledgeResult = await getMessengerWebsiteKnowledgeAnswer({
       supabase: sb,
       country: activeCountry,
       text: normalizedActionText,
@@ -1080,7 +1092,8 @@ async function processMessengerEvent(event: MessengerEvent) {
       'Messenger website knowledge lookup failed:',
       error instanceof Error ? error.message : 'Unknown knowledge lookup error',
     );
-    // Fall through to the existing deterministic/AI router.
+      // Fall through to the existing deterministic/AI router.
+    }
   }
 
   if (isDeterministicAgricultureFaqRequest(normalizedActionText)) {
