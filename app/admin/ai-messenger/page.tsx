@@ -28,7 +28,7 @@ type DashboardData = {
   messenger: { enabled: boolean; meta_configured: boolean; webhook_signature_required: boolean };
   settings: { is_enabled: boolean; provider: string | null; model: string | null; base_url: string | null; temperature: number | null; max_tokens: number | null; feature_flags: Record<string, boolean>; updated_at: string | null } | null;
   providers: Provider[];
-  stats: { conversations: number; open_handoffs: number; recent_messages: number; product_orders: number; combo_orders: number; offer_orders: number };
+  stats: { conversations: number; open_handoffs: number; bd_human_support_queue: number; recent_messages: number; product_orders: number; combo_orders: number; offer_orders: number };
   conversations: Array<{ id: string; channel: string; external_user_id: string | null; status: string; last_message_at: string | null; updated_at: string | null }>;
   handoffs: Array<{ id: string; conversation_id: string; reason: string; status: string; created_at: string; resolved_at: string | null; country_code?: string | null }>;
   support_queue: Array<{
