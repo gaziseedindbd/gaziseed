@@ -4,6 +4,7 @@ import test from 'node:test';
 import { buildMessengerMonitoringSummary } from '../lib/ai/messenger-monitoring';
 import {
   addPendingMessengerOrderToCart,
+  applyMessengerCustomerProfileToPending,
   formatMessengerCartSummary,
   parseMessengerCartItems,
 } from '../lib/ai/messenger-order-tool';
@@ -18,6 +19,7 @@ import {
   isMessengerCustomerProfileRequest,
   isMessengerOrderHistoryRequest,
   isMessengerOrderInterruptRequest,
+  isMessengerChangeDetailsRequest,
   isMessengerOrderResumeRequest,
   isMessengerOrderTrackingRequest,
   isMessengerOrderLinkRequest,
@@ -107,6 +109,41 @@ test('recognizes interrupting intents', () => {
   assert.equal(isMessengerOrderInterruptRequest('delivery charge koto'), true);
   assert.equal(isMessengerOrderInterruptRequest('এই বীজ কীভাবে লাগাব'), true);
   assert.equal(isMessengerOrderInterruptRequest('human support chai'), true);
+});
+
+test('prefills repeat-customer checkout from a verified Messenger profile', () => {
+  const pending = applyMessengerCustomerProfileToPending(
+    {
+      step: 'name',
+      product_id: 'p1',
+      product_name: 'Tomato',
+      unit_price: 99,
+      stock: 10,
+      quantity: 2,
+    },
+    {
+      name: 'Test Customer',
+      phone: '01000000000',
+      address: 'Saved address',
+    },
+  );
+
+  assert.equal(pending.step, 'saved_details_confirmation');
+  assert.equal(pending.customer_name, 'Test Customer');
+  assert.equal(pending.customer_phone, '01000000000');
+  assert.equal(pending.delivery_address, 'Saved address');
+
+  const incomplete = applyMessengerCustomerProfileToPending(
+    pending,
+    { name: 'Test Customer', phone: null, address: 'Saved address' },
+  );
+  assert.equal(incomplete.step, 'saved_details_confirmation');
+});
+
+test('recognizes repeat-checkout detail changes', () => {
+  assert.equal(isMessengerChangeDetailsRequest('তথ্য পরিবর্তন'), true);
+  assert.equal(isMessengerChangeDetailsRequest('change my address'), true);
+  assert.equal(isMessengerChangeDetailsRequest('hello'), false);
 });
 
 test('recognizes order resume phrases and never treats resume as interrupt', () => {
