@@ -21,6 +21,7 @@ import {
   formatMessengerCartSummary,
   getMessengerOrderResumeReply,
   handleMessengerOrderFlow,
+  isMessengerOrderIntent,
   parseMessengerCartItems,
   parsePendingMessengerOrder,
 } from '@/lib/ai/messenger-order-tool';
@@ -39,7 +40,6 @@ import {
   isMessengerCheckoutRequest,
   isMessengerCustomerProfileRequest,
   isMessengerOrderHistoryRequest,
-  isMessengerOrderIntent,
   isMessengerOrderLinkRequest,
   isMessengerOrderInterruptRequest,
   isMessengerOrderResumeRequest,
