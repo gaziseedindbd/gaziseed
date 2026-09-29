@@ -7,10 +7,16 @@ import {
   formatMessengerCartSummary,
   parseMessengerCartItems,
 } from '../lib/ai/messenger-order-tool';
+import {
+  formatMessengerCustomerProfile,
+  formatMessengerOrderHistory,
+} from '../lib/ai/messenger-customer-tool';
 
 import {
   isMessengerAddAnotherProductRequest,
   isMessengerCheckoutRequest,
+  isMessengerCustomerProfileRequest,
+  isMessengerOrderHistoryRequest,
   isMessengerOrderInterruptRequest,
   isMessengerOrderResumeRequest,
   isMessengerDeliveryIntent,
@@ -166,4 +172,59 @@ test('builds and validates Messenger cart items', () => {
   });
   assert.equal(merged[0].quantity, 3);
   assert.match(formatMessengerCartSummary(merged, '৳'), /Tomato × 3/);
+});
+
+
+test('recognizes Messenger customer profile and previous-order history', () => {
+  assert.equal(isMessengerCustomerProfileRequest('show my profile'), true);
+  assert.equal(isMessengerCustomerProfileRequest('আমার ফোন দেখাও'), true);
+  assert.equal(isMessengerOrderHistoryRequest('previous orders'), true);
+  assert.equal(isMessengerOrderHistoryRequest('আমার আগের অর্ডারগুলো দেখাও'), true);
+  assert.equal(isMessengerOrderHistoryRequest('order status'), false);
+  assert.equal(isMessengerOrderHistoryRequest('track my order'), false);
+});
+
+test('formats Messenger customer profile and order history', () => {
+  const profile = formatMessengerCustomerProfile(
+    {
+      id: 'profile-1',
+      name: 'Rahim',
+      phone: '01700000000',
+      address: 'Dhaka',
+      total_orders: 2,
+      total_spent: 500,
+      last_order_number: 'GS-BD-ABCDEFGH',
+      order_numbers: ['GS-BD-ABCDEFGH', 'GS-BD-IJKLMNOP'],
+    },
+    'BD',
+  );
+  assert.match(profile, /Rahim/);
+  assert.match(profile, /মোট Messenger orders: 2/);
+
+  const history = formatMessengerOrderHistory(
+    [
+      {
+        id: 'order-1',
+        order_number: 'GS-BD-ABCDEFGH',
+        customer_name: 'Rahim',
+        status: 'pending',
+        order_status: 'pending',
+        payment_status: 'unpaid',
+        final_amount: 250,
+        created_at: '2026-09-29T10:00:00Z',
+      },
+    ],
+    [
+      {
+        order_id: 'order-1',
+        product_name: 'Tomato',
+        quantity: 2,
+        unit_price: 50,
+        total_price: 100,
+      },
+    ],
+    'BD',
+  );
+  assert.match(history, /GS-BD-ABCDEFGH/);
+  assert.match(history, /Tomato × 2/);
 });
