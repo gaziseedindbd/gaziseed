@@ -29,6 +29,101 @@ export type PendingMessengerOrder = {
   india_thana?: string;
   india_state?: string;
 };
+export type MessengerCartItem = {
+  product_id: string;
+  product_name: string;
+  unit_price: number;
+  stock: number;
+  quantity: number;
+};
+
+export function parseMessengerCartItems(value: unknown): MessengerCartItem[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null;
+      const input = item as Record<string, unknown>;
+      if (
+        typeof input.product_id !== 'string' ||
+        typeof input.product_name !== 'string' ||
+        typeof input.unit_price !== 'number' ||
+        typeof input.stock !== 'number' ||
+        typeof input.quantity !== 'number' ||
+        !Number.isInteger(input.quantity) ||
+        input.quantity < 1 ||
+        input.quantity > 99
+      ) {
+        return null;
+      }
+
+      return {
+        product_id: input.product_id,
+        product_name: input.product_name,
+        unit_price: input.unit_price,
+        stock: input.stock,
+        quantity: input.quantity,
+      };
+    })
+    .filter((item): item is MessengerCartItem => item !== null)
+    .slice(0, 20);
+}
+
+export function addPendingMessengerOrderToCart(
+  cartItems: MessengerCartItem[],
+  pending: PendingMessengerOrder,
+): MessengerCartItem[] {
+  if (!pending.quantity) return cartItems;
+  const existing = cartItems.find((item) => item.product_id === pending.product_id);
+
+  if (existing) {
+    return cartItems.map((item) =>
+      item.product_id === pending.product_id
+        ? {
+            ...item,
+            quantity: Math.min(99, item.quantity + pending.quantity!),
+            stock: pending.stock,
+            unit_price: pending.unit_price,
+            product_name: pending.product_name,
+          }
+        : item,
+    );
+  }
+
+  return [
+    ...cartItems,
+    {
+      product_id: pending.product_id,
+      product_name: pending.product_name,
+      unit_price: pending.unit_price,
+      stock: pending.stock,
+      quantity: pending.quantity,
+    },
+  ].slice(0, 20);
+}
+
+export function formatMessengerCartSummary(
+  items: MessengerCartItem[],
+  currency: string,
+): string {
+  if (!items.length) return '🛒 কার্টে এখনো কোনো পণ্য নেই।';
+
+  const lines = items.map(
+    (item) =>
+      `• ${item.product_name} × ${item.quantity} = ${currency}${(
+        item.unit_price * item.quantity
+      ).toFixed(0)}`,
+  );
+  const subtotal = items.reduce(
+    (sum, item) => sum + item.unit_price * item.quantity,
+    0,
+  );
+
+  return ['🛒 Cart:', ...lines, '', `Subtotal: ${currency}${subtotal.toFixed(0)}`].join(
+    '\n',
+  );
+}
+
 
 function getConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -237,6 +332,46 @@ export async function createMessengerProductOrder(args: {
   };
 }
 
+
+export async function createMessengerCartOrder(args: {
+  country: MessengerOrderCountry;
+  customerName: string;
+  customerPhone: string;
+  deliveryAddress: string;
+  items: MessengerCartItem[];
+}) {
+  const supabase = countryScopedSupabase(args.country);
+
+  const { data, error } = await supabase.rpc('ai_create_product_order', {
+    p_customer_name: args.customerName,
+    p_customer_phone: args.customerPhone,
+    p_delivery_address: args.deliveryAddress,
+    p_items: args.items.map((item) => ({
+      product_id: item.product_id,
+      quantity: item.quantity,
+    })),
+    p_coupon_code: null,
+    p_delivery_zone_id: null,
+    p_special_instructions: 'Order created through Facebook Messenger AI',
+    p_confirmed: true,
+  });
+
+  if (error) throw error;
+  return data as {
+    success?: boolean;
+    order_id?: string;
+    order_number?: string;
+    subtotal?: number;
+    discount?: number;
+    delivery_charge?: number;
+    grand_total?: number;
+    final_amount?: number;
+    country_code?: MessengerOrderCountry;
+    error?: string;
+    requires_confirmation?: boolean;
+  };
+}
+
 export function messengerCurrency(country: MessengerOrderCountry) {
   return country === 'IN' ? '₹' : '৳';
 }
@@ -284,6 +419,7 @@ export async function handleMessengerOrderFlow(args: {
 }) {
   const metadata = args.metadata || {};
   const pending = parsePendingMessengerOrder(metadata.pending_messenger_order);
+  const cartItems = parseMessengerCartItems(metadata.messenger_cart_items);
   const currency = messengerCurrency(args.country);
 
   if (pending) {
@@ -482,15 +618,16 @@ export async function handleMessengerOrderFlow(args: {
         step: 'confirmation' as const,
       };
 
-      const subtotal = (pending.quantity || 0) * pending.unit_price;
+      const orderItems = pending.quantity
+        ? addPendingMessengerOrderToCart(cartItems, pending)
+        : cartItems;
+      const cartSummary = formatMessengerCartSummary(orderItems, currency);
 
       return {
         handled: true,
         reply:
           `অর্ডারটি নিশ্চিত করার আগে বিস্তারিত দেখে নিন:\n\n` +
-          `পণ্য: ${pending.product_name}\n` +
-          `পরিমাণ: ${pending.quantity || 0} প্যাকেট\n` +
-          `পণ্যের মূল্য: ${currency}${subtotal.toFixed(0)}\n` +
+          `${cartSummary}\n\n` +
           `নাম: ${next.customer_name}\n` +
           `মোবাইল: ${next.customer_phone}\n` +
           `PIN Code: ${next.india_pincode}\n` +
@@ -519,15 +656,16 @@ export async function handleMessengerOrderFlow(args: {
         step: 'confirmation' as const,
       };
 
-      const subtotal = (pending.quantity || 0) * pending.unit_price;
+      const orderItems = pending.quantity
+        ? addPendingMessengerOrderToCart(cartItems, pending)
+        : cartItems;
+      const cartSummary = formatMessengerCartSummary(orderItems, currency);
 
       return {
         handled: true,
         reply:
           `অর্ডারটি নিশ্চিত করার আগে বিস্তারিত দেখে নিন:\n\n` +
-          `পণ্য: ${pending.product_name}\n` +
-          `পরিমাণ: ${pending.quantity || 0} প্যাকেট\n` +
-          `পণ্যের মূল্য: ${currency}${subtotal.toFixed(0)}\n` +
+          `${cartSummary}\n\n` +
           `নাম: ${next.customer_name}\n` +
           `মোবাইল: ${next.customer_phone}\n` +
           `ঠিকানা: ${next.delivery_address}\n\n` +
@@ -568,14 +706,24 @@ export async function handleMessengerOrderFlow(args: {
         };
       }
 
-      const result = await createMessengerProductOrder({
-        country: args.country,
-        customerName: pending.customer_name,
-        customerPhone: pending.customer_phone,
-        deliveryAddress: pending.delivery_address,
-        productId: pending.product_id,
-        quantity: pending.quantity,
-      });
+      const orderItems = addPendingMessengerOrderToCart(cartItems, pending);
+      const result =
+        cartItems.length > 0
+          ? await createMessengerCartOrder({
+              country: args.country,
+              customerName: pending.customer_name,
+              customerPhone: pending.customer_phone,
+              deliveryAddress: pending.delivery_address,
+              items: orderItems,
+            })
+          : await createMessengerProductOrder({
+              country: args.country,
+              customerName: pending.customer_name,
+              customerPhone: pending.customer_phone,
+              deliveryAddress: pending.delivery_address,
+              productId: pending.product_id,
+              quantity: pending.quantity,
+            });
 
       if (!result?.success) {
         return {
@@ -588,14 +736,14 @@ export async function handleMessengerOrderFlow(args: {
         };
       }
 
+      const cartSummary = formatMessengerCartSummary(orderItems, currency);
+
       return {
         handled: true,
         reply:
           `✅ আপনার অর্ডার সফলভাবে তৈরি হয়েছে।\n\n` +
           `অর্ডার নম্বর: ${result.order_number || 'পাওয়া যায়নি'}\n` +
-          `পণ্য: ${pending.product_name}\n` +
-          `পরিমাণ: ${pending.quantity} প্যাকেট\n` +
-          `Subtotal: ${currency}${Number(result.subtotal || 0).toFixed(0)}\n` +
+          `${cartSummary}\n` +
           `Delivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\n` +
           `Grand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\n` +
           'অর্ডারটি GAZI SEED order system-এ যুক্ত হয়েছে।',
