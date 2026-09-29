@@ -57,10 +57,19 @@ function timeoutMs(): number {
   return Math.max(3_000, Math.min(raw, 30_000));
 }
 
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+function withTimeout<T>(
+  operation: (signal: AbortSignal) => Promise<T>,
+  ms: number,
+): Promise<T> {
+  const controller = new AbortController();
+
   return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Provider request timed out')), ms);
-    promise.then(
+    const timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error('Provider request timed out'));
+    }, ms);
+
+    operation(controller.signal).then(
       (value) => { clearTimeout(timer); resolve(value); },
       (error) => { clearTimeout(timer); reject(error); },
     );
@@ -150,6 +159,7 @@ async function callGemini(
   apiKey: string,
   temperature?: number,
   maxTokens?: number,
+  signal?: AbortSignal,
 ): Promise<AIChatResponse> {
   const systemMsg = messages.find((message) => message.role === 'system');
   const conversation = messages.filter((message) => message.role !== 'system').map((message) => ({
@@ -163,6 +173,7 @@ async function callGemini(
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    signal,
     body: JSON.stringify({
       system_instruction: systemMsg ? { parts: [{ text: systemMsg.content }] } : undefined,
       contents: conversation,
@@ -207,6 +218,7 @@ async function callOpenAICompatible(
   apiKey: string,
   temperature?: number,
   maxTokens?: number,
+  signal?: AbortSignal,
 ): Promise<AIChatResponse> {
   const baseUrl = {
     groq: process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
@@ -226,6 +238,7 @@ async function callOpenAICompatible(
   const response = await fetch(baseUrl + '/chat/completions', {
     method: 'POST',
     headers,
+    signal,
     body: JSON.stringify({
       model,
       messages,
@@ -264,6 +277,7 @@ async function callProvider(
   messages: AIChatMessage[],
   temperature?: number,
   maxTokens?: number,
+  signal?: AbortSignal,
 ): Promise<AIChatResponse> {
   // Safety-gated failover test: only active on Vercel Preview when explicitly enabled.
 // Preview-only test rebuild marker: 2026-09-25.
@@ -278,8 +292,8 @@ async function callProvider(
   const apiKey = keyFor(provider);
   const model = modelFor(provider);
   if (!apiKey) throw new Error('Provider API key is not configured');
-  if (provider === 'gemini') return callGemini(messages, model, apiKey, temperature, maxTokens);
-  return callOpenAICompatible(provider, messages, model, apiKey, temperature, maxTokens);
+  if (provider === 'gemini') return callGemini(messages, model, apiKey, temperature, maxTokens, signal);
+  return callOpenAICompatible(provider, messages, model, apiKey, temperature, maxTokens, signal);
 }
 
 export function isMessengerAIEnabled(): boolean {
@@ -314,7 +328,16 @@ export async function messengerAIChat(args: {
     const model = modelFor(provider);
     const startedAt = Date.now();
     try {
-      const response = await withTimeout(callProvider(provider, args.messages, args.temperature, args.max_tokens), timeout);
+      const response = await withTimeout(
+        (signal) => callProvider(
+          provider,
+          args.messages,
+          args.temperature,
+          args.max_tokens,
+          signal,
+        ),
+        timeout,
+      );
       attempts.push({ provider, model, ok: true, duration_ms: Date.now() - startedAt });
       return { ...response, content: cleanMessengerAnswer(response.content), provider, attempts };
     } catch (error) {

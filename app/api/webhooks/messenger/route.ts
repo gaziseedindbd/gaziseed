@@ -284,8 +284,17 @@ function getIndiaHumanSupportMessage(): string {
   ].join('\n');
 }
 
+function getBangladeshKnowledgeFallbackMessage(): string {
+  return [
+    'দুঃখিত, এই তথ্যটি এই মুহূর্তে নিশ্চিতভাবে দিতে পারছি না।',
+    '',
+    '🇧🇩 Bangladesh customer support team-এর সাহায্য নিন।',
+    '👤 একজন support agent আপনার বিষয়টি দেখে সাহায্য করবেন।',
+  ].join('\n');
+}
+
 function isKnowledgeFallbackResponse(text: string): boolean {
-  const normalized = text.toLocaleLowerCase().replace(/\\s+/g, ' ').trim();
+  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
   return /(দুঃখিত.*(তথ্য|সুনির্দিষ্ট|জানা|নেই)|তথ্য.*(নেই|অন্তর্ভুক্ত নেই)|তথ্যতালিকায়.*(নেই|অন্তর্ভুক্ত)|সুনির্দিষ্ট তথ্য নেই|জানাতে পারছি না|বিস্তারিত জানতে.*(মানব|সহায়তা)|মানব (সহায়তা|প্রতিনিধি)|human support|human representative|cannot (provide|verify)|don't have (the )?information|no (specific|exact) information)/i.test(normalized);
 }
 
@@ -294,12 +303,12 @@ function hasUnsafeGeneralAgricultureSpecifics(text: string): boolean {
   const normalized = text.toLocaleLowerCase();
 
   const numericMeasurement =
-    /(?:\d|[০-৯])[\d০-৯]*(?:[.,][\d০-৯]+)?\s*(?:[-–]\s*[\d০-৯]+(?:[.,][\d০-৯]+)?)?\s*(?:ঘণ্টা|ঘন্টা|দিন|সপ্তাহ|সেমি|cm|মিটার|meter|m\\b|গ্রাম|g\\b|কেজি|kg|মিলি|ml|লিটার|l\\b|%|ph|n\\s*[-–]?\\s*p\\s*[-–]?\\s*k)/i.test(
+    /(?:\d|[০-৯])[\d০-৯]*(?:[.,][\d০-৯]+)?\s*(?:[-–]\s*[\d০-৯]+(?:[.,][\d০-৯]+)?)?\s*(?:ঘণ্টা|ঘন্টা|দিন|সপ্তাহ|সেমি|cm|মিটার|meter|m\b|গ্রাম|g\b|কেজি|kg|মিলি|ml|লিটার|l\b|%|ph|n\s*[-–]?\s*p\s*[-–]?\s*k)/i.test(
       normalized,
     );
 
   const agricultureNumberContext =
-    /(?:বীজ|গর্ত|গাছ|চারা|সার|পানি|সেচ|দূরত্ব|গভীর|ভিজ|রোপণ|বপন|মাটি)[^\\n]{0,80}[\d০-৯]|[\d০-৯][^\\n]{0,80}(?:বীজ|গর্ত|গাছ|চারা|সার|পানি|সেচ|দূরত্ব|গভীর|ভিজ|রোপণ|বপন|মাটি)/i.test(
+    /(?:বীজ|গর্ত|গাছ|চারা|সার|পানি|সেচ|দূরত্ব|গভীর|ভিজ|রোপণ|বপন|মাটি)[^\n]{0,80}[\d০-৯]|[\d০-৯][^\n]{0,80}(?:বীজ|গর্ত|গাছ|চারা|সার|পানি|সেচ|দূরত্ব|গভীর|ভিজ|রোপণ|বপন|মাটি)/i.test(
       normalized,
     );
 
@@ -325,7 +334,7 @@ function getSafeGeneralAgricultureReply(): string {
 function isDeterministicAgricultureFaqRequest(text: string): boolean {
   const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
 
-  const isLauQuestion = /(লাউ|bottle\\s*gourd|lau)/i.test(normalized);
+  const isLauQuestion = /(লাউ|bottle\s*gourd|lau)/i.test(normalized);
   const isSeedSowingQuestion =
     isSeedKnowledgeRequest(text) &&
     /(কীভাবে|কিভাবে|কী ভাবে|কি ভাবে|কী করে|কি করে|বপন|রোপণ|sow|sowing|plant|planting)/i.test(
@@ -570,9 +579,20 @@ async function ensureConversation(
     .select('id,status,metadata')
     .single();
 
+  if (!error && data) return data;
+
+  // Meta can deliver the first events for a new sender concurrently.
+  // The unique conversation key is authoritative; reuse the row that won
+  // the race instead of failing the second webhook request.
+  if (error?.code === '23505') {
+    const concurrent = await getConversation(sb, externalUserId);
+    if (concurrent) return concurrent;
+  }
+
   if (error) throw error;
-  return data;
+  throw new Error('Could not create Messenger conversation');
 }
+
 
 async function saveMessage(
   sb: ReturnType<typeof adminSupabase>,
@@ -638,36 +658,52 @@ async function markConversation(
 ) {
   if (!sb) return;
 
-  const { data: current, error: readError } = await sb
-    .from('ai_conversations')
-    .select('metadata')
-    .eq('id', conversationId)
-    .maybeSingle();
-  if (readError) throw readError;
+  // Concurrent Messenger events can update the same conversation. Merge the
+  // newest metadata snapshot using optimistic concurrency so one webhook
+  // cannot silently overwrite another webhook's state.
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const { data: current, error: readError } = await sb
+      .from('ai_conversations')
+      .select('metadata,updated_at')
+      .eq('id', conversationId)
+      .maybeSingle();
 
-  const mergedMetadata = {
-    ...(current?.metadata || {}),
-    ...(metadata || {}),
-  };
+    if (readError) throw readError;
+    if (!current) throw new Error('Messenger conversation not found');
 
-  const updatePayload: Record<string, unknown> = {
-    status,
-    metadata: mergedMetadata,
-    last_message_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+    const mergedMetadata = {
+      ...(current.metadata || {}),
+      ...(metadata || {}),
+    };
 
-  if (countryCode) {
-    updatePayload.country_code = countryCode;
+    const updatePayload: Record<string, unknown> = {
+      status,
+      metadata: mergedMetadata,
+      last_message_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (countryCode) {
+      updatePayload.country_code = countryCode;
+    }
+
+    const { data: updatedRows, error: updateError } = await sb
+      .from('ai_conversations')
+      .update(updatePayload)
+      .eq('id', conversationId)
+      .eq('updated_at', current.updated_at)
+      .select('id');
+
+    if (updateError) throw updateError;
+    if (updatedRows && updatedRows.length > 0) return;
+
+    // Another webhook won the update race. Re-read the latest state and
+    // merge again instead of overwriting it.
   }
 
-  const { error } = await sb
-    .from('ai_conversations')
-    .update(updatePayload)
-    .eq('id', conversationId);
-
-  if (error) throw error;
+  throw new Error('Concurrent Messenger conversation update could not be committed safely');
 }
+
 
 async function createHumanHandoff(
   sb: ReturnType<typeof adminSupabase>,
@@ -1875,7 +1911,9 @@ async function processMessengerEvent(event: MessengerEvent) {
     const finalReply = unsafeGeneralAgricultureReply
       ? getSafeGeneralAgricultureReply()
       : isKnowledgeFallbackResponse(result.content) && !isGeneralAgricultureMessage
-        ? getIndiaHumanSupportMessage()
+        ? activeCountry === 'BD'
+          ? getBangladeshKnowledgeFallbackMessage()
+          : getIndiaHumanSupportMessage()
         : result.content;
 
     await saveMessage(sb, conversation.id, {
