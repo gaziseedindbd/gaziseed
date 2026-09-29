@@ -134,7 +134,7 @@ test('extracts Messenger contact numbers only from standalone numeric tokens', (
 
   assert.equal(extractMessengerPhone(linkText), mobile);
   assert.equal(extractMessengerPhone('prefix' + mobile), null);
-  assert.equal(normalizeMessengerPhone('+880 0000 000000'), '880000000000');
+  assert.equal(normalizeMessengerPhone('+880 0000 000000'), '8800000000000');
 });
 
 test('classifies delivery, support, and seed knowledge questions independently', () => {
