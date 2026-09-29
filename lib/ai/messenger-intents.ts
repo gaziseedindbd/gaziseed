@@ -121,3 +121,18 @@ export function isMessengerOrderTrackingRequest(text: string): boolean {
     normalized,
   );
 }
+
+
+export function isMessengerAddAnotherProductRequest(text: string): boolean {
+  const normalized = normalizeMessengerIntentText(text);
+  return /(add\s+(?:another|more|one\s+more)\s+(?:product|item)|another\s+product|more\s+products?|add\s+more|আরও\s+(?:পণ্য|প্রোডাক্ট)|অন্য\s+(?:পণ্য|প্রোডাক্ট)|আরেকটা\s+(?:পণ্য|প্রোডাক্ট)|আরও\s+যোগ|আরও\s+নিতে\s+চাই)/i.test(
+    normalized,
+  );
+}
+
+export function isMessengerCheckoutRequest(text: string): boolean {
+  const normalized = normalizeMessengerIntentText(text);
+  return /(\b(?:checkout|check\s*out|finish|complete\s+order|proceed)\b|অর্ডার\s+(?:শেষ|complete|করুন)|চেকআউট|এখন\s+অর্ডার|আর\s+কিছু\s+নেই|আর\s+কিছু\s+না)/i.test(
+    normalized,
+  );
+}
