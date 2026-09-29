@@ -80,6 +80,47 @@ const KNOWLEDGE_KEYWORDS = [
   'প্রশ্ন',
 ];
 
+const GENERIC_PRODUCT_TOKENS = new Set([
+  'বীজ',
+  'পণ্য',
+  'প্রোডাক্ট',
+  'ফুল',
+  'seed',
+  'seeds',
+  'product',
+  'products',
+  'flower',
+]);
+
+function isSimpleProductFieldQuestion(text: string): boolean {
+  const normalized = normalizeText(text);
+  if (normalized.length > 60) return false;
+
+  if (/(কীভাবে|কিভাবে|কী ভাবে|কি ভাবে|প্রস্তুত|বপন|রোপণ|চাষ|পরিচর্যা|how to|prepare|preparing|sow|sowing|planting|cultivation|care)/i.test(normalized)) {
+    return false;
+  }
+
+  return /(ব্র্যান্ড|brand|উৎপত্তি|origin|জাত|variety|বীজের ধরন|seed type|মৌসুম|season|অঙ্কুর|germination|দূরত্ব|spacing|গভীরতা|depth|রোদ|সূর্যালোক|sunlight|পানি|জল|water|মাটি|soil|প্যাকেট|packet|ফলন|yield|harvest|সংরক্ষণ|storage)/i.test(normalized);
+}
+
+export function isMessengerProductSpecificKnowledgeQuery(
+  text: string,
+  product: Pick<MessengerProduct, 'name_bn' | 'name_en' | 'slug'>,
+): boolean {
+  const normalized = normalizeText(text);
+
+  if (/(এই\s+(?:বীজ|পণ্য|প্রোডাক্ট)|এটার|এটি|এইটা|this\s+seed|this\s+product)/i.test(normalized)) {
+    return true;
+  }
+
+  const queryTokens = tokenize(normalized);
+  const productTokens = tokenize(
+    [product.name_bn, product.name_en, product.slug].filter(Boolean).join(' '),
+  ).filter((token) => !GENERIC_PRODUCT_TOKENS.has(token));
+
+  return productTokens.some((token) => queryTokens.includes(token));
+}
+
 const STOP_WORDS = new Set([
   'দাম',
   'কত',
@@ -498,13 +539,23 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
 
   const verifiedProductId = getVerifiedProductId(metadata);
   if (verifiedProductId) {
-    candidate = await getProductById(supabase, country, verifiedProductId);
+    const verifiedProduct = await getProductById(supabase, country, verifiedProductId);
+    if (
+      verifiedProduct &&
+      (isMessengerProductSpecificKnowledgeQuery(text, verifiedProduct) ||
+        isSimpleProductFieldQuestion(text))
+    ) {
+      candidate = verifiedProduct;
+    }
   }
 
   if (!candidate) {
     const matches = await searchMessengerProducts(supabase, country, text, 4);
-    if (matches.length === 1) {
-      candidate = matches[0];
+    const productSpecificMatches = matches.filter((match) =>
+      isMessengerProductSpecificKnowledgeQuery(text, match),
+    );
+    if (productSpecificMatches.length === 1) {
+      candidate = productSpecificMatches[0];
     }
   }
 
