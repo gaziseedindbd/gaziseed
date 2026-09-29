@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { searchMessengerProducts, type MessengerProduct } from './messenger-product-tool';
+import { isMessengerChangeDetailsRequest } from './messenger-intents';
 
 export type MessengerOrderCountry = 'IN' | 'BD';
 
@@ -14,7 +15,8 @@ export type PendingMessengerOrder = {
     | 'india_city'
     | 'india_thana'
     | 'india_state'
-    | 'confirmation';
+    | 'confirmation'
+    | 'saved_details_confirmation';
   product_id: string;
   product_name: string;
   unit_price: number;
@@ -29,6 +31,12 @@ export type PendingMessengerOrder = {
   india_thana?: string;
   india_state?: string;
 };
+export type MessengerCustomerPrefill = {
+  name: string | null;
+  phone: string | null;
+  address: string | null;
+};
+
 export type MessengerCartItem = {
   product_id: string;
   product_name: string;
