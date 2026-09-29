@@ -102,7 +102,7 @@ test('aggregates Messenger provider monitoring without double-counting provider_
 
   assert.equal(summary.responses, 3);
   assert.equal(summary.successful_responses, 2);
-  assert.equal(summary.fallback_responses, 2);
+  assert.equal(summary.fallback_responses, 1);
   assert.equal(summary.provider_failure_responses, 1);
   assert.equal(summary.total_tokens, 300);
   assert.equal(summary.average_success_latency_ms, 200);
