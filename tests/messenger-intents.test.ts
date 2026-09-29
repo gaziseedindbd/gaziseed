@@ -2,8 +2,15 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { buildMessengerMonitoringSummary } from '../lib/ai/messenger-monitoring';
+import {
+  addPendingMessengerOrderToCart,
+  formatMessengerCartSummary,
+  parseMessengerCartItems,
+} from '../lib/ai/messenger-order-tool';
 
 import {
+  isMessengerAddAnotherProductRequest,
+  isMessengerCheckoutRequest,
   isMessengerOrderInterruptRequest,
   isMessengerOrderResumeRequest,
   isMessengerDeliveryIntent,
@@ -127,4 +134,36 @@ test('aggregates Messenger provider monitoring without double-counting provider_
     fallback_hits: 0,
     average_latency_ms: 275,
   });
+});
+
+
+test('recognizes Messenger multi-product cart intents', () => {
+  assert.equal(isMessengerAddAnotherProductRequest('add another product'), true);
+  assert.equal(isMessengerAddAnotherProductRequest('আরও পণ্য যোগ করতে চাই'), true);
+  assert.equal(isMessengerCheckoutRequest('checkout'), true);
+  assert.equal(isMessengerCheckoutRequest('এখন অর্ডার করুন'), true);
+});
+
+test('builds and validates Messenger cart items', () => {
+  const cart = parseMessengerCartItems([
+    {
+      product_id: 'p1',
+      product_name: 'Tomato',
+      unit_price: 50,
+      stock: 20,
+      quantity: 2,
+    },
+  ]);
+  assert.equal(cart.length, 1);
+
+  const merged = addPendingMessengerOrderToCart(cart, {
+    step: 'name',
+    product_id: 'p1',
+    product_name: 'Tomato',
+    unit_price: 50,
+    stock: 20,
+    quantity: 1,
+  });
+  assert.equal(merged[0].quantity, 3);
+  assert.match(formatMessengerCartSummary(merged, '৳'), /Tomato × 3/);
 });
