@@ -1,5 +1,5 @@
 // Messenger AI runtime: keep seed research fallback deployable with the webhook module.
-import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { after, NextRequest, NextResponse } from 'next/server';
 import {
