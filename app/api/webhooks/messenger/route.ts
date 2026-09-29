@@ -39,6 +39,7 @@ import {
   isMessengerCheckoutRequest,
   isMessengerCustomerProfileRequest,
   isMessengerOrderHistoryRequest,
+  isMessengerOrderIntent,
   isMessengerOrderLinkRequest,
   isMessengerOrderInterruptRequest,
   isMessengerOrderResumeRequest,
@@ -1574,7 +1575,7 @@ async function processMessengerEvent(event: MessengerEvent) {
       const orderFlow = await handleMessengerOrderFlow({
         supabase: sb,
         country: activeCountry,
-        text: normalizedActionText,
+        text: quickReplyPayload ? normalizedActionText : text,
         metadata: conversation.metadata,
         customerProfile: repeatCustomerProfile,
       });
