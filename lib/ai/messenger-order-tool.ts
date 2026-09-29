@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { searchMessengerProducts, type MessengerProduct } from './messenger-product-tool';
+import { isMessengerChangeDetailsRequest } from './messenger-intents';
 
 export type MessengerOrderCountry = 'IN' | 'BD';
 
@@ -14,7 +15,8 @@ export type PendingMessengerOrder = {
     | 'india_city'
     | 'india_thana'
     | 'india_state'
-    | 'confirmation';
+    | 'confirmation'
+    | 'saved_details_confirmation';
   product_id: string;
   product_name: string;
   unit_price: number;
@@ -29,6 +31,12 @@ export type PendingMessengerOrder = {
   india_thana?: string;
   india_state?: string;
 };
+export type MessengerCustomerPrefill = {
+  name: string | null;
+  phone: string | null;
+  address: string | null;
+};
+
 export type MessengerCartItem = {
   product_id: string;
   product_name: string;
@@ -221,6 +229,7 @@ export function parsePendingMessengerOrder(value: unknown): PendingMessengerOrde
     'india_thana',
     'india_state',
     'confirmation',
+    'saved_details_confirmation',
   ]);
   const step = typeof input.step === 'string' && steps.has(input.step)
     ? (input.step as PendingMessengerOrder['step'])
@@ -264,6 +273,54 @@ export function parsePendingMessengerOrder(value: unknown): PendingMessengerOrde
   };
 }
 
+export function applyMessengerCustomerProfileToPending(
+  pending: PendingMessengerOrder,
+  profile: MessengerCustomerPrefill | null | undefined,
+): PendingMessengerOrder {
+  if (
+    pending.step !== 'name' ||
+    !profile?.name ||
+    !profile.phone ||
+    !profile.address
+  ) {
+    return pending;
+  }
+
+  return {
+    ...pending,
+    customer_name: profile.name,
+    customer_phone: profile.phone,
+    delivery_address: profile.address,
+    india_pincode: undefined,
+    india_address: undefined,
+    india_city: undefined,
+    india_thana: undefined,
+    india_state: undefined,
+    step: 'saved_details_confirmation',
+  };
+}
+
+function getMessengerSavedDetailsReply(
+  pending: PendingMessengerOrder,
+  cart: MessengerCartItem[],
+  currency: string,
+): string {
+  const orderItems = pending.quantity
+    ? addPendingMessengerOrderToCart(cart, pending)
+    : cart;
+
+  return [
+    '✅ আপনার আগের Messenger order-এর saved details পাওয়া গেছে।',
+    '',
+    formatMessengerCartSummary(orderItems, currency),
+    '',
+    'নাম: ' + (pending.customer_name || 'সংরক্ষিত নেই'),
+    'মোবাইল: ' + (pending.customer_phone || 'সংরক্ষিত নেই'),
+    'ঠিকানা: ' + (pending.delivery_address || 'সংরক্ষিত নেই'),
+    '',
+    'সব ঠিক থাকলে “হ্যাঁ” লিখুন। তথ্য বদলাতে “তথ্য পরিবর্তন” লিখুন।',
+  ].join('\n');
+}
 export function getMessengerOrderResumeReply(pending: PendingMessengerOrder): string {
   const prefix = `আগের অর্ডারটি আবার চালু করেছি। ${pending.product_name}-এর অর্ডারটি যেখানে থেমেছিল, সেখান থেকেই চলছি।`;
   switch (pending.step) {
@@ -285,6 +342,8 @@ export function getMessengerOrderResumeReply(pending: PendingMessengerOrder): st
       return prefix + '\n\nআপনার Thana লিখুন।';
     case 'india_state':
       return prefix + '\n\nআপনার State লিখুন।';
+    case 'saved_details_confirmation':
+      return prefix + '\n\nআপনার saved customer details পাওয়া গেছে। সব ঠিক থাকলে “হ্যাঁ” লিখুন; তথ্য বদলাতে “তথ্য পরিবর্তন” লিখুন।';
     case 'confirmation':
       return prefix + '\n\nঅর্ডারের তথ্য নিশ্চিত করতে হ্যাঁ বা না লিখুন।';
   }
@@ -416,6 +475,7 @@ export async function handleMessengerOrderFlow(args: {
   country: MessengerOrderCountry;
   text: string;
   metadata: Record<string, unknown> | null | undefined;
+  customerProfile?: MessengerCustomerPrefill | null;
 }) {
   const metadata = args.metadata || {};
   const pending = parsePendingMessengerOrder(metadata.pending_messenger_order);
@@ -441,15 +501,21 @@ export async function handleMessengerOrderFlow(args: {
         };
       }
 
-      const next: PendingMessengerOrder = {
-        ...pending,
-        quantity,
-        step: 'name',
-      };
+      const next = applyMessengerCustomerProfileToPending(
+        {
+          ...pending,
+          quantity,
+          step: 'name',
+        },
+        args.customerProfile,
+      );
 
       return {
         handled: true,
-        reply: 'অর্ডারের জন্য আপনার নামটি লিখুন।',
+        reply:
+          next.step === 'saved_details_confirmation'
+            ? getMessengerSavedDetailsReply(next, cartItems, currency)
+            : 'অর্ডারের জন্য আপনার নামটি লিখুন।',
         pending: next,
       };
     }
@@ -640,6 +706,66 @@ export async function handleMessengerOrderFlow(args: {
       };
     }
 
+    if (pending.step === 'saved_details_confirmation') {
+      if (isMessengerCancellation(args.text)) {
+        return {
+          handled: true,
+          reply: 'ঠিক আছে, অর্ডারটি বাতিল করা হয়েছে।',
+          pending: null,
+        };
+      }
+
+      if (isMessengerChangeDetailsRequest(args.text)) {
+        const next: PendingMessengerOrder = {
+          ...pending,
+          step: 'name',
+          customer_name: undefined,
+          customer_phone: undefined,
+          delivery_address: undefined,
+          india_pincode: undefined,
+          india_address: undefined,
+          india_city: undefined,
+          india_thana: undefined,
+          india_state: undefined,
+        };
+
+        return {
+          handled: true,
+          reply: 'ঠিক আছে। আপনার নামটি লিখুন।',
+          pending: next,
+        };
+      }
+
+      if (!isMessengerConfirmation(args.text)) {
+        return {
+          handled: true,
+          reply: 'সব ঠিক থাকলে “হ্যাঁ” লিখুন; তথ্য বদলাতে “তথ্য পরিবর্তন” লিখুন।',
+          pending,
+        };
+      }
+
+      const next: PendingMessengerOrder = {
+        ...pending,
+        step: 'confirmation',
+      };
+      const orderItems = pending.quantity
+        ? addPendingMessengerOrderToCart(cartItems, pending)
+        : cartItems;
+      const cartSummary = formatMessengerCartSummary(orderItems, currency);
+
+      return {
+        handled: true,
+        reply:
+          'অর্ডারটি নিশ্চিত করার আগে বিস্তারিত দেখে নিন:\n\n' +
+          cartSummary +
+          '\n\n' +
+          'নাম: ' + (next.customer_name || 'সংরক্ষিত নেই') + '\n' +
+          'মোবাইল: ' + (next.customer_phone || 'সংরক্ষিত নেই') + '\n' +
+          'ঠিকানা: ' + (next.delivery_address || 'সংরক্ষিত নেই') + '\n\n' +
+          'সব ঠিক থাকলে “হ্যাঁ” লিখুন; অর্ডার বাতিল করতে “না” লিখুন।',
+        pending: next,
+      };
+    }
     if (pending.step === 'address') {
       const address = args.text.trim().slice(0, 500);
       if (address.length < 8) {
@@ -820,20 +946,26 @@ export async function handleMessengerOrderFlow(args: {
     };
   }
 
-  const pendingOrder: PendingMessengerOrder = {
-    step: quantity ? 'name' : 'quantity',
-    product_id: product.id,
-    product_name: productDisplayName(product),
-    unit_price: price,
-    stock,
-    quantity: quantity || undefined,
-  };
+  const pendingOrder = applyMessengerCustomerProfileToPending(
+    {
+      step: quantity ? 'name' : 'quantity',
+      product_id: product.id,
+      product_name: productDisplayName(product),
+      unit_price: price,
+      stock,
+      quantity: quantity || undefined,
+    },
+    args.customerProfile,
+  );
 
   return {
     handled: true,
-    reply: quantity
-      ? 'অর্ডারের জন্য আপনার নামটি লিখুন।'
-      : `${productDisplayName(product)} — ${currency}${price} প্রতি প্যাকেট। কত প্যাকেট অর্ডার করতে চান?`,
+    reply:
+      pendingOrder.step === 'saved_details_confirmation'
+        ? getMessengerSavedDetailsReply(pendingOrder, cartItems, currency)
+        : quantity
+          ? 'অর্ডারের জন্য আপনার নামটি লিখুন।'
+          : `${productDisplayName(product)} — ${currency}${price} প্রতি প্যাকেট। কত প্যাকেট অর্ডার করতে চান?`,
     pending: pendingOrder,
   };
 }

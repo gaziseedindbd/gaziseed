@@ -156,6 +156,34 @@ async function getProfile(
   return (data || null) as MessengerCustomerProfile | null;
 }
 
+export type MessengerOrderCustomerProfile = {
+  name: string | null;
+  phone: string | null;
+  address: string | null;
+};
+
+export async function getMessengerOrderCustomerProfile(args: {
+  supabase: SupabaseClient;
+  pageId: string;
+  externalUserId: string;
+  country: MessengerCustomerCountry;
+}): Promise<MessengerOrderCustomerProfile | null> {
+  const profile = await getProfile(
+    args.supabase,
+    args.pageId,
+    args.externalUserId,
+    args.country,
+  );
+
+  if (!profile) return null;
+
+  return {
+    name: profile.name,
+    phone: profile.phone,
+    address: profile.address,
+  };
+}
+
 async function verifyAndLinkByOrder(
   supabase: SupabaseClient,
   args: {
