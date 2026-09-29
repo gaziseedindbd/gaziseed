@@ -26,6 +26,11 @@ import {
   isProductCatalogRequest,
   isProductListRequest,
 } from '../lib/ai/messenger-intents';
+import {
+  classifyMessengerProductMatch,
+  normalizeMessengerSearchSlug,
+  normalizeMessengerSearchTerm,
+} from '../lib/ai/messenger-product-tool';
 
 test('recognizes typo-tolerant other-product request', () => {
   assert.equal(isOtherProductRequest('OTHER PRODCUT DEKHTE CHAIE'), true);
@@ -43,6 +48,21 @@ test('does not classify ordinary order details as catalog intent', () => {
 test('recognizes catalog and list requests', () => {
   assert.equal(isProductCatalogRequest('what products do you have'), true);
   assert.equal(isProductListRequest('product list'), true);
+});
+
+test('normalizes and classifies Messenger product search matches', () => {
+  assert.equal(normalizeMessengerSearchTerm('  গোলাপ   ফুল  '), 'গোলাপ ফুল');
+  assert.equal(normalizeMessengerSearchSlug('  lal golap fuler bij  '), 'lal-golap-fuler-bij');
+
+  const product = {
+    name_bn: 'লাল গোলাপ ফুলের বীজ',
+    name_en: 'Red Rose Flower Seeds',
+    slug: 'lal-golap-fuler-bij',
+  };
+
+  assert.equal(classifyMessengerProductMatch('Red Rose Flower Seeds', product), 'exact');
+  assert.equal(classifyMessengerProductMatch('golap', product), 'strong');
+  assert.equal(classifyMessengerProductMatch('golp', product), 'similar');
 });
 
 test('recognizes interrupting intents', () => {
