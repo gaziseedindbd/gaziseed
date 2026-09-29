@@ -57,7 +57,10 @@ export function buildMessengerMonitoringSummary(
   let totalTokens = 0;
 
   for (const message of messages) {
-    if (message.role !== 'assistant' || message.action_status !== 'sent') {
+    if (
+      message.role !== 'assistant' ||
+      !['sent', 'handoff'].includes(message.action_status || '')
+    ) {
       continue;
     }
 
