@@ -30,6 +30,7 @@ import {
 } from '@/lib/ai/messenger-order-tracking';
 import {
   getMessengerCustomerProfileReply,
+  getMessengerOrderCustomerProfile,
   getMessengerOrderHistoryReply,
   upsertMessengerCustomerProfile,
 } from '@/lib/ai/messenger-customer-tool';
@@ -797,7 +798,11 @@ async function processMessengerEvent(event: MessengerEvent) {
           ? 'add another product'
           : quickReplyPayload === 'CART_CHECKOUT'
             ? 'checkout'
-            : text;
+            : quickReplyPayload === 'ORDER_USE_SAVED_DETAILS'
+              ? 'হ্যাঁ'
+              : quickReplyPayload === 'ORDER_CHANGE_DETAILS'
+                ? 'তথ্য পরিবর্তন'
+                : text;
 
   const quickReplyCountry =
     event.message?.quick_reply?.payload === 'COUNTRY_IN'
@@ -1556,11 +1561,22 @@ async function processMessengerEvent(event: MessengerEvent) {
       const pendingOrderBeforeFlow = parsePendingMessengerOrder(
         conversation.metadata?.pending_messenger_order,
       );
+      const shouldLoadCustomerProfile =
+        Boolean(pendingOrderBeforeFlow) || isMessengerOrderIntent(normalizedActionText);
+      const repeatCustomerProfile = shouldLoadCustomerProfile
+        ? await getMessengerOrderCustomerProfile({
+            supabase: sb,
+            pageId: META_PAGE_ID,
+            externalUserId: senderId,
+            country: activeCountry,
+          })
+        : null;
       const orderFlow = await handleMessengerOrderFlow({
         supabase: sb,
         country: activeCountry,
-        text,
+        text: normalizedActionText,
         metadata: conversation.metadata,
+        customerProfile: repeatCustomerProfile,
       });
       const nextPendingOrder = parsePendingMessengerOrder(orderFlow.pending);
 
@@ -1637,17 +1653,22 @@ async function processMessengerEvent(event: MessengerEvent) {
       });
 
       const confirmationQuickReplies =
-        orderFlow.pending?.step === 'confirmation'
+        orderFlow.pending?.step === 'saved_details_confirmation'
           ? [
-              { title: '✅ হ্যাঁ, অর্ডার নিশ্চিত করুন', payload: 'ORDER_CONFIRM' },
-              { title: '❌ না, অর্ডার বাতিল করুন', payload: 'ORDER_CANCEL' },
+              { title: '✅ Saved details ব্যবহার করুন', payload: 'ORDER_USE_SAVED_DETAILS' },
+              { title: '✏️ তথ্য পরিবর্তন করুন', payload: 'ORDER_CHANGE_DETAILS' },
             ]
-          : orderFlow.pending?.step === 'name'
+          : orderFlow.pending?.step === 'confirmation'
             ? [
-                { title: '➕ আরও product', payload: 'CART_ADD_PRODUCT' },
-                { title: '✅ Checkout', payload: 'CART_CHECKOUT' },
+                { title: '✅ হ্যাঁ, অর্ডার নিশ্চিত করুন', payload: 'ORDER_CONFIRM' },
+                { title: '❌ না, অর্ডার বাতিল করুন', payload: 'ORDER_CANCEL' },
               ]
-            : undefined;
+            : orderFlow.pending?.step === 'name'
+              ? [
+                  { title: '➕ আরও product', payload: 'CART_ADD_PRODUCT' },
+                  { title: '✅ Checkout', payload: 'CART_CHECKOUT' },
+                ]
+              : undefined;
 
       await sendMessengerText(senderId, orderFlow.reply, confirmationQuickReplies);
       return;
