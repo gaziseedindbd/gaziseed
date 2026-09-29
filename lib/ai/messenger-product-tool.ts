@@ -2,6 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type MessengerCountry = 'IN' | 'BD';
 
+export type MessengerProductSearchMatchType = 'exact' | 'strong' | 'similar';
+
 export type MessengerProduct = {
   id: string;
   name_bn: string | null;
@@ -23,6 +25,8 @@ export type MessengerProduct = {
   germination_rate: string | null;
   harvest_time: string | null;
   country_code: string;
+  search_match_type?: MessengerProductSearchMatchType | null;
+  search_match_score?: number | null;
 };
 
 const PRODUCT_FIELDS = [
@@ -51,14 +55,56 @@ const PRODUCT_FIELDS = [
 function normalizeSearchTerm(value: string): string {
   return value
     .replace(/[\\%_]/g, ' ')
-    .replace(/[\r\n]+/g, ' ')
+    .replace(/[\\r\\n]+/g, ' ')
+    .replace(/\\s+/g, ' ')
     .trim()
     .slice(0, 80);
 }
 
+export function normalizeMessengerSearchTerm(value: string): string {
+  return normalizeSearchTerm(value);
+}
+
+export function normalizeMessengerSearchSlug(value: string): string {
+  return normalizeSearchTerm(value).toLocaleLowerCase().replace(/\\s+/g, '-');
+}
+
+export function classifyMessengerProductMatch(
+  searchTerm: string,
+  product: Pick<MessengerProduct, 'name_bn' | 'name_en' | 'slug'>,
+): MessengerProductSearchMatchType {
+  const query = normalizeSearchTerm(searchTerm).toLocaleLowerCase();
+  const querySlug = normalizeMessengerSearchSlug(searchTerm);
+  if (!query) return 'similar';
+
+  const nameBn = (product.name_bn || '').toLocaleLowerCase();
+  const nameEn = (product.name_en || '').toLocaleLowerCase();
+  const slug = (product.slug || '').toLocaleLowerCase();
+
+  if (
+    nameBn === query ||
+    nameEn === query ||
+    slug === query ||
+    slug === querySlug
+  ) {
+    return 'exact';
+  }
+
+  if (
+    nameBn.includes(query) ||
+    nameEn.includes(query) ||
+    slug.includes(query) ||
+    slug.includes(querySlug)
+  ) {
+    return 'strong';
+  }
+
+  return 'similar';
+}
+
 function searchTokens(value: string): string[] {
   const stopWords = new Set([
-    'দাম', 'কত', 'আছে', 'স্টক', 'স্টকে', 'টি', 'টা', 'টি', 'এর', 'র', 'জন্য',
+    'দাম', 'কত', 'আছে', 'স্টক', 'স্টকে', 'টি', 'টা', 'এর', 'র', 'জন্য',
     'এবং', 'ও', 'কি', 'কী', 'কোন', 'কোনটা', 'আমার', 'চাই', 'দিবেন', 'দাও',
     'price', 'how', 'much', 'stock', 'available', 'is', 'are', 'the', 'a', 'an',
     'and', 'of', 'for', 'please', 'tell', 'me',
@@ -66,9 +112,13 @@ function searchTokens(value: string): string[] {
 
   return Array.from(
     new Set(
-      (value.match(/[A-Za-z0-9\u0980-\u09FF]+/g) || [])
+      (value.match(/[A-Za-z0-9\\u0980-\\u09FF]+/g) || [])
         .map((token) => token.trim())
-        .filter((token) => token.length >= 2 && !stopWords.has(token.toLocaleLowerCase())),
+        .filter(
+          (token) =>
+            token.length >= 2 &&
+            !stopWords.has(token.toLocaleLowerCase()),
+        ),
     ),
   ).slice(0, 6);
 }
@@ -88,6 +138,30 @@ function effectivePrice(product: MessengerProduct): number | null {
   return valid[0] ?? null;
 }
 
+function sortMessengerProducts(
+  products: MessengerProduct[],
+): MessengerProduct[] {
+  return products.sort((a, b) => {
+    const aStock = Number(a.stock || 0) > 0 ? 1 : 0;
+    const bStock = Number(b.stock || 0) > 0 ? 1 : 0;
+    if (aStock !== bStock) return bStock - aStock;
+
+    const aPrice = effectivePrice(a);
+    const bPrice = effectivePrice(b);
+    if (aPrice === null && bPrice !== null) return 1;
+    if (aPrice !== null && bPrice === null) return -1;
+
+    const aScore = Number(a.search_match_score || 0);
+    const bScore = Number(b.search_match_score || 0);
+    if (aScore !== bScore) return bScore - aScore;
+
+    return (a.name_bn || a.name_en || a.slug || '').localeCompare(
+      b.name_bn || b.name_en || b.slug || '',
+      'bn',
+    );
+  });
+}
+
 export async function listMessengerProducts(
   supabase: SupabaseClient,
   country: MessengerCountry,
@@ -105,23 +179,11 @@ export async function listMessengerProducts(
   if (error) throw error;
 
   const rows = data as unknown as MessengerProduct[] | null;
-  return (rows || [])
-    .sort((a, b) => {
-      const aStock = Number(a.stock || 0) > 0 ? 1 : 0;
-      const bStock = Number(b.stock || 0) > 0 ? 1 : 0;
-      if (aStock !== bStock) return bStock - aStock;
-
-      const aPrice = effectivePrice(a);
-      const bPrice = effectivePrice(b);
-      if (aPrice === null && bPrice !== null) return 1;
-      if (aPrice !== null && bPrice === null) return -1;
-
-      return (a.name_bn || a.name_en || a.slug || '').localeCompare(
-        b.name_bn || b.name_en || b.slug || '',
-        'bn',
-      );
-    })
-    .slice(0, safeLimit);
+  return sortMessengerProducts((rows || []).map((row) => ({
+    ...row,
+    search_match_type: 'exact',
+    search_match_score: 0,
+  }))).slice(0, safeLimit);
 }
 
 export async function searchMessengerProducts(
@@ -134,24 +196,38 @@ export async function searchMessengerProducts(
   if (!term) return [];
 
   const safeLimit = Math.max(1, Math.min(limit, 20));
+
+  // Primary path: indexed PostgreSQL full-text + trigram/fuzzy search.
+  try {
+    const { data, error } = await supabase.rpc('search_messenger_products', {
+      p_country: country,
+      p_query: term,
+      p_limit: safeLimit,
+    });
+
+    if (!error && Array.isArray(data)) {
+      const rankedRows = data as unknown as MessengerProduct[];
+      return sortMessengerProducts(rankedRows).slice(0, safeLimit);
+    }
+  } catch {
+    // Fall back to the legacy ilike path so product search remains available
+    // during rollout or if an older deployment reaches this route.
+  }
+
   const columns = ['name_bn', 'name_en', 'slug'] as const;
   const queries = [term];
+  const tokens = searchTokens(term);
 
-  if (!term.toLocaleLowerCase().includes('messenger')) {
-    const tokens = searchTokens(term);
-    for (const token of tokens) {
-      if (!queries.some((query) => query.toLocaleLowerCase() === token.toLocaleLowerCase())) {
-        queries.push(token);
-      }
+  for (const token of tokens) {
+    if (
+      queries.length >= 6 ||
+      queries.some(
+        (query) => query.toLocaleLowerCase() === token.toLocaleLowerCase(),
+      )
+    ) {
+      continue;
     }
-  } else {
-    const tokens = searchTokens(term);
-    for (const token of tokens) {
-      if (queries.length >= 6) break;
-      if (!queries.some((query) => query.toLocaleLowerCase() === token.toLocaleLowerCase())) {
-        queries.push(token);
-      }
-    }
+    queries.push(token);
   }
 
   const results = await Promise.all(
@@ -176,28 +252,16 @@ export async function searchMessengerProducts(
 
     const rows = result.data as unknown as MessengerProduct[] | null;
     for (const row of rows || []) {
-      merged.set(row.id, row);
+      merged.set(row.id, {
+        ...row,
+        search_match_type: classifyMessengerProductMatch(term, row),
+        search_match_score:
+          classifyMessengerProductMatch(term, row) === 'exact' ? 1 : 0,
+      });
     }
   }
 
-  return Array.from(merged.values())
-    .sort((a, b) => {
-      const aStock = Number(a.stock || 0) > 0 ? 1 : 0;
-      const bStock = Number(b.stock || 0) > 0 ? 1 : 0;
-      if (aStock !== bStock) return bStock - aStock;
-
-      const aPrice = effectivePrice(a);
-      const bPrice = effectivePrice(b);
-
-      if (aPrice === null && bPrice !== null) return 1;
-      if (aPrice !== null && bPrice === null) return -1;
-
-      return (a.name_bn || a.name_en || a.slug || '').localeCompare(
-        b.name_bn || b.name_en || b.slug || '',
-        'bn',
-      );
-    })
-    .slice(0, safeLimit);
+  return sortMessengerProducts(Array.from(merged.values())).slice(0, safeLimit);
 }
 
 export function serializeMessengerProducts(products: MessengerProduct[]) {
@@ -222,5 +286,7 @@ export function serializeMessengerProducts(products: MessengerProduct[]) {
     germination_rate: product.germination_rate,
     harvest_time: product.harvest_time,
     country_code: product.country_code,
+    search_match_type: product.search_match_type || null,
+    search_match_score: product.search_match_score ?? null,
   }));
 }
