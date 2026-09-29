@@ -34,6 +34,10 @@ import {
 import {
   getMessengerHumanSupportQueueState,
 } from '../lib/ai/messenger-human-support';
+import {
+  getMessengerRateLimitReply,
+  hashMessengerMessage,
+} from '../lib/ai/messenger-rate-limit';
 
 test('recognizes typo-tolerant other-product request', () => {
   assert.equal(isOtherProductRequest('OTHER PRODCUT DEKHTE CHAIE'), true);
@@ -204,6 +208,29 @@ test('maps Bangladesh human-support queue states', () => {
   assert.equal(getMessengerHumanSupportQueueState('resolved'), 'closed');
   assert.equal(getMessengerHumanSupportQueueState('cancelled'), 'closed');
 });
+
+test('provides deterministic Messenger abuse-protection helpers', () => {
+  assert.equal(hashMessengerMessage('hello'), hashMessengerMessage('hello'));
+  assert.notEqual(hashMessengerMessage('hello'), hashMessengerMessage('hello!'));
+
+  assert.match(
+    getMessengerRateLimitReply({
+      allowed: false,
+      reason: 'duplicate_burst',
+      retry_after_seconds: 60,
+      notify_customer: true,
+      minute_count: 5,
+      hour_count: 5,
+      day_count: 5,
+      ai_minute_count: 0,
+      ai_hour_count: 0,
+      duplicate_count: 4,
+      blocked_until: null,
+    }),
+    /বারবার/,
+  );
+});
+
 
 test('recognizes Messenger customer profile and previous-order history', () => {
   assert.equal(isMessengerCustomerProfileRequest('show my profile'), true);

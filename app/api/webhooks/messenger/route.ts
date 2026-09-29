@@ -47,6 +47,11 @@ import {
 } from '@/lib/ai/messenger-intents';
 import { getMessengerWebsiteKnowledgeAnswer } from '@/lib/ai/messenger-knowledge-tool';
 import {
+  consumeMessengerRateLimit,
+  getMessengerRateLimitReply,
+  hashMessengerMessage,
+} from '@/lib/ai/messenger-rate-limit';
+import {
   getBangladeshHumanSupportAcknowledgement,
   getBangladeshHumanSupportWaitingReply,
 } from '@/lib/ai/messenger-human-support';
@@ -410,6 +415,39 @@ function verifySignature(rawBody: string, signatureHeader: string | null): boole
   return safeEqual(expected, signature);
 }
 
+async function hasSavedMessengerMessage(
+  sb: ReturnType<typeof adminSupabase>,
+  externalMessageId: string,
+): Promise<boolean> {
+  if (!sb) return false;
+
+  const { data, error } = await sb
+    .from('ai_messages')
+    .select('id')
+    .eq('external_message_id', externalMessageId)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return Boolean(data);
+}
+
+function buildMessengerRateLimitInput(
+  normalizedActionText: string,
+  quickReplyPayload: string,
+  postbackTitle: string,
+): string {
+  return [
+    normalizedActionText,
+    quickReplyPayload,
+    postbackTitle,
+  ]
+    .join('|')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 500);
+}
+
 function adminSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -740,6 +778,46 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   const conversation = await ensureConversation(sb, senderId);
   if (!conversation) throw new Error('Could not create Messenger conversation');
+
+  // Meta can retry the same event. Check idempotency before consuming a rate-limit token.
+  if (await hasSavedMessengerMessage(sb, messageId)) {
+    return;
+  }
+
+  const preCountry =
+    quickReplyCountry ||
+    detectExplicitCountry(normalizedActionText) ||
+    getVerifiedCountry(conversation) ||
+    'BD';
+
+  const rateLimitInput = buildMessengerRateLimitInput(
+    normalizedActionText,
+    quickReplyPayload,
+    event.postback?.title || '',
+  );
+
+  const messageRateLimit = await consumeMessengerRateLimit(sb, {
+    pageId: META_PAGE_ID,
+    externalUserId: senderId,
+    countryCode: preCountry,
+    messageHash: hashMessengerMessage(rateLimitInput),
+    mode: 'message',
+  });
+
+  if (!messageRateLimit.allowed) {
+    if (messageRateLimit.notify_customer) {
+      const rateLimitReply = getMessengerRateLimitReply(messageRateLimit);
+      try {
+        await sendMessengerText(senderId, rateLimitReply);
+      } catch (error) {
+        console.error(
+          'Messenger rate-limit notice failed:',
+          error instanceof Error ? error.message : 'Unknown rate-limit notice error',
+        );
+      }
+    }
+    return;
+  }
 
   await markConversation(sb, conversation.id, conversation.status, {
     last_sender_id: senderId,
@@ -1733,6 +1811,35 @@ async function processMessengerEvent(event: MessengerEvent) {
   ];
 
   try {
+    const aiRateLimit = await consumeMessengerRateLimit(sb, {
+      pageId: META_PAGE_ID,
+      externalUserId: senderId,
+      countryCode: activeCountry,
+      mode: 'ai',
+    });
+
+    if (!aiRateLimit.allowed) {
+      const rateLimitReply = getMessengerRateLimitReply(aiRateLimit);
+
+      if (aiRateLimit.notify_customer) {
+        await saveMessage(sb, conversation.id, {
+          role: 'assistant',
+          content: rateLimitReply,
+          actionStatus: 'rate_limited',
+          countryCode: activeCountry,
+          sourceContext: {
+            rate_limit: true,
+            rate_limit_reason: aiRateLimit.reason,
+            retry_after_seconds: aiRateLimit.retry_after_seconds,
+            ai_call_skipped: true,
+          },
+        });
+        await sendMessengerText(senderId, rateLimitReply);
+      }
+
+      return;
+    }
+
     const result = await messengerAIChat({
       messages: chatMessages,
       temperature: 0.2,
