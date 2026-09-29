@@ -95,11 +95,25 @@ export function isMessengerHumanSupportIntent(text: string): boolean {
 
 export function isMessengerChangeDetailsRequest(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
-  return /(changes+(?:mys+)?(?:details|information|info|address|phone|mobile|name)|edits+(?:mys+)?(?:details|information|info|address|phone|mobile|name)|uses+(?:as+)?differents+(?:details|address|phone|mobile|name)|তথ্যs+(?:পরিবর্তন|বদল)|ডিটেইলসs+(?:পরিবর্তন|বদল)|নামs+(?:পরিবর্তন|বদল)|ফোনs+(?:পরিবর্তন|বদল)|মোবাইলs+(?:পরিবর্তন|বদল)|ঠিকানাs+(?:পরিবর্তন|বদল))/i.test(
-    normalized,
+
+  return (
+    normalized.includes('তথ্য পরিবর্তন') ||
+    normalized.includes('তথ্য বদল') ||
+    normalized.includes('ডিটেইলস পরিবর্তন') ||
+    normalized.includes('ডিটেইলস বদল') ||
+    normalized.includes('নাম পরিবর্তন') ||
+    normalized.includes('নাম বদল') ||
+    normalized.includes('ফোন পরিবর্তন') ||
+    normalized.includes('ফোন বদল') ||
+    normalized.includes('মোবাইল পরিবর্তন') ||
+    normalized.includes('মোবাইল বদল') ||
+    normalized.includes('ঠিকানা পরিবর্তন') ||
+    normalized.includes('ঠিকানা বদল') ||
+    /(^| )change( my)? (details|information|info|address|phone|mobile|name)( |$)/i.test(normalized) ||
+    /(^| )edit( my)? (details|information|info|address|phone|mobile|name)( |$)/i.test(normalized) ||
+    /(^| )use a different (details|address|phone|mobile|name)( |$)/i.test(normalized)
   );
 }
-
 export function isMessengerOrderResumeRequest(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
   return /(\b(?:continue|resume|go on|pick up|previous order|my previous order|old order)\b|আগের অর্ডার|আগেরটা|আগের অর্ডারটা|অর্ডার (?:চালু|চালিয়ে|চালিয়ে)|চালিয়ে যেতে চাই|চালিয়ে যেতে চাই|আবার অর্ডার|order continue)/i.test(
