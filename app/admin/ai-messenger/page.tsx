@@ -5,10 +5,13 @@ import {
   Bot,
   CheckCircle2,
   CircleAlert,
+  Activity,
   Clock3,
+  Gauge,
   MessageCircle,
   RefreshCw,
   ShieldCheck,
+  TimerReset,
   UserRound,
   Zap,
 } from 'lucide-react';
@@ -29,6 +32,24 @@ type DashboardData = {
   conversations: Array<{ id: string; channel: string; external_user_id: string | null; status: string; last_message_at: string | null; updated_at: string | null }>;
   handoffs: Array<{ id: string; conversation_id: string; reason: string; status: string; created_at: string; resolved_at: string | null }>;
   messages: Array<{ id: string; conversation_id: string; role: string; provider: string | null; model: string | null; tool_name: string | null; action_status: string | null; requires_confirmation: boolean; created_at: string }>;
+  monitoring: {
+    window_hours: number;
+    responses: number;
+    successful_responses: number;
+    fallback_responses: number;
+    fallback_rate_percent: number;
+    provider_failure_responses: number;
+    total_tokens: number;
+    average_success_latency_ms: number | null;
+    provider_stats: Array<{
+      provider: string;
+      attempts: number;
+      successes: number;
+      failures: number;
+      fallback_hits: number;
+      average_latency_ms: number | null;
+    }>;
+  };
 };
 
 function formatDate(value: string | null) {
@@ -106,6 +127,53 @@ export default function AIMessengerAdminPage() {
       <section className="rounded-2xl border border-border bg-card p-6">
         <div className="mb-5"><h2 className="text-lg font-bold">Order Channels</h2><p className="mt-1 text-sm text-muted-foreground">Messenger থেকে কোন ধরনের order হয়েছে তার হিসাব</p></div>
         <div className="grid gap-4 md:grid-cols-3"><div className="rounded-2xl bg-secondary/40 p-5"><p className="text-sm text-muted-foreground">Normal Product</p><p className="mt-2 text-2xl font-bold">{data.stats.product_orders}</p></div><div className="rounded-2xl bg-secondary/40 p-5"><p className="text-sm text-muted-foreground">Combo</p><p className="mt-2 text-2xl font-bold">{data.stats.combo_orders}</p></div><div className="rounded-2xl bg-secondary/40 p-5"><p className="text-sm text-muted-foreground">Ads / Landing Offer</p><p className="mt-2 text-2xl font-bold">{data.stats.offer_orders}</p></div></div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-card p-6">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2"><Activity className="h-5 w-5 text-primary" /><h2 className="text-lg font-bold">AI Monitoring</h2></div>
+            <p className="mt-1 text-sm text-muted-foreground">গত {data.monitoring.window_hours} ঘণ্টার Messenger AI runtime telemetry</p>
+          </div>
+          <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-xs font-semibold"><TimerReset className="h-3.5 w-3.5" /> Live data</span>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="rounded-2xl bg-secondary/40 p-5"><p className="text-sm text-muted-foreground">AI Responses</p><p className="mt-2 text-2xl font-bold">{data.monitoring.responses}</p><p className="mt-1 text-xs text-muted-foreground">{data.monitoring.successful_responses} successful</p></div>
+          <div className="rounded-2xl bg-secondary/40 p-5"><p className="text-sm text-muted-foreground">Fallback Rate</p><p className="mt-2 text-2xl font-bold">{data.monitoring.fallback_rate_percent}%</p><p className="mt-1 text-xs text-muted-foreground">{data.monitoring.fallback_responses} fallback responses</p></div>
+          <div className="rounded-2xl bg-secondary/40 p-5"><p className="text-sm text-muted-foreground">Avg Latency</p><p className="mt-2 text-2xl font-bold">{data.monitoring.average_success_latency_ms == null ? '—' : data.monitoring.average_success_latency_ms + ' ms'}</p><p className="mt-1 text-xs text-muted-foreground"><Gauge className="mr-1 inline h-3.5 w-3.5" /> successful provider response</p></div>
+          <div className="rounded-2xl bg-secondary/40 p-5"><p className="text-sm text-muted-foreground">Provider Failures</p><p className="mt-2 text-2xl font-bold">{data.monitoring.provider_failure_responses}</p><p className="mt-1 text-xs text-muted-foreground">turned into human handoff</p></div>
+          <div className="rounded-2xl bg-secondary/40 p-5"><p className="text-sm text-muted-foreground">Reported Tokens</p><p className="mt-2 text-2xl font-bold">{data.monitoring.total_tokens.toLocaleString()}</p><p className="mt-1 text-xs text-muted-foreground">provider-reported usage</p></div>
+        </div>
+        <div className="mt-6 overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-border text-xs text-muted-foreground">
+                <th className="px-3 py-3">Provider</th>
+                <th className="px-3 py-3">Attempts</th>
+                <th className="px-3 py-3">Success</th>
+                <th className="px-3 py-3">Failures</th>
+                <th className="px-3 py-3">Fallback Hits</th>
+                <th className="px-3 py-3">Avg Latency</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.monitoring.provider_stats.length === 0 ? (
+                <tr><td colSpan={6} className="px-3 py-5 text-center text-sm text-muted-foreground">No provider telemetry recorded in this window.</td></tr>
+              ) : (
+                data.monitoring.provider_stats.map((provider) => (
+                  <tr key={provider.provider} className="border-b border-border/70">
+                    <td className="px-3 py-3 font-semibold">{provider.provider}</td>
+                    <td className="px-3 py-3">{provider.attempts}</td>
+                    <td className="px-3 py-3">{provider.successes}</td>
+                    <td className="px-3 py-3">{provider.failures}</td>
+                    <td className="px-3 py-3">{provider.fallback_hits}</td>
+                    <td className="px-3 py-3">{provider.average_latency_ms == null ? '—' : provider.average_latency_ms + ' ms'}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <div className="grid gap-6 xl:grid-cols-2">
