@@ -89,7 +89,20 @@ function isProductAvailabilityQuestion(text: string): boolean {
 
 function isProductCatalogRequest(text: string): boolean {
   const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+
+  // A request to browse a different/other product is always a new catalog intent.
+  // It must not be consumed by an older pending order quantity step.
+  const isOtherProductRequest =
+    /(other product|other products|another product|another products|different product|more products|show other products|show me other products|see other products|want other products|buy another product)/i.test(
+      normalized,
+    ) ||
+    /\\b(?:other|another|different|more)\\b.*\\bproducts?\\b/i.test(normalized) ||
+    /\\bproducts?\\b.*\\b(?:other|another|different|more)\\b/i.test(normalized) ||
+    /(অন্য|আরও|আর|অন্যটা|অন্যগুলো).*(প্রোডাক্ট|পণ্য|product|products)/i.test(normalized) ||
+    /(প্রোডাক্ট|পণ্য|product|products).*(অন্য|আরও|আর|অন্যটা|অন্যগুলো)/i.test(normalized);
+
   return (
+    isOtherProductRequest ||
     isProductAvailabilityQuestion(normalized) ||
     /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে|দাম|price|স্টক|stock|available|উপলব্ধ)/i.test(
       normalized,
