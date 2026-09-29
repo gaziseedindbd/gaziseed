@@ -68,7 +68,15 @@ export async function getMessengerOrderTrackingReply(args: {
     (args.text.match(/(?:\+?\d[\d\s().-]{8,}\d)/)?.[0] || ''),
   );
 
-  const phone = requestedPhone || profilePhone;
+  if (profilePhone && requestedPhone && profilePhone !== requestedPhone) {
+    return {
+      handled: true,
+      reply:
+        'নিরাপত্তার জন্য এই Messenger account-এর সাথে আগে linked mobile number-টাই ব্যবহার করুন। প্রয়োজনে Order Number-সহ আবার চেষ্টা করুন।',
+    };
+  }
+
+  const phone = profilePhone || requestedPhone;
 
   if (!phone) {
     return {
@@ -76,6 +84,14 @@ export async function getMessengerOrderTrackingReply(args: {
       reply:
         'আপনার Messenger-এর সাথে কোনো verified order phone number এখনো linked নেই।\n\n' +
         'নির্দিষ্ট order track করতে Order Number (যেমন GS-BD-XXXXXXXX) এবং অর্ডারের সময় দেওয়া mobile number লিখুন।',
+    };
+  }
+
+  if (!profilePhone && !requestedOrderNumber) {
+    return {
+      handled: true,
+      reply:
+        'নিরাপত্তার জন্য প্রথমবার order tracking করতে Order Number (যেমন GS-BD-XXXXXXXX) এবং অর্ডারের সময় দেওয়া mobile number একসাথে লিখুন।',
     };
   }
 
