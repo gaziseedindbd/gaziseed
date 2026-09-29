@@ -2,10 +2,6 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type MessengerTrackingCountry = 'IN' | 'BD';
 
-type TrackingProfile = {
-  phone: string | null;
-};
-
 const TRACKING_FIELDS =
   'id,order_number,customer_name,customer_phone,status,order_status,payment_status,final_amount,country_code,created_at,updated_at';
 
@@ -22,8 +18,8 @@ function parseOrderNumber(text: string): string | null {
   return match?.[0] || null;
 }
 
-function statusLabel(status: string | null | undefined) {
-  const key = (status || '').toLowerCase();
+function statusLabel(status: unknown) {
+  const key = typeof status === 'string' ? status.toLowerCase() : '';
   const labels: Record<string, string> = {
     pending: 'অর্ডার গ্রহণ করা হয়েছে / Pending',
     confirmed: 'অর্ডার Confirmed',
@@ -35,10 +31,10 @@ function statusLabel(status: string | null | undefined) {
     canceled: 'অর্ডার Cancelled হয়েছে',
     returned: 'অর্ডার Returned হয়েছে',
   };
-  return labels[key] || status || 'Status পাওয়া যায়নি';
+  return labels[key] || (typeof status === 'string' && status) || 'Status পাওয়া যায়নি';
 }
 
-export function parseMessengerTrackingOrderNumber(text: string) {
+export function parseMessengerTrackingOrderNumber(text: string): string | null {
   return parseOrderNumber(text);
 }
 
@@ -62,17 +58,18 @@ export async function getMessengerOrderTrackingReply(args: {
   if (profileError) throw profileError;
 
   const profilePhone =
-    profile && typeof profile.phone === 'string' ? normalizePhone(profile.phone) : '';
+    profile && typeof profile.phone === 'string'
+      ? normalizePhone(profile.phone)
+      : '';
 
-  const requestedPhone = normalizePhone(
-    (args.text.match(/(?:\+?\d[\d\s().-]{8,}\d)/)?.[0] || ''),
-  );
+  const phoneMatch = args.text.match(/(?:\+?\d[\d\s().-]{8,}\d)/);
+  const requestedPhone = normalizePhone(phoneMatch?.[0] || '');
 
   if (profilePhone && requestedPhone && profilePhone !== requestedPhone) {
     return {
       handled: true,
       reply:
-        'নিরাপত্তার জন্য এই Messenger account-এর সাথে আগে linked mobile number-টাই ব্যবহার করুন। প্রয়োজনে Order Number-সহ আবার চেষ্টা করুন।',
+        'নিরাপত্তার জন্য এই Messenger account-এর সাথে আগে linked mobile number-টাই ব্যবহার করুন।',
     };
   }
 
@@ -95,23 +92,23 @@ export async function getMessengerOrderTrackingReply(args: {
     };
   }
 
-  let query = args.supabase
+  const baseOrdersQuery = args.supabase
     .from('orders')
     .select(TRACKING_FIELDS)
     .eq('country_code', args.country)
     .eq('order_source', 'facebook_messenger_ai')
-    .eq('customer_phone', phone)
-    .order('created_at', { ascending: false })
-    .limit(5);
+    .eq('customer_phone', phone);
 
-  if (requestedOrderNumber) {
-    query = query.eq('order_number', requestedOrderNumber).limit(1);
-  }
+  const ordersQuery = requestedOrderNumber
+    ? baseOrdersQuery.eq('order_number', requestedOrderNumber).limit(1)
+    : baseOrdersQuery.order('created_at', { ascending: false }).limit(5);
 
-  const { data: orders, error: ordersError } = await query;
+  const { data: orders, error: ordersError } = await ordersQuery;
   if (ordersError) throw ordersError;
 
-  if (!orders?.length) {
+  const rows = (orders || []) as Array<Record<string, unknown>>;
+
+  if (!rows.length) {
     return {
       handled: true,
       reply: requestedOrderNumber
@@ -121,10 +118,7 @@ export async function getMessengerOrderTrackingReply(args: {
   }
 
   if (requestedOrderNumber) {
-    const order = orders[0] as Record<string, unknown>;
-    const status = statusLabel(
-      typeof order.order_status === 'string' ? order.order_status : order.status as string,
-    );
+    const order = rows[0];
     const amount = Number(order.final_amount || 0);
 
     return {
@@ -132,8 +126,8 @@ export async function getMessengerOrderTrackingReply(args: {
       orderIds: [String(order.id)],
       reply:
         '📦 আপনার অর্ডারের বর্তমান অবস্থা\n\n' +
-        `Order: ${order.order_number}\n` +
-        `Status: ${status}\n` +
+        `Order: ${String(order.order_number || requestedOrderNumber)}\n` +
+        `Status: ${statusLabel(order.order_status ?? order.status)}\n` +
         `Payment: ${String(order.payment_status || 'unknown')}\n` +
         `Total: ${currency(args.country)}${amount.toFixed(0)}\n` +
         `Order date: ${new Date(String(order.created_at)).toLocaleDateString('en-IN')}\n\n` +
@@ -141,17 +135,14 @@ export async function getMessengerOrderTrackingReply(args: {
     };
   }
 
-  const lines = orders.slice(0, 5).map((order: Record<string, unknown>) => {
-    const status = statusLabel(
-      typeof order.order_status === 'string' ? order.order_status : order.status as string,
-    );
+  const lines = rows.map((order) => {
     const amount = Number(order.final_amount || 0);
-    return `• ${order.order_number} — ${status} — ${currency(args.country)}${amount.toFixed(0)}`;
+    return `• ${String(order.order_number || 'Unknown')} — ${statusLabel(order.order_status ?? order.status)} — ${currency(args.country)}${amount.toFixed(0)}`;
   });
 
   return {
     handled: true,
-    orderIds: orders.map((order: Record<string, unknown>) => String(order.id)),
+    orderIds: rows.map((order) => String(order.id)),
     reply:
       '📦 আপনার সাম্প্রতিক Messenger orders:\n\n' +
       lines.join('\n') +
@@ -168,12 +159,14 @@ export async function upsertMessengerCustomerProfile(args: {
   phone?: string | null;
   orderId?: string | null;
   orderNumber?: string | null;
-}) {
+}): Promise<void> {
   const phone = args.phone ? normalizePhone(args.phone) : null;
 
   const { data: existing, error: existingError } = await args.supabase
     .from('messenger_customer_profiles')
-    .select('id,name,phone,total_orders,total_spent,last_order_id,last_order_number,order_numbers')
+    .select(
+      'id,name,phone,total_orders,total_spent,last_order_id,last_order_number,order_numbers',
+    )
     .eq('page_id', args.pageId)
     .eq('external_user_id', args.externalUserId)
     .eq('country_code', args.country)
@@ -181,24 +174,22 @@ export async function upsertMessengerCustomerProfile(args: {
 
   if (existingError) throw existingError;
 
-  const orderNumbers = Array.isArray(existing?.order_numbers)
-    ? existing.order_numbers.filter((value): value is string => typeof value === 'string')
+  const previousOrderNumbers = Array.isArray(existing?.order_numbers)
+    ? existing.order_numbers.filter(
+        (value: unknown): value is string => typeof value === 'string',
+      )
     : [];
 
-  if (args.orderNumber && !orderNumbers.includes(args.orderNumber)) {
-    orderNumbers.unshift(args.orderNumber);
-  }
+  const orderNumbers = args.orderNumber
+    ? [args.orderNumber, ...previousOrderNumbers.filter((value) => value !== args.orderNumber)].slice(
+        0,
+        20,
+      )
+    : previousOrderNumbers.slice(0, 20);
 
-  const update: Record<string, unknown> = {
-    page_id: args.pageId,
-    external_user_id: args.externalUserId,
-    country_code: args.country,
-    name: args.name || existing?.name || null,
-    phone: phone || existing?.phone || null,
-    last_order_id: args.orderId || existing?.last_order_id || null,
-    last_order_number: args.orderNumber || existing?.last_order_number || null,
-    order_numbers: orderNumbers.slice(0, 20),
-  };
+  let totalOrders = Number(existing?.total_orders || 0);
+  let totalSpent = Number(existing?.total_spent || 0);
+  let lastOrderId = args.orderId || existing?.last_order_id || null;
 
   if (args.orderNumber) {
     let orderQuery = args.supabase
@@ -214,20 +205,32 @@ export async function upsertMessengerCustomerProfile(args: {
     }
 
     const { data: order } = await orderQuery.maybeSingle();
-    update.last_order_id = order?.id || args.orderId || existing?.last_order_id || null;
-    update.total_orders = Number(existing?.total_orders || 0) + (order ? 1 : 0);
-    update.total_spent =
-      Number(existing?.total_spent || 0) + Number(order?.final_amount || 0);
-  } else {
-    update.total_orders = Number(existing?.total_orders || 0);
-    update.total_spent = Number(existing?.total_spent || 0);
+
+    if (order) {
+      totalOrders += 1;
+      totalSpent += Number(order.final_amount || 0);
+      lastOrderId = order.id;
+    }
   }
 
-  const { error } = await args.supabase
+  const { error: upsertError } = await args.supabase
     .from('messenger_customer_profiles')
-    .upsert(update, {
-      onConflict: 'page_id,external_user_id,country_code',
-    });
+    .upsert(
+      {
+        page_id: args.pageId,
+        external_user_id: args.externalUserId,
+        country_code: args.country,
+        name: args.name || existing?.name || null,
+        phone: phone || existing?.phone || null,
+        total_orders: totalOrders,
+        total_spent: totalSpent,
+        last_order_id: lastOrderId,
+        last_order_number:
+          args.orderNumber || existing?.last_order_number || null,
+        order_numbers: orderNumbers,
+      },
+      { onConflict: 'page_id,external_user_id,country_code' },
+    );
 
-  if (error) throw error;
+  if (upsertError) throw upsertError;
 }
