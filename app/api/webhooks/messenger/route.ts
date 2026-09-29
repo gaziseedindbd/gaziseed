@@ -152,24 +152,6 @@ function isProductListRequest(text: string): boolean {
     )
   );
 }
-function isGeneralSeedAdviceRequest(text: string): boolean {
-  if (!isSeedKnowledgeRequest(text)) return false;
-  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
-  return /(কীভাবে|কিভাবে|কখন|কতদিন|কত দিনে|অঙ্কুর|বপন|রোপণ|পরিচর্যা|মাটি|সার|পানি|জল|watering|how to|when to|how long|germination|sow|sowing|plant|planting|care|soil|fertilizer)/i.test(
-    normalized,
-  );
-}
-
-function isProductListRequest(text: string): boolean {
-  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
-  return (
-    isProductAvailabilityQuestion(normalized) ||
-    /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে)/i.test(
-      normalized,
-    )
-  );
-}
-
 function formatMessengerCurrency(country: CountryCode): string {
   return country === 'IN' ? '₹' : '৳';
 }
@@ -964,7 +946,11 @@ async function processMessengerEvent(event: MessengerEvent) {
   // quantity/name/address order step hijack a fresh product question.
   const freshProductBrowseIntent = isOtherProductRequest(normalizedActionText);
   const startsNewProductIntent = isProductCatalogRequest(normalizedActionText);
-  if (startsNewProductIntent && conversation.metadata?.pending_messenger_order) {
+  if (
+    startsNewProductIntent &&
+    (Boolean(conversation.metadata?.pending_messenger_order) ||
+      (freshProductBrowseIntent && Boolean(conversation.metadata?.last_messenger_product)))
+  ) {
     const resetMetadata = freshProductBrowseIntent
       ? {
           pending_messenger_order: null,
