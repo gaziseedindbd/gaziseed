@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { extractMessengerPhone, normalizeMessengerPhone } from './messenger-phone';
 
 export type MessengerTrackingCountry = 'IN' | 'BD';
 
@@ -7,10 +8,6 @@ const TRACKING_FIELDS =
 
 function currency(country: MessengerTrackingCountry) {
   return country === 'IN' ? '₹' : '৳';
-}
-
-function normalizePhone(value: string) {
-  return value.replace(/\D/g, '');
 }
 
 function parseOrderNumber(text: string): string | null {
@@ -59,11 +56,10 @@ export async function getMessengerOrderTrackingReply(args: {
 
   const profilePhone =
     profile && typeof profile.phone === 'string'
-      ? normalizePhone(profile.phone)
+      ? normalizeMessengerPhone(profile.phone)
       : '';
 
-  const phoneMatch = args.text.match(/(?:\+?\d[\d\s().-]{8,}\d)/);
-  const requestedPhone = normalizePhone(phoneMatch?.[0] || '');
+  const requestedPhone = extractMessengerPhone(args.text) || '';
 
   if (profilePhone && requestedPhone && profilePhone !== requestedPhone) {
     return {
@@ -160,7 +156,7 @@ export async function upsertMessengerCustomerProfile(args: {
   orderId?: string | null;
   orderNumber?: string | null;
 }): Promise<void> {
-  const phone = args.phone ? normalizePhone(args.phone) : null;
+  const phone = args.phone ? normalizeMessengerPhone(args.phone) : null;
 
   const { data: existing, error: existingError } = await args.supabase
     .from('messenger_customer_profiles')
