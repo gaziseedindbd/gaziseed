@@ -17,8 +17,11 @@ import {
   serializeMessengerDeliveryPolicy,
 } from '@/lib/ai/messenger-delivery-tool';
 import {
+  addPendingMessengerOrderToCart,
+  formatMessengerCartSummary,
   getMessengerOrderResumeReply,
   handleMessengerOrderFlow,
+  parseMessengerCartItems,
   parsePendingMessengerOrder,
 } from '@/lib/ai/messenger-order-tool';
 import {
@@ -27,6 +30,8 @@ import {
   upsertMessengerCustomerProfile,
 } from '@/lib/ai/messenger-order-tracking';
 import {
+  isMessengerAddAnotherProductRequest,
+  isMessengerCheckoutRequest,
   isMessengerOrderInterruptRequest,
   isMessengerOrderResumeRequest,
   isMessengerOrderTrackingRequest,
@@ -658,7 +663,11 @@ async function processMessengerEvent(event: MessengerEvent) {
       ? 'হ্যাঁ'
       : quickReplyPayload === 'ORDER_CANCEL' || quickReplyPayload === 'ORDER_CANCEL_NO'
         ? 'না'
-        : text;
+        : quickReplyPayload === 'CART_ADD_PRODUCT'
+          ? 'add another product'
+          : quickReplyPayload === 'CART_CHECKOUT'
+            ? 'checkout'
+            : text;
 
   const quickReplyCountry =
     event.message?.quick_reply?.payload === 'COUNTRY_IN'
