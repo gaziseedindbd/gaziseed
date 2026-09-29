@@ -184,16 +184,22 @@ export async function upsertMessengerCustomerProfile(args: {
     order_numbers: orderNumbers.slice(0, 20),
   };
 
-  if (args.orderId && args.orderNumber) {
-    const { data: order } = await args.supabase
+  if (args.orderNumber) {
+    let orderQuery = args.supabase
       .from('orders')
-      .select('final_amount')
-      .eq('id', args.orderId)
+      .select('id,final_amount')
+      .eq('order_number', args.orderNumber)
       .eq('country_code', args.country)
       .eq('order_source', 'facebook_messenger_ai')
-      .maybeSingle();
+      .limit(1);
 
-    update.total_orders = Number(existing?.total_orders || 0) + 1;
+    if (args.orderId) {
+      orderQuery = orderQuery.eq('id', args.orderId);
+    }
+
+    const { data: order } = await orderQuery.maybeSingle();
+    update.last_order_id = order?.id || args.orderId || existing?.last_order_id || null;
+    update.total_orders = Number(existing?.total_orders || 0) + (order ? 1 : 0);
     update.total_spent =
       Number(existing?.total_spent || 0) + Number(order?.final_amount || 0);
   } else {
