@@ -905,7 +905,8 @@ async function processMessengerEvent(event: MessengerEvent) {
   if (
     suspendedOrder &&
     !conversation.metadata?.pending_messenger_order &&
-    isMessengerOrderResumeRequest(normalizedActionText)
+    isMessengerOrderResumeRequest(normalizedActionText) &&
+    !isMessengerOrderTrackingRequest(normalizedActionText)
   ) {
     const suspendedProduct = conversation.metadata?.suspended_messenger_product;
     const resumeMetadata: Record<string, unknown> = {
