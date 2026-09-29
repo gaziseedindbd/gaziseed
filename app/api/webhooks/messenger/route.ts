@@ -905,17 +905,35 @@ async function processMessengerEvent(event: MessengerEvent) {
     return;
   }
 
+  // A new product/catalog request starts a new intent. Never let an older
+  // quantity/name/address order step hijack a fresh product question.
+  const startsNewProductIntent = isProductCatalogRequest(normalizedActionText);
+  if (startsNewProductIntent && conversation.metadata?.pending_messenger_order) {
+    await markConversation(
+      sb,
+      conversation.id,
+      'active',
+      { pending_messenger_order: null },
+      activeCountry,
+    );
+    conversation.metadata = {
+      ...(conversation.metadata || {}),
+      pending_messenger_order: null,
+    };
+  }
+
   // General agricultural questions remain AI-capable for both countries.
   // Product/catalog questions with a seed-advice intent continue through the AI path
   // so multi-intent requests such as “দাম কত এবং কীভাবে বপন করব?” can be answered together.
 
-  try {
-    const orderFlow = await handleMessengerOrderFlow({
-      supabase: sb,
-      country: activeCountry,
-      text,
-      metadata: conversation.metadata,
-    });
+  if (!startsNewProductIntent) {
+    try {
+      const orderFlow = await handleMessengerOrderFlow({
+        supabase: sb,
+        country: activeCountry,
+        text,
+        metadata: conversation.metadata,
+      });
 
     if (orderFlow.handled) {
       await markConversation(
@@ -949,10 +967,10 @@ async function processMessengerEvent(event: MessengerEvent) {
 
       await sendMessengerText(senderId, orderFlow.reply, confirmationQuickReplies);
       return;
-    }
-  } catch (error) {
-    console.error(
-      'Messenger order flow failed:',
+      }
+    } catch (error) {
+      console.error(
+        'Messenger order flow failed:',
       error instanceof Error ? error.message : 'Unknown order flow error',
     );
 
@@ -966,8 +984,9 @@ async function processMessengerEvent(event: MessengerEvent) {
       countryCode: activeCountry,
     });
 
-    await sendMessengerText(senderId, orderErrorMessage);
-    return;
+      await sendMessengerText(senderId, orderErrorMessage);
+      return;
+    }
   }
 
   // Prefer verified website/catalog knowledge before generic agriculture AI.
