@@ -1,0 +1,43 @@
+name: Messenger AI Regression
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/api/webhooks/messenger/**"
+      - "app/api/admin/ai-assistant/**"
+      - "app/admin/ai-messenger/**"
+      - "lib/ai/messenger-*.ts"
+      - "tests/messenger-*.ts"
+      - "tsconfig.messenger-tests.json"
+      - "package.json"
+      - "package-lock.json"
+  pull_request:
+    paths:
+      - "app/api/webhooks/messenger/**"
+      - "app/api/admin/ai-assistant/**"
+      - "app/admin/ai-messenger/**"
+      - "lib/ai/messenger-*.ts"
+      - "tests/messenger-*.ts"
+      - "tsconfig.messenger-tests.json"
+      - "package.json"
+      - "package-lock.json"
+
+jobs:
+  messenger-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Messenger regression tests
+        run: npm run test:messenger
