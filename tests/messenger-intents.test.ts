@@ -134,10 +134,17 @@ test('prefills repeat-customer checkout from a verified Messenger profile', () =
   assert.equal(pending.delivery_address, 'Saved address');
 
   const incomplete = applyMessengerCustomerProfileToPending(
-    pending,
+    {
+      step: 'name',
+      product_id: 'p1',
+      product_name: 'Tomato',
+      unit_price: 99,
+      stock: 10,
+      quantity: 2,
+    },
     { name: 'Test Customer', phone: null, address: 'Saved address' },
   );
-  assert.equal(incomplete.step, 'saved_details_confirmation');
+  assert.equal(incomplete.step, 'name');
 });
 
 test('recognizes repeat-checkout detail changes', () => {
