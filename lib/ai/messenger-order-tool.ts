@@ -272,6 +272,54 @@ export function parsePendingMessengerOrder(value: unknown): PendingMessengerOrde
   };
 }
 
+export function applyMessengerCustomerProfileToPending(
+  pending: PendingMessengerOrder,
+  profile: MessengerCustomerPrefill | null | undefined,
+): PendingMessengerOrder {
+  if (
+    pending.step !== 'name' ||
+    !profile?.name ||
+    !profile.phone ||
+    !profile.address
+  ) {
+    return pending;
+  }
+
+  return {
+    ...pending,
+    customer_name: profile.name,
+    customer_phone: profile.phone,
+    delivery_address: profile.address,
+    india_pincode: undefined,
+    india_address: undefined,
+    india_city: undefined,
+    india_thana: undefined,
+    india_state: undefined,
+    step: 'saved_details_confirmation',
+  };
+}
+
+function getMessengerSavedDetailsReply(
+  pending: PendingMessengerOrder,
+  cart: MessengerCartItem[],
+  currency: string,
+): string {
+  const orderItems = pending.quantity
+    ? addPendingMessengerOrderToCart(cart, pending)
+    : cart;
+
+  return [
+    '✅ আপনার আগের Messenger order-এর saved details পাওয়া গেছে।',
+    '',
+    formatMessengerCartSummary(orderItems, currency),
+    '',
+    'নাম: ' + (pending.customer_name || 'সংরক্ষিত নেই'),
+    'মোবাইল: ' + (pending.customer_phone || 'সংরক্ষিত নেই'),
+    'ঠিকানা: ' + (pending.delivery_address || 'সংরক্ষিত নেই'),
+    '',
+    'সব ঠিক থাকলে “হ্যাঁ” লিখুন। তথ্য বদলাতে “তথ্য পরিবর্তন” লিখুন।',
+  ].join('\n');
+}
 export function getMessengerOrderResumeReply(pending: PendingMessengerOrder): string {
   const prefix = `আগের অর্ডারটি আবার চালু করেছি। ${pending.product_name}-এর অর্ডারটি যেখানে থেমেছিল, সেখান থেকেই চলছি।`;
   switch (pending.step) {
@@ -293,6 +341,8 @@ export function getMessengerOrderResumeReply(pending: PendingMessengerOrder): st
       return prefix + '\n\nআপনার Thana লিখুন।';
     case 'india_state':
       return prefix + '\n\nআপনার State লিখুন।';
+    case 'saved_details_confirmation':
+      return prefix + '\n\nআপনার saved customer details পাওয়া গেছে। সব ঠিক থাকলে “হ্যাঁ” লিখুন; তথ্য বদলাতে “তথ্য পরিবর্তন” লিখুন।';
     case 'confirmation':
       return prefix + '\n\nঅর্ডারের তথ্য নিশ্চিত করতে হ্যাঁ বা না লিখুন।';
   }
