@@ -32,6 +32,9 @@ import {
   normalizeMessengerSearchTerm,
 } from '../lib/ai/messenger-product-tool';
 import {
+  isMessengerProductSpecificKnowledgeQuery,
+} from '../lib/ai/messenger-knowledge-tool';
+import {
   getMessengerHumanSupportQueueState,
 } from '../lib/ai/messenger-human-support';
 import {
@@ -70,6 +73,28 @@ test('normalizes and classifies Messenger product search matches', () => {
   assert.equal(classifyMessengerProductMatch('Red Rose Flower Seeds', product), 'exact');
   assert.equal(classifyMessengerProductMatch('golap', product), 'strong');
   assert.equal(classifyMessengerProductMatch('golp', product), 'similar');
+});
+
+
+test('keeps generic agriculture process questions out of stale product context', () => {
+  const product = {
+    name_bn: 'লাল গোলাপ ফুলের বীজ',
+    name_en: 'Red Rose Flower Seeds',
+    slug: 'lal-golap-fuler-bij',
+  };
+
+  assert.equal(
+    isMessengerProductSpecificKnowledgeQuery('বীজ বপনের আগে মাটি কীভাবে প্রস্তুত করব?', product),
+    false,
+  );
+  assert.equal(
+    isMessengerProductSpecificKnowledgeQuery('এই বীজের মাটি কেমন?', product),
+    true,
+  );
+  assert.equal(
+    isMessengerProductSpecificKnowledgeQuery('লাল গোলাপের মাটি কেমন?', product),
+    true,
+  );
 });
 
 test('recognizes interrupting intents', () => {
