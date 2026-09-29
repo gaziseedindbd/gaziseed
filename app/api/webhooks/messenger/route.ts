@@ -22,8 +22,14 @@ import {
   parsePendingMessengerOrder,
 } from '@/lib/ai/messenger-order-tool';
 import {
+  getMessengerOrderTrackingReply,
+  parseMessengerTrackingOrderNumber,
+  upsertMessengerCustomerProfile,
+} from '@/lib/ai/messenger-order-tracking';
+import {
   isMessengerOrderInterruptRequest,
   isMessengerOrderResumeRequest,
+  isMessengerOrderTrackingRequest,
   isOtherProductRequest,
   isProductCatalogRequest,
   isProductListRequest,
@@ -1019,12 +1025,47 @@ async function processMessengerEvent(event: MessengerEvent) {
     };
   }
 
+  // Messenger order tracking is deterministic and isolated from checkout.
+  if (isMessengerOrderTrackingRequest(normalizedActionText)) {
+    try {
+      const tracking = await getMessengerOrderTrackingReply({
+        supabase: sb,
+        pageId: META_PAGE_ID,
+        externalUserId: senderId,
+        country: activeCountry,
+        text,
+      });
+
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: tracking.reply,
+        actionStatus: 'order_tracking',
+        countryCode: activeCountry,
+        sourceContext: {
+          order_tracking: true,
+          requested_order_number: parseMessengerTrackingOrderNumber(text),
+          order_ids: tracking.orderIds || [],
+        },
+      });
+      await sendMessengerText(senderId, tracking.reply);
+      return;
+    } catch (error) {
+      console.error(
+        'Messenger order tracking failed:',
+        error instanceof Error ? error.message : 'Unknown order tracking error',
+      );
+    }
+  }
+
   // General agricultural questions remain AI-capable for both countries.
   // Product/catalog questions with a seed-advice intent continue through the AI path
   // so multi-intent requests such as “দাম কত এবং কীভাবে বপন করব?” can be answered together.
 
   if (!startsNewProductIntent) {
     try {
+      const pendingOrderBeforeFlow = parsePendingMessengerOrder(
+        conversation.metadata?.pending_messenger_order,
+      );
       const orderFlow = await handleMessengerOrderFlow({
         supabase: sb,
         country: activeCountry,
@@ -1033,6 +1074,40 @@ async function processMessengerEvent(event: MessengerEvent) {
       });
 
     if (orderFlow.handled) {
+      if (
+        pendingOrderBeforeFlow?.customer_phone ||
+        pendingOrderBeforeFlow?.customer_name ||
+        orderFlow.pending?.customer_phone ||
+        orderFlow.pending?.customer_name
+      ) {
+        try {
+          const orderNumberMatch =
+            orderFlow.reply.match(/GS-(?:IN|BD)-[A-Z0-9]{8}/i)?.[0] || null;
+          await upsertMessengerCustomerProfile({
+            supabase: sb,
+            pageId: META_PAGE_ID,
+            externalUserId: senderId,
+            country: activeCountry,
+            name:
+              orderFlow.pending?.customer_name ||
+              pendingOrderBeforeFlow?.customer_name ||
+              null,
+            phone:
+              orderFlow.pending?.customer_phone ||
+              pendingOrderBeforeFlow?.customer_phone ||
+              null,
+            orderNumber: orderNumberMatch,
+          });
+        } catch (profileError) {
+          console.error(
+            'Messenger customer profile sync failed:',
+            profileError instanceof Error
+              ? profileError.message
+              : 'Unknown profile error',
+          );
+        }
+      }
+
       await markConversation(
         sb,
         conversation.id,
