@@ -16,7 +16,7 @@ import {
   isMessengerDeliveryPolicyQuestion,
   serializeMessengerDeliveryPolicy,
 } from '@/lib/ai/messenger-delivery-tool';
-import { handleMessengerOrderFlow } from '@/lib/ai/messenger-order-tool';
+import {\n  getMessengerOrderResumeReply,\n  handleMessengerOrderFlow,\n  parsePendingMessengerOrder,\n} from '@/lib/ai/messenger-order-tool';
 import { getMessengerWebsiteKnowledgeAnswer } from '@/lib/ai/messenger-knowledge-tool';
 
 export const dynamic = 'force-dynamic';
@@ -85,53 +85,6 @@ function isProductAvailabilityQuestion(text: string): boolean {
   const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
 
   return /(?:\b(?:ki|kono|kon|what|which|any|anything)\s+(?:products?|product)\s+(?:(?:is|are)\s+)?(?:ache|ase|nei|naie|available|there)\b|(?:ki|kono|kon|কী|কি|কোনো|কোন)\s*(?:কি\s*)?(?:প্রোডাক্ট|পণ্য|products?|product)\s*(?:আছে|আছেন|নেই|নাই|naie|nei|ache|ase|available|there)|(?:কোনো|কোন)\s*(?:প্রোডাক্ট|পণ্য|products?|product)\s*(?:নেই|নাই|আছে|আছেন)|\b(?:anything|any)\s+(?:available|in stock|there)\b)/i.test(normalized);
-}
-
-function isOtherProductRequest(text: string): boolean {
-  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
-
-  // Customers often type product names with Messenger-style spelling mistakes
-  // such as "prodcuts", "prodcut", or "prodcuct". Treat the product stem plus
-  // an "other/more" browsing phrase as a fresh catalog intent.
-  const hasAlternativeWord =
-    /\b(?:other|another|different|more|additional)\b/i.test(normalized);
-  const hasProductLikeWord =
-    /\bprod[a-z0-9_-]*\b/i.test(normalized) ||
-    /\bitem[a-z0-9_-]*\b/i.test(normalized) ||
-    /(?:প্রোডাক্ট|পণ্য)/i.test(normalized);
-  const hasBrowseWord =
-    /\b(?:show|see|view|browse|looking|want|need)\b/i.test(normalized) ||
-    /(?:dekh|dekha|dekhte|dekhan|dekhao|chai|chaie|chaye|দেখ|চাই)/i.test(
-      normalized,
-    );
-
-  return (
-    /\b(?:other|another|different|more|additional)\s+(?:prod[a-z0-9_-]*|item[a-z0-9_-]*)\b/i.test(
-      normalized,
-    ) ||
-    /\b(?:prod[a-z0-9_-]*|item[a-z0-9_-]*)\s+(?:other|another|different|more|additional)\b/i.test(
-      normalized,
-    ) ||
-    (hasAlternativeWord && hasProductLikeWord && hasBrowseWord) ||
-    /(অন্য|আরও|আর|আরেক|অন্যটা|অন্যগুলো).*(প্রোডাক্ট|পণ্য|prod[a-z0-9_-]*|item[a-z0-9_-]*)/i.test(
-      normalized,
-    ) ||
-    /(প্রোডাক্ট|পণ্য|prod[a-z0-9_-]*|item[a-z0-9_-]*).*(অন্য|আরও|আর|আরেক|অন্যটা|অন্যগুলো)/i.test(
-      normalized,
-    )
-  );
-}
-
-function isProductCatalogRequest(text: string): boolean {
-  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
-
-  return (
-    isOtherProductRequest(normalized) ||
-    isProductAvailabilityQuestion(normalized) ||
-    /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে|দাম|price|স্টক|stock|available|উপলব্ধ)/i.test(
-      normalized,
-    )
-  );
 }
 
 function isGeneralSeedAdviceRequest(text: string): boolean {
@@ -923,6 +876,8 @@ async function processMessengerEvent(event: MessengerEvent) {
                 stock: selectedStock,
               }
             : null,
+        suspended_messenger_order: null,
+        suspended_messenger_product: null,
         product_selection_at: new Date().toISOString(),
       },
       activeCountry,
@@ -942,10 +897,106 @@ async function processMessengerEvent(event: MessengerEvent) {
     return;
   }
 
+  // Resume a previously suspended order before the new intent router runs.
+  const suspendedOrder = parsePendingMessengerOrder(
+    conversation.metadata?.suspended_messenger_order,
+  );
+  if (
+    suspendedOrder &&
+    !conversation.metadata?.pending_messenger_order &&
+    isMessengerOrderResumeRequest(normalizedActionText)
+  ) {
+    const suspendedProduct = conversation.metadata?.suspended_messenger_product;
+    const resumeMetadata: Record<string, unknown> = {
+      pending_messenger_order: suspendedOrder,
+      suspended_messenger_order: null,
+      suspended_messenger_product: null,
+      last_messenger_product:
+        suspendedProduct && typeof suspendedProduct === 'object'
+          ? suspendedProduct
+          : {
+              id: suspendedOrder.product_id,
+              name: suspendedOrder.product_name,
+              price: suspendedOrder.unit_price,
+              stock: suspendedOrder.stock,
+            },
+      order_resumed_at: new Date().toISOString(),
+      order_resume_reason: 'customer_requested_resume',
+    };
+
+    await markConversation(
+      sb,
+      conversation.id,
+      'active',
+      resumeMetadata,
+      activeCountry,
+    );
+    conversation.metadata = {
+      ...(conversation.metadata || {}),
+      ...resumeMetadata,
+    };
+
+    const resumeReply = getMessengerOrderResumeReply(suspendedOrder);
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: resumeReply,
+      actionStatus: 'order_flow_resume',
+      countryCode: activeCountry,
+      sourceContext: {
+        order_flow: true,
+        pending_step: suspendedOrder.step,
+        resumed_order: true,
+      },
+    });
+    await sendMessengerText(senderId, resumeReply);
+    return;
+  }
+
   // A new product/catalog request starts a new intent. Never let an older
   // quantity/name/address order step hijack a fresh product question.
   const freshProductBrowseIntent = isOtherProductRequest(normalizedActionText);
   const startsNewProductIntent = isProductCatalogRequest(normalizedActionText);
+  const pendingOrderBeforeInterrupt = parsePendingMessengerOrder(
+    conversation.metadata?.pending_messenger_order,
+  );
+  const shouldSuspendPendingOrder =
+    Boolean(pendingOrderBeforeInterrupt) &&
+    isMessengerOrderInterruptRequest(normalizedActionText);
+
+  if (shouldSuspendPendingOrder && pendingOrderBeforeInterrupt) {
+    const suspensionMetadata: Record<string, unknown> = {
+      pending_messenger_order: null,
+      suspended_messenger_order: pendingOrderBeforeInterrupt,
+      suspended_messenger_product:
+        conversation.metadata?.last_messenger_product || {
+          id: pendingOrderBeforeInterrupt.product_id,
+          name: pendingOrderBeforeInterrupt.product_name,
+          price: pendingOrderBeforeInterrupt.unit_price,
+          stock: pendingOrderBeforeInterrupt.stock,
+        },
+      order_suspended_at: new Date().toISOString(),
+      order_suspend_reason: isMessengerOrderResumeRequest(normalizedActionText)
+        ? 'resume_guard'
+        : 'customer_intent_interrupt',
+    };
+
+    if (freshProductBrowseIntent) {
+      suspensionMetadata.last_messenger_product = null;
+    }
+
+    await markConversation(
+      sb,
+      conversation.id,
+      'active',
+      suspensionMetadata,
+      activeCountry,
+    );
+    conversation.metadata = {
+      ...(conversation.metadata || {}),
+      ...suspensionMetadata,
+    };
+  }
+
   if (
     startsNewProductIntent &&
     (Boolean(conversation.metadata?.pending_messenger_order) ||
@@ -1227,10 +1278,11 @@ async function processMessengerEvent(event: MessengerEvent) {
       content: result.content,
       provider: result.provider,
       model: result.model,
-      actionStatus: 'sent',
+      actionStatus: 'provider_result',
       countryCode: activeCountry,
       sourceContext: {
         attempts: result.attempts,
+        usage: result.usage || null,
       },
     });
 
@@ -1261,6 +1313,7 @@ async function processMessengerEvent(event: MessengerEvent) {
       countryCode: activeCountry,
       sourceContext: {
         attempts: result.attempts,
+        usage: result.usage || null,
         knowledge_fallback: finalReply !== result.content,
       },
     });
@@ -1290,6 +1343,10 @@ async function processMessengerEvent(event: MessengerEvent) {
         countryCode: activeCountry,
         sourceContext: {
           error: reason,
+          attempts:
+            error instanceof MessengerAIProviderError
+              ? error.attempts
+              : [],
         },
       });
       await sendMessengerText(senderId, handoffMessage);
