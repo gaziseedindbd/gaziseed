@@ -54,9 +54,9 @@ const PRODUCT_FIELDS = [
 
 function normalizeSearchTerm(value: string): string {
   return value
-    .replace(/[\\%_]/g, ' ')
-    .replace(/[\\r\\n]+/g, ' ')
-    .replace(/\\s+/g, ' ')
+    .replace(/[%_]/g, ' ')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 80);
 }
@@ -66,7 +66,7 @@ export function normalizeMessengerSearchTerm(value: string): string {
 }
 
 export function normalizeMessengerSearchSlug(value: string): string {
-  return normalizeSearchTerm(value).toLocaleLowerCase().replace(/\\s+/g, '-');
+  return normalizeSearchTerm(value).toLocaleLowerCase().replace(/\s+/g, '-');
 }
 
 export function classifyMessengerProductMatch(
@@ -112,7 +112,7 @@ function searchTokens(value: string): string[] {
 
   return Array.from(
     new Set(
-      (value.match(/[A-Za-z0-9\\u0980-\\u09FF]+/g) || [])
+      (value.match(/[A-Za-z0-9\u0980-\u09FF]+/g) || [])
         .map((token) => token.trim())
         .filter(
           (token) =>
