@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { buildMessengerMonitoringSummary } from '@/lib/ai/messenger-monitoring';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,17 +27,29 @@ export async function GET() {
     const sb = adminSupabase();
     if (!sb) return NextResponse.json({ success: false, message: 'Server configuration incomplete' }, { status: 500 });
 
-    const [settingsRes, conversationsRes, handoffsRes, messagesRes, productOrdersRes, comboOrdersRes, offerOrdersRes] = await Promise.all([
+    const monitoringSince = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const [settingsRes, conversationsRes, handoffsRes, messagesRes, monitoringMessagesRes, productOrdersRes, comboOrdersRes, offerOrdersRes] = await Promise.all([
       sb.from('ai_settings').select('id,is_enabled,provider,model,base_url,temperature,max_tokens,feature_flags,updated_at').eq('id', 1).maybeSingle(),
       sb.from('ai_conversations').select('id,channel,external_user_id,page_id,status,metadata,last_message_at,created_at,updated_at').order('updated_at', { ascending: false }).limit(12),
       sb.from('ai_handoffs').select('id,conversation_id,reason,status,assigned_to,notes,created_at,resolved_at').order('created_at', { ascending: false }).limit(12),
       sb.from('ai_messages').select('id,conversation_id,role,provider,model,tool_name,action_status,requires_confirmation,created_at').order('created_at', { ascending: false }).limit(20),
+      sb.from('ai_messages').select('role,provider,action_status,source_context').gte('created_at', monitoringSince).order('created_at', { ascending: false }).limit(2000),
       sb.from('orders').select('id', { count: 'exact', head: true }).eq('order_source', 'facebook_messenger_ai'),
       sb.from('orders').select('id', { count: 'exact', head: true }).eq('order_source', 'facebook_messenger_ai_combo'),
       sb.from('orders').select('id', { count: 'exact', head: true }).eq('order_source', 'facebook_messenger_ai_offer'),
     ]);
 
     if (settingsRes.error) throw settingsRes.error;
+    const monitoring = buildMessengerMonitoringSummary(
+      (monitoringMessagesRes.data || []).map((message) => ({
+        role: message.role,
+        provider: message.provider,
+        action_status: message.action_status,
+        source_context: message.source_context,
+      })),
+    );
+
 
     const flags = (settingsRes.data?.feature_flags && typeof settingsRes.data.feature_flags === 'object')
       ? settingsRes.data.feature_flags
@@ -43,17 +57,17 @@ export async function GET() {
 
     const providers = [
       {
-        key: 'groq',
-        label: 'Groq',
-        configured: Boolean(process.env.GROQ_API_KEY),
-        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
-        priority: 1,
-      },
-      {
         key: 'gemini',
         label: 'Gemini',
         configured: Boolean(process.env.GEMINI_API_KEY),
-        model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+        model: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
+        priority: 1,
+      },
+      {
+        key: 'groq',
+        label: 'Groq',
+        configured: Boolean(process.env.GROQ_API_KEY),
+        model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
         priority: 2,
       },
       {
@@ -99,6 +113,10 @@ export async function GET() {
         product_orders: productOrdersRes.count || 0,
         combo_orders: comboOrdersRes.count || 0,
         offer_orders: offerOrdersRes.count || 0,
+      },
+      monitoring: {
+        window_hours: 24,
+        ...monitoring,
       },
       conversations: conversationsRes.data || [],
       handoffs: handoffsRes.data || [],
