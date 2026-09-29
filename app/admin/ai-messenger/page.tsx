@@ -30,7 +30,32 @@ type DashboardData = {
   providers: Provider[];
   stats: { conversations: number; open_handoffs: number; recent_messages: number; product_orders: number; combo_orders: number; offer_orders: number };
   conversations: Array<{ id: string; channel: string; external_user_id: string | null; status: string; last_message_at: string | null; updated_at: string | null }>;
-  handoffs: Array<{ id: string; conversation_id: string; reason: string; status: string; created_at: string; resolved_at: string | null }>;
+  handoffs: Array<{ id: string; conversation_id: string; reason: string; status: string; created_at: string; resolved_at: string | null; country_code?: string | null }>;
+  support_queue: Array<{
+    id: string;
+    conversation_id: string;
+    reason: string;
+    status: string;
+    queue_state: 'pending' | 'open' | 'closed';
+    assigned_to: string | null;
+    created_at: string;
+    resolved_at: string | null;
+    customer_profile: {
+      name?: string | null;
+      phone?: string | null;
+      address?: string | null;
+      total_orders?: number | null;
+      total_spent?: number | null;
+      last_order_number?: string | null;
+    } | null;
+    conversation: {
+      external_user_id: string | null;
+      status: string;
+      last_message_at: string | null;
+      metadata?: Record<string, unknown> | null;
+    } | null;
+    context: Array<{ id: string; role: string; content: string | null; created_at: string; action_status: string | null }>;
+  }>;
   messages: Array<{ id: string; conversation_id: string; role: string; provider: string | null; model: string | null; tool_name: string | null; action_status: string | null; requires_confirmation: boolean; created_at: string }>;
   monitoring: {
     window_hours: number;
@@ -74,6 +99,27 @@ export default function AIMessengerAdminPage() {
       setError(e instanceof Error ? e.message : 'AI Messenger data load failed');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function updateSupportHandoff(
+    handoffId: string,
+    action: 'claim' | 'close' | 'reopen',
+  ) {
+    try {
+      setError('');
+      const res = await fetch('/api/admin/ai-assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handoff_id: handoffId, action }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || 'Support handoff update failed');
+      }
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Support handoff update failed');
     }
   }
 
@@ -179,7 +225,114 @@ export default function AIMessengerAdminPage() {
       <div className="grid gap-6 xl:grid-cols-2">
         <section className="rounded-2xl border border-border bg-card p-6"><div className="mb-5 flex items-center gap-2"><MessageCircle className="h-5 w-5 text-primary" /><div><h2 className="text-lg font-bold">Recent Conversations</h2><p className="text-sm text-muted-foreground">সবচেয়ে সাম্প্রতিক Messenger sessions</p></div></div><div className="space-y-3">{data.conversations.length === 0 ? <p className="text-sm text-muted-foreground">No conversations yet.</p> : data.conversations.map((conversation) => <div key={conversation.id} className="rounded-xl border border-border p-4"><div className="flex items-center justify-between gap-3"><span className="font-semibold">{conversation.status}</span><span className="text-xs text-muted-foreground"><Clock3 className="mr-1 inline h-3 w-3" />{formatDate(conversation.updated_at)}</span></div><p className="mt-2 text-xs text-muted-foreground">User: {conversation.external_user_id || '—'}</p></div>)}</div></section>
 
-        <section className="rounded-2xl border border-border bg-card p-6"><div className="mb-5 flex items-center gap-2"><UserRound className="h-5 w-5 text-primary" /><div><h2 className="text-lg font-bold">Human Handoffs</h2><p className="text-sm text-muted-foreground">যে conversation-গুলোতে মানুষ লাগবে</p></div></div><div className="space-y-3">{data.handoffs.length === 0 ? <p className="text-sm text-muted-foreground">No handoffs yet.</p> : data.handoffs.map((handoff) => <div key={handoff.id} className="rounded-xl border border-border p-4"><div className="flex items-center justify-between gap-3"><span className="font-semibold">{handoff.status}</span><span className="text-xs text-muted-foreground">{formatDate(handoff.created_at)}</span></div><p className="mt-2 text-sm">{handoff.reason}</p></div>)}</div></section>
+        <section className="rounded-2xl border border-border bg-card p-6">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <UserRound className="h-5 w-5 text-primary" />
+              <div>
+                <h2 className="text-lg font-bold">Bangladesh Human Support Queue</h2>
+                <p className="text-sm text-muted-foreground">Customer request → pending → agent takeover → closed</p>
+              </div>
+            </div>
+            <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">
+              {data.stats.bd_human_support_queue} active
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            {data.support_queue.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No Bangladesh human-support requests yet.</p>
+            ) : (
+              data.support_queue.map((handoff) => (
+                <div key={handoff.id} className="rounded-2xl border border-border p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold uppercase">
+                        {handoff.queue_state}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{formatDate(handoff.created_at)}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      {handoff.queue_state === 'pending' ? (
+                        <button
+                          className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary"
+                          onClick={() => updateSupportHandoff(handoff.id, 'claim')}
+                        >
+                          Take Support
+                        </button>
+                      ) : null}
+                      {handoff.queue_state !== 'closed' ? (
+                        <button
+                          className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
+                          onClick={() => updateSupportHandoff(handoff.id, 'close')}
+                        >
+                          Close
+                        </button>
+                      ) : (
+                        <button
+                          className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary"
+                          onClick={() => updateSupportHandoff(handoff.id, 'reopen')}
+                        >
+                          Reopen
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <p className="mt-3 text-sm font-medium">{handoff.reason}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Messenger user: {handoff.conversation?.external_user_id || '—'}
+                  </p>
+
+                  {handoff.customer_profile ? (
+                    <div className="mt-3 rounded-xl bg-secondary/40 p-3 text-xs">
+                      <div className="grid gap-1 sm:grid-cols-2">
+                        <span>নাম: {handoff.customer_profile.name || '—'}</span>
+                        <span>ফোন: {handoff.customer_profile.phone || '—'}</span>
+                        <span>ঠিকানা: {handoff.customer_profile.address || '—'}</span>
+                        <span>আগের orders: {handoff.customer_profile.total_orders ?? '—'}</span>
+                        <span>শেষ order: {handoff.customer_profile.last_order_number || '—'}</span>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="mt-4 rounded-xl border border-border/70 bg-background p-3">
+                    <p className="mb-2 text-xs font-semibold text-muted-foreground">Previous Conversation Context</p>
+                    <div className="max-h-64 space-y-2 overflow-y-auto">
+                      {handoff.context.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No conversation messages found.</p>
+                      ) : (
+                        handoff.context.map((message) => (
+                          <div key={message.id} className="rounded-lg border border-border/60 p-2">
+                            <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                              <span className="font-semibold">{message.role}</span>
+                              <span>{formatDate(message.created_at)}</span>
+                            </div>
+                            <p className="mt-1 whitespace-pre-wrap text-xs">{message.content || '—'}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {handoff.queue_state === 'open' ? (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Human agent takeover active — Messenger AI remains blocked until this handoff is closed.
+                    </p>
+                  ) : handoff.queue_state === 'pending' ? (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Pending queue — customer has requested a human and AI replies are blocked.
+                    </p>
+                  ) : (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Closed — conversation has been returned to automated AI routing.
+                    </p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </section>
       </div>
 
       <section className="rounded-2xl border border-border bg-card p-6"><div className="mb-4"><h2 className="text-lg font-bold">Recent AI Activity</h2><p className="mt-1 text-sm text-muted-foreground">Provider/tool activity; secret values are excluded</p></div><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b border-border text-xs text-muted-foreground"><th className="px-3 py-3">Time</th><th className="px-3 py-3">Role</th><th className="px-3 py-3">Provider</th><th className="px-3 py-3">Tool</th><th className="px-3 py-3">Confirmation</th></tr></thead><tbody>{data.messages.map((message) => <tr key={message.id} className="border-b border-border/70"><td className="px-3 py-3 whitespace-nowrap">{formatDate(message.created_at)}</td><td className="px-3 py-3">{message.role}</td><td className="px-3 py-3">{message.provider || '—'}</td><td className="px-3 py-3">{message.tool_name || '—'}</td><td className="px-3 py-3">{message.requires_confirmation ? 'Required' : '—'}</td></tr>)}</tbody></table></div></section>
