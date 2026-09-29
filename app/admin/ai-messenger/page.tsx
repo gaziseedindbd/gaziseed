@@ -24,38 +24,45 @@ type Provider = {
   priority: number;
 };
 
+type SupportQueueItem = {
+  id: string;
+  conversation_id: string;
+  reason: string;
+  status: string;
+  queue_state: 'pending' | 'open' | 'closed';
+  assigned_to: string | null;
+  created_at: string;
+  resolved_at: string | null;
+  customer_profile: {
+    name?: string | null;
+    phone?: string | null;
+    address?: string | null;
+    total_orders?: number | null;
+    total_spent?: number | null;
+    last_order_number?: string | null;
+  } | null;
+  conversation: {
+    external_user_id: string | null;
+    status: string;
+    last_message_at: string | null;
+    metadata?: Record<string, unknown> | null;
+  } | null;
+  context: Array<{
+    id: string;
+    role: string;
+    content: string | null;
+    created_at: string;
+    action_status: string | null;
+  }>;
+};
+
 type DashboardData = {
   messenger: { enabled: boolean; meta_configured: boolean; webhook_signature_required: boolean };
   settings: { is_enabled: boolean; provider: string | null; model: string | null; base_url: string | null; temperature: number | null; max_tokens: number | null; feature_flags: Record<string, boolean>; updated_at: string | null } | null;
   providers: Provider[];
-  stats: { conversations: number; open_handoffs: number; bd_human_support_queue: number; recent_messages: number; product_orders: number; combo_orders: number; offer_orders: number };
+  stats: { conversations: number; open_handoffs: number; recent_messages: number; product_orders: number; combo_orders: number; offer_orders: number };
   conversations: Array<{ id: string; channel: string; external_user_id: string | null; status: string; last_message_at: string | null; updated_at: string | null }>;
-  handoffs: Array<{ id: string; conversation_id: string; reason: string; status: string; created_at: string; resolved_at: string | null; country_code?: string | null }>;
-  support_queue: Array<{
-    id: string;
-    conversation_id: string;
-    reason: string;
-    status: string;
-    queue_state: 'pending' | 'open' | 'closed';
-    assigned_to: string | null;
-    created_at: string;
-    resolved_at: string | null;
-    customer_profile: {
-      name?: string | null;
-      phone?: string | null;
-      address?: string | null;
-      total_orders?: number | null;
-      total_spent?: number | null;
-      last_order_number?: string | null;
-    } | null;
-    conversation: {
-      external_user_id: string | null;
-      status: string;
-      last_message_at: string | null;
-      metadata?: Record<string, unknown> | null;
-    } | null;
-    context: Array<{ id: string; role: string; content: string | null; created_at: string; action_status: string | null }>;
-  }>;
+  handoffs: Array<{ id: string; conversation_id: string; reason: string; status: string; created_at: string; resolved_at: string | null }>;
   messages: Array<{ id: string; conversation_id: string; role: string; provider: string | null; model: string | null; tool_name: string | null; action_status: string | null; requires_confirmation: boolean; created_at: string }>;
   monitoring: {
     window_hours: number;
@@ -86,15 +93,30 @@ export default function AIMessengerAdminPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [supportQueue, setSupportQueue] = useState<SupportQueueItem[]>([]);
 
   async function load() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/admin/ai-assistant', { cache: 'no-store' });
-      const json = await res.json();
-      if (!res.ok || !json.success) throw new Error(json.message || 'AI Messenger data load failed');
-      setData(json);
+      const [assistantRes, supportRes] = await Promise.all([
+        fetch('/api/admin/ai-assistant', { cache: 'no-store' }),
+        fetch('/api/admin/ai-assistant/human-support', { cache: 'no-store' }),
+      ]);
+
+      const assistantJson = await assistantRes.json();
+      const supportJson = await supportRes.json();
+
+      if (!assistantRes.ok || !assistantJson.success) {
+        throw new Error(assistantJson.message || 'AI Messenger data load failed');
+      }
+
+      if (!supportRes.ok || !supportJson.success) {
+        throw new Error(supportJson.message || 'Human support queue load failed');
+      }
+
+      setData(assistantJson);
+      setSupportQueue(supportJson.support_queue || []);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'AI Messenger data load failed');
     } finally {
@@ -108,7 +130,7 @@ export default function AIMessengerAdminPage() {
   ) {
     try {
       setError('');
-      const res = await fetch('/api/admin/ai-assistant', {
+      const res = await fetch('/api/admin/ai-assistant/human-support', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ handoff_id: handoffId, action }),
@@ -235,15 +257,15 @@ export default function AIMessengerAdminPage() {
               </div>
             </div>
             <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">
-              {data.stats.bd_human_support_queue} active
+              {supportQueue.filter((item) => item.queue_state !== 'closed').length} active
             </span>
           </div>
 
           <div className="space-y-4">
-            {data.support_queue.length === 0 ? (
+            {supportQueue.length === 0 ? (
               <p className="text-sm text-muted-foreground">No Bangladesh human-support requests yet.</p>
             ) : (
-              data.support_queue.map((handoff) => (
+              supportQueue.map((handoff) => (
                 <div key={handoff.id} className="rounded-2xl border border-border p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
