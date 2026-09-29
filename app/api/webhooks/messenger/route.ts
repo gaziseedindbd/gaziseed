@@ -87,22 +87,46 @@ function isProductAvailabilityQuestion(text: string): boolean {
   return /(?:\b(?:ki|kono|kon|what|which|any|anything)\s+(?:products?|product)\s+(?:(?:is|are)\s+)?(?:ache|ase|nei|naie|available|there)\b|(?:ki|kono|kon|কী|কি|কোনো|কোন)\s*(?:কি\s*)?(?:প্রোডাক্ট|পণ্য|products?|product)\s*(?:আছে|আছেন|নেই|নাই|naie|nei|ache|ase|available|there)|(?:কোনো|কোন)\s*(?:প্রোডাক্ট|পণ্য|products?|product)\s*(?:নেই|নাই|আছে|আছেন)|\b(?:anything|any)\s+(?:available|in stock|there)\b)/i.test(normalized);
 }
 
+function isOtherProductRequest(text: string): boolean {
+  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+
+  // Customers often type product names with Messenger-style spelling mistakes
+  // such as "prodcuts", "prodcut", or "prodcuct". Treat the product stem plus
+  // an "other/more" browsing phrase as a fresh catalog intent.
+  const hasAlternativeWord =
+    /\b(?:other|another|different|more|additional)\b/i.test(normalized);
+  const hasProductLikeWord =
+    /\bprod[a-z0-9_-]*\b/i.test(normalized) ||
+    /\bitem[a-z0-9_-]*\b/i.test(normalized) ||
+    /(?:প্রোডাক্ট|পণ্য)/i.test(normalized);
+  const hasBrowseWord =
+    /\b(?:show|see|view|browse|looking|want|need)\b/i.test(normalized) ||
+    /(?:dekh|dekha|dekhte|dekhan|dekhao|chai|chaie|chaye|দেখ|চাই)/i.test(
+      normalized,
+    );
+
+  return (
+    /\b(?:other|another|different|more|additional)\s+(?:prod[a-z0-9_-]*|item[a-z0-9_-]*)\b/i.test(
+      normalized,
+    ) ||
+    /\b(?:prod[a-z0-9_-]*|item[a-z0-9_-]*)\s+(?:other|another|different|more|additional)\b/i.test(
+      normalized,
+    ) ||
+    (hasAlternativeWord && hasProductLikeWord && hasBrowseWord) ||
+    /(অন্য|আরও|আর|আরেক|অন্যটা|অন্যগুলো).*(প্রোডাক্ট|পণ্য|prod[a-z0-9_-]*|item[a-z0-9_-]*)/i.test(
+      normalized,
+    ) ||
+    /(প্রোডাক্ট|পণ্য|prod[a-z0-9_-]*|item[a-z0-9_-]*).*(অন্য|আরও|আর|আরেক|অন্যটা|অন্যগুলো)/i.test(
+      normalized,
+    )
+  );
+}
+
 function isProductCatalogRequest(text: string): boolean {
   const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
 
-  // A request to browse a different/other product is always a new catalog intent.
-  // It must not be consumed by an older pending order quantity step.
-  const isOtherProductRequest =
-    /(other product|other products|another product|another products|different product|more products|show other products|show me other products|see other products|want other products|buy another product)/i.test(
-      normalized,
-    ) ||
-    /\\b(?:other|another|different|more)\\b.*\\bproducts?\\b/i.test(normalized) ||
-    /\\bproducts?\\b.*\\b(?:other|another|different|more)\\b/i.test(normalized) ||
-    /(অন্য|আরও|আর|অন্যটা|অন্যগুলো).*(প্রোডাক্ট|পণ্য|product|products)/i.test(normalized) ||
-    /(প্রোডাক্ট|পণ্য|product|products).*(অন্য|আরও|আর|অন্যটা|অন্যগুলো)/i.test(normalized);
-
   return (
-    isOtherProductRequest ||
+    isOtherProductRequest(normalized) ||
     isProductAvailabilityQuestion(normalized) ||
     /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে|দাম|price|স্টক|stock|available|উপলব্ধ)/i.test(
       normalized,
@@ -110,6 +134,24 @@ function isProductCatalogRequest(text: string): boolean {
   );
 }
 
+function isGeneralSeedAdviceRequest(text: string): boolean {
+  if (!isSeedKnowledgeRequest(text)) return false;
+  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+  return /(কীভাবে|কিভাবে|কখন|কতদিন|কত দিনে|অঙ্কুর|বপন|রোপণ|পরিচর্যা|মাটি|সার|পানি|জল|watering|how to|when to|how long|germination|sow|sowing|plant|planting|care|soil|fertilizer)/i.test(
+    normalized,
+  );
+}
+
+function isProductListRequest(text: string): boolean {
+  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+  return (
+    isOtherProductRequest(normalized) ||
+    isProductAvailabilityQuestion(normalized) ||
+    /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে)/i.test(
+      normalized,
+    )
+  );
+}
 function isGeneralSeedAdviceRequest(text: string): boolean {
   if (!isSeedKnowledgeRequest(text)) return false;
   const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
