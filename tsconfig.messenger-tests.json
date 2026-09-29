@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "rootDir": ".",
+    "outDir": ".tmp/messenger-tests",
+    "noEmitOnError": true
+  },
+  "include": [
+    "tests/messenger-intents.test.ts",
+    "lib/ai/messenger-intents.ts"
+  ]
+}
