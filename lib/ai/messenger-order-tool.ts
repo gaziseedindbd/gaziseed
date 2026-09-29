@@ -169,6 +169,32 @@ export function parsePendingMessengerOrder(value: unknown): PendingMessengerOrde
   };
 }
 
+export function getMessengerOrderResumeReply(pending: PendingMessengerOrder): string {
+  const prefix = `আগের অর্ডারটি আবার চালু করেছি। ${pending.product_name}-এর অর্ডারটি যেখানে থেমেছিল, সেখান থেকেই চলছি।`;
+  switch (pending.step) {
+    case 'quantity':
+      return prefix + '\n\nকত প্যাকেট অর্ডার করতে চান? সংখ্যা লিখুন।';
+    case 'name':
+      return prefix + '\n\nআপনার নামটি লিখুন।';
+    case 'phone':
+      return prefix + '\n\nআপনার ফোন নম্বরটি লিখুন।';
+    case 'address':
+      return prefix + '\n\nআপনার সম্পূর্ণ ডেলিভারি ঠিকানাটি লিখুন।';
+    case 'india_pincode':
+      return prefix + '\n\nআপনার ৬ সংখ্যার PIN code লিখুন।';
+    case 'india_address':
+      return prefix + '\n\nআপনার সম্পূর্ণ ঠিকানা ও কাছাকাছি landmark লিখুন।';
+    case 'india_city':
+      return prefix + '\n\nআপনার City লিখুন।';
+    case 'india_thana':
+      return prefix + '\n\nআপনার Thana লিখুন।';
+    case 'india_state':
+      return prefix + '\n\nআপনার State লিখুন।';
+    case 'confirmation':
+      return prefix + '\n\nঅর্ডারের তথ্য নিশ্চিত করতে হ্যাঁ বা না লিখুন।';
+  }
+}
+
 export async function createMessengerProductOrder(args: {
   country: MessengerOrderCountry;
   customerName: string;
