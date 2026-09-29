@@ -27,11 +27,17 @@ import {
 import {
   getMessengerOrderTrackingReply,
   parseMessengerTrackingOrderNumber,
-  upsertMessengerCustomerProfile,
 } from '@/lib/ai/messenger-order-tracking';
+import {
+  getMessengerCustomerProfileReply,
+  getMessengerOrderHistoryReply,
+  upsertMessengerCustomerProfile,
+} from '@/lib/ai/messenger-customer-tool';
 import {
   isMessengerAddAnotherProductRequest,
   isMessengerCheckoutRequest,
+  isMessengerCustomerProfileRequest,
+  isMessengerOrderHistoryRequest,
   isMessengerOrderInterruptRequest,
   isMessengerOrderResumeRequest,
   isMessengerOrderTrackingRequest,
@@ -1241,6 +1247,67 @@ async function processMessengerEvent(event: MessengerEvent) {
     }
   }
 
+  // Customer profile and previous-order history are deterministic and isolated
+  // from order creation. They use only the Messenger identity for the verified country,
+  // or require Order Number + phone once to securely link the account.
+  if (
+    isMessengerCustomerProfileRequest(normalizedActionText) ||
+    isMessengerOrderHistoryRequest(normalizedActionText)
+  ) {
+    try {
+      if (isMessengerOrderHistoryRequest(normalizedActionText)) {
+        const history = await getMessengerOrderHistoryReply({
+          supabase: sb,
+          pageId: META_PAGE_ID,
+          externalUserId: senderId,
+          country: activeCountry,
+          text,
+        });
+
+        await saveMessage(sb, conversation.id, {
+          role: 'assistant',
+          content: history.reply,
+          actionStatus: 'customer_order_history',
+          countryCode: activeCountry,
+          sourceContext: {
+            customer_profile: true,
+            order_history: true,
+            order_ids: history.orderIds,
+            linked: history.linked,
+          },
+        });
+        await sendMessengerText(senderId, history.reply);
+        return;
+      }
+
+      const profile = await getMessengerCustomerProfileReply({
+        supabase: sb,
+        pageId: META_PAGE_ID,
+        externalUserId: senderId,
+        country: activeCountry,
+        text,
+      });
+
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: profile.reply,
+        actionStatus: 'customer_profile',
+        countryCode: activeCountry,
+        sourceContext: {
+          customer_profile: true,
+          linked: profile.linked,
+        },
+      });
+      await sendMessengerText(senderId, profile.reply);
+      return;
+    } catch (error) {
+      console.error(
+        'Messenger customer profile/history failed:',
+        error instanceof Error ? error.message : 'Unknown customer profile error',
+      );
+    }
+  }
+
   // General agricultural questions remain AI-capable for both countries.
   // Product/catalog questions with a seed-advice intent continue through the AI path
   // so multi-intent requests such as “দাম কত এবং কীভাবে বপন করব?” can be answered together.
@@ -1259,15 +1326,19 @@ async function processMessengerEvent(event: MessengerEvent) {
       const nextPendingOrder = parsePendingMessengerOrder(orderFlow.pending);
 
     if (orderFlow.handled) {
+      const orderNumberMatch =
+        orderFlow.reply.match(/GS-(?:IN|BD)-[A-Z0-9]{8}/i)?.[0] || null;
+
       if (
-        pendingOrderBeforeFlow?.customer_phone ||
-        pendingOrderBeforeFlow?.customer_name ||
-        nextPendingOrder?.customer_phone ||
-        nextPendingOrder?.customer_name
+        orderNumberMatch &&
+        (
+          pendingOrderBeforeFlow?.customer_phone ||
+          pendingOrderBeforeFlow?.customer_name ||
+          nextPendingOrder?.customer_phone ||
+          nextPendingOrder?.customer_name
+        )
       ) {
         try {
-          const orderNumberMatch =
-            orderFlow.reply.match(/GS-(?:IN|BD)-[A-Z0-9]{8}/i)?.[0] || null;
           await upsertMessengerCustomerProfile({
             supabase: sb,
             pageId: META_PAGE_ID,
@@ -1280,6 +1351,10 @@ async function processMessengerEvent(event: MessengerEvent) {
             phone:
               nextPendingOrder?.customer_phone ||
               pendingOrderBeforeFlow?.customer_phone ||
+              null,
+            address:
+              nextPendingOrder?.delivery_address ||
+              pendingOrderBeforeFlow?.delivery_address ||
               null,
             orderNumber: orderNumberMatch,
           });
