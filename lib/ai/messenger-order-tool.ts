@@ -704,6 +704,66 @@ export async function handleMessengerOrderFlow(args: {
       };
     }
 
+    if (pending.step === 'saved_details_confirmation') {
+      if (isMessengerCancellation(args.text)) {
+        return {
+          handled: true,
+          reply: 'ঠিক আছে, অর্ডারটি বাতিল করা হয়েছে।',
+          pending: null,
+        };
+      }
+
+      if (isMessengerChangeDetailsRequest(args.text)) {
+        const next: PendingMessengerOrder = {
+          ...pending,
+          step: 'name',
+          customer_name: undefined,
+          customer_phone: undefined,
+          delivery_address: undefined,
+          india_pincode: undefined,
+          india_address: undefined,
+          india_city: undefined,
+          india_thana: undefined,
+          india_state: undefined,
+        };
+
+        return {
+          handled: true,
+          reply: 'ঠিক আছে। আপনার নামটি লিখুন।',
+          pending: next,
+        };
+      }
+
+      if (!isMessengerConfirmation(args.text)) {
+        return {
+          handled: true,
+          reply: 'সব ঠিক থাকলে “হ্যাঁ” লিখুন; তথ্য বদলাতে “তথ্য পরিবর্তন” লিখুন।',
+          pending,
+        };
+      }
+
+      const next: PendingMessengerOrder = {
+        ...pending,
+        step: 'confirmation',
+      };
+      const orderItems = pending.quantity
+        ? addPendingMessengerOrderToCart(cartItems, pending)
+        : cartItems;
+      const cartSummary = formatMessengerCartSummary(orderItems, currency);
+
+      return {
+        handled: true,
+        reply:
+          'অর্ডারটি নিশ্চিত করার আগে বিস্তারিত দেখে নিন:\n\n' +
+          cartSummary +
+          '\n\n' +
+          'নাম: ' + (next.customer_name || 'সংরক্ষিত নেই') + '\n' +
+          'মোবাইল: ' + (next.customer_phone || 'সংরক্ষিত নেই') + '\n' +
+          'ঠিকানা: ' + (next.delivery_address || 'সংরক্ষিত নেই') + '\n\n' +
+          'সব ঠিক থাকলে “হ্যাঁ” লিখুন; অর্ডার বাতিল করতে “না” লিখুন।',
+        pending: next,
+      };
+    }
     if (pending.step === 'address') {
       const address = args.text.trim().slice(0, 500);
       if (address.length < 8) {
