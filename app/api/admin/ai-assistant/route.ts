@@ -40,6 +40,7 @@ export async function GET() {
     ]);
 
     if (settingsRes.error) throw settingsRes.error;
+    if (monitoringMessagesRes.error) throw monitoringMessagesRes.error;
     const monitoring = buildMessengerMonitoringSummary(
       (monitoringMessagesRes.data || []).map((message) => ({
         role: message.role,
