@@ -119,6 +119,7 @@ export function isMessengerOrderInterruptRequest(text: string): boolean {
 export function isMessengerOrderTrackingRequest(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
   if (/\bGS-(?:IN|BD)-[A-Z0-9]{8}\b/i.test(normalized)) return true;
+  if (isMessengerOrderHistoryRequest(normalized)) return false;
   return /(track|tracking|status|where.*order|order.*status|my order|previous order|last order|latest order|delivery status|কোথায়.*অর্ডার|অর্ডার.*কোথায়|অর্ডার.*স্ট্যাটাস|অর্ডারের.*অবস্থা|অর্ডার.*কখন পাব|আমার অর্ডার|আগের অর্ডার|শেষ অর্ডার|অর্ডার ট্র্যাক|অর্ডার.*ট্র্যাক)/i.test(
     normalized,
   );

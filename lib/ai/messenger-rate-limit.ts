@@ -59,6 +59,10 @@ export function getMessengerRateLimitReply(result: MessengerRateLimitResult): st
     return 'আজকের request limit পূর্ণ হয়েছে। অনুগ্রহ করে আগামীকাল আবার চেষ্টা করুন।';
   }
 
+  if (result.reason === 'limiter_unavailable') {
+    return 'সাময়িকভাবে AI সহায়তা সীমিত করা হয়েছে। অনুগ্রহ করে ১ মিনিট পরে আবার চেষ্টা করুন।';
+  }
+
   return 'সাময়িকভাবে request সীমিত করা হয়েছে। ' + roundedMinutes + ' মিনিট পরে আবার চেষ্টা করুন।';
 }
 
@@ -83,6 +87,15 @@ export async function consumeMessengerRateLimit(
 
     if (error) {
       console.error('Messenger rate limiter failed:', error.message);
+      if ((args.mode || 'message') === 'ai') {
+        return {
+          ...FALLBACK_ALLOWED,
+          allowed: false,
+          reason: 'limiter_unavailable',
+          retry_after_seconds: 30,
+          notify_customer: true,
+        };
+      }
       return FALLBACK_ALLOWED;
     }
 
@@ -105,6 +118,15 @@ export async function consumeMessengerRateLimit(
     };
   } catch (error) {
     console.error('Messenger rate limiter exception:', error instanceof Error ? error.message : 'Unknown rate limiter error');
+    if ((args.mode || 'message') === 'ai') {
+      return {
+        ...FALLBACK_ALLOWED,
+        allowed: false,
+        reason: 'limiter_unavailable',
+        retry_after_seconds: 30,
+        notify_customer: true,
+      };
+    }
     return FALLBACK_ALLOWED;
   }
 }

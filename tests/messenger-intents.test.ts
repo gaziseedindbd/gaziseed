@@ -19,6 +19,7 @@ import {
   isMessengerOrderHistoryRequest,
   isMessengerOrderInterruptRequest,
   isMessengerOrderResumeRequest,
+  isMessengerOrderTrackingRequest,
   isMessengerDeliveryIntent,
   isMessengerHumanSupportIntent,
   isMessengerSeedKnowledgeQuestion,
@@ -107,6 +108,12 @@ test('recognizes order resume phrases and never treats resume as interrupt', () 
   assert.equal(isMessengerOrderResumeRequest('continue order'), true);
   assert.equal(isMessengerOrderResumeRequest('আগের অর্ডারটা চালিয়ে যেতে চাই'), true);
   assert.equal(isMessengerOrderInterruptRequest('আগের অর্ডারটা চালিয়ে যেতে চাই'), false);
+});
+
+test('routes previous-order history away from tracking unless an order number is explicit', () => {
+  assert.equal(isMessengerOrderHistoryRequest('আমার আগের অর্ডারগুলো দেখান'), true);
+  assert.equal(isMessengerOrderTrackingRequest('আমার আগের অর্ডারগুলো দেখান'), false);
+  assert.equal(isMessengerOrderTrackingRequest('track GS-BD-ABCDEFGH'), true);
 });
 
 test('classifies delivery, support, and seed knowledge questions independently', () => {
