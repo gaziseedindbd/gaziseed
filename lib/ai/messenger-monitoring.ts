@@ -48,6 +48,8 @@ export function buildMessengerMonitoringSummary(
     fallback_hits: number;
     latency_total: number;
     latency_count: number;
+    success_latency_total: number;
+    success_latency_count: number;
   }>();
 
   let responses = 0;
@@ -93,6 +95,8 @@ export function buildMessengerMonitoringSummary(
         fallback_hits: 0,
         latency_total: 0,
         latency_count: 0,
+        success_latency_total: 0,
+        success_latency_count: 0,
       };
 
       current.attempts += 1;
@@ -107,6 +111,10 @@ export function buildMessengerMonitoringSummary(
       if (typeof attempt.duration_ms === 'number' && Number.isFinite(attempt.duration_ms)) {
         current.latency_total += attempt.duration_ms;
         current.latency_count += 1;
+        if (attempt.ok) {
+          current.success_latency_total += attempt.duration_ms;
+          current.success_latency_count += 1;
+        }
       }
 
       providerMap.set(attempt.provider, current);
@@ -137,18 +145,16 @@ export function buildMessengerMonitoringSummary(
     total_tokens: totalTokens,
     provider_stats,
     average_success_latency_ms: (() => {
-      const successfulAttempts = provider_stats.reduce(
-        (sum, provider) => sum + provider.successes,
-        0,
-      );
-      if (!successfulAttempts) return null;
-      const weightedLatency = provider_stats.reduce(
-        (sum, provider) =>
-          sum +
-          (provider.average_latency_ms || 0) * provider.successes,
-        0,
-      );
-      return Math.round(weightedLatency / successfulAttempts);
+      let successLatencyTotal = 0;
+    let successLatencyCount = 0;
+
+    providerMap.forEach((value) => {
+      successLatencyTotal += value.success_latency_total;
+      successLatencyCount += value.success_latency_count;
+    });
+
+    if (!successLatencyCount) return null;
+    return Math.round(successLatencyTotal / successLatencyCount);
     })(),
   };
 }
