@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { extractMessengerPhone, normalizeMessengerPhone } from './messenger-phone';
 
 export type MessengerCustomerCountry = 'IN' | 'BD';
 
@@ -36,18 +37,9 @@ function currency(country: MessengerCustomerCountry) {
   return country === 'IN' ? '₹' : '৳';
 }
 
-function normalizePhone(value: string) {
-  return value.replace(/\D/g, '');
-}
-
 function parseOrderNumber(text: string): string | null {
   const match = text.toUpperCase().match(/\bGS-(?:IN|BD)-[A-Z0-9]{8}\b/);
   return match?.[0] || null;
-}
-
-function extractPhone(text: string): string | null {
-  const match = text.match(/(?:\+?\d[\d\s().-]{8,}\d)/);
-  return match ? normalizePhone(match[0]) : null;
 }
 
 function statusLabel(status: string | null | undefined) {
@@ -174,7 +166,7 @@ async function verifyAndLinkByOrder(
   },
 ) {
   const orderNumber = parseOrderNumber(args.text);
-  const phone = extractPhone(args.text);
+  const phone = extractMessengerPhone(args.text);
 
   if (!orderNumber || !phone) return null;
 
@@ -277,7 +269,7 @@ export async function getMessengerOrderHistoryReply(args: {
 
   const profilePhone =
     profile && typeof profile.phone === 'string'
-      ? normalizePhone(profile.phone)
+      ? normalizeMessengerPhone(profile.phone)
       : '';
 
   if (!profilePhone) {
@@ -340,7 +332,7 @@ export async function upsertMessengerCustomerProfile(args: {
   orderId?: string | null;
   orderNumber?: string | null;
 }) {
-  const phone = args.phone ? normalizePhone(args.phone) : null;
+  const phone = args.phone ? normalizeMessengerPhone(args.phone) : null;
 
   let orderRows: Array<{
     id: string;

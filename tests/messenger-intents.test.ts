@@ -43,6 +43,10 @@ import {
   getMessengerRateLimitReply,
   hashMessengerMessage,
 } from '../lib/ai/messenger-rate-limit';
+import {
+  extractMessengerPhone,
+  normalizeMessengerPhone,
+} from '../lib/ai/messenger-phone';
 
 test('recognizes typo-tolerant other-product request', () => {
   assert.equal(isOtherProductRequest('OTHER PRODCUT DEKHTE CHAIE'), true);
@@ -122,6 +126,15 @@ test('routes Order Number + mobile-number linking into customer history instead 
   assert.equal(isMessengerOrderLinkRequest(linkText), true);
   assert.equal(isMessengerOrderTrackingRequest(linkText), false);
   assert.equal(isMessengerOrderTrackingRequest('track GS-BD-14B96466 01994098536'), true);
+});
+
+test('extracts Messenger contact numbers only from standalone numeric tokens', () => {
+  const mobile = '0'.repeat(11);
+  const linkText = 'GS-BD-AB12CD34 ' + mobile;
+
+  assert.equal(extractMessengerPhone(linkText), mobile);
+  assert.equal(extractMessengerPhone('prefix' + mobile), null);
+  assert.equal(normalizeMessengerPhone('+880 0000 000000'), '8800000000000');
 });
 
 test('classifies delivery, support, and seed knowledge questions independently', () => {
