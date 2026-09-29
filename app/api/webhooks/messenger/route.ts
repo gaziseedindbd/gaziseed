@@ -1073,13 +1073,14 @@ async function processMessengerEvent(event: MessengerEvent) {
         text,
         metadata: conversation.metadata,
       });
+      const nextPendingOrder = parsePendingMessengerOrder(orderFlow.pending);
 
     if (orderFlow.handled) {
       if (
         pendingOrderBeforeFlow?.customer_phone ||
         pendingOrderBeforeFlow?.customer_name ||
-        orderFlow.pending?.customer_phone ||
-        orderFlow.pending?.customer_name
+        nextPendingOrder?.customer_phone ||
+        nextPendingOrder?.customer_name
       ) {
         try {
           const orderNumberMatch =
@@ -1090,11 +1091,11 @@ async function processMessengerEvent(event: MessengerEvent) {
             externalUserId: senderId,
             country: activeCountry,
             name:
-              orderFlow.pending?.customer_name ||
+              nextPendingOrder?.customer_name ||
               pendingOrderBeforeFlow?.customer_name ||
               null,
             phone:
-              orderFlow.pending?.customer_phone ||
+              nextPendingOrder?.customer_phone ||
               pendingOrderBeforeFlow?.customer_phone ||
               null,
             orderNumber: orderNumberMatch,
