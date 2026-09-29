@@ -16,7 +16,18 @@ import {
   isMessengerDeliveryPolicyQuestion,
   serializeMessengerDeliveryPolicy,
 } from '@/lib/ai/messenger-delivery-tool';
-import {\n  getMessengerOrderResumeReply,\n  handleMessengerOrderFlow,\n  parsePendingMessengerOrder,\n} from '@/lib/ai/messenger-order-tool';
+import {
+  getMessengerOrderResumeReply,
+  handleMessengerOrderFlow,
+  parsePendingMessengerOrder,
+} from '@/lib/ai/messenger-order-tool';
+import {
+  isMessengerOrderInterruptRequest,
+  isMessengerOrderResumeRequest,
+  isOtherProductRequest,
+  isProductCatalogRequest,
+  isProductListRequest,
+} from '@/lib/ai/messenger-intents';
 import { getMessengerWebsiteKnowledgeAnswer } from '@/lib/ai/messenger-knowledge-tool';
 
 export const dynamic = 'force-dynamic';
@@ -81,12 +92,6 @@ function isSeedKnowledgeRequest(text: string): boolean {
   );
 }
 
-function isProductAvailabilityQuestion(text: string): boolean {
-  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
-
-  return /(?:\b(?:ki|kono|kon|what|which|any|anything)\s+(?:products?|product)\s+(?:(?:is|are)\s+)?(?:ache|ase|nei|naie|available|there)\b|(?:ki|kono|kon|কী|কি|কোনো|কোন)\s*(?:কি\s*)?(?:প্রোডাক্ট|পণ্য|products?|product)\s*(?:আছে|আছেন|নেই|নাই|naie|nei|ache|ase|available|there)|(?:কোনো|কোন)\s*(?:প্রোডাক্ট|পণ্য|products?|product)\s*(?:নেই|নাই|আছে|আছেন)|\b(?:anything|any)\s+(?:available|in stock|there)\b)/i.test(normalized);
-}
-
 function isGeneralSeedAdviceRequest(text: string): boolean {
   if (!isSeedKnowledgeRequest(text)) return false;
   const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
@@ -95,16 +100,6 @@ function isGeneralSeedAdviceRequest(text: string): boolean {
   );
 }
 
-function isProductListRequest(text: string): boolean {
-  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
-  return (
-    isOtherProductRequest(normalized) ||
-    isProductAvailabilityQuestion(normalized) ||
-    /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে)/i.test(
-      normalized,
-    )
-  );
-}
 function formatMessengerCurrency(country: CountryCode): string {
   return country === 'IN' ? '₹' : '৳';
 }
