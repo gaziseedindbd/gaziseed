@@ -76,7 +76,13 @@ export function buildMessengerMonitoringSummary(
 
     responses += 1;
     successfulResponses += attempts.some((attempt) => attempt.ok) ? 1 : 0;
-    if (attempts.length > 1) fallbackResponses += 1;
+    if (
+      attempts.length > 1 &&
+      attempts.some((attempt) => attempt.ok) &&
+      attempts.findIndex((attempt) => attempt.ok) > 0
+    ) {
+      fallbackResponses += 1;
+    }
     if (!attempts.some((attempt) => attempt.ok)) providerFailureResponses += 1;
 
     const usage = sourceContext.usage;
@@ -105,7 +111,10 @@ export function buildMessengerMonitoringSummary(
       } else {
         current.failures += 1;
       }
-      if (index < attempts.length - 1 && !attempt.ok) {
+      if (
+        !attempt.ok &&
+        attempts.slice(index + 1).some((nextAttempt) => nextAttempt.ok)
+      ) {
         current.fallback_hits += 1;
       }
       if (typeof attempt.duration_ms === 'number' && Number.isFinite(attempt.duration_ms)) {
