@@ -1710,6 +1710,7 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   if (
     isProductCatalogRequest(normalizedActionText) &&
+    !isMessengerDeliveryPolicyQuestion(normalizedActionText) &&
     !isGeneralSeedAdviceRequest(normalizedActionText)
   ) {
     const catalogReply = formatMessengerCatalogReply(
