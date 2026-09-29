@@ -229,6 +229,7 @@ export function parsePendingMessengerOrder(value: unknown): PendingMessengerOrde
     'india_thana',
     'india_state',
     'confirmation',
+    'saved_details_confirmation',
   ]);
   const step = typeof input.step === 'string' && steps.has(input.step)
     ? (input.step as PendingMessengerOrder['step'])
@@ -474,6 +475,7 @@ export async function handleMessengerOrderFlow(args: {
   country: MessengerOrderCountry;
   text: string;
   metadata: Record<string, unknown> | null | undefined;
+  customerProfile?: MessengerCustomerPrefill | null;
 }) {
   const metadata = args.metadata || {};
   const pending = parsePendingMessengerOrder(metadata.pending_messenger_order);
@@ -944,20 +946,26 @@ export async function handleMessengerOrderFlow(args: {
     };
   }
 
-  const pendingOrder: PendingMessengerOrder = {
-    step: quantity ? 'name' : 'quantity',
-    product_id: product.id,
-    product_name: productDisplayName(product),
-    unit_price: price,
-    stock,
-    quantity: quantity || undefined,
-  };
+  const pendingOrder = applyMessengerCustomerProfileToPending(
+    {
+      step: quantity ? 'name' : 'quantity',
+      product_id: product.id,
+      product_name: productDisplayName(product),
+      unit_price: price,
+      stock,
+      quantity: quantity || undefined,
+    },
+    args.customerProfile,
+  );
 
   return {
     handled: true,
-    reply: quantity
-      ? 'অর্ডারের জন্য আপনার নামটি লিখুন।'
-      : `${productDisplayName(product)} — ${currency}${price} প্রতি প্যাকেট। কত প্যাকেট অর্ডার করতে চান?`,
+    reply:
+      pendingOrder.step === 'saved_details_confirmation'
+        ? getMessengerSavedDetailsReply(pendingOrder, cartItems, currency)
+        : quantity
+          ? 'অর্ডারের জন্য আপনার নামটি লিখুন।'
+          : `${productDisplayName(product)} — ${currency}${price} প্রতি প্যাকেট। কত প্যাকেট অর্ডার করতে চান?`,
     pending: pendingOrder,
   };
 }
