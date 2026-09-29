@@ -31,6 +31,9 @@ import {
   normalizeMessengerSearchSlug,
   normalizeMessengerSearchTerm,
 } from '../lib/ai/messenger-product-tool';
+import {
+  getMessengerHumanSupportQueueState,
+} from '../lib/ai/messenger-human-support';
 
 test('recognizes typo-tolerant other-product request', () => {
   assert.equal(isOtherProductRequest('OTHER PRODCUT DEKHTE CHAIE'), true);
@@ -194,6 +197,13 @@ test('builds and validates Messenger cart items', () => {
   assert.match(formatMessengerCartSummary(merged, '৳'), /Tomato × 3/);
 });
 
+
+test('maps Bangladesh human-support queue states', () => {
+  assert.equal(getMessengerHumanSupportQueueState('open'), 'pending');
+  assert.equal(getMessengerHumanSupportQueueState('assigned'), 'open');
+  assert.equal(getMessengerHumanSupportQueueState('resolved'), 'closed');
+  assert.equal(getMessengerHumanSupportQueueState('cancelled'), 'closed');
+});
 
 test('recognizes Messenger customer profile and previous-order history', () => {
   assert.equal(isMessengerCustomerProfileRequest('show my profile'), true);
