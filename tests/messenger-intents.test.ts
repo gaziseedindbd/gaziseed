@@ -221,7 +221,7 @@ test('classifies delivery, support, and seed knowledge questions independently',
 
 test('blocks AI-only transactional claims while allowing ordinary payment/order information', () => {
   assert.equal(
-    isUnsafeMessengerTransactionalReply('✅ আপনার অর্ডার সফলভাবে তৈরি হয়েছে।'),
+    isUnsafeMessengerTransactionalReply('✅ আপনার অর্ডার তৈরি হয়েছে।'),
     true,
   );
   assert.equal(
