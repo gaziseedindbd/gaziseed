@@ -45,6 +45,10 @@ import {
   getMessengerHumanSupportQueueState,
 } from '../lib/ai/messenger-human-support';
 import {
+  getMessengerTransactionalGuardReply,
+  isUnsafeMessengerTransactionalReply,
+} from '../lib/ai/messenger-transactional-guard';
+import {
   getMessengerRateLimitReply,
   hashMessengerMessage,
 } from '../lib/ai/messenger-rate-limit';
@@ -214,6 +218,30 @@ test('classifies delivery, support, and seed knowledge questions independently',
   assert.equal(isMessengerSeedKnowledgeQuestion('লাউয়ের বীজ কীভাবে বপন করব'), true);
 });
 
+
+test('blocks AI-only transactional claims while allowing ordinary payment/order information', () => {
+  assert.equal(
+    isUnsafeMessengerTransactionalReply('✅ আপনার অর্ডার সফলভাবে তৈরি হয়েছে।'),
+    true,
+  );
+  assert.equal(
+    isUnsafeMessengerTransactionalReply('🔐 Pay ₹90 Now - payment button নিচে দেওয়া হলো।'),
+    true,
+  );
+  assert.equal(
+    isUnsafeMessengerTransactionalReply('Payment successful হয়েছে।'),
+    true,
+  );
+  assert.equal(
+    isUnsafeMessengerTransactionalReply('Bangladesh-এ Cash on Delivery (COD) payment গ্রহণ করি।'),
+    false,
+  );
+  assert.equal(
+    isUnsafeMessengerTransactionalReply('অর্ডার করতে product-এর নাম লিখুন।'),
+    false,
+  );
+  assert.match(getMessengerTransactionalGuardReply(), /official order flow/);
+});
 
 test('aggregates Messenger provider monitoring without double-counting provider_result rows', () => {
   const summary = buildMessengerMonitoringSummary([
