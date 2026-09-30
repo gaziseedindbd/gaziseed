@@ -6,6 +6,7 @@ import {
   addPendingMessengerOrderToCart,
   applyMessengerCustomerProfileToPending,
   formatMessengerCartSummary,
+  isMessengerOrderIntent,
   parseMessengerCartItems,
 } from '../lib/ai/messenger-order-tool';
 import {
@@ -18,7 +19,6 @@ import {
   isMessengerCheckoutRequest,
   isMessengerCustomerProfileRequest,
   isMessengerOrderHistoryRequest,
-  isMessengerOrderIntent,
   isMessengerOrderInterruptRequest,
   isMessengerChangeDetailsRequest,
   isMessengerOrderResumeRequest,
