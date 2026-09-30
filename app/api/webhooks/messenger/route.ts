@@ -629,7 +629,7 @@ async function sendMessengerText(
   }
 
   const validProductCards = (productCards || []).filter(
-    (card) => card.imageUrl && /^https?:\\/\\//i.test(card.imageUrl),
+    (card) => card.imageUrl && /^https?:\/\//i.test(card.imageUrl),
   ).slice(0, 10);
 
   if (validProductCards.length) {
