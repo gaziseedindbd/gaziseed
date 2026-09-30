@@ -431,6 +431,40 @@ export async function createMessengerCartOrder(args: {
   };
 }
 
+export async function createMessengerIndiaCodPayment(args: {
+  customerName: string;
+  customerPhone: string;
+  deliveryAddress: string;
+  items: MessengerCartItem[];
+}) {
+  const supabase = countryScopedSupabase('IN');
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.gaziseed.com').replace(/\\/$/, '');
+  const returnUrl = siteUrl + '/messenger-payment?return=1';
+  const { data, error } = await supabase.functions.invoke('cashfree-payment-session', {
+    body: {
+      customer_name: args.customerName,
+      customer_phone: args.customerPhone,
+      customer_email: '',
+      delivery_address: args.deliveryAddress,
+      special_instructions: 'Order created through Facebook Messenger AI',
+      items: args.items.map((item) => ({ product_id: item.product_id, quantity: item.quantity, variant_id: null, bundle_id: null })),
+      coupon_code: null,
+      use_referral_wallet: false,
+      payment_method: 'cod',
+      return_url: returnUrl,
+    },
+  });
+  if (error) throw error;
+  if (!data?.ok || !data.payment_session_id || !data.order_id) throw new Error(data?.error || 'Unable to start Cashfree COD advance payment');
+  return {
+    paymentUrl: siteUrl + '/messenger-payment?order_id=' + encodeURIComponent(data.order_id as string),
+    advanceAmount: Number(data.quote?.advance_amount || data.order_amount || 0),
+    finalAmount: Number(data.quote?.final_amount || 0),
+    deliveryCharge: Number(data.quote?.delivery_charge || 0),
+    dueAmount: Math.max(0, Number(data.quote?.final_amount || 0) - Number(data.quote?.advance_amount || data.order_amount || 0)),
+  };
+}
+
 export function messengerCurrency(country: MessengerOrderCountry) {
   return country === 'IN' ? '₹' : '৳';
 }
@@ -833,6 +867,37 @@ export async function handleMessengerOrderFlow(args: {
       }
 
       const orderItems = addPendingMessengerOrderToCart(cartItems, pending);
+      if (args.country === 'IN') {
+        try {
+          const payment = await createMessengerIndiaCodPayment({
+            customerName: pending.customer_name,
+            customerPhone: pending.customer_phone,
+            deliveryAddress: pending.delivery_address,
+            items: orderItems,
+          });
+          const cartSummary = formatMessengerCartSummary(orderItems, currency);
+          return {
+            handled: true,
+            reply:
+              '🇮🇳 আপনার India COD order-এর payment step প্রস্তুত।\n\n' +
+              cartSummary + '\n' +
+              `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}\n` +
+              `COD advance এখন: ${currency}${payment.advanceAmount.toFixed(0)}\n` +
+              `Delivery-এর সময় বাকি: ${currency}${payment.dueAmount.toFixed(0)}\n\n` +
+              '🔐 আগে COD advance payment সম্পন্ন করুন। Payment সফল হলে আপনার COD order automatically confirm হবে।\n\n' +
+              `💳 Payment link: ${payment.paymentUrl}`,
+            pending: null,
+          };
+        } catch (paymentError) {
+          console.error('Messenger India COD payment start failed', paymentError);
+          return {
+            handled: true,
+            reply: 'দুঃখিত, COD advance payment link তৈরি করা যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।',
+            pending,
+          };
+        }
+      }
+
       const result =
         cartItems.length > 0
           ? await createMessengerCartOrder({
