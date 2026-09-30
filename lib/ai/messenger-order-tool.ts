@@ -885,7 +885,11 @@ export async function handleMessengerOrderFlow(args: {
               `COD advance এখন: ${currency}${payment.advanceAmount.toFixed(0)}\n` +
               `Delivery-এর সময় বাকি: ${currency}${payment.dueAmount.toFixed(0)}\n\n` +
               '🔐 আগে COD advance payment সম্পন্ন করুন। Payment সফল হলে আপনার COD order automatically confirm হবে।\n\n' +
-              `💳 Payment link: ${payment.paymentUrl}`,
+              '🔐 Payment button নিচে দেওয়া হলো।',
+            paymentButton: {
+              title: `Pay ${currency}${payment.advanceAmount.toFixed(0)} Now`,
+              url: payment.paymentUrl,
+            },
             pending: null,
           };
         } catch (paymentError) {
