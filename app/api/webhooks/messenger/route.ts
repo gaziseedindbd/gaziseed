@@ -1575,6 +1575,11 @@ async function processMessengerEvent(event: MessengerEvent) {
     }
 
     const [left, right] = selected;
+    if (!left || !right) {
+      await sendMessengerText(senderId, 'দুঃখিত, তুলনা করার জন্য দুটি matching active product পাওয়া যায়নি।');
+      return;
+    }
+
     const leftPrice = [left.offer_price, left.sale_price, left.price, left.regular_price].find((v) => typeof v === 'number' && v > 0) ?? 0;
     const rightPrice = [right.offer_price, right.sale_price, right.price, right.regular_price].find((v) => typeof v === 'number' && v > 0) ?? 0;
     const currency = formatMessengerCurrency(activeCountry);
