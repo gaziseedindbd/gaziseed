@@ -199,8 +199,10 @@ export function normalizeMessengerPhone(text: string, country: MessengerOrderCou
 }
 
 export function isMessengerOrderIntent(text: string) {
-  return /(অর্ডার|order|কিনতে চাই|কিনবো|নিতে চাই|নেব|কিনতে চাই|buy|purchase|place\s+order)/i.test(
-    text,
+  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+
+  return /(?:অর্ডার|order|কিনতে চাই|কিনবো|নিতে চাই|নেব|buy|purchase|place\s+order|কিনতে\s+(?:চাই|চায়|চাইলে)|নিতে\s+(?:চাই|চায়|চাইলে)|\bkinte\s+cha(?:i|ie|y)\b|\bnite\s+cha(?:i|ie|y)\b|\bnibo\b|\bnebo\b|\border\s+kor(?:te|bo|ben|b)\b)/i.test(
+    normalized,
   );
 }
 
