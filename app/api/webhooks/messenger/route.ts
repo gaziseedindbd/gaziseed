@@ -1564,8 +1564,9 @@ async function processMessengerEvent(event: MessengerEvent) {
       return;
     }
 
+    const messengerCountry = activeCountry;
     const matches = await Promise.all(
-      queries.map((query) => searchMessengerProducts(sb, activeCountry, query, 3)),
+      queries.map((query) => searchMessengerProducts(sb, messengerCountry, query, 3)),
     );
     const selected = matches.map((items) => items.find((item) => item.search_match_type !== 'similar') || items[0] || null);
 
