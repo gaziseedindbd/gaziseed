@@ -2,7 +2,7 @@ export function isUnsafeMessengerTransactionalReply(reply: string): boolean {
   const normalized = reply.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
 
   const positiveOrderClaim =
-    /(?:\border\s+(?:is\s+)?(?:ready|prepared|created|confirmed|placed)\b|(?:your|আপনার)\s+order\s+(?:has\s+been\s+)?(?:created|confirmed|placed)\b|(?:আপনার\s+)?অর্ডার\s*(?:প্রস্তুত|তৈরি হয়েছে|তৈরি হয়েছে|কনফার্ম|নিশ্চিত)\b)/i.test(
+    /(?:\border\s+(?:is\s+)?(?:ready|prepared|created|confirmed|placed)\b|(?:your|আপনার)\s+order\s+(?:has\s+been\s+)?(?:created|confirmed|placed)\b|(?:আপনার\s+)?অর্ডার\s*(?:প্রস্তুত|তৈরি হয়েছে|তৈরি হয়েছে|কনফার্ম|নিশ্চিত))/i.test(
       normalized,
     );
 
