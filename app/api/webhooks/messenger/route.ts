@@ -1714,7 +1714,7 @@ async function processMessengerEvent(event: MessengerEvent) {
         senderId,
         orderFlow.reply,
         confirmationQuickReplies,
-        orderFlow.paymentButton,
+        'paymentButton' in orderFlow ? orderFlow.paymentButton : undefined,
       );
       return;
       }
