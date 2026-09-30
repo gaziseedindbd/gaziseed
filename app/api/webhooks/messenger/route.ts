@@ -38,6 +38,10 @@ import {
 import {
   isMessengerAddAnotherProductRequest,
   isMessengerCheckoutRequest,
+  isMessengerCartViewRequest,
+  isMessengerCartRemoveRequest,
+  isMessengerCartQuantityChangeRequest,
+  isMessengerAddToCartRequest,
   isMessengerCustomerProfileRequest,
   isMessengerOrderHistoryRequest,
   isMessengerOrderLinkRequest,
@@ -141,6 +145,32 @@ function messengerProductReplyTitle(product: Record<string, unknown>): string {
 function parseMessengerProductSelection(payload: string): string | null {
   const match = payload.match(/^PRODUCT_SELECT:([0-9a-f-]{36})$/i);
   return match?.[1] || null;
+}
+
+function normalizeMessengerCartText(value: string): string {
+  return value.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function parseMessengerCartQuantity(text: string): number | null {
+  const normalized = text.replace(/[০-৯]/g, (digit) => String('০১২৩৪৫৬৭৮৯'.indexOf(digit)));
+  const match = normalized.match(/\b(\d{1,2})\b/);
+  if (!match) return null;
+  const quantity = Number(match[1]);
+  return Number.isInteger(quantity) && quantity >= 1 && quantity <= 99 ? quantity : null;
+}
+
+function findMessengerCartItem(
+  items: ReturnType<typeof parseMessengerCartItems>,
+  text: string,
+) {
+  if (items.length === 1) return items[0];
+  const normalized = normalizeMessengerCartText(text);
+  return items.find((item) => {
+    const name = normalizeMessengerCartText(item.product_name);
+    if (name && normalized.includes(name)) return true;
+    const tokens = name.split(/[^a-z0-9\u0980-\u09FF]+/i).filter((token) => token.length >= 3);
+    return tokens.some((token) => normalized.includes(token));
+  }) || null;
 }
 
 function formatMessengerProductName(product: Record<string, unknown>): string {
@@ -1255,6 +1285,205 @@ async function processMessengerEvent(event: MessengerEvent) {
   const messengerCartItems = parseMessengerCartItems(
     conversation.metadata?.messenger_cart_items,
   );
+
+
+  // Phase 1 cart controls: only Messenger cart metadata is changed here.
+  if (isMessengerCartViewRequest(normalizedActionText)) {
+    const reply =
+      formatMessengerCartSummary(messengerCartItems, formatMessengerCurrency(activeCountry)) +
+      (messengerCartItems.length
+        ? '\n\n🛒 Cart options: Checkout / Add more product'
+        : '\n\nএকটি product select করে quantity দিলে cart তৈরি হবে।');
+
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: reply,
+      actionStatus: 'cart_view',
+      countryCode: activeCountry,
+      sourceContext: { deterministic_cart_action: true },
+    });
+    await sendMessengerText(
+      senderId,
+      reply,
+      messengerCartItems.length
+        ? [
+            { title: '✅ Checkout', payload: 'CART_CHECKOUT' },
+            { title: '➕ Add product', payload: 'CART_ADD_PRODUCT' },
+          ]
+        : undefined,
+    );
+    return;
+  }
+
+  if (isMessengerCartRemoveRequest(normalizedActionText) && messengerCartItems.length > 0) {
+    const target = findMessengerCartItem(messengerCartItems, normalizedActionText);
+
+    if (!target) {
+      const reply =
+        formatMessengerCartSummary(messengerCartItems, formatMessengerCurrency(activeCountry)) +
+        '\n\nকোন productটি remove করতে চান, নামটি লিখুন।';
+      await sendMessengerText(senderId, reply);
+      return;
+    }
+
+    const nextItems = messengerCartItems.filter((item) => item.product_id !== target.product_id);
+    await markConversation(
+      sb,
+      conversation.id,
+      'active',
+      { messenger_cart_items: nextItems, cart_updated_at: new Date().toISOString() },
+      activeCountry,
+    );
+    conversation.metadata = { ...(conversation.metadata || {}), messenger_cart_items: nextItems };
+
+    const reply =
+      '🗑️ ' + target.product_name + ' cart থেকে remove করা হয়েছে.\n\n' +
+      formatMessengerCartSummary(nextItems, formatMessengerCurrency(activeCountry));
+
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: reply,
+      actionStatus: 'cart_remove',
+      countryCode: activeCountry,
+      sourceContext: { product_id: target.product_id },
+    });
+    await sendMessengerText(senderId, reply);
+    return;
+  }
+
+  if (isMessengerCartQuantityChangeRequest(normalizedActionText) && messengerCartItems.length > 0) {
+    const target = findMessengerCartItem(messengerCartItems, normalizedActionText);
+    const quantity = parseMessengerCartQuantity(normalizedActionText);
+
+    if (!target || !quantity) {
+      await sendMessengerText(senderId, 'কোন product-এর quantity কত করতে চান সেটি লিখুন। উদাহরণ: “মরিচ 3টা”।');
+      return;
+    }
+
+    const { data: liveProduct, error: liveProductError } = await sb
+      .from('products')
+      .select('id,name_bn,name_en,stock,regular_price,sale_price,offer_price,price,country_code,is_active')
+      .eq('id', target.product_id)
+      .eq('country_code', activeCountry)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (liveProductError) throw liveProductError;
+
+    if (!liveProduct) {
+      await sendMessengerText(senderId, target.product_name + ' এখন আর available নেই।');
+      return;
+    }
+
+    const liveStock = typeof liveProduct.stock === 'number' ? liveProduct.stock : 0;
+    if (quantity > liveStock) {
+      await sendMessengerText(
+        senderId,
+        '📦 ' + (liveProduct.name_bn || liveProduct.name_en || target.product_name) +
+          '-এর বর্তমান stock ' + liveStock + ' প্যাকেট। ' + quantity + 'টি দেওয়া সম্ভব নয়।',
+      );
+      return;
+    }
+
+    const livePrice =
+      [liveProduct.offer_price, liveProduct.sale_price, liveProduct.price, liveProduct.regular_price]
+        .find((value) => typeof value === 'number' && value > 0) ?? target.unit_price;
+
+    const nextItems = messengerCartItems.map((item) =>
+      item.product_id === target.product_id
+        ? {
+            ...item,
+            quantity,
+            stock: liveStock,
+            unit_price: livePrice,
+            product_name: liveProduct.name_bn || liveProduct.name_en || item.product_name,
+          }
+        : item,
+    );
+
+    await markConversation(
+      sb,
+      conversation.id,
+      'active',
+      { messenger_cart_items: nextItems, cart_updated_at: new Date().toISOString() },
+      activeCountry,
+    );
+    conversation.metadata = { ...(conversation.metadata || {}), messenger_cart_items: nextItems };
+
+    const reply =
+      '✅ ' + (liveProduct.name_bn || liveProduct.name_en || target.product_name) +
+      '-এর quantity ' + quantity + ' করা হয়েছে.\n\n' +
+      formatMessengerCartSummary(nextItems, formatMessengerCurrency(activeCountry));
+
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: reply,
+      actionStatus: 'cart_quantity_update',
+      countryCode: activeCountry,
+      sourceContext: { product_id: target.product_id, quantity },
+    });
+    await sendMessengerText(senderId, reply);
+    return;
+  }
+
+  if (isMessengerAddToCartRequest(normalizedActionText)) {
+    const pending = parsePendingMessengerOrder(conversation.metadata?.pending_messenger_order);
+
+    if (!pending) {
+      await sendMessengerText(senderId, 'কোন productটি cart-এ যোগ করতে চান আগে product select করুন।');
+      return;
+    }
+
+    if (!pending.quantity) {
+      await sendMessengerText(
+        senderId,
+        pending.product_name + '-এর quantity আগে দিন। তারপর “cart-এ যোগ করুন” লিখুন।',
+      );
+      return;
+    }
+
+    const nextItems = addPendingMessengerOrderToCart(messengerCartItems, pending);
+
+    await markConversation(
+      sb,
+      conversation.id,
+      'active',
+      {
+        messenger_cart_items: nextItems,
+        pending_messenger_order: null,
+        last_messenger_product: null,
+        cart_updated_at: new Date().toISOString(),
+      },
+      activeCountry,
+    );
+    conversation.metadata = {
+      ...(conversation.metadata || {}),
+      messenger_cart_items: nextItems,
+      pending_messenger_order: null,
+      last_messenger_product: null,
+    };
+
+    const reply =
+      '🛒 ' + pending.product_name + ' cart-এ যোগ করা হয়েছে.\n\n' +
+      formatMessengerCartSummary(nextItems, formatMessengerCurrency(activeCountry));
+
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: reply,
+      actionStatus: 'cart_add',
+      countryCode: activeCountry,
+      sourceContext: { product_id: pending.product_id },
+    });
+    await sendMessengerText(
+      senderId,
+      reply,
+      [
+        { title: '✅ Checkout', payload: 'CART_CHECKOUT' },
+        { title: '➕ Add product', payload: 'CART_ADD_PRODUCT' },
+      ],
+    );
+    return;
+  }
 
   // Multi-product cart: after selecting at least one product, the customer can
   // explicitly add another product without disturbing the existing checkout flow.
