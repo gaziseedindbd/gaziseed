@@ -438,7 +438,7 @@ export async function createMessengerIndiaCodPayment(args: {
   items: MessengerCartItem[];
 }) {
   const supabase = countryScopedSupabase('IN');
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.gaziseed.com').replace(/\\/$/, '');
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.gaziseed.com').replace(/\/$/, '');
   const returnUrl = siteUrl + '/messenger-payment?return=1';
   const { data, error } = await supabase.functions.invoke('cashfree-payment-session', {
     body: {
