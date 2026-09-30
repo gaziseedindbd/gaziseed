@@ -18,6 +18,7 @@ import {
   isMessengerCheckoutRequest,
   isMessengerCustomerProfileRequest,
   isMessengerOrderHistoryRequest,
+  isMessengerOrderIntent,
   isMessengerOrderInterruptRequest,
   isMessengerChangeDetailsRequest,
   isMessengerOrderResumeRequest,
@@ -68,6 +69,16 @@ test('does not classify ordinary order details as catalog intent', () => {
 test('recognizes catalog and list requests', () => {
   assert.equal(isProductCatalogRequest('what products do you have'), true);
   assert.equal(isProductListRequest('product list'), true);
+});
+
+
+test('recognizes Romanized Bangla purchase intent without affecting normal browsing', () => {
+  assert.equal(isMessengerOrderIntent('ROSE SEED KINTE CHAIE'), true);
+  assert.equal(isMessengerOrderIntent('golap seed kinte chai'), true);
+  assert.equal(isMessengerOrderIntent('ROSE SEED KINTE CHAY'), true);
+  assert.equal(isMessengerOrderIntent('rose seed nite chai'), true);
+  assert.equal(isMessengerOrderIntent('what products do you have'), false);
+  assert.equal(isMessengerOrderIntent('how to plant rose seeds'), false);
 });
 
 test('recognizes common Messenger product spelling typos', () => {
