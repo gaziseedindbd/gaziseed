@@ -162,6 +162,27 @@ export function isMessengerOrderTrackingRequest(text: string): boolean {
 }
 
 
+
+export function isMessengerCartViewRequest(text: string): boolean {
+  const normalized = normalizeMessengerIntentText(text);
+  return /(?:\bcart\b|shopping cart|basket|আমার কার্ট|কার্ট দেখ|কার্টে কী আছে|কার্টের পণ্য|কার্টটা দেখ|ঝুড়ি|ঝুড়ি)/i.test(normalized);
+}
+
+export function isMessengerCartRemoveRequest(text: string): boolean {
+  const normalized = normalizeMessengerIntentText(text);
+  return /(?:remove|delete|বাদ দাও|বাদ দিন|সরিয়ে দাও|সরিয়ে দাও|কার্ট থেকে.*বাদ|কার্ট থেকে.*সর)/i.test(normalized);
+}
+
+export function isMessengerCartQuantityChangeRequest(text: string): boolean {
+  const normalized = normalizeMessengerIntentText(text);
+  return /(?:quantity|qty|সংখ্যা|পরিমাণ|টা করে|টি করে|set|change).*?(?:\d|[০-৯])/i.test(normalized);
+}
+
+export function isMessengerAddToCartRequest(text: string): boolean {
+  const normalized = normalizeMessengerIntentText(text);
+  return /(?:add\s+(?:to\s+)?cart|add\s+this|কার্টে\s+(?:যোগ|দাও|রাখ)|কার্টে\s+নাও|cart\s+এ\s+(?:যোগ|দাও))/i.test(normalized);
+}
+
 export function isMessengerAddAnotherProductRequest(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
   return /(add\s+(?:another|more|one\s+more)\s+(?:product|item)|another\s+product|more\s+products?|add\s+more|আরও\s+(?:পণ্য|প্রোডাক্ট)|অন্য\s+(?:পণ্য|প্রোডাক্ট)|আরেকটা\s+(?:পণ্য|প্রোডাক্ট)|আরও\s+যোগ|আরও\s+নিতে\s+চাই)/i.test(
