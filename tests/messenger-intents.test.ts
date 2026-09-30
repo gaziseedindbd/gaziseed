@@ -36,6 +36,8 @@ import {
   normalizeMessengerSearchTerm,
 } from '../lib/ai/messenger-product-tool';
 import {
+  getBangladeshPaymentMethodReply,
+  isBangladeshPaymentMethodQuestion,
   isMessengerProductSpecificKnowledgeQuery,
 } from '../lib/ai/messenger-knowledge-tool';
 import {
@@ -89,6 +91,14 @@ test('normalizes and classifies Messenger product search matches', () => {
   assert.equal(classifyMessengerProductMatch('golp', product), 'similar');
 });
 
+
+
+test('recognizes Bangladesh COD-only payment questions', () => {
+  assert.equal(isBangladeshPaymentMethodQuestion('আপনাদের payment method কী কী?'), true);
+  assert.equal(isBangladeshPaymentMethodQuestion('cash on delivery আছে?'), true);
+  assert.equal(isBangladeshPaymentMethodQuestion('delivery charge koto'), false);
+  assert.match(getBangladeshPaymentMethodReply(), /Cash on Delivery/);
+});
 
 test('keeps generic agriculture process questions out of stale product context', () => {
   const product = {

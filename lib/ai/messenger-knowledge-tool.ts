@@ -523,6 +523,21 @@ export function isMessengerWebsiteKnowledgeRequest(text: string): boolean {
   return hasKnowledgeIntent(text);
 }
 
+function isBangladeshPaymentMethodQuestion(text: string): boolean {
+  const normalized = normalizeText(text);
+  return /(payment|pay|পেমেন্ট|পেমেন্টের|পেমেন্ট মেথড|payment method|কীভাবে পেমেন্ট|কিভাবে পেমেন্ট|কী দিয়ে পেমেন্ট|কিভাবে টাকা দেব|কীভাবে টাকা দেব|cash on delivery|cod|ক্যাশ অন ডেলিভারি|সিওডি)/i.test(
+    normalized,
+  );
+}
+
+function getBangladeshPaymentMethodReply(): string {
+  return [
+    '🇧🇩 Bangladesh-এ বর্তমানে আমরা শুধু Cash on Delivery (COD) payment গ্রহণ করি।',
+    '',
+    '📦 পণ্য হাতে পাওয়ার সময় delivery agent-কে payment করবেন।',
+  ].join('\n');
+}
+
 export async function getMessengerWebsiteKnowledgeAnswer(args: {
   supabase: SupabaseClient;
   country: MessengerKnowledgeCountry;
@@ -530,6 +545,13 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
   metadata?: ProductKnowledgeMetadata;
 }): Promise<ProductKnowledgeResult> {
   const { supabase, country, text, metadata } = args;
+
+  if (country === 'BD' && isBangladeshPaymentMethodQuestion(text)) {
+    return {
+      handled: true,
+      reply: getBangladeshPaymentMethodReply(),
+    };
+  }
 
   if (!hasKnowledgeIntent(text)) {
     return { handled: false };
