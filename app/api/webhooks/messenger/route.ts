@@ -502,6 +502,7 @@ async function sendMessengerText(
   recipientId: string,
   text: string,
   quickReplies?: Array<{ title: string; payload: string }>,
+  urlButton?: { title: string; url: string },
 ) {
   if (!META_PAGE_ACCESS_TOKEN) {
     throw new Error('META_PAGE_ACCESS_TOKEN is not configured');
@@ -529,12 +530,50 @@ async function sendMessengerText(
               }
             : {}),
         },
-      }),    },
+      }),
+    },
   );
 
   if (!response.ok) {
     const body = await response.text();
     throw new Error(`Meta Send API error: ${response.status} ${body.slice(0, 500)}`);
+  }
+
+  if (urlButton?.url) {
+    const buttonResponse = await fetch(
+      `https://graph.facebook.com/${META_GRAPH_VERSION}/me/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${META_PAGE_ACCESS_TOKEN}`,
+        },
+        body: JSON.stringify({
+          recipient: { id: recipientId },
+          message: {
+            attachment: {
+              type: 'template',
+              payload: {
+                template_type: 'button',
+                text: 'Secure Cashfree payment',
+                buttons: [
+                  {
+                    type: 'web_url',
+                    title: urlButton.title.slice(0, 20),
+                    url: urlButton.url,
+                  },
+                ],
+              },
+            },
+          },
+        }),
+      },
+    );
+
+    if (!buttonResponse.ok) {
+      const body = await buttonResponse.text();
+      throw new Error(`Meta Send API button error: ${buttonResponse.status} ${body.slice(0, 500)}`);
+    }
   }
 }
 
@@ -1671,7 +1710,12 @@ async function processMessengerEvent(event: MessengerEvent) {
                 ]
               : undefined;
 
-      await sendMessengerText(senderId, orderFlow.reply, confirmationQuickReplies);
+      await sendMessengerText(
+        senderId,
+        orderFlow.reply,
+        confirmationQuickReplies,
+        'paymentButton' in orderFlow ? orderFlow.paymentButton : undefined,
+      );
       return;
       }
     } catch (error) {
