@@ -63,6 +63,10 @@ import {
   getBangladeshHumanSupportAcknowledgement,
   getBangladeshHumanSupportWaitingReply,
 } from '@/lib/ai/messenger-human-support';
+import {
+  getMessengerTransactionalGuardReply,
+  isUnsafeMessengerTransactionalReply,
+} from '@/lib/ai/messenger-transactional-guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -2393,25 +2397,38 @@ async function processMessengerEvent(event: MessengerEvent) {
       isGeneralAgricultureMessage &&
       hasUnsafeGeneralAgricultureSpecifics(result.content);
 
+    const transactionallyUnsafeAIReply =
+      !unsafeGeneralAgricultureReply &&
+      !isKnowledgeFallbackResponse(result.content) &&
+      isUnsafeMessengerTransactionalReply(result.content);
+
     const finalReply = unsafeGeneralAgricultureReply
       ? getSafeGeneralAgricultureReply()
       : isKnowledgeFallbackResponse(result.content) && !isGeneralAgricultureMessage
         ? activeCountry === 'BD'
           ? getBangladeshKnowledgeFallbackMessage()
           : getIndiaHumanSupportMessage()
-        : result.content;
+        : transactionallyUnsafeAIReply
+          ? getMessengerTransactionalGuardReply()
+          : result.content;
 
     await saveMessage(sb, conversation.id, {
       role: 'assistant',
       content: finalReply,
       provider: result.provider,
       model: result.model,
-      actionStatus: finalReply === result.content ? 'sent' : 'knowledge_fallback_support',
+      actionStatus:
+        finalReply !== result.content
+          ? transactionallyUnsafeAIReply
+            ? 'transactional_guard'
+            : 'knowledge_fallback_support'
+          : 'sent',
       countryCode: activeCountry,
       sourceContext: {
         attempts: result.attempts,
         usage: result.usage || null,
         knowledge_fallback: finalReply !== result.content,
+        transactional_guard: transactionallyUnsafeAIReply,
       },
     });
 

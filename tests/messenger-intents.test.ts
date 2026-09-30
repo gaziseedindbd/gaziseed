@@ -6,6 +6,7 @@ import {
   addPendingMessengerOrderToCart,
   applyMessengerCustomerProfileToPending,
   formatMessengerCartSummary,
+  isMessengerOrderIntent,
   parseMessengerCartItems,
 } from '../lib/ai/messenger-order-tool';
 import {
@@ -44,6 +45,10 @@ import {
   getMessengerHumanSupportQueueState,
 } from '../lib/ai/messenger-human-support';
 import {
+  getMessengerTransactionalGuardReply,
+  isUnsafeMessengerTransactionalReply,
+} from '../lib/ai/messenger-transactional-guard';
+import {
   getMessengerRateLimitReply,
   hashMessengerMessage,
 } from '../lib/ai/messenger-rate-limit';
@@ -68,6 +73,16 @@ test('does not classify ordinary order details as catalog intent', () => {
 test('recognizes catalog and list requests', () => {
   assert.equal(isProductCatalogRequest('what products do you have'), true);
   assert.equal(isProductListRequest('product list'), true);
+});
+
+
+test('recognizes Romanized Bangla purchase intent without affecting normal browsing', () => {
+  assert.equal(isMessengerOrderIntent('ROSE SEED KINTE CHAIE'), true);
+  assert.equal(isMessengerOrderIntent('golap seed kinte chai'), true);
+  assert.equal(isMessengerOrderIntent('ROSE SEED KINTE CHAY'), true);
+  assert.equal(isMessengerOrderIntent('rose seed nite chai'), true);
+  assert.equal(isMessengerOrderIntent('what products do you have'), false);
+  assert.equal(isMessengerOrderIntent('how to plant rose seeds'), false);
 });
 
 test('recognizes common Messenger product spelling typos', () => {
@@ -203,6 +218,30 @@ test('classifies delivery, support, and seed knowledge questions independently',
   assert.equal(isMessengerSeedKnowledgeQuestion('লাউয়ের বীজ কীভাবে বপন করব'), true);
 });
 
+
+test('blocks AI-only transactional claims while allowing ordinary payment/order information', () => {
+  assert.equal(
+    isUnsafeMessengerTransactionalReply('✅ আপনার অর্ডার তৈরি হয়েছে।'),
+    true,
+  );
+  assert.equal(
+    isUnsafeMessengerTransactionalReply('🔐 Pay ₹90 Now - payment button নিচে দেওয়া হলো।'),
+    true,
+  );
+  assert.equal(
+    isUnsafeMessengerTransactionalReply('Payment successful হয়েছে।'),
+    true,
+  );
+  assert.equal(
+    isUnsafeMessengerTransactionalReply('Bangladesh-এ Cash on Delivery (COD) payment গ্রহণ করি।'),
+    false,
+  );
+  assert.equal(
+    isUnsafeMessengerTransactionalReply('অর্ডার করতে product-এর নাম লিখুন।'),
+    false,
+  );
+  assert.match(getMessengerTransactionalGuardReply(), /official order flow/);
+});
 
 test('aggregates Messenger provider monitoring without double-counting provider_result rows', () => {
   const summary = buildMessengerMonitoringSummary([
