@@ -1178,13 +1178,55 @@ async function processMessengerEvent(event: MessengerEvent) {
         activeCountry === 'IN'
           ? 'ঠিক আছে। আপনার জন্য India 🇮🇳 সাপোর্ট তথ্য ব্যবহার করা হবে। এখন আপনার প্রশ্নটি লিখুন।'
           : 'ঠিক আছে। আপনার জন্য Bangladesh 🇧🇩 সাপোর্ট তথ্য ব্যবহার করা হবে। এখন আপনার প্রশ্নটি লিখুন।';
+      const products = await listMessengerProducts(sb, activeCountry, 12);
+      const serializedProducts = serializeMessengerProducts(products);
+      const catalogReply = formatMessengerCatalogReply(
+        'কি কি product ase?',
+        serializedProducts as Array<Record<string, unknown>>,
+        activeCountry,
+      );
+      const productQuickReplies = serializedProducts
+        .slice(0, 13)
+        .map((product) => ({
+          title: messengerProductReplyTitle(product),
+          payload: `PRODUCT_SELECT:${String(product.id)}`,
+        }));
+      const messengerCountry: CountryCode = activeCountry;
+      const productCards = (serializedProducts as Array<Record<string, unknown>>)
+        .filter((product) => typeof product.image === 'string' && product.image.trim())
+        .map((product) => ({
+          title: formatMessengerProductName(product),
+          subtitle:
+            (typeof product.effective_price === 'number'
+              ? formatMessengerCurrency(messengerCountry) + product.effective_price
+              : 'দাম জানা নেই') +
+            ' • Stock: ' +
+            (typeof product.stock === 'number' ? product.stock : 0),
+          imageUrl: String(product.image),
+          productId: String(product.id),
+          productUrl:
+            typeof product.slug === 'string' && product.slug
+              ? 'https://www.gaziseed.com/product/' + encodeURIComponent(product.slug)
+              : undefined,
+        }));
+      const reply = `${confirmation}\n\n${catalogReply}`;
       await saveMessage(sb, conversation.id, {
         role: 'assistant',
-        content: confirmation,
+        content: reply,
         actionStatus: 'country_confirmed',
         countryCode: activeCountry,
+        sourceContext: {
+          country_confirmed_with_catalog: true,
+          product_count: products.length,
+        },
       });
-      await sendMessengerText(senderId, confirmation);
+      await sendMessengerText(
+        senderId,
+        reply,
+        productQuickReplies,
+        undefined,
+        productCards,
+      );
       return;
     }
   }
