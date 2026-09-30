@@ -2214,13 +2214,14 @@ async function processMessengerEvent(event: MessengerEvent) {
         selectable_product_count: productQuickReplies?.length || 0,
       },
     });
+    const messengerCountry: CountryCode = activeCountry;
     const productCards = (products as Array<Record<string, unknown>>)
       .filter((product) => typeof product.image === 'string' && product.image.trim())
       .map((product) => ({
         title: formatMessengerProductName(product),
         subtitle:
           (typeof product.effective_price === 'number'
-            ? formatMessengerCurrency(activeCountry) + product.effective_price
+            ? formatMessengerCurrency(messengerCountry) + product.effective_price
             : 'দাম জানা নেই') +
           ' • Stock: ' +
           (typeof product.stock === 'number' ? product.stock : 0),
