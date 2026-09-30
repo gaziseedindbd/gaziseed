@@ -10,6 +10,7 @@ export type MessengerProduct = {
   name_en: string | null;
   slug: string | null;
   short_description: string | null;
+  image: string | null;
   regular_price: number | null;
   sale_price: number | null;
   offer_price: number | null;
@@ -35,6 +36,7 @@ const PRODUCT_FIELDS = [
   'name_en',
   'slug',
   'short_description',
+  'image',
   'regular_price',
   'sale_price',
   'offer_price',
@@ -273,6 +275,7 @@ export function serializeMessengerProducts(products: MessengerProduct[]) {
     name_en: product.name_en,
     slug: product.slug,
     short_description: product.short_description,
+    image: product.image,
     regular_price: product.regular_price,
     sale_price: product.sale_price,
     offer_price: product.offer_price,

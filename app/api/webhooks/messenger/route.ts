@@ -42,6 +42,7 @@ import {
   isMessengerCartRemoveRequest,
   isMessengerCartQuantityChangeRequest,
   isMessengerAddToCartRequest,
+  isMessengerProductComparisonRequest,
   isMessengerCustomerProfileRequest,
   isMessengerOrderHistoryRequest,
   isMessengerOrderLinkRequest,
@@ -171,6 +172,20 @@ function findMessengerCartItem(
     const tokens = name.split(/[^a-z0-9\u0980-\u09FF]+/i).filter((token) => token.length >= 3);
     return tokens.some((token) => normalized.includes(token));
   }) || null;
+}
+
+function getMessengerComparisonQueries(text: string): string[] {
+  const cleaned = normalizeMessengerCartText(text)
+    .replace(/(?:compare|comparison|তুলনা|কোনটা|which|better)/gi, ' ')
+    .replace(/(?:please|দয়া করে|দয়া করে|করো|করুন|করে|দেখাও|দেখান)/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const parts = cleaned.split(/\s+(?:and|&|ও|এবং|আর|vs|versus)\s+/i)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  return parts.slice(0, 2);
 }
 
 function formatMessengerProductName(product: Record<string, unknown>): string {
@@ -533,6 +548,13 @@ async function sendMessengerText(
   text: string,
   quickReplies?: Array<{ title: string; payload: string }>,
   urlButton?: { title: string; url: string },
+  productCards?: Array<{
+    title: string;
+    subtitle?: string;
+    imageUrl?: string;
+    productId: string;
+    productUrl?: string;
+  }>,
 ) {
   if (!META_PAGE_ACCESS_TOKEN) {
     throw new Error('META_PAGE_ACCESS_TOKEN is not configured');
@@ -605,6 +627,55 @@ async function sendMessengerText(
       throw new Error(`Meta Send API button error: ${buttonResponse.status} ${body.slice(0, 500)}`);
     }
   }
+
+  const validProductCards = (productCards || []).filter(
+    (card) => card.imageUrl && /^https?:\\/\\//i.test(card.imageUrl),
+  ).slice(0, 10);
+
+  if (validProductCards.length) {
+    const cardResponse = await fetch(
+      `https://graph.facebook.com/${META_GRAPH_VERSION}/me/messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${META_PAGE_ACCESS_TOKEN}`,
+        },
+        body: JSON.stringify({
+          recipient: { id: recipientId },
+          message: {
+            attachment: {
+              type: 'template',
+              payload: {
+                template_type: 'generic',
+                elements: validProductCards.map((card) => ({
+                  title: card.title.slice(0, 80),
+                  ...(card.subtitle ? { subtitle: card.subtitle.slice(0, 80) } : {}),
+                  image_url: card.imageUrl,
+                  buttons: [
+                    ...(card.productUrl
+                      ? [{ type: 'web_url', title: 'View Product', url: card.productUrl }]
+                      : []),
+                    {
+                      type: 'postback',
+                      title: 'Order Now',
+                      payload: `PRODUCT_SELECT:${card.productId}`,
+                    },
+                  ].slice(0, 3),
+                })),
+              },
+            },
+          },
+        }),
+      },
+    );
+
+    if (!cardResponse.ok) {
+      const body = await cardResponse.text();
+      throw new Error(`Meta Send API product card error: ${cardResponse.status} ${body.slice(0, 500)}`);
+    }
+  }
+
 }
 
 async function getConversation(sb: ReturnType<typeof adminSupabase>, externalUserId: string) {
@@ -1485,6 +1556,56 @@ async function processMessengerEvent(event: MessengerEvent) {
     return;
   }
 
+
+  if (isMessengerProductComparisonRequest(normalizedActionText)) {
+    const queries = getMessengerComparisonQueries(normalizedActionText);
+    if (queries.length < 2) {
+      await sendMessengerText(senderId, 'দুটি product-এর নাম লিখুন। উদাহরণ: “টমেটো আর মরিচ তুলনা করো”।');
+      return;
+    }
+
+    const matches = await Promise.all(
+      queries.map((query) => searchMessengerProducts(sb, activeCountry, query, 3)),
+    );
+    const selected = matches.map((items) => items.find((item) => item.search_match_type !== 'similar') || items[0] || null);
+
+    if (selected.some((item) => !item)) {
+      await sendMessengerText(senderId, 'দুঃখিত, তুলনা করার জন্য দুটি matching active product পাওয়া যায়নি।');
+      return;
+    }
+
+    const [left, right] = selected;
+    const leftPrice = [left.offer_price, left.sale_price, left.price, left.regular_price].find((v) => typeof v === 'number' && v > 0) ?? 0;
+    const rightPrice = [right.offer_price, right.sale_price, right.price, right.regular_price].find((v) => typeof v === 'number' && v > 0) ?? 0;
+    const currency = formatMessengerCurrency(activeCountry);
+
+    const reply = [
+      '⚖️ Product Comparison',
+      '',
+      '🌱 ' + (left.name_bn || left.name_en || left.slug || 'Product'),
+      '💰 দাম: ' + currency + leftPrice,
+      '📦 স্টক: ' + (left.stock ?? 0),
+      '🌾 ধরন: ' + (left.seed_type || 'তথ্য নেই'),
+      '🗓️ মৌসুম: ' + (left.season || 'তথ্য নেই'),
+      '',
+      '🌱 ' + (right.name_bn || right.name_en || right.slug || 'Product'),
+      '💰 দাম: ' + currency + rightPrice,
+      '📦 স্টক: ' + (right.stock ?? 0),
+      '🌾 ধরন: ' + (right.seed_type || 'তথ্য নেই'),
+      '🗓️ মৌসুম: ' + (right.season || 'তথ্য নেই'),
+    ].join('\n');
+
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: reply,
+      actionStatus: 'product_comparison',
+      countryCode: activeCountry,
+      sourceContext: { deterministic_product_comparison: true },
+    });
+    await sendMessengerText(senderId, reply);
+    return;
+  }
+
   // Multi-product cart: after selecting at least one product, the customer can
   // explicitly add another product without disturbing the existing checkout flow.
   if (isMessengerAddAnotherProductRequest(normalizedActionText)) {
@@ -2087,7 +2208,25 @@ async function processMessengerEvent(event: MessengerEvent) {
         selectable_product_count: productQuickReplies?.length || 0,
       },
     });
-    await sendMessengerText(senderId, catalogReply, productQuickReplies);
+    const productCards = (products as Array<Record<string, unknown>>)
+      .filter((product) => typeof product.image === 'string' && product.image.trim())
+      .map((product) => ({
+        title: formatMessengerProductName(product),
+        subtitle:
+          (typeof product.effective_price === 'number'
+            ? formatMessengerCurrency(activeCountry) + product.effective_price
+            : 'দাম জানা নেই') +
+          ' • Stock: ' +
+          (typeof product.stock === 'number' ? product.stock : 0),
+        imageUrl: String(product.image),
+        productId: String(product.id),
+        productUrl:
+          typeof product.slug === 'string' && product.slug
+            ? 'https://www.gaziseed.com/product/' + encodeURIComponent(product.slug)
+            : undefined,
+      }));
+
+    await sendMessengerText(senderId, catalogReply, productQuickReplies, undefined, productCards);
     return;
   }
 

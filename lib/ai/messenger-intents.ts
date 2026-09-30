@@ -163,6 +163,12 @@ export function isMessengerOrderTrackingRequest(text: string): boolean {
 
 
 
+
+export function isMessengerProductComparisonRequest(text: string): boolean {
+  const normalized = normalizeMessengerIntentText(text);
+  return /(?:compare|comparison|তুলনা|তুলনা করে|দুটো.*তুলনা|দুইটা.*তুলনা|কোনটা.*ভালো|which.*better)/i.test(normalized);
+}
+
 export function isMessengerCartViewRequest(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
   return /(?:\bcart\b|shopping cart|basket|আমার কার্ট|কার্ট দেখ|কার্টে কী আছে|কার্টের পণ্য|কার্টটা দেখ|ঝুড়ি|ঝুড়ি)/i.test(normalized);
