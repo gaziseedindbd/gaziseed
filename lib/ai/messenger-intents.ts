@@ -1,5 +1,10 @@
 export function normalizeMessengerIntentText(text: string): string {
-  return text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+  return text
+    .toLocaleLowerCase()
+    .replace(/\bprodcuts?\b/g, 'products')
+    .replace(/\bprod(?:cut|cuct|ect|duct)\b/g, 'product')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 export function isOtherProductRequest(text: string): boolean {
