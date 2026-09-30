@@ -68,6 +68,12 @@ test('recognizes catalog and list requests', () => {
   assert.equal(isProductListRequest('product list'), true);
 });
 
+test('recognizes common Messenger product spelling typos', () => {
+  assert.equal(isProductListRequest('ki ki prodcut ase?'), true);
+  assert.equal(isProductCatalogRequest('kono prodcut naie?'), true);
+  assert.equal(isProductListRequest('ki ki prodcuts ase?'), true);
+});
+
 test('normalizes and classifies Messenger product search matches', () => {
   assert.equal(normalizeMessengerSearchTerm('  গোলাপ   ফুল  '), 'গোলাপ ফুল');
   assert.equal(normalizeMessengerSearchSlug('  lal golap fuler bij  '), 'lal-golap-fuler-bij');
