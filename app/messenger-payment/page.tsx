@@ -3,16 +3,18 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Loader2, ShieldCheck, XCircle } from 'lucide-react';
 
-declare global {
-  interface Window {
-    Cashfree?: (options: { mode: 'production' | 'sandbox' }) => {
-      checkout: (options: { paymentSessionId: string; redirectTarget?: string }) => Promise<unknown>;
-    };
-  }
+type CashfreeClient = {
+  checkout: (options: { paymentSessionId: string; redirectTarget?: string }) => Promise<unknown>;
+};
+
+type CashfreeFactory = (options: { mode: 'production' | 'sandbox' }) => CashfreeClient;
+
+function getCashfreeFactory(): CashfreeFactory | undefined {
+  return (window as unknown as { Cashfree?: CashfreeFactory }).Cashfree;
 }
 
 async function loadCashfreeSdk() {
-  if (window.Cashfree) return;
+  if (getCashfreeFactory()) return;
   await new Promise<void>((resolve, reject) => {
     const existing = document.querySelector('script[data-cashfree-sdk="v3"]') as HTMLScriptElement | null;
     if (existing) {
@@ -70,10 +72,11 @@ export default function MessengerPaymentPage() {
         }
 
         await loadCashfreeSdk();
-        if (!window.Cashfree) throw new Error('Cashfree SDK unavailable');
+        const cashfreeFactory = getCashfreeFactory();
+        if (!cashfreeFactory) throw new Error('Cashfree SDK unavailable');
         setState('opening');
         setMessage('Cashfree secure checkout খোলা হচ্ছে…');
-        const cashfree = window.Cashfree({ mode: 'production' });
+        const cashfree = cashfreeFactory({ mode: 'production' });
         await cashfree.checkout({ paymentSessionId: data.payment_session_id, redirectTarget: '_self' });
       } catch (error) {
         if (!active) return;
