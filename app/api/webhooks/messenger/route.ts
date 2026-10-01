@@ -962,11 +962,18 @@ async function getRecentMessages(
 
   const recentMessages = data || [];
   const filteredMessages = options?.excludeClosedHumanSupportMessages
-    ? recentMessages.filter(
-        (message) =>
-          message.action_status !== 'human_support_queue_created' &&
-          message.action_status !== 'human_support_queue_waiting',
-      )
+    ? recentMessages.filter((message) => {
+        const isQueueArtifact =
+          message.action_status === 'human_support_queue_created' ||
+          message.action_status === 'human_support_queue_waiting';
+        const isExactSupportReply =
+          message.role === 'assistant' &&
+          Boolean(message.content) &&
+          (message.content.trim() === getBangladeshHumanSupportWaitingReply().trim() ||
+            message.content.trim() === getBangladeshHumanSupportAcknowledgement().trim());
+
+        return !isQueueArtifact && !isExactSupportReply;
+      })
     : recentMessages;
 
   return filteredMessages.reverse().map(({ role, content }) => ({ role, content }));
@@ -2774,6 +2781,17 @@ async function processMessengerEvent(event: MessengerEvent) {
       !isKnowledgeFallbackResponse(result.content) &&
       isUnsafeMessengerTransactionalReply(result.content);
 
+    const closedHumanSupportContext =
+      conversation.metadata?.human_support_state === 'closed' &&
+      conversation.metadata?.human_takeover !== true;
+
+    const repeatedHumanSupportReply =
+      closedHumanSupportContext &&
+      (
+        result.content.trim() === getBangladeshHumanSupportWaitingReply().trim() ||
+        result.content.trim() === getBangladeshHumanSupportAcknowledgement().trim()
+      );
+
     const finalReply = unsafeGeneralAgricultureReply
       ? getSafeGeneralAgricultureReply()
       : isKnowledgeFallbackResponse(result.content) && !isGeneralAgricultureMessage
@@ -2782,7 +2800,9 @@ async function processMessengerEvent(event: MessengerEvent) {
           : getIndiaHumanSupportMessage()
         : transactionallyUnsafeAIReply
           ? getMessengerTransactionalGuardReply()
-          : result.content;
+          : repeatedHumanSupportReply
+            ? 'জি। আপনার আগের human support request এখন বন্ধ করা হয়েছে এবং AI সহায়তা আবার চালু আছে। আপনার প্রশ্নটি লিখুন—আমি সাহায্য করছি।'
+            : result.content;
 
     await saveMessage(sb, conversation.id, {
       role: 'assistant',
@@ -2793,7 +2813,9 @@ async function processMessengerEvent(event: MessengerEvent) {
         finalReply !== result.content
           ? transactionallyUnsafeAIReply
             ? 'transactional_guard'
-            : 'knowledge_fallback_support'
+            : repeatedHumanSupportReply
+              ? 'human_support_resume_guard'
+              : 'knowledge_fallback_support'
           : 'sent',
       countryCode: activeCountry,
       sourceContext: {
@@ -2801,6 +2823,7 @@ async function processMessengerEvent(event: MessengerEvent) {
         usage: result.usage || null,
         knowledge_fallback: finalReply !== result.content,
         transactional_guard: transactionallyUnsafeAIReply,
+        human_support_resume_guard: repeatedHumanSupportReply,
       },
     });
 
