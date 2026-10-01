@@ -1097,6 +1097,7 @@ async function processMessengerEvent(event: MessengerEvent) {
   const conversationMetadata = conversation.metadata || {};
   let humanTakeoverActive = conversationMetadata.human_takeover === true;
   let conversationStatus = conversation.status;
+  let humanSupportClosed = conversationMetadata.human_support_state === 'closed';
 
   // Reconcile stale human-support state before applying the hard AI stop.
   // Admin close marks the handoff resolved and the conversation closed-state
@@ -1138,6 +1139,7 @@ async function processMessengerEvent(event: MessengerEvent) {
     if (handoffIsClosed || metadataSaysClosed) {
       conversationStatus = 'active';
       humanTakeoverActive = false;
+      humanSupportClosed = true;
 
       await markConversation(
         sb,
@@ -2578,8 +2580,7 @@ async function processMessengerEvent(event: MessengerEvent) {
   const [recentMessages, products, deliveryPolicy, webSeedContext] = await Promise.all([
     getRecentMessages(sb, conversation.id, {
       excludeClosedHumanSupportMessages:
-        conversation.metadata?.human_support_state === 'closed' &&
-        conversation.metadata?.human_takeover !== true,
+        humanSupportClosed && humanTakeoverActive !== true,
     }),
     isProductListRequest(normalizedActionText)
       ? listMessengerProducts(sb, activeCountry, 12).then(serializeMessengerProducts)
@@ -2782,8 +2783,7 @@ async function processMessengerEvent(event: MessengerEvent) {
       isUnsafeMessengerTransactionalReply(result.content);
 
     const closedHumanSupportContext =
-      conversation.metadata?.human_support_state === 'closed' &&
-      conversation.metadata?.human_takeover !== true;
+      humanSupportClosed && humanTakeoverActive !== true;
 
     const repeatedHumanSupportReply =
       closedHumanSupportContext &&
