@@ -33,6 +33,7 @@ import {
   getMessengerCustomerProfileReply,
   getMessengerOrderCustomerProfile,
   getMessengerOrderHistoryReply,
+  linkMessengerCustomerProfileByPhone,
   upsertMessengerCustomerProfile,
 } from '@/lib/ai/messenger-customer-tool';
 import {
@@ -46,6 +47,7 @@ import {
   isMessengerProductComparisonRequest,
   isMessengerRecommendationRequest,
   isMessengerRestockNotificationRequest,
+  isMessengerPhoneOnlyMessage,
   isMessengerCustomerProfileRequest,
   isMessengerOrderHistoryRequest,
   isMessengerOrderLinkRequest,
@@ -58,6 +60,7 @@ import {
 } from '@/lib/ai/messenger-intents';
 import { getMessengerWebsiteKnowledgeAnswer } from '@/lib/ai/messenger-knowledge-tool';
 import { getMessengerCustomerRecommendations } from '@/lib/ai/messenger-recommendation-tool';
+import { extractMessengerPhone } from '@/lib/ai/messenger-phone';
 import { subscribeMessengerRestockNotification } from '@/lib/ai/messenger-restock-tool';
 import {
   consumeMessengerRateLimit,
@@ -1912,6 +1915,84 @@ async function processMessengerEvent(event: MessengerEvent) {
     };
   }
 
+  // A pending restock request can be completed with only a mobile number.
+  // No Order Number and no OTP are required for this flow.
+  const pendingRestock =
+    conversation.metadata &&
+    typeof conversation.metadata.pending_restock_notification === 'object' &&
+    conversation.metadata.pending_restock_notification !== null
+      ? (conversation.metadata.pending_restock_notification as { text?: unknown })
+      : null;
+
+  if (pendingRestock && isMessengerPhoneOnlyMessage(normalizedActionText)) {
+    try {
+      const phone = extractMessengerPhone(normalizedActionText);
+      if (!phone) return;
+
+      const linked = await linkMessengerCustomerProfileByPhone({
+        supabase: sb,
+        pageId: META_PAGE_ID,
+        externalUserId: senderId,
+        country: activeCountry,
+        phone,
+      });
+
+      if (!linked.linked) {
+        const reply =
+          '📱 এই mobile number-এর সঙ্গে কোনো customer record পাওয়া যায়নি।\n\n' +
+          'আপনার GAZI SEED order-এ দেওয়া mobile numberটি পাঠান।';
+        await saveMessage(sb, conversation.id, {
+          role: 'assistant',
+          content: reply,
+          actionStatus: 'restock_mobile_link_failed',
+          countryCode: activeCountry,
+          sourceContext: { restock_notification: true },
+        });
+        await sendMessengerText(senderId, reply);
+        return;
+      }
+
+      const pendingText =
+        typeof pendingRestock.text === 'string' ? pendingRestock.text : '';
+
+      const restock = await subscribeMessengerRestockNotification({
+        supabase: sb,
+        pageId: META_PAGE_ID,
+        externalUserId: senderId,
+        country: activeCountry,
+        text: pendingText,
+      });
+
+      await markConversation(
+        sb,
+        conversation.id,
+        'active',
+        { pending_restock_notification: null },
+        activeCountry,
+      );
+
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: restock.reply,
+        actionStatus: 'restock_notification',
+        countryCode: activeCountry,
+        sourceContext: {
+          restock_notification: true,
+          subscribed: restock.subscribed,
+          product_id: restock.product?.id || null,
+          mobile_linked: true,
+        },
+      });
+      await sendMessengerText(senderId, restock.reply);
+      return;
+    } catch (error) {
+      console.error(
+        'Messenger restock mobile linking failed:',
+        error instanceof Error ? error.message : 'Unknown restock mobile linking error',
+      );
+    }
+  }
+
   // Messenger payment status is deterministic and isolated from AI/order creation.
   if (isMessengerPaymentStatusRequest(normalizedActionText)) {
     try {
@@ -2067,6 +2148,21 @@ async function processMessengerEvent(event: MessengerEvent) {
           product_id: restock.product?.id || null,
         },
       });
+
+      if (restock.needsPhone) {
+        await markConversation(
+          sb,
+          conversation.id,
+          'active',
+          {
+            pending_restock_notification: {
+              text,
+              created_at: new Date().toISOString(),
+            },
+          },
+          activeCountry,
+        );
+      }
 
       await sendMessengerText(senderId, restock.reply);
       return;
