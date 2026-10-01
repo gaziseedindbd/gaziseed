@@ -108,11 +108,18 @@ export async function getMessengerPaymentStatusReply(args: {
 }> {
   const requestedOrderNumber = parseOrderNumber(args.text);
   const metadataPayment = args.metadata?.messenger_payment;
-  const cashfreeOrderId = parseCashfreeOrderId(
+  const metadataPaymentCountry =
     metadataPayment && typeof metadataPayment === 'object'
-      ? (metadataPayment as Record<string, unknown>).cashfree_order_id
-      : null,
-  );
+      ? (metadataPayment as Record<string, unknown>).country
+      : null;
+  const cashfreeOrderId =
+    (metadataPaymentCountry === args.country || !metadataPaymentCountry)
+      ? parseCashfreeOrderId(
+          metadataPayment && typeof metadataPayment === 'object'
+            ? (metadataPayment as Record<string, unknown>).cashfree_order_id
+            : null,
+        )
+      : null;
 
   const { data: profile, error: profileError } = await args.supabase
     .from('messenger_customer_profiles')
