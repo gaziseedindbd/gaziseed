@@ -227,6 +227,45 @@ async function verifyAndLinkByOrder(
   return order;
 }
 
+export async function linkMessengerCustomerProfileByPhone(args: {
+  supabase: SupabaseClient;
+  pageId: string;
+  externalUserId: string;
+  country: MessengerCustomerCountry;
+  phone: string;
+}): Promise<{ linked: boolean; phone: string | null }> {
+  const phone = normalizeMessengerPhone(args.phone);
+  if (!phone) return { linked: false, phone: null };
+
+  const { data: order, error } = await args.supabase
+    .from('orders')
+    .select(
+      'id,order_number,customer_name,customer_phone,delivery_address,final_amount,created_at',
+    )
+    .eq('country_code', args.country)
+    .eq('customer_phone', phone)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!order) return { linked: false, phone };
+
+  await upsertMessengerCustomerProfile({
+    supabase: args.supabase,
+    pageId: args.pageId,
+    externalUserId: args.externalUserId,
+    country: args.country,
+    name: order.customer_name,
+    phone: order.customer_phone,
+    address: order.delivery_address,
+    orderId: order.id,
+    orderNumber: order.order_number,
+  });
+
+  return { linked: true, phone };
+}
+
 export async function getMessengerCustomerProfileReply(args: {
   supabase: SupabaseClient;
   pageId: string;
