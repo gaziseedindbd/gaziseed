@@ -130,7 +130,12 @@ export function isMessengerRestockNotificationRequest(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
 
   const hasStockSignal =
-    /(?:\b(?:back\s*in\s*stock|restock|in\s*stock|available)\b|(?:স্টক|stock)\s*(?:এলে|ele|আসলে|asle|হলে|hole|আসলে|ফিরলে)|আবার\s*স্টকে|স্টকে\s*ফিরে)/i.test(
+    /(?:\b(?:back\s*in\s*stock|restock|in\s*stock|available)\b|(?:স্টক|stock)\s*(?:এলে|ele|আসলে|asle|হলে|hole|ফিরলে)|আবার\s*স্টকে|স্টকে\s*ফিরে)/i.test(
+      normalized,
+    );
+
+  const hasArrivalSignal =
+    /(?:\b(?:when|whenever|if|once)\b.*\b(?:comes?|arrives?|available)\b|\b(?:ele|asle|aaye|aajaye|milega)\b|(?:এলে|আসলে|আসলে|ফিরলে|পেলে))/i.test(
       normalized,
     );
 
@@ -140,7 +145,8 @@ export function isMessengerRestockNotificationRequest(text: string): boolean {
     );
 
   return (
-    hasStockSignal && hasNotifySignal ||
+    (hasStockSignal && hasNotifySignal) ||
+    (hasArrivalSignal && hasNotifySignal) ||
     /(?:back\s*in\s*stock|restock)\b/i.test(normalized) ||
     /(?:স্টক|stock).*(?:জান|notify|knock|ping|bat)/i.test(normalized)
   );
