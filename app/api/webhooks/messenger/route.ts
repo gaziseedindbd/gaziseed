@@ -876,20 +876,46 @@ async function createHumanHandoff(
     handoff_at: new Date().toISOString(),
   }, countryCode);
 
-  const { data: existing } = await sb
+  const { data: existing, error: existingError } = await sb
     .from('ai_handoffs')
-    .select('id')
+    .select('id,status,reason,assigned_to,created_at')
     .eq('conversation_id', conversationId)
     .in('status', ['open', 'assigned'])
     .limit(1)
     .maybeSingle();
 
-  if (existing) return existing;
+  if (existingError) throw existingError;
 
   const notes =
     reason === 'customer_requested_human_support'
       ? 'Customer requested human support. AI replies are blocked until an admin closes the handoff.'
       : 'Automatic AI failover exhausted. Automatic replies may resume on a new customer message.';
+
+  if (existing) {
+    // Reuse the existing active handoff, but make an explicit customer request
+    // visible as a real human-support queue item instead of leaving it labeled
+    // as an older provider-failure/disabled-AI handoff.
+    if (
+      reason === 'customer_requested_human_support' &&
+      existing.reason !== 'customer_requested_human_support'
+    ) {
+      const { data: updated, error: updateError } = await sb
+        .from('ai_handoffs')
+        .update({
+          reason,
+          notes,
+          country_code: countryCode,
+        })
+        .eq('id', existing.id)
+        .select('id,status,assigned_to,created_at')
+        .single();
+
+      if (updateError) throw updateError;
+      return updated;
+    }
+
+    return existing;
+  }
 
   const { data, error } = await sb
     .from('ai_handoffs')
