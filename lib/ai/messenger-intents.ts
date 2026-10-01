@@ -126,6 +126,14 @@ export function isMessengerOrderResumeRequest(text: string): boolean {
   );
 }
 
+export function isMessengerRestockNotificationRequest(text: string): boolean {
+  const normalized = normalizeMessengerIntentText(text);
+
+  return /(?:\\b(?:back\\s*in\\s*stock|restock)\\b|\\bnotify(?:\\s+me)?\\b.*\\b(?:stock|restock)\\b|\\b(?:stock|restock)\\b.*\\bnotify(?:\\s+me)?\\b|\\b(?:let|tell|inform)\\s+me\\b.*\\b(?:stock|available)\\b|স্টক\\s*এলে|স্টক\\s*আসলে|আবার\\s*স্টকে|স্টক\\s*হলে|স্টকে\\s*এলে.*জানাবেন|স্টক.*জানিয়ে|স্টক.*জানিয়ে)/i.test(
+    normalized,
+  );
+}
+
 export function isMessengerRecommendationRequest(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
 
@@ -142,6 +150,7 @@ export function isMessengerOrderInterruptRequest(text: string): boolean {
   if (isMessengerDeliveryIntent(normalized)) return true;
   if (isMessengerHumanSupportIntent(normalized)) return true;
   if (isMessengerRecommendationRequest(normalized)) return true;
+  if (isMessengerRestockNotificationRequest(normalized)) return true;
   if (isMessengerSeedKnowledgeQuestion(normalized)) return true;
   if (isMessengerCustomerProfileRequest(normalized)) return true;
   if (isMessengerOrderHistoryRequest(normalized)) return true;
