@@ -2,19 +2,19 @@ import { createClient } from '@supabase/supabase-js';
 
 type CountryCode = 'IN' | 'BD';
 
+type ProductRestock = {
+  name_bn: string | null;
+  name_en: string | null;
+  slug: string | null;
+  stock: number | null;
+};
+
 type PendingRestock = {
   id: string;
   product_id: string | null;
   phone: string | null;
   country_code: CountryCode;
-  products:
-    | {
-        name_bn: string | null;
-        name_en: string | null;
-        slug: string | null;
-        stock: number | null;
-      }
-    | null;
+  products: ProductRestock[] | null;
 };
 
 function adminSupabase() {
@@ -29,7 +29,7 @@ function adminSupabase() {
   });
 }
 
-function productName(product: PendingRestock['products']): string {
+function productName(product: ProductRestock | null): string {
   return product?.name_bn || product?.name_en || product?.slug || 'পণ্য';
 }
 
@@ -138,7 +138,7 @@ export async function processMessengerRestockNotifications(limit = 50): Promise<
   let failed = 0;
 
   for (const notification of notifications) {
-    const product = notification.products;
+    const product = notification.products?.[0] ?? null;
     const phone = String(notification.phone || '').trim();
     const stock = Number(product?.stock || 0);
 
