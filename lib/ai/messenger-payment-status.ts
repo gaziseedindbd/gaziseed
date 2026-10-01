@@ -278,10 +278,18 @@ export async function getMessengerPaymentStatusReply(args: {
   if (intentError) throw intentError;
   if (intent) paymentIntentStatus = intent.status;
 
+  const resolvedCashfreeOrderId = intent?.cashfree_order_id || cashfreeOrderId;
+  const retryUrl = isMessengerPaymentRetryableStatus(paymentIntentStatus)
+    ? getMessengerPaymentRetryUrl(resolvedCashfreeOrderId)
+    : null;
+
   return {
     handled: true,
     reply: formatOrderPaymentStatus(order, paymentIntentStatus, args.country),
     orderIds: [String(order.id)],
-    cashfreeOrderId: intent?.cashfree_order_id || cashfreeOrderId,
+    cashfreeOrderId: resolvedCashfreeOrderId,
+    ...(retryUrl
+      ? { paymentRetryButton: { title: '🔄 Retry Payment', url: retryUrl } }
+      : {}),
   };
 }
