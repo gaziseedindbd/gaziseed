@@ -13,15 +13,14 @@ function productName(product: MessengerProduct): string {
 export function extractMessengerRestockProductQuery(text: string): string {
   return text
     .replace(
-      /(?:notify|notification|notify me|let me know|tell me|inform me|when.*back|back in stock|restock|stock এলে|স্টক এলে|আবার স্টকে|স্টকে এলে|স্টক আসলে|স্টক হলে|জানাবেন|জানিয়ে|জানিয়ে)/gi,
+      /(?:notify(?: me)?|let me know|tell me|inform me|back in stock|in stock|restock|stock এলে|স্টক এলে|আবার স্টকে|স্টকে এলে|স্টক আসলে|স্টক হলে|stock hole|stock ele|abar stock e|হলে জানাবেন|জানাবেন|জানিয়ে|জানিয়ে)/gi,
       ' ',
     )
-    .replace(/(?:please|দয়া করে|দয়া করে|চাই|চাইলে|দিবেন|দাও|করুন|করে)/gi, ' ')
+    .replace(/(?:when|whenever|is|again|please|দয়া করে|দয়া করে|চাই|চাইলে|দিবেন|দাও|করুন|করে)/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 80);
 }
-
 export async function subscribeMessengerRestockNotification(args: {
   supabase: SupabaseClient;
   pageId: string;
