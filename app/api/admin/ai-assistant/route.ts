@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase/server';
 import { buildMessengerMonitoringSummary } from '@/lib/ai/messenger-monitoring';
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +17,7 @@ export async function GET(request: Request) {
   try {
     const authUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-    const accessToken = request.headers.get('authorization')?.replace(/^Bearer\\s+/i, '').trim() || '';
+    const accessToken = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() || '';
     if (!authUrl || !anonKey || !accessToken) {
       return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
     }
