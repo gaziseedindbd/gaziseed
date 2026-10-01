@@ -2122,6 +2122,7 @@ async function processMessengerEvent(event: MessengerEvent) {
         ? {
             messenger_payment: {
               cashfree_order_id: cashfreeOrderIdMatch[1],
+              country: activeCountry,
               started_at: new Date().toISOString(),
             },
           }
