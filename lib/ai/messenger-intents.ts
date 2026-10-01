@@ -129,7 +129,7 @@ export function isMessengerOrderResumeRequest(text: string): boolean {
 export function isMessengerRecommendationRequest(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
 
-  return /(?:\\brecommend(?:ed|ation)?\\b|\\bsuggest(?:ion|ions)?\\b|what should i (?:buy|get|choose)|which (?:product|seed) should i (?:buy|get|choose)|what do you recommend|কোনটা\\s+(?:নেব|নিতে|ভালো)|কোন\\s+(?:পণ্য|বীজ)\\s+(?:নেব|নিতে)|আমার জন্য\\s+(?:কি|কী)\\s+(?:নেব|ভালো)|পরামর্শ\\s+দিন)/i.test(
+  return /(?:\brecommend(?:ed|ation)?\b|\bsuggest(?:ion|ions)?\b|what should i (?:buy|get|choose)|which (?:product|seed) should i (?:buy|get|choose)|what do you recommend|কোনটা\s+(?:নেব|নিতে|ভালো)|কোন\s+(?:পণ্য|বীজ)\s+(?:নেব|নিতে)|আমার জন্য\s+(?:কি|কী)\s+(?:নেব|ভালো)|পরামর্শ\s+দিন)/i.test(
     normalized,
   );
 }
