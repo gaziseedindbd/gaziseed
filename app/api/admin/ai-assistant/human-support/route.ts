@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { createServerSupabase } from '@/lib/supabase/server';
 import { getMessengerHumanSupportQueueState } from '@/lib/ai/messenger-human-support';
 
 export const dynamic = 'force-dynamic';
@@ -15,24 +14,40 @@ function adminSupabase() {
   });
 }
 
-async function requireAdmin() {
-  const authClient = await createServerSupabase();
-  const { data: { user } } = await authClient.auth.getUser();
-  if (!user) {
+async function requireAdmin(request: Request) {
+  const accessToken = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() || '';
+  if (!accessToken) {
     return { ok: false as const, status: 401, message: 'Authentication required', user: null };
   }
 
-  const { data: isAdmin } = await authClient.rpc('is_admin');
-  if (!isAdmin) {
+  const sb = adminSupabase();
+  if (!sb) {
+    return { ok: false as const, status: 500, message: 'Server configuration incomplete', user: null };
+  }
+
+  const { data: { user }, error: userError } = await sb.auth.getUser(accessToken);
+  if (userError || !user) {
+    return { ok: false as const, status: 401, message: 'Authentication required', user: null };
+  }
+
+  const { data: adminRow, error: adminError } = await sb
+    .from('admin_users')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (adminError) throw adminError;
+  if (!adminRow) {
     return { ok: false as const, status: 403, message: 'Admin access required', user: null };
   }
 
   return { ok: true as const, status: 200, message: '', user };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requireAdmin(request);
     if (!auth.ok) {
       return NextResponse.json({ success: false, message: auth.message }, { status: auth.status });
     }
@@ -160,7 +175,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requireAdmin(request);
     if (!auth.ok) {
       return NextResponse.json({ success: false, message: auth.message }, { status: auth.status });
     }

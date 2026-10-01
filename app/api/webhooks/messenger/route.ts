@@ -876,20 +876,46 @@ async function createHumanHandoff(
     handoff_at: new Date().toISOString(),
   }, countryCode);
 
-  const { data: existing } = await sb
+  const { data: existing, error: existingError } = await sb
     .from('ai_handoffs')
-    .select('id')
+    .select('id,status,reason,assigned_to,created_at')
     .eq('conversation_id', conversationId)
     .in('status', ['open', 'assigned'])
     .limit(1)
     .maybeSingle();
 
-  if (existing) return existing;
+  if (existingError) throw existingError;
 
   const notes =
     reason === 'customer_requested_human_support'
       ? 'Customer requested human support. AI replies are blocked until an admin closes the handoff.'
       : 'Automatic AI failover exhausted. Automatic replies may resume on a new customer message.';
+
+  if (existing) {
+    // Reuse the existing active handoff, but make an explicit customer request
+    // visible as a real human-support queue item instead of leaving it labeled
+    // as an older provider-failure/disabled-AI handoff.
+    if (
+      reason === 'customer_requested_human_support' &&
+      existing.reason !== 'customer_requested_human_support'
+    ) {
+      const { data: updated, error: updateError } = await sb
+        .from('ai_handoffs')
+        .update({
+          reason,
+          notes,
+          country_code: countryCode,
+        })
+        .eq('id', existing.id)
+        .select('id,status,assigned_to,created_at')
+        .single();
+
+      if (updateError) throw updateError;
+      return updated;
+    }
+
+    return existing;
+  }
 
   const { data, error } = await sb
     .from('ai_handoffs')
@@ -1062,11 +1088,67 @@ async function processMessengerEvent(event: MessengerEvent) {
   if (savedUserMessage.duplicate) return;
 
   const conversationMetadata = conversation.metadata || {};
-  const humanTakeoverActive = conversationMetadata.human_takeover === true;
+  let humanTakeoverActive = conversationMetadata.human_takeover === true;
+  let conversationStatus = conversation.status;
+
+  // Reconcile stale human-support state before applying the hard AI stop.
+  // Admin close marks the handoff resolved and the conversation closed-state
+  // metadata. If an older webhook snapshot still says takeover=true/handoff,
+  // the resolved handoff must win so AI can resume.
+  if (
+    (humanTakeoverActive && conversationStatus === 'handoff') ||
+    conversationMetadata.human_support_state === 'closed'
+  ) {
+    const configuredHandoffId =
+      typeof conversationMetadata.human_support_handoff_id === 'string'
+        ? conversationMetadata.human_support_handoff_id
+        : null;
+
+    const { data: explicitHandoff, error: explicitHandoffError } =
+      configuredHandoffId
+        ? await sb
+            .from('ai_handoffs')
+            .select('id,status,reason')
+            .eq('id', configuredHandoffId)
+            .eq('conversation_id', conversation.id)
+            .maybeSingle()
+        : await sb
+            .from('ai_handoffs')
+            .select('id,status,reason')
+            .eq('conversation_id', conversation.id)
+            .eq('reason', 'customer_requested_human_support')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+    if (explicitHandoffError) throw explicitHandoffError;
+
+    const handoffIsClosed =
+      explicitHandoff?.reason === 'customer_requested_human_support' &&
+      (explicitHandoff.status === 'resolved' || explicitHandoff.status === 'cancelled');
+    const metadataSaysClosed = conversationMetadata.human_support_state === 'closed';
+
+    if (handoffIsClosed || metadataSaysClosed) {
+      conversationStatus = 'active';
+      humanTakeoverActive = false;
+
+      await markConversation(
+        sb,
+        conversation.id,
+        'active',
+        {
+          human_takeover: false,
+          human_support_state: 'closed',
+          human_support_resume_reconciled_at: new Date().toISOString(),
+        },
+        resolvedCountry || undefined,
+      );
+    }
+  }
 
   // A Bangladesh human-support takeover is a hard AI stop. Customer messages
   // are still stored for the agent, but the automated router must not resume.
-  if (humanTakeoverActive && conversation.status === 'handoff') {
+  if (humanTakeoverActive && conversationStatus === 'handoff') {
     await markConversation(
       sb,
       conversation.id,
