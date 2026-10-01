@@ -36,7 +36,7 @@ function productName(product: PendingRestock['products']): string {
 function getProductUrl(slug: string | null): string | null {
   if (!slug) return null;
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.gaziseed.com';
-  return `${baseUrl.replace(/\\/$/, '')}/product/${encodeURIComponent(slug)}`;
+  return `${baseUrl.replace(/\/$/, '')}/product/${encodeURIComponent(slug)}`;
 }
 
 async function sendMessengerText(
