@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processMessengerRestockNotifications } from '@/lib/ai/messenger-restock-delivery';
 import { processMessengerOrderConfirmationNotifications } from '@/lib/ai/messenger-order-notification-delivery';
+import { processMessengerOrderStatusNotifications } from '@/lib/ai/messenger-order-status-notification-delivery';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,12 +19,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const [restock, orderConfirmation] = await Promise.all([
+    const [restock, orderConfirmation, orderStatus] = await Promise.all([
       processMessengerRestockNotifications(50),
       processMessengerOrderConfirmationNotifications(50),
+      processMessengerOrderStatusNotifications(50),
     ]);
 
-    return NextResponse.json({ ok: true, restock, orderConfirmation });
+    return NextResponse.json({ ok: true, restock, orderConfirmation, orderStatus });
   } catch (error) {
     console.error('Messenger notification cron failed:', error);
     return NextResponse.json(
