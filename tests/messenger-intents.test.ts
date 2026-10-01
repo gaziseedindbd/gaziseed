@@ -25,6 +25,7 @@ import {
   isMessengerOrderTrackingRequest,
   isMessengerPaymentStatusRequest,
   isMessengerRecommendationRequest,
+  isMessengerRestockNotificationRequest,
   isMessengerOrderLinkRequest,
   isMessengerDeliveryIntent,
   isMessengerHumanSupportIntent,
@@ -347,6 +348,14 @@ test('aggregates Messenger provider monitoring without double-counting provider_
   });
 });
 
+
+test('recognizes Messenger back-in-stock notification requests safely', () => {
+  assert.equal(isMessengerRestockNotificationRequest('notify me when rose seed is back in stock'), true);
+  assert.equal(isMessengerRestockNotificationRequest('rose seed restock hole janaben'), true);
+  assert.equal(isMessengerRestockNotificationRequest('গোলাপ ফুলের বীজ stock এলে জানাবেন'), true);
+  assert.equal(isMessengerRestockNotificationRequest('stock koto ache'), false);
+  assert.equal(isMessengerRestockNotificationRequest('what products do you have'), false);
+});
 
 test('recognizes Messenger recommendation requests without affecting ordinary product queries', () => {
   assert.equal(isMessengerRecommendationRequest('recommend some seeds for me'), true);

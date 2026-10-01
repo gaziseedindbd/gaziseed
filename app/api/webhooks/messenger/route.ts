@@ -45,6 +45,7 @@ import {
   isMessengerAddToCartRequest,
   isMessengerProductComparisonRequest,
   isMessengerRecommendationRequest,
+  isMessengerRestockNotificationRequest,
   isMessengerCustomerProfileRequest,
   isMessengerOrderHistoryRequest,
   isMessengerOrderLinkRequest,
@@ -57,6 +58,7 @@ import {
 } from '@/lib/ai/messenger-intents';
 import { getMessengerWebsiteKnowledgeAnswer } from '@/lib/ai/messenger-knowledge-tool';
 import { getMessengerCustomerRecommendations } from '@/lib/ai/messenger-recommendation-tool';
+import { subscribeMessengerRestockNotification } from '@/lib/ai/messenger-restock-tool';
 import {
   consumeMessengerRateLimit,
   getMessengerRateLimitReply,
@@ -2038,6 +2040,40 @@ async function processMessengerEvent(event: MessengerEvent) {
       console.error(
         'Messenger customer profile/history failed:',
         error instanceof Error ? error.message : 'Unknown customer profile error',
+      );
+    }
+  }
+
+  // Restock subscriptions are deterministic and write only to the existing
+  // stock_notifications queue. No order, payment, or inventory mutation occurs.
+  if (isMessengerRestockNotificationRequest(normalizedActionText)) {
+    try {
+      const restock = await subscribeMessengerRestockNotification({
+        supabase: sb,
+        pageId: META_PAGE_ID,
+        externalUserId: senderId,
+        country: activeCountry,
+        text,
+      });
+
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: restock.reply,
+        actionStatus: 'restock_notification',
+        countryCode: activeCountry,
+        sourceContext: {
+          restock_notification: true,
+          subscribed: restock.subscribed,
+          product_id: restock.product?.id || null,
+        },
+      });
+
+      await sendMessengerText(senderId, restock.reply);
+      return;
+    } catch (error) {
+      console.error(
+        'Messenger restock notification failed:',
+        error instanceof Error ? error.message : 'Unknown restock notification error',
       );
     }
   }
