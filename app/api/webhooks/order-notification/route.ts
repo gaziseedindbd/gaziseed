@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   processMessengerOrderConfirmationNotifications,
 } from '@/lib/ai/messenger-order-notification-delivery';
+import {
+  processMessengerOrderStatusNotifications,
+} from '@/lib/ai/messenger-order-status-notification-delivery';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,8 +27,16 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await processMessengerOrderConfirmationNotifications(20);
-    return NextResponse.json({ ok: true, ...result });
+    const [orderConfirmation, orderStatus] = await Promise.all([
+      processMessengerOrderConfirmationNotifications(20),
+      processMessengerOrderStatusNotifications(20),
+    ]);
+
+    return NextResponse.json({
+      ok: true,
+      orderConfirmation,
+      orderStatus,
+    });
   } catch (error) {
     console.error('Messenger order notification webhook failed:', error);
     return NextResponse.json(
