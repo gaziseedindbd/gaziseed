@@ -129,9 +129,29 @@ export function isMessengerOrderResumeRequest(text: string): boolean {
 export function isMessengerRestockNotificationRequest(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
 
-  return /(?:\b(?:back\s*in\s*stock|restock)\b|\b(?:restock|stock)\b.*\b(?:hole|ele|asche|ase|asle)\b.*\b(?:janaben|janio|janaben)?\b|\bnotify(?:\s+me)?\b.*\b(?:stock|restock)\b|\b(?:stock|restock)\b.*\bnotify(?:\s+me)?\b|\b(?:let|tell|inform)\s+me\b.*\b(?:stock|available)\b|(?:স্টক|stock)\s*(?:এলে|ele|আসলে|asle|হলে|hole)|আবার\s*স্টকে|স্টকে\s*এলে.*জানাবেন|স্টক.*জানিয়ে|স্টক.*জানিয়ে)/i.test(
-    normalized,
+  const hasStockSignal =
+    /(?:\b(?:back\s*in\s*stock|restock|in\s*stock|available)\b|(?:স্টক|stock)\s*(?:এলে|ele|আসলে|asle|হলে|hole|আসলে|ফিরলে)|আবার\s*স্টকে|স্টকে\s*ফিরে)/i.test(
+      normalized,
+    );
+
+  const hasNotifySignal =
+    /(?:\b(?:notify|notifying|tell|inform|let)\b.*\b(?:me|us)\b|\b(?:knock|ping)\s*(?:me|us)\b|\b(?:when|whenever|if|once)\b.*\b(?:stock|available)\b|(?:জানাবেন|জানিও|জানাব|জানিয়ে|জানিয়ে|খবর\s*(?:দেবেন|দিও|দিন)|বলবেন|বলে\s*দেবেন)|(?:batana|bata\s*dena|bata\s*dijiye|batana\s*jab|jab\s+stock\s+aye|stock\s+mein\s+aye|stock\s+aaye))/i.test(
+      normalized,
+    );
+
+  return (
+    hasStockSignal && hasNotifySignal ||
+    /(?:back\s*in\s*stock|restock)\b/i.test(normalized) ||
+    /(?:স্টক|stock).*(?:জান|notify|knock|ping|bat)/i.test(normalized)
   );
+}
+
+export function isMessengerPhoneOnlyMessage(text: string): boolean {
+  const normalized = normalizeMessengerIntentText(text)
+    .replace(/[+()\-.]/g, ' ')
+    .trim();
+
+  return /^(?:\d[\d\s]{8,}\d)$/.test(normalized);
 }
 
 export function isMessengerRecommendationRequest(text: string): boolean {
