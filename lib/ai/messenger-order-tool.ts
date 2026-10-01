@@ -453,6 +453,7 @@ export async function createMessengerIndiaCodPayment(args: {
       coupon_code: null,
       use_referral_wallet: false,
       payment_method: 'cod',
+      order_source: 'facebook_messenger_ai',
       return_url: returnUrl,
     },
   });
