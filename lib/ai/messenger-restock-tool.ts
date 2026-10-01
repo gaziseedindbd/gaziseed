@@ -32,7 +32,8 @@ export async function subscribeMessengerRestockNotification(args: {
   reply: string;
   product?: MessengerProduct;
   subscribed: boolean;
-}> {
+  needsPhone?: boolean;
+> {
   const profileResult = await args.supabase
     .from('messenger_customer_profiles')
     .select('phone')
@@ -52,9 +53,10 @@ export async function subscribeMessengerRestockNotification(args: {
     return {
       handled: true,
       subscribed: false,
+      needsPhone: true,
       reply:
-        '🔔 Back-in-stock notification চালু করতে আগে আপনার Messenger account-এর সাথে একটি mobile number link করতে হবে.\n\n' +
-        'উদাহরণ: আপনার Order Number এবং অর্ডারের সময় দেওয়া mobile number একসাথে লিখুন।',
+        '🔔 Back-in-stock notification চালু করতে আপনার mobile number দিন।\n\n' +
+        'শুধু mobile number দিলেই হবে — Order Number বা OTP লাগবে না।',
     };
   }
 
