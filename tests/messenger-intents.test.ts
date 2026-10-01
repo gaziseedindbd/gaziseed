@@ -24,6 +24,7 @@ import {
   isMessengerOrderResumeRequest,
   isMessengerOrderTrackingRequest,
   isMessengerPaymentStatusRequest,
+  isMessengerRecommendationRequest,
   isMessengerOrderLinkRequest,
   isMessengerDeliveryIntent,
   isMessengerHumanSupportIntent,
@@ -346,6 +347,14 @@ test('aggregates Messenger provider monitoring without double-counting provider_
   });
 });
 
+
+test('recognizes Messenger recommendation requests without affecting ordinary product queries', () => {
+  assert.equal(isMessengerRecommendationRequest('recommend some seeds for me'), true);
+  assert.equal(isMessengerRecommendationRequest('what should i buy'), true);
+  assert.equal(isMessengerRecommendationRequest('আমার জন্য কোনটা নেব'), true);
+  assert.equal(isMessengerRecommendationRequest('product list'), false);
+  assert.equal(isMessengerRecommendationRequest('ROSE SEED KINTE CHAIE'), false);
+});
 
 test('recognizes Messenger multi-product cart intents', () => {
   assert.equal(isMessengerAddAnotherProductRequest('add another product'), true);

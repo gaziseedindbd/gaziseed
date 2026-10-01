@@ -44,6 +44,7 @@ import {
   isMessengerCartQuantityChangeRequest,
   isMessengerAddToCartRequest,
   isMessengerProductComparisonRequest,
+  isMessengerRecommendationRequest,
   isMessengerCustomerProfileRequest,
   isMessengerOrderHistoryRequest,
   isMessengerOrderLinkRequest,
@@ -55,6 +56,7 @@ import {
   isProductListRequest,
 } from '@/lib/ai/messenger-intents';
 import { getMessengerWebsiteKnowledgeAnswer } from '@/lib/ai/messenger-knowledge-tool';
+import { getMessengerCustomerRecommendations } from '@/lib/ai/messenger-recommendation-tool';
 import {
   consumeMessengerRateLimit,
   getMessengerRateLimitReply,
@@ -2036,6 +2038,81 @@ async function processMessengerEvent(event: MessengerEvent) {
       console.error(
         'Messenger customer profile/history failed:',
         error instanceof Error ? error.message : 'Unknown customer profile error',
+      );
+    }
+  }
+
+  // Customer recommendations are deterministic and read-only. They never create
+  // or modify an order; the existing product-card Order Now action remains the
+  // only entry point into the secure order flow.
+  if (isMessengerRecommendationRequest(normalizedActionText)) {
+    try {
+      const recommendations = await getMessengerCustomerRecommendations({
+        supabase: sb,
+        pageId: META_PAGE_ID,
+        externalUserId: senderId,
+        country: activeCountry,
+        limit: 3,
+      });
+
+      const currency = formatMessengerCurrency(activeCountry);
+      const productCards = recommendations.products.map((product) => {
+        const productRecord = product as Record<string, unknown>;
+        const name = formatMessengerProductName(productRecord);
+        const priceValue =
+          typeof productRecord.offer_price === 'number'
+            ? productRecord.offer_price
+            : typeof productRecord.sale_price === 'number'
+              ? productRecord.sale_price
+              : typeof productRecord.price === 'number'
+                ? productRecord.price
+                : typeof productRecord.regular_price === 'number'
+                  ? productRecord.regular_price
+                  : 0;
+        const stock =
+          typeof product.stock === 'number' ? product.stock : 0;
+
+        return {
+          title: name,
+          subtitle:
+            currency +
+            String(priceValue) +
+            ' • Stock: ' +
+            String(stock) +
+            ' pack' +
+            (stock === 1 ? '' : 's'),
+          imageUrl: product.image || undefined,
+          productId: product.id,
+          productUrl: product.slug
+            ? 'https://www.gaziseed.com/product/' + encodeURIComponent(product.slug)
+            : undefined,
+        };
+      });
+
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: recommendations.reply,
+        actionStatus: 'customer_recommendation',
+        countryCode: activeCountry,
+        sourceContext: {
+          customer_recommendation: true,
+          personalized: recommendations.personalized,
+          product_ids: recommendations.products.map((product) => product.id),
+        },
+      });
+
+      await sendMessengerText(
+        senderId,
+        recommendations.reply,
+        undefined,
+        undefined,
+        productCards,
+      );
+      return;
+    } catch (error) {
+      console.error(
+        'Messenger recommendation failed:',
+        error instanceof Error ? error.message : 'Unknown recommendation error',
       );
     }
   }

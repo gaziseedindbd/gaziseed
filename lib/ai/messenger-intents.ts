@@ -126,6 +126,14 @@ export function isMessengerOrderResumeRequest(text: string): boolean {
   );
 }
 
+export function isMessengerRecommendationRequest(text: string): boolean {
+  const normalized = normalizeMessengerIntentText(text);
+
+  return /(?:\brecommend(?:ed|ation)?\b|\bsuggest(?:ion|ions)?\b|what should i (?:buy|get|choose)|which (?:product|seed) should i (?:buy|get|choose)|what do you recommend|কোনটা\s+(?:নেব|নিতে|ভালো)|কোন\s+(?:পণ্য|বীজ)\s+(?:নেব|নিতে)|আমার জন্য\s+(?:কি|কী)\s+(?:নেব|ভালো)|পরামর্শ\s+দিন)/i.test(
+    normalized,
+  );
+}
+
 export function isMessengerOrderInterruptRequest(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
 
@@ -133,6 +141,7 @@ export function isMessengerOrderInterruptRequest(text: string): boolean {
   if (isProductCatalogRequest(normalized)) return true;
   if (isMessengerDeliveryIntent(normalized)) return true;
   if (isMessengerHumanSupportIntent(normalized)) return true;
+  if (isMessengerRecommendationRequest(normalized)) return true;
   if (isMessengerSeedKnowledgeQuestion(normalized)) return true;
   if (isMessengerCustomerProfileRequest(normalized)) return true;
   if (isMessengerOrderHistoryRequest(normalized)) return true;
