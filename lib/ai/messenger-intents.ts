@@ -129,7 +129,7 @@ export function isMessengerOrderResumeRequest(text: string): boolean {
 export function isMessengerRestockNotificationRequest(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
 
-  return /(?:\b(?:back\s*in\s*stock|restock)\b|\bnotify(?:\s+me)?\b.*\b(?:stock|restock)\b|\b(?:stock|restock)\b.*\bnotify(?:\s+me)?\b|\b(?:let|tell|inform)\s+me\b.*\b(?:stock|available)\b|স্টক\s*এলে|স্টক\s*আসলে|আবার\s*স্টকে|স্টক\s*হলে|স্টকে\s*এলে.*জানাবেন|স্টক.*জানিয়ে|স্টক.*জানিয়ে)/i.test(
+  return /(?:\b(?:back\s*in\s*stock|restock)\b|\b(?:restock|stock)\b.*\b(?:hole|ele|asche|ase|asle)\b.*\b(?:janaben|janio|janaben)?\b|\bnotify(?:\s+me)?\b.*\b(?:stock|restock)\b|\b(?:stock|restock)\b.*\bnotify(?:\s+me)?\b|\b(?:let|tell|inform)\s+me\b.*\b(?:stock|available)\b|স্টক\s*এলে|স্টক\s*আসলে|আবার\s*স্টকে|স্টক\s*হলে|স্টকে\s*এলে.*জানাবেন|স্টক.*জানিয়ে|স্টক.*জানিয়ে)/i.test(
     normalized,
   );
 }
