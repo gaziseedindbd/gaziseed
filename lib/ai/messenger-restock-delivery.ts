@@ -168,7 +168,7 @@ export async function processMessengerRestockNotifications(limit = 50): Promise<
     try {
       await sendMessengerText(
         profiles[0].external_user_id,
-        `🌱 সুসংবাদ! ${productName(product)} আবার স্টকে এসেছে।\\n\\n📦 এখন স্টকে: ${stock} প্যাকেট`,
+        `🌱 সুসংবাদ! ${productName(product)} আবার স্টকে এসেছে।\n\n📦 এখন স্টকে: ${stock} প্যাকেট`,
         getProductUrl(product.slug),
       );
 
