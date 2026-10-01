@@ -13,10 +13,10 @@ function productName(product: MessengerProduct): string {
 export function extractMessengerRestockProductQuery(text: string): string {
   return text
     .replace(
-      /(?:notify(?: me)?|let me know|tell me|inform me|back in stock|in stock|restock|stock এলে|স্টক এলে|আবার স্টকে|স্টকে এলে|স্টক আসলে|স্টক হলে|stock hole|stock ele|abar stock e|হলে জানাবেন|জানাবেন|জানিয়ে|জানিয়ে)/gi,
+      /(?:notify(?: me)?|let me know|tell me|inform me|knock me|ping me|back in stock|in stock|restock|stock এলে|স্টক এলে|আবার স্টকে|স্টকে এলে|স্টক আসলে|স্টক হলে|স্টক ফিরলে|stock hole|stock ele|abar stock e|হলে জানাবেন|জানাবেন|জানিও|জানিয়ে|জানিয়ে|খবর দেবেন|খবর দিও|বলবেন|batana|bata dena|bata dijiye|jab stock aaye|stock mein aaye|stock aane par)/gi,
       ' ',
     )
-    .replace(/(?:when|whenever|is|again|please|দয়া করে|দয়া করে|চাই|চাইলে|দিবেন|দাও|করুন|করে)/gi, ' ')
+    .replace(/(?:when|whenever|if|once|is|again|please|দয়া করে|দয়া করে|চাই|চাইলে|দিবেন|দাও|করুন|করে|হলে|এলে|asle|ele|hole|aaye|milega)/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 80);
@@ -33,7 +33,7 @@ export async function subscribeMessengerRestockNotification(args: {
   product?: MessengerProduct;
   subscribed: boolean;
   needsPhone?: boolean;
-> {
+}> {
   const profileResult = await args.supabase
     .from('messenger_customer_profiles')
     .select('phone')
