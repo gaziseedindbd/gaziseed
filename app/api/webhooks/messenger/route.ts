@@ -38,6 +38,7 @@ import {
 import {
   isMessengerAddAnotherProductRequest,
   isMessengerCheckoutRequest,
+  isMessengerPaymentStatusRequest,
   isMessengerCartViewRequest,
   isMessengerCartRemoveRequest,
   isMessengerCartQuantityChangeRequest,
@@ -67,6 +68,9 @@ import {
   getMessengerTransactionalGuardReply,
   isUnsafeMessengerTransactionalReply,
 } from '@/lib/ai/messenger-transactional-guard';
+import {
+  getMessengerPaymentStatusReply,
+} from '@/lib/ai/messenger-payment-status';
 
 export const dynamic = 'force-dynamic';
 
@@ -949,7 +953,9 @@ async function processMessengerEvent(event: MessengerEvent) {
                 ? 'তথ্য পরিবর্তন'
                 : quickReplyPayload === 'ORDER_STATUS'
                   ? 'order status'
-                  : text;
+                  : quickReplyPayload === 'PAYMENT_STATUS'
+                    ? 'payment status'
+                    : text;
 
   const quickReplyCountry =
     event.message?.quick_reply?.payload === 'COUNTRY_IN'
@@ -1902,6 +1908,39 @@ async function processMessengerEvent(event: MessengerEvent) {
     };
   }
 
+  // Messenger payment status is deterministic and isolated from AI/order creation.
+  if (isMessengerPaymentStatusRequest(normalizedActionText)) {
+    try {
+      const paymentStatus = await getMessengerPaymentStatusReply({
+        supabase: sb,
+        pageId: META_PAGE_ID,
+        externalUserId: senderId,
+        country: activeCountry,
+        text,
+        metadata: conversation.metadata,
+      });
+
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: paymentStatus.reply,
+        actionStatus: 'payment_status',
+        countryCode: activeCountry,
+        sourceContext: {
+          payment_status: true,
+          order_ids: paymentStatus.orderIds || [],
+          cashfree_order_id: paymentStatus.cashfreeOrderId || null,
+        },
+      });
+      await sendMessengerText(senderId, paymentStatus.reply);
+      return;
+    } catch (error) {
+      console.error(
+        'Messenger payment status failed:',
+        error instanceof Error ? error.message : 'Unknown payment status error',
+      );
+    }
+  }
+
   // Messenger order tracking is deterministic and isolated from checkout.
   if (isMessengerOrderTrackingRequest(normalizedActionText)) {
     try {
@@ -2074,6 +2113,21 @@ async function processMessengerEvent(event: MessengerEvent) {
             ? conversation.metadata?.messenger_cart_items || null
             : null;
 
+      const paymentButtonUrl =
+        'paymentButton' in orderFlow && orderFlow.paymentButton?.url
+          ? orderFlow.paymentButton.url
+          : '';
+      const cashfreeOrderIdMatch = paymentButtonUrl.match(/(?:[?&])order_id=(GS-CF-[0-9a-f-]{36})\b/i);
+      const paymentMetadata = cashfreeOrderIdMatch?.[1]
+        ? {
+            messenger_payment: {
+              cashfree_order_id: cashfreeOrderIdMatch[1],
+              country: activeCountry,
+              started_at: new Date().toISOString(),
+            },
+          }
+        : {};
+
       await markConversation(
         sb,
         conversation.id,
@@ -2081,6 +2135,7 @@ async function processMessengerEvent(event: MessengerEvent) {
         {
           pending_messenger_order: orderFlow.pending || null,
           messenger_cart_items: nextCartMetadata,
+          ...paymentMetadata,
         },
         activeCountry,
       );
@@ -2112,9 +2167,11 @@ async function processMessengerEvent(event: MessengerEvent) {
                   { title: '➕ আরও product', payload: 'CART_ADD_PRODUCT' },
                   { title: '✅ Checkout', payload: 'CART_CHECKOUT' },
                 ]
-              : orderNumberMatch
-                ? [{ title: '📦 Order Status', payload: 'ORDER_STATUS' }]
-                : undefined;
+              : 'paymentButton' in orderFlow && orderFlow.paymentButton
+                ? [{ title: '💳 Payment Status', payload: 'PAYMENT_STATUS' }]
+                : orderNumberMatch
+                  ? [{ title: '📦 Order Status', payload: 'ORDER_STATUS' }]
+                  : undefined;
 
       await sendMessengerText(
         senderId,

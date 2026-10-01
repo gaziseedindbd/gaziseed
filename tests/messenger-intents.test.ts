@@ -23,6 +23,7 @@ import {
   isMessengerChangeDetailsRequest,
   isMessengerOrderResumeRequest,
   isMessengerOrderTrackingRequest,
+  isMessengerPaymentStatusRequest,
   isMessengerOrderLinkRequest,
   isMessengerDeliveryIntent,
   isMessengerHumanSupportIntent,
@@ -188,6 +189,16 @@ test('recognizes order resume phrases and never treats resume as interrupt', () 
   assert.equal(isMessengerOrderResumeRequest('continue order'), true);
   assert.equal(isMessengerOrderResumeRequest('আগের অর্ডারটা চালিয়ে যেতে চাই'), true);
   assert.equal(isMessengerOrderInterruptRequest('আগের অর্ডারটা চালিয়ে যেতে চাই'), false);
+});
+
+test('recognizes deterministic Messenger payment status requests', () => {
+  assert.equal(isMessengerPaymentStatusRequest('payment status'), true);
+  assert.equal(isMessengerPaymentStatusRequest('payment check'), true);
+  assert.equal(isMessengerPaymentStatusRequest('পেমেন্টের অবস্থা কী'), true);
+  assert.equal(isMessengerPaymentStatusRequest('অগ্রিম payment status'), true);
+  assert.equal(isMessengerPaymentStatusRequest('GS-IN-ABCDEFGH payment status'), true);
+  assert.equal(isMessengerPaymentStatusRequest('delivery status'), false);
+  assert.equal(isMessengerPaymentStatusRequest('order status'), false);
 });
 
 test('routes previous-order history away from tracking unless an order number is explicit', () => {

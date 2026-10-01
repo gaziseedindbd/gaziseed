@@ -149,6 +149,19 @@ export function isMessengerOrderLinkRequest(text: string): boolean {
   return hasOrderNumber && hasMobileNumber;
 }
 
+export function isMessengerPaymentStatusRequest(text: string): boolean {
+  const normalized = normalizeMessengerIntentText(text);
+
+  return (
+    /\bGS-(?:IN|BD)-[A-Z0-9]{8}\b/i.test(normalized) &&
+    /(?:payment|paid|advance|পেমেন্ট|পেমেন্টের|অগ্রিম|টাকা).*(?:status|check|done|successful|pending|failed|হয়েছে|হয়েছে|অবস্থা|স্ট্যাটাস|চেক)/i.test(
+      normalized,
+    )
+  ) || /(?:payment\s*(?:status|check|done|successful|pending|failed)|payment\s*(?:হয়েছে|হয়েছে|হয়েছে কি|হয়েছে কি|কিনা|কী অবস্থা|কি অবস্থা)|পেমেন্ট(?:ের)?\s*(?:স্ট্যাটাস|অবস্থা|চেক|হয়েছে|হয়েছে|হয়েছে কি|হয়েছে কি|কিনা)|অগ্রিম\s*payment|advance\s*payment\s*(?:status|check)|টাকা\s*(?:গেছে|পেয়েছি|পেয়েছি)\s*কি)/i.test(
+    normalized,
+  );
+}
+
 export function isMessengerOrderTrackingRequest(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
   if (isMessengerOrderHistoryRequest(normalized)) return false;
