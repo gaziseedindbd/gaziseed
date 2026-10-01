@@ -947,7 +947,9 @@ async function processMessengerEvent(event: MessengerEvent) {
               ? 'হ্যাঁ'
               : quickReplyPayload === 'ORDER_CHANGE_DETAILS'
                 ? 'তথ্য পরিবর্তন'
-                : text;
+                : quickReplyPayload === 'ORDER_STATUS'
+                  ? 'order status'
+                  : text;
 
   const quickReplyCountry =
     event.message?.quick_reply?.payload === 'COUNTRY_IN'
@@ -2110,7 +2112,9 @@ async function processMessengerEvent(event: MessengerEvent) {
                   { title: '➕ আরও product', payload: 'CART_ADD_PRODUCT' },
                   { title: '✅ Checkout', payload: 'CART_CHECKOUT' },
                 ]
-              : undefined;
+              : orderNumberMatch
+                ? [{ title: '📦 Order Status', payload: 'ORDER_STATUS' }]
+                : undefined;
 
       await sendMessengerText(
         senderId,
