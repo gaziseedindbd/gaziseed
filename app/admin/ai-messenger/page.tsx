@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase/client';
 import {
   Bot,
   CheckCircle2,
@@ -84,6 +85,13 @@ type DashboardData = {
   };
 };
 
+async function getAdminAuthHeaders() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token
+    ? { Authorization: 'Bearer ' + session.access_token }
+    : {};
+}
+
 function formatDate(value: string | null) {
   if (!value) return '—';
   try { return new Date(value).toLocaleString('bn-BD', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return value; }
@@ -99,9 +107,10 @@ export default function AIMessengerAdminPage() {
     setLoading(true);
     setError('');
     try {
+      const headers = await getAdminAuthHeaders();
       const [assistantRes, supportRes] = await Promise.all([
-        fetch('/api/admin/ai-assistant', { cache: 'no-store' }),
-        fetch('/api/admin/ai-assistant/human-support', { cache: 'no-store' }),
+        fetch('/api/admin/ai-assistant', { cache: 'no-store', headers }),
+        fetch('/api/admin/ai-assistant/human-support', { cache: 'no-store', headers }),
       ]);
 
       const assistantJson = await assistantRes.json();
@@ -130,9 +139,10 @@ export default function AIMessengerAdminPage() {
   ) {
     try {
       setError('');
+      const authHeaders = await getAdminAuthHeaders();
       const res = await fetch('/api/admin/ai-assistant/human-support', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({ handoff_id: handoffId, action }),
       });
       const json = await res.json();
