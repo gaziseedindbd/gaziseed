@@ -15,24 +15,30 @@ function adminSupabase() {
 
 export async function GET(request: Request) {
   try {
-    const authUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
     const accessToken = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() || '';
-    if (!authUrl || !anonKey || !accessToken) {
+    if (!accessToken) {
       return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
     }
 
-    const authClient = createClient(authUrl, anonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      global: { headers: { Authorization: 'Bearer ' + accessToken } },
-    });
-    const { data: { user } } = await authClient.auth.getUser(accessToken);
-    if (!user) return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
-
-    const { data: isAdmin } = await authClient.rpc('is_admin');
-    if (!isAdmin) return NextResponse.json({ success: false, message: 'Admin access required' }, { status: 403 });
-
     const sb = adminSupabase();
+    if (!sb) return NextResponse.json({ success: false, message: 'Server configuration incomplete' }, { status: 500 });
+
+    const { data: { user }, error: userError } = await sb.auth.getUser(accessToken);
+    if (userError || !user) {
+      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
+    }
+
+    const { data: adminRow, error: adminError } = await sb
+      .from('admin_users')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (adminError) throw adminError;
+    if (!adminRow) {
+      return NextResponse.json({ success: false, message: 'Admin access required' }, { status: 403 });
+    }
     if (!sb) return NextResponse.json({ success: false, message: 'Server configuration incomplete' }, { status: 500 });
 
     const monitoringSince = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
