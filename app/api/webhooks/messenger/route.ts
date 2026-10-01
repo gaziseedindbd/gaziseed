@@ -141,6 +141,17 @@ function isSeedKnowledgeRequest(text: string): boolean {
   );
 }
 
+type MessengerReplyLanguage = 'English' | 'Bengali';
+
+function detectMessengerReplyLanguage(text: string): MessengerReplyLanguage {
+  const bengaliChars = (text.match(/[\u0980-\u09FF]/g) || []).length;
+  const latinChars = (text.match(/[A-Za-z]/g) || []).length;
+
+  if (bengaliChars > 0 && bengaliChars >= latinChars) return 'Bengali';
+  if (latinChars > 0) return 'English';
+  return 'Bengali';
+}
+
 function isGeneralSeedAdviceRequest(text: string): boolean {
   if (!isSeedKnowledgeRequest(text)) return false;
   const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
@@ -2688,9 +2699,10 @@ async function processMessengerEvent(event: MessengerEvent) {
   const deliveryPolicyContext = deliveryPolicy
     ? JSON.stringify(serializeMessengerDeliveryPolicy(deliveryPolicy))
     : '';
+  const replyLanguage = detectMessengerReplyLanguage(normalizedActionText);
   const systemPrompt =
     'You are GAZI SEED customer support AI on Facebook Messenger. ' +
-    'Answer in natural Bengali unless the customer uses another language. ' +
+    `Reply in exactly the same language/script as the customer\'s latest message. The required reply language for this turn is ${replyLanguage}. If the latest message is in English or English-only Latin script, answer in English. If it is in Bengali script, answer in Bengali. Do not switch to Bengali merely because product names, catalog fields, or retrieved context are in Bengali. Translate the surrounding explanation into the required reply language while preserving verified product names where useful. ` +
     'The previous human-support request may already be closed. When human_support_state is closed, treat the current customer message as a fresh AI turn and do not repeat, quote, or imitate any earlier human-support waiting/active-support message. Only use a human-support waiting response when the webhook hard-stop has explicitly triggered it. ' +
     `The verified customer country is ${activeCountry}. Only use the catalog data for that country. ` +
     'Use ONLY the supplied GAZI SEED product data for current GAZI SEED prices, stock, offers, product lists, and product facts. For product-list questions, list the available products for the verified country from PRODUCT DATA. For price or stock questions, answer from PRODUCT DATA when a matching product is present; if it is not present for the verified country, say it is not available in that country rather than using another country. ' +
