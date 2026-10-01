@@ -15,6 +15,7 @@ type StatusNotification = {
   status: 'pending' | 'sent' | 'failed';
   attempts: number;
   last_error: string | null;
+  meta_message_id: string | null;
 };
 
 type OrderRow = {
@@ -26,6 +27,10 @@ type OrderRow = {
   order_status: string | null;
   status: string | null;
   payment_status: string | null;
+};
+
+type MessengerSendResult = {
+  messageId: string;
 };
 
 function adminSupabase() {
@@ -63,14 +68,17 @@ function buildStatusMessage(
     '🔔';
 
   return (
-    `${emoji} আপনার GAZI SEED অর্ডারের status update হয়েছে।\n\n` +
-    `🧾 Order: ${order.order_number}\n` +
-    `📌 বর্তমান status: ${label}\n\n` +
+    emoji + ' আপনার GAZI SEED অর্ডারের status update হয়েছে।\n\n' +
+    '🧾 Order: ' + order.order_number + '\n' +
+    '📌 বর্তমান status: ' + label + '\n\n' +
     'Status পরিবর্তন হলে এই Messenger-এ আপনাকে আবার জানানো হবে।'
   );
 }
 
-async function sendMessengerText(recipientId: string, text: string): Promise<void> {
+async function sendMessengerText(
+  recipientId: string,
+  text: string,
+): Promise<MessengerSendResult> {
   const token = process.env.META_PAGE_ACCESS_TOKEN || '';
   const graphVersion = process.env.META_GRAPH_VERSION || 'v26.0';
 
@@ -79,11 +87,11 @@ async function sendMessengerText(recipientId: string, text: string): Promise<voi
   }
 
   const response = await fetch(
-    `https://graph.facebook.com/${graphVersion}/me/messages`,
+    'https://graph.facebook.com/' + graphVersion + '/me/messages',
     {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: 'Bearer ' + token,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -93,12 +101,37 @@ async function sendMessengerText(recipientId: string, text: string): Promise<voi
     },
   );
 
+  const responseBody = await response.text();
+
   if (!response.ok) {
-    const body = await response.text();
     throw new Error(
-      `Meta Send API error: ${response.status} ${body.slice(0, 500)}`,
+      'Meta Send API error: ' +
+        response.status +
+        ' ' +
+        responseBody.slice(0, 500),
     );
   }
+
+  let payload: { message_id?: string } = {};
+  try {
+    payload = JSON.parse(responseBody) as { message_id?: string };
+  } catch {
+    throw new Error(
+      'Meta Send API returned a non-JSON success response: ' +
+        responseBody.slice(0, 500),
+    );
+  }
+
+  const messageId = String(payload.message_id || '').trim();
+
+  if (!messageId) {
+    throw new Error(
+      'Meta Send API returned success without message_id: ' +
+        responseBody.slice(0, 500),
+    );
+  }
+
+  return { messageId };
 }
 
 export async function processMessengerOrderStatusNotifications(
@@ -115,7 +148,7 @@ export async function processMessengerOrderStatusNotifications(
   const { data, error } = await supabase
     .from('messenger_order_status_notifications')
     .select(
-      'id,order_id,country_code,event_type,old_status,new_status,phone,page_id,external_user_id,status,attempts,last_error',
+      'id,order_id,country_code,event_type,old_status,new_status,phone,page_id,external_user_id,status,attempts,last_error,meta_message_id',
     )
     .eq('status', 'pending')
     .eq('event_type', 'order_status_changed')
@@ -153,7 +186,9 @@ export async function processMessengerOrderStatusNotifications(
       continue;
     }
 
-    const phone = String(order.customer_phone || notification.phone || '').trim();
+    const phone = String(
+      order.customer_phone || notification.phone || '',
+    ).trim();
 
     if (!phone) {
       skipped += 1;
@@ -176,15 +211,30 @@ export async function processMessengerOrderStatusNotifications(
       continue;
     }
 
-    if (!profiles || profiles.length !== 1 || !profiles[0]?.external_user_id) {
+    if (
+      !profiles ||
+      profiles.length !== 1 ||
+      !profiles[0]?.external_user_id
+    ) {
       skipped += 1;
       continue;
     }
 
     try {
-      await sendMessengerText(
+      const sendResult = await sendMessengerText(
         profiles[0].external_user_id,
         buildStatusMessage(order, notification),
+      );
+
+      console.info(
+        'Messenger order status notification sent:',
+        JSON.stringify({
+          notificationId: notification.id,
+          orderNumber: order.order_number,
+          newStatus: notification.new_status,
+          recipientId: profiles[0].external_user_id,
+          metaMessageId: sendResult.messageId,
+        }),
       );
 
       const { error: updateError } = await supabase
@@ -192,6 +242,7 @@ export async function processMessengerOrderStatusNotifications(
         .update({
           page_id: profiles[0].page_id ?? null,
           external_user_id: profiles[0].external_user_id,
+          meta_message_id: sendResult.messageId,
           status: 'sent',
           sent_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
