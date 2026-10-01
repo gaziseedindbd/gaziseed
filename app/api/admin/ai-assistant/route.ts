@@ -14,10 +14,20 @@ function adminSupabase() {
   });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const authClient = await createServerSupabase();
-    const { data: { user } } = await authClient.auth.getUser();
+    const authUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    const accessToken = request.headers.get('authorization')?.replace(/^Bearer\\s+/i, '').trim() || '';
+    if (!authUrl || !anonKey || !accessToken) {
+      return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
+    }
+
+    const authClient = createClient(authUrl, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { Authorization: 'Bearer ' + accessToken } },
+    });
+    const { data: { user } } = await authClient.auth.getUser(accessToken);
     if (!user) return NextResponse.json({ success: false, message: 'Authentication required' }, { status: 401 });
 
     const { data: isAdmin } = await authClient.rpc('is_admin');
