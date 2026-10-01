@@ -15,25 +15,30 @@ function adminSupabase() {
 }
 
 async function requireAdmin(request: Request) {
-  const authUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
   const accessToken = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() || '';
-
-  if (!authUrl || !anonKey || !accessToken) {
+  if (!accessToken) {
     return { ok: false as const, status: 401, message: 'Authentication required', user: null };
   }
 
-  const authClient = createClient(authUrl, anonKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: { headers: { Authorization: 'Bearer ' + accessToken } },
-  });
-  const { data: { user } } = await authClient.auth.getUser(accessToken);
-  if (!user) {
+  const sb = adminSupabase();
+  if (!sb) {
+    return { ok: false as const, status: 500, message: 'Server configuration incomplete', user: null };
+  }
+
+  const { data: { user }, error: userError } = await sb.auth.getUser(accessToken);
+  if (userError || !user) {
     return { ok: false as const, status: 401, message: 'Authentication required', user: null };
   }
 
-  const { data: isAdmin } = await authClient.rpc('is_admin');
-  if (!isAdmin) {
+  const { data: adminRow, error: adminError } = await sb
+    .from('admin_users')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (adminError) throw adminError;
+  if (!adminRow) {
     return { ok: false as const, status: 403, message: 'Admin access required', user: null };
   }
 
