@@ -21,6 +21,19 @@ function currency(country: MessengerPaymentStatusCountry) {
   return country === 'IN' ? '₹' : '৳';
 }
 
+export function isMessengerPaymentRetryableStatus(status: unknown): boolean {
+  const key = typeof status === 'string' ? status.toLowerCase() : '';
+  return ['created', 'pending', 'failed', 'cancelled', 'canceled', 'expired'].includes(key);
+}
+
+function getMessengerPaymentRetryUrl(cashfreeOrderId: string | null): string | null {
+  if (!cashfreeOrderId) return null;
+  const siteUrl = (
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://www.gaziseed.com'
+  ).replace(/\/$/, '');
+  return siteUrl + '/messenger-payment?order_id=' + encodeURIComponent(cashfreeOrderId);
+}
+
 export function formatMessengerPaymentIntentStatus(status: unknown): string {
   const key = typeof status === 'string' ? status.toLowerCase() : '';
   const labels: Record<string, string> = {
@@ -105,6 +118,7 @@ export async function getMessengerPaymentStatusReply(args: {
   reply: string;
   orderIds?: string[];
   cashfreeOrderId?: string | null;
+  paymentRetryButton?: { title: string; url: string };
 }> {
   const requestedOrderNumber = parseOrderNumber(args.text);
   const metadataPayment = args.metadata?.messenger_payment;
@@ -172,6 +186,9 @@ export async function getMessengerPaymentStatusReply(args: {
 
         if (linkedOrderError) throw linkedOrderError;
         if (linkedOrder) {
+          const retryUrl = isMessengerPaymentRetryableStatus(intent.status)
+            ? getMessengerPaymentRetryUrl(cashfreeOrderId)
+            : null;
           return {
             handled: true,
             reply: formatOrderPaymentStatus(
@@ -181,10 +198,16 @@ export async function getMessengerPaymentStatusReply(args: {
             ),
             orderIds: [String(linkedOrder.id)],
             cashfreeOrderId,
+            ...(retryUrl
+              ? { paymentRetryButton: { title: '🔄 Retry Payment', url: retryUrl } }
+              : {}),
           };
         }
       }
 
+      const retryUrl = isMessengerPaymentRetryableStatus(intent.status)
+        ? getMessengerPaymentRetryUrl(cashfreeOrderId)
+        : null;
       return {
         handled: true,
         reply:
@@ -192,6 +215,9 @@ export async function getMessengerPaymentStatusReply(args: {
           formatMessengerPaymentIntentStatus(intent.status) +
           '\n\nPayment complete হলে একই Messenger-এ “payment status” আবার লিখতে পারেন।',
         cashfreeOrderId,
+        ...(retryUrl
+          ? { paymentRetryButton: { title: '🔄 Retry Payment', url: retryUrl } }
+          : {}),
       };
     }
   }
@@ -252,10 +278,18 @@ export async function getMessengerPaymentStatusReply(args: {
   if (intentError) throw intentError;
   if (intent) paymentIntentStatus = intent.status;
 
+  const resolvedCashfreeOrderId = intent?.cashfree_order_id || cashfreeOrderId;
+  const retryUrl = isMessengerPaymentRetryableStatus(paymentIntentStatus)
+    ? getMessengerPaymentRetryUrl(resolvedCashfreeOrderId)
+    : null;
+
   return {
     handled: true,
     reply: formatOrderPaymentStatus(order, paymentIntentStatus, args.country),
     orderIds: [String(order.id)],
-    cashfreeOrderId: intent?.cashfree_order_id || cashfreeOrderId,
+    cashfreeOrderId: resolvedCashfreeOrderId,
+    ...(retryUrl
+      ? { paymentRetryButton: { title: '🔄 Retry Payment', url: retryUrl } }
+      : {}),
   };
 }

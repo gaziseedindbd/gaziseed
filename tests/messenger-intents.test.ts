@@ -50,6 +50,10 @@ import {
   isUnsafeMessengerTransactionalReply,
 } from '../lib/ai/messenger-transactional-guard';
 import {
+  formatMessengerPaymentIntentStatus,
+  isMessengerPaymentRetryableStatus,
+} from '../lib/ai/messenger-payment-status';
+import {
   getMessengerRateLimitReply,
   hashMessengerMessage,
 } from '../lib/ai/messenger-rate-limit';
@@ -229,6 +233,16 @@ test('classifies delivery, support, and seed knowledge questions independently',
   assert.equal(isMessengerSeedKnowledgeQuestion('লাউয়ের বীজ কীভাবে বপন করব'), true);
 });
 
+
+test('allows Messenger payment retry only for non-final payment states', () => {
+  assert.equal(isMessengerPaymentRetryableStatus('created'), true);
+  assert.equal(isMessengerPaymentRetryableStatus('pending'), true);
+  assert.equal(isMessengerPaymentRetryableStatus('failed'), true);
+  assert.equal(isMessengerPaymentRetryableStatus('expired'), true);
+  assert.equal(isMessengerPaymentRetryableStatus('completed'), false);
+  assert.equal(isMessengerPaymentRetryableStatus('processing'), false);
+  assert.match(formatMessengerPaymentIntentStatus('failed'), /failed/);
+});
 
 test('blocks AI-only transactional claims while allowing ordinary payment/order information', () => {
   assert.equal(

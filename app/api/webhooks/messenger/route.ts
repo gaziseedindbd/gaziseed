@@ -1931,7 +1931,12 @@ async function processMessengerEvent(event: MessengerEvent) {
           cashfree_order_id: paymentStatus.cashfreeOrderId || null,
         },
       });
-      await sendMessengerText(senderId, paymentStatus.reply);
+      await sendMessengerText(
+        senderId,
+        paymentStatus.reply,
+        undefined,
+        paymentStatus.paymentRetryButton,
+      );
       return;
     } catch (error) {
       console.error(
