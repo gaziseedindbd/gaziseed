@@ -48,7 +48,17 @@ function keyFor(provider: MessengerProvider): string {
 }
 
 function isConfigured(provider: MessengerProvider): boolean {
-  return Boolean(keyFor(provider));
+  if (!keyFor(provider)) return false;
+
+  // Gemini currently returns a production 403 because the configured
+  // Google project has been denied access. Keep Gemini opt-in until that
+  // project-side access issue is resolved; all other providers remain
+  // unchanged and continue through the normal fallback chain.
+  if (provider === 'gemini') {
+    return process.env.GEMINI_MESSENGER_ENABLED === 'true';
+  }
+
+  return true;
 }
 
 function timeoutMs(): number {
