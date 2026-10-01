@@ -49,6 +49,7 @@ function adminSupabase() {
 const STATUS_LABELS: Record<string, { bn: string; emoji: string }> = {
   pending: { bn: 'অর্ডার গ্রহণ করা হয়েছে', emoji: '📦' },
   processing: { bn: 'অর্ডার প্রস্তুত করা হচ্ছে', emoji: '⚙️' },
+  packed: { bn: 'অর্ডার প্যাক করা হয়েছে', emoji: '📦' },
   shipped: { bn: 'অর্ডার পাঠানো হয়েছে', emoji: '🚚' },
   delivered: { bn: 'অর্ডার ডেলিভারি সম্পন্ন হয়েছে', emoji: '✅' },
   cancelled: { bn: 'অর্ডার বাতিল করা হয়েছে', emoji: '❌' },
