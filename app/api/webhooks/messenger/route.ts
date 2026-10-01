@@ -921,19 +921,29 @@ async function getProductContext(
 async function getRecentMessages(
   sb: ReturnType<typeof adminSupabase>,
   conversationId: string,
+  options?: { excludeClosedHumanSupportMessages?: boolean },
 ) {
   if (!sb) return [];
 
   const { data, error } = await sb
     .from('ai_messages')
-    .select('role,content')
+    .select('role,content,action_status')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
     .limit(20);
 
   if (error) throw error;
 
-  return (data || []).reverse();
+  const recentMessages = data || [];
+  const filteredMessages = options?.excludeClosedHumanSupportMessages
+    ? recentMessages.filter(
+        (message) =>
+          message.action_status !== 'human_support_queue_created' &&
+          message.action_status !== 'human_support_queue_waiting',
+      )
+    : recentMessages;
+
+  return filteredMessages.reverse().map(({ role, content }) => ({ role, content }));
 }
 
 async function processMessengerEvent(event: MessengerEvent) {
@@ -2477,7 +2487,11 @@ async function processMessengerEvent(event: MessengerEvent) {
   }
 
   const [recentMessages, products, deliveryPolicy, webSeedContext] = await Promise.all([
-    getRecentMessages(sb, conversation.id),
+    getRecentMessages(sb, conversation.id, {
+      excludeClosedHumanSupportMessages:
+        conversation.metadata?.human_support_state === 'closed' &&
+        conversation.metadata?.human_takeover !== true,
+    }),
     isProductListRequest(normalizedActionText)
       ? listMessengerProducts(sb, activeCountry, 12).then(serializeMessengerProducts)
       : isProductCatalogRequest(normalizedActionText)
@@ -2587,6 +2601,7 @@ async function processMessengerEvent(event: MessengerEvent) {
   const systemPrompt =
     'You are GAZI SEED customer support AI on Facebook Messenger. ' +
     'Answer in natural Bengali unless the customer uses another language. ' +
+    'The previous human-support request may already be closed. When human_support_state is closed, treat the current customer message as a fresh AI turn and do not repeat, quote, or imitate any earlier human-support waiting/active-support message. Only use a human-support waiting response when the webhook hard-stop has explicitly triggered it. ' +
     `The verified customer country is ${activeCountry}. Only use the catalog data for that country. ` +
     'Use ONLY the supplied GAZI SEED product data for current GAZI SEED prices, stock, offers, product lists, and product facts. For product-list questions, list the available products for the verified country from PRODUCT DATA. For price or stock questions, answer from PRODUCT DATA when a matching product is present; if it is not present for the verified country, say it is not available in that country rather than using another country. ' +
     'Use the supplied GAZI SEED data for GAZI SEED-specific facts. For general agricultural or seed-growing questions, you may answer from your general agricultural knowledge, but do not present general knowledge as a GAZI SEED-specific fact. If you cannot confidently answer a general question, say so without inventing specifics. For general agricultural advice, use safe, practical, broadly applicable guidance. Do not give specific numeric prescriptions or measurements in general agricultural advice unless they are explicitly present in VERIFIED DATA supplied to you. In particular, do not invent or state numeric values for seed soaking duration, sowing depth, plant spacing, fertilizer quantity or dosage, pesticide or chemical dosage, spray intervals, treatment duration, irrigation schedules, or other crop-management measurements. Prefer wording such as lightly soak, shallow sowing, adequate spacing, keep soil evenly moist, and follow the seed packet or local agricultural guidance when exact values are needed. Do not invent disease names, pest diagnoses, chemical names, or treatment schedules. When exact local guidance is needed, clearly say that it depends on crop variety, climate, soil, and local agricultural recommendations. ' +
