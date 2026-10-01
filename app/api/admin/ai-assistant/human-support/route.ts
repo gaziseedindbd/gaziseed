@@ -15,9 +15,20 @@ function adminSupabase() {
   });
 }
 
-async function requireAdmin() {
-  const authClient = await createServerSupabase();
-  const { data: { user } } = await authClient.auth.getUser();
+async function requireAdmin(request: Request) {
+  const authUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  const accessToken = request.headers.get('authorization')?.replace(/^Bearer\\s+/i, '').trim() || '';
+
+  if (!authUrl || !anonKey || !accessToken) {
+    return { ok: false as const, status: 401, message: 'Authentication required', user: null };
+  }
+
+  const authClient = createClient(authUrl, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: 'Bearer ' + accessToken } },
+  });
+  const { data: { user } } = await authClient.auth.getUser(accessToken);
   if (!user) {
     return { ok: false as const, status: 401, message: 'Authentication required', user: null };
   }
@@ -30,9 +41,9 @@ async function requireAdmin() {
   return { ok: true as const, status: 200, message: '', user };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requireAdmin(request);
     if (!auth.ok) {
       return NextResponse.json({ success: false, message: auth.message }, { status: auth.status });
     }
@@ -160,7 +171,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const auth = await requireAdmin();
+    const auth = await requireAdmin(request);
     if (!auth.ok) {
       return NextResponse.json({ success: false, message: auth.message }, { status: auth.status });
     }
