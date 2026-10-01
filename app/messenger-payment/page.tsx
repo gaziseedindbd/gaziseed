@@ -42,6 +42,7 @@ export default function MessengerPaymentPage() {
   const startPayment = useCallback(async (currentOrderId: string, returned: boolean) => {
     try {
       setPaymentOrderId(currentOrderId);
+      window.sessionStorage.setItem('gazi_messenger_payment_order_id', currentOrderId);
       setState('loading');
       const response = await fetch('/api/messenger-payment-session?order_id=' + encodeURIComponent(currentOrderId), { cache: 'no-store' });
       const data = await response.json();
@@ -58,6 +59,7 @@ export default function MessengerPaymentPage() {
         const result = await complete.json();
         if (!complete.ok || !result?.completed) throw new Error(result?.error || 'Advance payment was not completed');
         setOrderNumber(typeof result.order_number === 'string' ? result.order_number : '');
+        window.sessionStorage.removeItem('gazi_messenger_payment_order_id');
         setState('success');
         setMessage('COD order successfully confirmed.');
         return;
@@ -78,8 +80,13 @@ export default function MessengerPaymentPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const currentOrderId = params.get('order_id')?.trim() || '';
     const returned = params.get('return') === '1';
+    const urlOrderId = params.get('order_id')?.trim() || '';
+    const storedOrderId =
+      typeof window !== 'undefined'
+        ? window.sessionStorage.getItem('gazi_messenger_payment_order_id')?.trim() || ''
+        : '';
+    const currentOrderId = urlOrderId || storedOrderId;
     if (!currentOrderId) {
       setState('error');
       setMessage('Payment order পাওয়া যায়নি।');
