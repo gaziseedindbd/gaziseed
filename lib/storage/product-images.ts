@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase/client';
 
 function getStoragePathFromPublicUrl(url: string, bucket: string): string | null {
   try {
@@ -29,7 +29,7 @@ export function getProductImageUrls(product: { image?: string | null; images?: u
 }
 
 export async function deleteProductImagesFromStorage(
-  supabaseClient: SupabaseClient,
+  supabaseClient: typeof supabase,
   urls: string[],
   bucket = 'product-images',
   excludeProductId?: string | null,
