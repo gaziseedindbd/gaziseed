@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import { getProductBySlug, getLandingPageBySlug, getBundleOffers, formatPrice, trackLandingPageView } from '@/lib/data';
 import { supabase } from '@/lib/supabase/client';
 import { Check, Truck, ShieldCheck, Star, ChevronDown, ChevronLeft, ChevronRight, Loader2, Zap, Package, Sparkles, Clock, ArrowDownCircle, CheckCircle2, Shield, HeartHandshake } from 'lucide-react';
@@ -246,12 +247,12 @@ export default function OfferLandingPage() {
       {/* ব্র্যান্ড হেডার */}
       <header className="bg-white/95 backdrop-blur-md sticky top-0 z-30 border-b border-gray-100 shadow-xs">
         <div className="max-w-6xl mx-auto px-4 flex items-center justify-between py-3">
-          <a href="/" className="flex items-center gap-2 group">
+          <Link href="/" className="flex items-center gap-2 group">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-700 text-white font-black text-base shadow-sm group-hover:scale-105 transition">
               S
             </div>
             <span className="font-extrabold text-xl text-emerald-900 tracking-tight">SEED BARI</span>
-          </a>
+          </Link>
           <a 
             href="#order-form" 
             className="flex items-center gap-1.5 rounded-full bg-emerald-700 px-4 py-1.5 text-xs font-bold text-white shadow hover:bg-emerald-800 transition active:scale-95"
