@@ -1,7 +1,8 @@
 export type MessengerReplyLanguage = 'English' | 'Bengali' | 'Hindi';
 
 const HINDI_LATIN_HINTS = new Set([
-  'kaise', 'kya', 'hai', 'hain', 'ka', 'ki', 'ke', 'ko', 'mein', 'me',
+  'kaise', 'kya', 'hai', 'hain', 'ka', 'ki', 'ke',
+  'haan', 'han', 'nahi', 'nahin', 'theek', 'sahi', 'ko', 'mein', 'me',
   'se', 'par', 'kab', 'kahan', 'kahaan', 'kitna', 'kitne', 'kitni',
   'chahiye', 'ugana', 'ugaye', 'ugayein', 'ugao', 'ugane', 'batao',
   'bataiye', 'bataye', 'karna', 'kare', 'karo', 'kijiye', 'mujhe',
@@ -15,8 +16,6 @@ const ENGLISH_LATIN_HINTS = new Set([
   'seed', 'seeds', 'please', 'can', 'could', 'would', 'you', 'your',
   'tell', 'have', 'available', 'stock', 'buy', 'order', 'payment',
   'status', 'delivery', 'shipping', 'need', 'want', 'give', 'show',
-  'haan', 'han', 'nahi', 'nahin', 'theek', 'sahi', 'jaankari', 'jankari',
-  'badal', 'badlen', 'karo', 'kariye', 'kar do', 'kardo',
 ]);
 
 function tokenScore(text: string, hints: Set<string>): number {
