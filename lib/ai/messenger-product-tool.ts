@@ -35,13 +35,14 @@ export type MessengerProduct = {
  * Similar matches may be shown as discovery hints, but their transactional
  * fields must never be trusted.
  */
-export function isTrustedMessengerProductMatch(
-  product: Pick<MessengerProduct, 'search_match_type'>,
-): boolean {
-  return (
-    product.search_match_type === 'exact' ||
-    product.search_match_type === 'strong'
-  );
+export function isTrustedMessengerProductMatch(product: unknown): boolean {
+  if (!product || typeof product !== 'object') return false;
+
+  const matchType = (product as {
+    search_match_type?: unknown;
+  }).search_match_type;
+
+  return matchType === 'exact' || matchType === 'strong';
 }
 
 const PRODUCT_FIELDS = [
