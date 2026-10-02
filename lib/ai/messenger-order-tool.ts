@@ -972,7 +972,11 @@ export async function handleMessengerOrderFlow(args: {
     return {
       handled: true,
       reply:
-        'আপনি কোন পণ্যটি অর্ডার করতে চান? দয়া করে পণ্যের সঠিক নামটি লিখুন।',
+        replyLanguage === 'English'
+          ? 'Which product would you like to order? Please enter the exact product name.'
+          : replyLanguage === 'Hindi'
+            ? 'आप कौन सा product order करना चाहते हैं? Product का सही नाम लिखें।'
+            : 'আপনি কোন পণ্যটি অর্ডার করতে চান? দয়া করে পণ্যের সঠিক নামটি লিখুন.',
       pending: null,
     };
   } else if (lastProduct) {
@@ -995,7 +999,12 @@ export async function handleMessengerOrderFlow(args: {
   } else {
     return {
       handled: true,
-      reply: 'অর্ডার করতে চান এমন পণ্যের নাম লিখুন।',
+      reply:
+        replyLanguage === 'English'
+          ? 'Enter the name of the product you want to order.'
+          : replyLanguage === 'Hindi'
+            ? 'जिस product को order करना है उसका नाम लिखें।'
+            : 'অর্ডার করতে চান এমন পণ্যের নাম লিখুন.',
       pending: null,
     };
   }
