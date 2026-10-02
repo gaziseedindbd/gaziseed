@@ -15,6 +15,8 @@ const ENGLISH_LATIN_HINTS = new Set([
   'seed', 'seeds', 'please', 'can', 'could', 'would', 'you', 'your',
   'tell', 'have', 'available', 'stock', 'buy', 'order', 'payment',
   'status', 'delivery', 'shipping', 'need', 'want', 'give', 'show',
+  'haan', 'han', 'nahi', 'nahin', 'theek', 'sahi', 'jaankari', 'jankari',
+  'badal', 'badlen', 'karo', 'kariye', 'kar do', 'kardo',
 ]);
 
 function tokenScore(text: string, hints: Set<string>): number {
