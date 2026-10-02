@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const prompt = String(body.prompt || '').trim();
 
     if (!moduleName || !(moduleName in MODULES)) {
-      return NextResponse.json({ success: false, message: 'Invalid AI moduleName' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Invalid AI module' }, { status: 400 });
     }
 
     const supabase = await createServerSupabase();
@@ -98,8 +98,8 @@ export async function POST(req: NextRequest) {
     const adapter = getAdapter(ai.provider);
     const result = await adapter.chat({ messages: [{ role: 'system', content: system }, { role: 'user', content: user }], temperature: ai.temperature ?? undefined, max_tokens: ai.max_tokens ?? undefined }, ai);
 
-    return NextResponse.json({ success: true, moduleName, result: result.content, model: result.model });
+    return NextResponse.json({ success: true, module: moduleName, result: result.content, model: result.model });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error instanceof Error ? error.message : 'AI moduleName failed' }, { status: 500 });
+    return NextResponse.json({ success: false, message: error instanceof Error ? error.message : 'AI module failed' }, { status: 500 });
   }
 }
