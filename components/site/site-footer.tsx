@@ -12,15 +12,22 @@ import { getVisitorCountry } from '@/lib/supabase/client';
 export function SiteFooter() {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/allahmohammad/admin/');
-  if (isAdminRoute) return null;
 
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [nav, setNav] = useState<Navigation[]>([]);
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
   const { t, tDb } = useLang();
 
-  useEffect(() => { getSiteSettings().then(setSettings); getNavigation().then(setNav); setCountry(getVisitorCountry()); }, []);
+  useEffect(() => {
+    if (isAdminRoute) return;
+
+    getSiteSettings().then(setSettings);
+    getNavigation().then(setNav);
+    setCountry(getVisitorCountry());
+  }, [isAdminRoute]);
   const isIndia = country === 'IN'; const fallbackBrand = 'GAZI SEED'; const fallbackTagline = isIndia ? 'Quality Seeds • Better Farming' : 'বীজ • গাছ • কৃষি পণ্য'; const fallbackDescription = isIndia ? "India's trusted online store for seeds and agro products." : 'বাংলাদেশের বিশ্বস্ত বীজ ও কৃষি পণ্যের অনলাইন স্টোর। সারাদেশে ক্যাশ অন ডেলিভারি।'; const fallbackLocation = isIndia ? 'ভারত' : 'ঢাকা, বাংলাদেশ';
+
+  if (isAdminRoute) return null;
 
   return <footer className="border-t border-primary/10 bg-gradient-to-b from-secondary/20 to-background pb-24 md:pb-0">
     <div className="container-custom pt-10 sm:pt-14">
