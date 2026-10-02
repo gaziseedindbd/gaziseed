@@ -88,7 +88,10 @@ import {
   getMessengerAIDeliveryActionStatus,
   shouldTrackMessengerAIDeliveryStatus,
 } from '@/lib/ai/messenger-delivery-state';
-import { verifyMessengerWebhookSignature } from '@/lib/ai/messenger-webhook-security';
+import {
+  safeEqual,
+  verifyMessengerWebhookSignature,
+} from '@/lib/ai/messenger-webhook-security';
 
 export const dynamic = 'force-dynamic';
 
