@@ -83,6 +83,8 @@ import {
   type MessengerReplyLanguage,
 } from '@/lib/ai/messenger-language';
 
+import { shouldIncludeMessengerAIHistoryMessage } from '@/lib/ai/messenger-history';
+
 export const dynamic = 'force-dynamic';
 
 const WEBHOOK_VERIFY_TOKEN =
@@ -1029,12 +1031,16 @@ async function getRecentMessages(
     .from('ai_messages')
     .select('role,content,action_status')
     .eq('conversation_id', conversationId)
+    // Keep provider_result telemetry in the database, but never feed it back
+    // into the AI context. Include NULL action_status rows because many
+    // deterministic/customer-facing messages legitimately have no status.
+    .or('action_status.is.null,action_status.neq.provider_result')
     .order('created_at', { ascending: false })
     .limit(20);
 
   if (error) throw error;
 
-  const recentMessages = data || [];
+  const recentMessages = (data || []).filter(shouldIncludeMessengerAIHistoryMessage);
   const filteredMessages = options?.excludeClosedHumanSupportMessages
     ? recentMessages.filter((message) => {
         const isQueueArtifact =

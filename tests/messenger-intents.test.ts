@@ -63,6 +63,26 @@ import {
   extractMessengerPhone,
   normalizeMessengerPhone,
 } from '../lib/ai/messenger-phone';
+import { shouldIncludeMessengerAIHistoryMessage } from '../lib/ai/messenger-history';
+
+test('keeps provider telemetry out of future Messenger AI context', () => {
+  assert.equal(
+    shouldIncludeMessengerAIHistoryMessage({ action_status: 'provider_result' }),
+    false,
+  );
+  assert.equal(
+    shouldIncludeMessengerAIHistoryMessage({ action_status: 'sent' }),
+    true,
+  );
+  assert.equal(
+    shouldIncludeMessengerAIHistoryMessage({ action_status: null }),
+    true,
+  );
+  assert.equal(
+    shouldIncludeMessengerAIHistoryMessage({}),
+    true,
+  );
+});
 
 test('recognizes typo-tolerant other-product request', () => {
   assert.equal(isOtherProductRequest('OTHER PRODCUT DEKHTE CHAIE'), true);
