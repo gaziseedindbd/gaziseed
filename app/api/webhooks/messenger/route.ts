@@ -72,8 +72,8 @@ import {
   getBangladeshHumanSupportWaitingReply,
 } from '@/lib/ai/messenger-human-support';
 import {
+  classifyMessengerTransactionalReply,
   getMessengerTransactionalGuardReply,
-  isUnsafeMessengerTransactionalReply,
 } from '@/lib/ai/messenger-transactional-guard';
 import {
   getMessengerPaymentStatusReply,
@@ -2875,10 +2875,13 @@ async function processMessengerEvent(event: MessengerEvent) {
       isGeneralAgricultureMessage &&
       hasUnsafeGeneralAgricultureSpecifics(result.content);
 
-    const transactionallyUnsafeAIReply =
+    const transactionalCategory =
       !unsafeGeneralAgricultureReply &&
-      !isKnowledgeFallbackResponse(result.content) &&
-      isUnsafeMessengerTransactionalReply(result.content);
+      !isKnowledgeFallbackResponse(result.content)
+        ? classifyMessengerTransactionalReply(result.content)
+        : null;
+
+    const transactionallyUnsafeAIReply = transactionalCategory !== null;
 
     const closedHumanSupportContext =
       humanSupportClosed && humanTakeoverActive !== true;
@@ -2923,6 +2926,7 @@ async function processMessengerEvent(event: MessengerEvent) {
         usage: result.usage || null,
         knowledge_fallback: finalReply !== result.content,
         transactional_guard: transactionallyUnsafeAIReply,
+        transactional_category: transactionalCategory,
         human_support_resume_guard: repeatedHumanSupportReply,
       },
     });
