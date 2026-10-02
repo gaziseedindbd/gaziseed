@@ -84,6 +84,7 @@ import {
 } from '@/lib/ai/messenger-language';
 
 import { shouldIncludeMessengerAIHistoryMessage } from '@/lib/ai/messenger-history';
+import { detectExplicitMessengerCountry } from '@/lib/ai/messenger-country';
 import {
   getMessengerAIDeliveryActionStatus,
   shouldTrackMessengerAIDeliveryStatus,
@@ -114,22 +115,7 @@ type ConversationRecord = {
 };
 
 function detectExplicitCountry(text: string): CountryCode | null {
-  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
-
-  const mentionsIndia =
-    /\b(india|indian|bharat)\b/.test(normalized) ||
-    normalized.includes('ভারত') ||
-    normalized.includes('ভারতীয়') ||
-    normalized.includes('ভারতীয়');
-
-  const mentionsBangladesh =
-    /\b(bangladesh|bangladeshi)\b/.test(normalized) ||
-    normalized.includes('বাংলাদেশ') ||
-    normalized.includes('বাংলাদেশি') ||
-    normalized.includes('বাংলাদেশী');
-
-  if (mentionsIndia === mentionsBangladesh) return null;
-  return mentionsIndia ? 'IN' : 'BD';
+  return detectExplicitMessengerCountry(text);
 }
 
 function getVerifiedCountry(conversation: ConversationRecord): CountryCode | null {

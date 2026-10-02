@@ -67,6 +67,33 @@ import {
   normalizeMessengerPhone,
 } from '../lib/ai/messenger-phone';
 import { shouldIncludeMessengerAIHistoryMessage } from '../lib/ai/messenger-history';
+import { detectExplicitMessengerCountry } from '../lib/ai/messenger-country';
+
+
+
+test('detects Messenger country only from explicit country intent', () => {
+  assert.equal(detectExplicitMessengerCountry('India'), 'IN');
+  assert.equal(detectExplicitMessengerCountry('Bangladesh'), 'BD');
+  assert.equal(detectExplicitMessengerCountry('I am in India'), 'IN');
+  assert.equal(detectExplicitMessengerCountry('deliver to India'), 'IN');
+  assert.equal(detectExplicitMessengerCountry('India delivery'), 'IN');
+  assert.equal(detectExplicitMessengerCountry('Indian customer'), 'IN');
+  assert.equal(detectExplicitMessengerCountry('Bangladesh branch'), 'BD');
+  assert.equal(detectExplicitMessengerCountry('বাংলাদেশে ডেলিভারি'), 'BD');
+  assert.equal(detectExplicitMessengerCountry('ভারত থেকে অর্ডার করব'), 'IN');
+
+  assert.equal(detectExplicitMessengerCountry('Indian seeds please'), null);
+  assert.equal(detectExplicitMessengerCountry('Indian tomato variety'), null);
+  assert.equal(detectExplicitMessengerCountry('from Indian seeds'), null);
+  assert.equal(detectExplicitMessengerCountry('Bangladeshi seeds'), null);
+  assert.equal(detectExplicitMessengerCountry('বাংলাদেশি জাতের বীজ আছে?'), null);
+  assert.equal(detectExplicitMessengerCountry('ভারতীয় বীজ আছে?'), null);
+
+  assert.equal(
+    detectExplicitMessengerCountry('Indian seeds, deliver to Bangladesh'),
+    'BD',
+  );
+});
 
 test('keeps internal Messenger AI delivery states out of future context', () => {
   assert.equal(
