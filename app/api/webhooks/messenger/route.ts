@@ -66,6 +66,7 @@ import {
   consumeMessengerRateLimit,
   getMessengerRateLimitReply,
   hashMessengerMessage,
+  resolveMessengerRateLimitCountry,
 } from '@/lib/ai/messenger-rate-limit';
 import {
   getBangladeshHumanSupportAcknowledgement,
@@ -1087,11 +1088,13 @@ async function processMessengerEvent(event: MessengerEvent) {
     return;
   }
 
-  const preCountry =
-    quickReplyCountry ||
-    detectExplicitCountry(normalizedActionText) ||
-    getVerifiedCountry(conversation) ||
-    'BD';
+  const currentCountry = getVerifiedCountry(conversation);
+  const detectedCountry = quickReplyCountry || detectExplicitCountry(normalizedActionText);
+  const rateLimitCountry = resolveMessengerRateLimitCountry({
+    quickReplyCountry,
+    detectedCountry,
+    verifiedCountry: currentCountry,
+  });
 
   const rateLimitInput = buildMessengerRateLimitInput(
     normalizedActionText,
@@ -1102,7 +1105,7 @@ async function processMessengerEvent(event: MessengerEvent) {
   const messageRateLimit = await consumeMessengerRateLimit(sb, {
     pageId: META_PAGE_ID,
     externalUserId: senderId,
-    countryCode: preCountry,
+    countryCode: rateLimitCountry,
     messageHash: hashMessengerMessage(rateLimitInput),
     mode: 'message',
   });
@@ -1127,8 +1130,6 @@ async function processMessengerEvent(event: MessengerEvent) {
     last_event_at: new Date().toISOString(),
   });
 
-  const currentCountry = getVerifiedCountry(conversation);
-  const detectedCountry = quickReplyCountry || detectExplicitCountry(normalizedActionText);
   const resolvedCountry = detectedCountry || currentCountry;
 
 
