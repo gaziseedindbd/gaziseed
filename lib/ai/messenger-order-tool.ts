@@ -559,7 +559,11 @@ export async function handleMessengerOrderFlow(args: {
         reply:
           next.step === 'saved_details_confirmation'
             ? getMessengerSavedDetailsReply(next, cartItems, currency)
-            : 'অর্ডারের জন্য আপনার নামটি লিখুন।',
+            : replyLanguage === 'Hindi'
+              ? 'Order के लिए अपना नाम लिखें।'
+              : replyLanguage === 'English'
+                ? 'Please enter your name for the order.'
+                : 'অর্ডারের জন্য আপনার নামটি লিখুন।',
         pending: next,
       };
     }
@@ -974,7 +978,6 @@ export async function handleMessengerOrderFlow(args: {
     return { handled: false as const };
   }
 
-  const replyLanguage = detectMessengerReplyLanguage(args.text);
   const lastProduct = productFromMetadata(metadata.last_messenger_product);
   let product: MessengerProduct | null = null;
 
