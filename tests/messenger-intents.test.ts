@@ -65,13 +65,25 @@ import {
 } from '../lib/ai/messenger-phone';
 import { shouldIncludeMessengerAIHistoryMessage } from '../lib/ai/messenger-history';
 
-test('keeps provider telemetry out of future Messenger AI context', () => {
+test('keeps internal Messenger AI delivery states out of future context', () => {
   assert.equal(
     shouldIncludeMessengerAIHistoryMessage({ action_status: 'provider_result' }),
     false,
   );
   assert.equal(
+    shouldIncludeMessengerAIHistoryMessage({ action_status: 'generated' }),
+    false,
+  );
+  assert.equal(
+    shouldIncludeMessengerAIHistoryMessage({ action_status: 'failed' }),
+    false,
+  );
+  assert.equal(
     shouldIncludeMessengerAIHistoryMessage({ action_status: 'sent' }),
+    true,
+  );
+  assert.equal(
+    shouldIncludeMessengerAIHistoryMessage({ action_status: 'transactional_guard' }),
     true,
   );
   assert.equal(
