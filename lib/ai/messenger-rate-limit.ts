@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type MessengerRateLimitMode = 'message' | 'ai';
+export type MessengerRateLimitCountryCode = 'IN' | 'BD' | 'UNKNOWN';
 
 export type MessengerRateLimitResult = {
   allowed: boolean;
@@ -29,6 +30,19 @@ const FALLBACK_ALLOWED: MessengerRateLimitResult = {
   duplicate_count: 0,
   blocked_until: null,
 };
+
+export function resolveMessengerRateLimitCountry(args: {
+  quickReplyCountry?: 'IN' | 'BD' | null;
+  detectedCountry?: 'IN' | 'BD' | null;
+  verifiedCountry?: 'IN' | 'BD' | null;
+}): MessengerRateLimitCountryCode {
+  return (
+    args.quickReplyCountry ||
+    args.detectedCountry ||
+    args.verifiedCountry ||
+    'UNKNOWN'
+  );
+}
 
 export function hashMessengerMessage(value: string): string {
   let hash = 2166136261;
@@ -71,7 +85,7 @@ export async function consumeMessengerRateLimit(
   args: {
     pageId: string;
     externalUserId: string;
-    countryCode: 'IN' | 'BD';
+    countryCode: MessengerRateLimitCountryCode;
     messageHash?: string | null;
     mode?: MessengerRateLimitMode;
   },
