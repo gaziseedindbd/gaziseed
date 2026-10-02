@@ -489,31 +489,40 @@ function getMessengerSavedDetailsReply(
     messengerOrderText(language, 'saved_details'),
   ].join('\n');
 }
-export function getMessengerOrderResumeReply(pending: PendingMessengerOrder): string {
-  const prefix = `আগের অর্ডারটি আবার চালু করেছি। ${pending.product_name}-এর অর্ডারটি যেখানে থেমেছিল, সেখান থেকেই চলছি।`;
+export function getMessengerOrderResumeReply(
+  pending: PendingMessengerOrder,
+  language: ReturnType<typeof detectMessengerReplyLanguage> = 'Bengali',
+): string {
+  const prefix =
+    language === 'Hindi'
+      ? `पिछला order फिर से शुरू कर दिया है। ${pending.product_name} का order जहाँ रुका था, वहीं से जारी करते हैं।`
+      : language === 'English'
+        ? `Your previous order has been resumed. We’ll continue the ${pending.product_name} order from where it stopped.`
+        : `আগের অর্ডারটি আবার চালু করেছি। ${pending.product_name}-এর অর্ডারটি যেখানে থেমেছিল, সেখান থেকেই চলছি।`;
+
   switch (pending.step) {
     case 'quantity':
-      return prefix + '\n\nকত প্যাকেট অর্ডার করতে চান? সংখ্যা লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'quantity');
     case 'name':
-      return prefix + '\n\nআপনার নামটি লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'name');
     case 'phone':
-      return prefix + '\n\nআপনার ফোন নম্বরটি লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'phone_bd');
     case 'address':
-      return prefix + '\n\nআপনার সম্পূর্ণ ডেলিভারি ঠিকানাটি লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'address');
     case 'india_pincode':
-      return prefix + '\n\nআপনার ৬ সংখ্যার PIN code লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'pincode');
     case 'india_address':
-      return prefix + '\n\nআপনার সম্পূর্ণ ঠিকানা ও কাছাকাছি landmark লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'india_address');
     case 'india_city':
-      return prefix + '\n\nআপনার City লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'city');
     case 'india_thana':
-      return prefix + '\n\nআপনার Thana লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'thana');
     case 'india_state':
-      return prefix + '\n\nআপনার State লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'state');
     case 'saved_details_confirmation':
-      return prefix + '\n\nআপনার saved customer details পাওয়া গেছে। সব ঠিক থাকলে “হ্যাঁ” লিখুন; তথ্য বদলাতে “তথ্য পরিবর্তন” লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'saved_details');
     case 'confirmation':
-      return prefix + '\n\nঅর্ডারের তথ্য নিশ্চিত করতে হ্যাঁ বা না লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'confirmation');
   }
 }
 
@@ -1101,7 +1110,12 @@ export async function handleMessengerOrderFlow(args: {
                     '🔐 আগে COD advance payment সম্পন্ন করুন। Payment সফল হলে আপনার COD order automatically confirm হবে।\n\n' +
                     '🔐 Payment button নিচে দেওয়া হলো।',
             paymentButton: {
-              title: `Pay ${currency}${payment.advanceAmount.toFixed(0)} Now`,
+              title:
+                replyLanguage === 'Hindi'
+                  ? `अभी ${currency}${payment.advanceAmount.toFixed(0)} Pay करें`
+                  : replyLanguage === 'English'
+                    ? `Pay ${currency}${payment.advanceAmount.toFixed(0)} Now`
+                    : `এখন ${currency}${payment.advanceAmount.toFixed(0)} Pay করুন`,
               url: payment.paymentUrl,
             },
             pending: null,
@@ -1137,10 +1151,13 @@ export async function handleMessengerOrderFlow(args: {
       if (!result?.success) {
         return {
           handled: true,
-          reply:
-            result?.error
-              ? `দুঃখিত, অর্ডার তৈরি করা যায়নি: ${result.error}`
-              : 'দুঃখিত, অর্ডার তৈরি করা যায়নি। দয়া করে আবার চেষ্টা করুন।',
+          reply: result?.error
+            ? (replyLanguage === 'Hindi'
+              ? `माफ़ कीजिए, order नहीं बन पाया: ${result.error}`
+              : replyLanguage === 'English'
+                ? `Sorry, the order could not be created: ${result.error}`
+                : `দুঃখিত, অর্ডার তৈরি করা যায়নি: ${result.error}`)
+            : messengerOrderText(replyLanguage, 'order_failed'),
           pending: null,
         };
       }
@@ -1150,12 +1167,11 @@ export async function handleMessengerOrderFlow(args: {
       return {
         handled: true,
         reply:
-          `✅ আপনার অর্ডার সফলভাবে তৈরি হয়েছে।\n\n` +
-          `অর্ডার নম্বর: ${result.order_number || 'পাওয়া যায়নি'}\n` +
-          `${cartSummary}\n` +
-          `Delivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\n` +
-          `Grand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\n` +
-          'অর্ডারটি GAZI SEED order system-এ যুক্ত হয়েছে।',
+          replyLanguage === 'Hindi'
+            ? `✅ आपका order सफलतापूर्वक बन गया है।\n\nOrder number: ${result.order_number || 'Not available'}\n${cartSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nOrder GAZI SEED order system में जोड़ दिया गया है।`
+            : replyLanguage === 'English'
+              ? `✅ Your order has been created successfully.\n\nOrder number: ${result.order_number || 'Not available'}\n${cartSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nThe order has been added to the GAZI SEED order system.`
+              : `✅ আপনার অর্ডার সফলভাবে তৈরি হয়েছে।\n\nঅর্ডার নম্বর: ${result.order_number || 'পাওয়া যায়নি'}\n${cartSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nঅর্ডারটি GAZI SEED order system-এ যুক্ত হয়েছে।`,
         pending: null,
       };
     }
