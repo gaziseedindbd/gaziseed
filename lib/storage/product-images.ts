@@ -25,7 +25,7 @@ export function getProductImageUrls(product: { image?: string | null; images?: u
     }
   }
 
-  return [...urls];
+  return Array.from(urls);
 }
 
 export async function deleteProductImagesFromStorage(
@@ -34,11 +34,11 @@ export async function deleteProductImagesFromStorage(
   bucket = 'product-images',
   excludeProductId?: string | null,
 ): Promise<{ deleted: string[]; skippedReferenced: string[]; failed: string[] }> {
-  const paths = [...new Set(
+  const paths = Array.from(new Set(
     urls
       .map((url) => getStoragePathFromPublicUrl(url, bucket))
       .filter((path): path is string => Boolean(path)),
-  )];
+  ));
 
   if (paths.length === 0) {
     return { deleted: [], skippedReferenced: [], failed: [] };
