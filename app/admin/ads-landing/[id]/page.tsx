@@ -266,7 +266,7 @@ export default function AdsLandingEditorPage() {
           {bundles.map((b, idx) => (
             <BundleCard key={b.id || idx} bundle={b} onChange={(updated) => setBundles(bundles.map((item, i) => i === idx ? updated : item))} onDelete={() => { if (b.id && !b._new) supabase.from('bundle_offers').delete().eq('id', b.id); setBundles(bundles.filter((_, i) => i !== idx)); }} onDuplicate={() => setBundles([...bundles.slice(0, idx + 1), { ...b, _new: true, id: `new-${Date.now()}`, bundle_name: b.bundle_name + ' (Copy)' }, ...bundles.slice(idx + 1)])} />
           ))}
-          {bundles.length === 0 && <p className="text-sm text-muted-foreground">কোন বান্ডল নেই। "+ নতুন Bundle" বাটনে ক্লিক করে যোগ করুন।</p>}
+          {bundles.length === 0 && <p className="text-sm text-muted-foreground">কোন বান্ডল নেই। &quot;+ নতুন Bundle&quot; বাটনে ক্লিক করে যোগ করুন।</p>}
           <button onClick={saveAll} disabled={saving} className="rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">সেভ করুন</button>
         </div>
       )}
@@ -308,7 +308,7 @@ export default function AdsLandingEditorPage() {
               </table>
             </div>
           )}
-          {quantityOffers.length === 0 && <p className="text-sm text-muted-foreground">কোন Quantity Offer নেই। "+ নতুন Quantity Offer" বাটনে ক্লিক করে যোগ করুন।</p>}
+          {quantityOffers.length === 0 && <p className="text-sm text-muted-foreground">কোন Quantity Offer নেই। &quot;+ নতুন Quantity Offer&quot; বাটনে ক্লিক করে যোগ করুন।</p>}
           <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-700">এই মূল্যগুলো শুধমাত্র Ads Landing Page-এর জন্য। সাধারণ ওয়েবসাইট প্রাইস পরিবর্তিত হবে না। কাস্টমার যে পরিমাণ বাছাই করবে, ঠিক সেই মূল্য চার্জ হবে — ইউনিট প্রাইস × পরিমাণ নয়।</div>
           <button onClick={saveAll} disabled={saving} className="rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">সেভ করুন</button>
         </div>
