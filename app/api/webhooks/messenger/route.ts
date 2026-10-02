@@ -883,6 +883,21 @@ async function saveMessage(
   throw new Error('Messenger message insert returned no row');
 }
 
+async function updateMessengerMessageActionStatus(
+  sb: ReturnType<typeof adminSupabase>,
+  messageId: string,
+  actionStatus: string,
+) {
+  if (!sb) throw new Error('Supabase service configuration is incomplete');
+
+  const { error } = await sb
+    .from('ai_messages')
+    .update({ action_status: actionStatus })
+    .eq('id', messageId);
+
+  if (error) throw error;
+}
+
 async function markConversation(
   sb: ReturnType<typeof adminSupabase>,
   conversationId: string,
@@ -2887,19 +2902,21 @@ async function processMessengerEvent(event: MessengerEvent) {
             ? 'জি। আপনার আগের human support request এখন বন্ধ করা হয়েছে এবং AI সহায়তা আবার চালু আছে। আপনার প্রশ্নটি লিখুন—আমি সাহায্য করছি।'
             : result.content;
 
-    await saveMessage(sb, conversation.id, {
+    const finalReplyActionStatus =
+      finalReply !== result.content
+        ? transactionallyUnsafeAIReply
+          ? 'transactional_guard'
+          : repeatedHumanSupportReply
+            ? 'human_support_resume_guard'
+            : 'knowledge_fallback_support'
+        : 'generated';
+
+    const savedFinalReply = await saveMessage(sb, conversation.id, {
       role: 'assistant',
       content: finalReply,
       provider: result.provider,
       model: result.model,
-      actionStatus:
-        finalReply !== result.content
-          ? transactionallyUnsafeAIReply
-            ? 'transactional_guard'
-            : repeatedHumanSupportReply
-              ? 'human_support_resume_guard'
-              : 'knowledge_fallback_support'
-          : 'sent',
+      actionStatus: finalReplyActionStatus,
       countryCode: activeCountry,
       sourceContext: {
         attempts: result.attempts,
@@ -2907,10 +2924,30 @@ async function processMessengerEvent(event: MessengerEvent) {
         knowledge_fallback: finalReply !== result.content,
         transactional_guard: transactionallyUnsafeAIReply,
         human_support_resume_guard: repeatedHumanSupportReply,
+        delivery_status: 'pending',
       },
     });
 
-    await sendMessengerText(senderId, finalReply);
+    try {
+      await sendMessengerText(senderId, finalReply);
+
+      if (finalReplyActionStatus === 'generated') {
+        await updateMessengerMessageActionStatus(
+          sb,
+          savedFinalReply.id,
+          'sent',
+        );
+      }
+    } catch (sendError) {
+      if (finalReplyActionStatus === 'generated') {
+        await updateMessengerMessageActionStatus(
+          sb,
+          savedFinalReply.id,
+          'failed',
+        );
+      }
+      throw sendError;
+    }
   } catch (error) {
     const reason =
       error instanceof MessengerAIProviderError
