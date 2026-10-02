@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { searchMessengerProducts, type MessengerProduct } from './messenger-product-tool';
 import { isMessengerChangeDetailsRequest } from './messenger-intents';
+import { detectMessengerReplyLanguage } from './messenger-language';
 
 export type MessengerOrderCountry = 'IN' | 'BD';
 
@@ -201,19 +202,19 @@ export function normalizeMessengerPhone(text: string, country: MessengerOrderCou
 export function isMessengerOrderIntent(text: string) {
   const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
 
-  return /(?:অর্ডার|order|কিনতে চাই|কিনবো|নিতে চাই|নেব|buy|purchase|place\s+order|কিনতে\s+(?:চাই|চায়|চাইলে)|নিতে\s+(?:চাই|চায়|চাইলে)|\bkinte\s+cha(?:i|ie|y)\b|\bnite\s+cha(?:i|ie|y)\b|\bnibo\b|\bnebo\b|\border\s+kor(?:te|bo|ben|b)\b)/i.test(
+  return /(?:অর্ডার|order|কিনতে চাই|কিনবো|নিতে চাই|নেব|buy|purchase|place\s+order|কিনতে\s+(?:চাই|চায়|চাইলে)|নিতে\s+(?:চাই|চায়|চাইলে)|\bkinte\s+cha(?:i|ie|y)\b|\bnite\s+cha(?:i|ie|y)\b|\bnibo\b|\bnebo\b|\bkharidna\b|\bkharidne\b|\bkharidna\s+(?:hai|hain)\b|\bkharid\s+kar(?:na|ne|ni)\b|\blena\b|\blena\s+(?:hai|hain)\b|\bmujhe\s+(?:kharidna|lena)\b|\bchahiye\b|\blunga\b|\blungi\b|\blenge\b|\border\s+kor(?:te|bo|ben|b)\b)/i.test(
     normalized,
   );
 }
 
 export function isMessengerConfirmation(text: string) {
-  return /(হ্যাঁ|হ্যা|yes|confirm|confirmed|নিশ্চিত|ঠিক আছে|করুন|অর্ডার করুন|place it|do it)/i.test(
+  return /(হ্যাঁ|হ্যা|हाँ|haan|han|yes|confirm|confirmed|निश्चित|ठीक है|theek hai|theek|নিশ্চিত|ঠিক আছে|করুন|অর্ডার করুন|place it|do it|kar do|karo)/i.test(
     text.trim(),
   );
 }
 
 export function isMessengerCancellation(text: string) {
-  return /(না|no|cancel|বাতিল|থাক|দরকার নেই)/i.test(text.trim());
+  return /(না|no|cancel|बातिल|नहीं|नही|nahin|nahi|বাতিল|থাক|দরকার নেই)/i.test(text.trim());
 }
 
 export function parsePendingMessengerOrder(value: unknown): PendingMessengerOrder | null {
@@ -954,6 +955,7 @@ export async function handleMessengerOrderFlow(args: {
     return { handled: false as const };
   }
 
+  const replyLanguage = detectMessengerReplyLanguage(args.text);
   const lastProduct = productFromMetadata(metadata.last_messenger_product);
   let product: MessengerProduct | null = null;
 
@@ -976,7 +978,12 @@ export async function handleMessengerOrderFlow(args: {
   } else if (lastProduct) {
     return {
       handled: true,
-      reply: `${lastProduct.name} অর্ডার করতে চান। কত প্যাকেট নেবেন?`,
+      reply:
+        replyLanguage === 'English'
+          ? `You want to order ${lastProduct.name}. How many packets would you like?`
+          : replyLanguage === 'Hindi'
+            ? `${lastProduct.name} order करना है। कितने packet लेने हैं?`
+            : `${lastProduct.name} অর্ডার করতে চান। কত প্যাকেট নেবেন?`,
       pending: {
         step: 'quantity',
         product_id: lastProduct.id,
@@ -998,7 +1005,12 @@ export async function handleMessengerOrderFlow(args: {
   if (!price || stock <= 0) {
     return {
       handled: true,
-      reply: `দুঃখিত, ${productDisplayName(product)} বর্তমানে অর্ডারযোগ্য নয়।`,
+      reply:
+        replyLanguage === 'English'
+          ? `Sorry, ${productDisplayName(product)} is currently unavailable for ordering.`
+          : replyLanguage === 'Hindi'
+            ? `माफ़ कीजिए, ${productDisplayName(product)} अभी order करने के लिए उपलब्ध नहीं है।`
+            : `দুঃখিত, ${productDisplayName(product)} বর্তমানে অর্ডারযোগ্য নয়।`,
       pending: null,
     };
   }
@@ -1007,7 +1019,12 @@ export async function handleMessengerOrderFlow(args: {
   if (quantity && quantity > stock) {
     return {
       handled: true,
-      reply: `দুঃখিত, বর্তমানে ${stock}টি প্যাকেটের বেশি স্টক নেই। কতটি নিতে চান?`,
+      reply:
+        replyLanguage === 'English'
+          ? `Sorry, only ${stock} packets are currently in stock. How many would you like?`
+          : replyLanguage === 'Hindi'
+            ? `माफ़ कीजिए, अभी ${stock} packet ही stock में हैं। कितने लेना है?`
+            : `দুঃখিত, বর্তমানে ${stock}টি প্যাকেটের বেশি স্টক নেই। কতটি নিতে চান?`,
       pending: {
         step: 'quantity',
         product_id: product.id,
@@ -1036,8 +1053,16 @@ export async function handleMessengerOrderFlow(args: {
       pendingOrder.step === 'saved_details_confirmation'
         ? getMessengerSavedDetailsReply(pendingOrder, cartItems, currency)
         : quantity
-          ? 'অর্ডারের জন্য আপনার নামটি লিখুন।'
-          : `${productDisplayName(product)} — ${currency}${price} প্রতি প্যাকেট। কত প্যাকেট অর্ডার করতে চান?`,
+          ? replyLanguage === 'English'
+            ? 'Please enter your name for the order.'
+            : replyLanguage === 'Hindi'
+              ? 'Order के लिए अपना नाम लिखें।'
+              : 'অর্ডারের জন্য আপনার নামটি লিখুন।'
+          : replyLanguage === 'English'
+            ? `${productDisplayName(product)} — ${currency}${price} per packet. How many packets would you like to order?`
+            : replyLanguage === 'Hindi'
+              ? `${productDisplayName(product)} — ${currency}${price} प्रति packet। कितने packet order करने हैं?`
+              : `${productDisplayName(product)} — ${currency}${price} প্রতি প্যাকেট। কত প্যাকেট অর্ডার করতে চান?`,
     pending: pendingOrder,
   };
 }
