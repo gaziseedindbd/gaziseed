@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-function safeEqual(expected: string, actual: string): boolean {
+export function safeEqual(expected: string, actual: string): boolean {
   const expectedBuffer = Buffer.from(expected);
   const actualBuffer = Buffer.from(actual);
   if (expectedBuffer.length !== actualBuffer.length) return false;
