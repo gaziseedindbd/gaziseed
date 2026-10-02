@@ -112,14 +112,18 @@ function formatOrderPaymentStatus(
   if (paymentMethod === 'cod' && paymentStatus !== 'paid') {
     const due = Number(order.payment_due_amount || order.final_amount || 0);
     return [
-      '💳 আপনার payment status',
+      language === 'English' ? '💳 Your payment status' : '💳 আপনার payment status',
       '',
       `Order: ${String(order.order_number || 'Unknown')}`,
       '✅ Payment method: Cash on Delivery (COD)',
-      '💰 Delivery-এর সময় payment করতে হবে।',
+      language === 'English'
+        ? '💰 Payment is due at delivery.'
+        : '💰 Delivery-এর সময় payment করতে হবে।',
       `Due: ${currency(country)}${due.toFixed(0)}`,
       '',
-      'Order status জানতে “order status” লিখুন।',
+      language === 'English'
+        ? 'Type “order status” to check the order status.'
+        : 'Order status জানতে “order status” লিখুন।',
     ].join('\n');
   }
 
@@ -266,8 +270,9 @@ export async function getMessengerPaymentStatusReply(args: {
     return {
       handled: true,
       reply:
-        'Payment status দেখতে আপনার linked mobile number ব্যবহার করা হবে। ' +
-        'নির্দিষ্ট order-এর জন্য Order Number (যেমন GS-IN-XXXXXXXX) এবং অর্ডারের সময় দেওয়া mobile number লিখুন।',
+        replyLanguage === 'English'
+          ? 'Your linked mobile number will be used to find the payment status. For a specific order, provide the Order Number (for example, GS-IN-XXXXXXXX) and the mobile number used when placing the order.'
+          : 'Payment status দেখতে আপনার linked mobile number ব্যবহার করা হবে। নির্দিষ্ট order-এর জন্য Order Number (যেমন GS-IN-XXXXXXXX) এবং অর্ডারের সময় দেওয়া mobile number লিখুন।',
       cashfreeOrderId,
     };
   }
@@ -276,7 +281,9 @@ export async function getMessengerPaymentStatusReply(args: {
     return {
       handled: true,
       reply:
-        'নিরাপত্তার জন্য প্রথমবার payment status দেখতে Order Number (যেমন GS-IN-XXXXXXXX) এবং অর্ডারের সময় দেওয়া mobile number একসাথে লিখুন।',
+        replyLanguage === 'English'
+          ? 'For security, on the first payment-status check, provide the Order Number (for example, GS-IN-XXXXXXXX) together with the mobile number used for the order.'
+          : 'নিরাপত্তার জন্য প্রথমবার payment status দেখতে Order Number (যেমন GS-IN-XXXXXXXX) এবং অর্ডারের সময় দেওয়া mobile number একসাথে লিখুন।',
       cashfreeOrderId,
     };
   }
