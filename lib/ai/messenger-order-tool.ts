@@ -431,14 +431,23 @@ function formatMessengerOrderCartSummary(
         ? '🛒 There are no products in the cart yet.'
         : '🛒 কার্টে এখনো কোনো পণ্য নেই।';
   }
+
   const lines = items.map(
     (item) =>
-      \`• \${item.product_name} × \${item.quantity} = \${currency}\${(item.unit_price * item.quantity).toFixed(0)}\`,
+      `• ${item.product_name} × ${item.quantity} = ${currency}${(
+        item.unit_price * item.quantity
+      ).toFixed(0)}`,
   );
-  const subtotal = items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
-  const subtotalLabel = language === 'Hindi' ? 'Subtotal' : language === 'English' ? 'Subtotal' : 'সাবটোটাল';
-  const cartLabel = language === 'Hindi' || language === 'English' ? '🛒 Cart:' : '🛒 কার্ট:';
-  return [cartLabel, ...lines, '', \`\${subtotalLabel}: \${currency}\${subtotal.toFixed(0)}\`].join('\\n');
+  const subtotal = items.reduce(
+    (sum, item) => sum + item.unit_price * item.quantity,
+    0,
+  );
+  const subtotalLabel =
+    language === 'Hindi' ? 'Subtotal' : language === 'English' ? 'Subtotal' : 'সাবটোটাল';
+  const cartLabel =
+    language === 'Hindi' || language === 'English' ? '🛒 Cart:' : '🛒 কার্ট:';
+
+  return [cartLabel, ...lines, '', `${subtotalLabel}: ${currency}${subtotal.toFixed(0)}`].join('\n');
 }
 
 function getMessengerSavedDetailsReply(
