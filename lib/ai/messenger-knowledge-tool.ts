@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  isTrustedMessengerProductMatch,
   searchMessengerProducts,
   type MessengerProduct,
 } from './messenger-product-tool';
@@ -573,8 +574,10 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
 
   if (!candidate) {
     const matches = await searchMessengerProducts(supabase, country, text, 4);
-    const productSpecificMatches = matches.filter((match) =>
-      isMessengerProductSpecificKnowledgeQuery(text, match),
+    const productSpecificMatches = matches.filter(
+      (match) =>
+        isTrustedMessengerProductMatch(match) &&
+        isMessengerProductSpecificKnowledgeQuery(text, match),
     );
     if (productSpecificMatches.length === 1) {
       candidate = productSpecificMatches[0];
