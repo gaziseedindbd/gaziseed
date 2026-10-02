@@ -22,10 +22,10 @@ function compact(value: unknown, max = 12000) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const module = body.module as keyof AIFeatureFlags;
+    const moduleName = body.module as keyof AIFeatureFlags;
     const prompt = String(body.prompt || '').trim();
 
-    if (!module || !(module in MODULES)) {
+    if (!moduleName || !(moduleName in MODULES)) {
       return NextResponse.json({ success: false, message: 'Invalid AI module' }, { status: 400 });
     }
 
