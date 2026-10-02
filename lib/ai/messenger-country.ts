@@ -18,7 +18,7 @@ function hasEnglishCountryIntent(
     return true;
   }
 
-  const countryWord = '(?:' + country + '|' + adjective + ')';
+  const countryWord = country;
 
   return (
     new RegExp('\\b(?:in|from|to|into|for|near)\\s+' + countryWord + '\\b', 'i').test(normalized) ||
@@ -26,7 +26,8 @@ function hasEnglishCountryIntent(
     new RegExp('\\b' + branchWord + '\\s+(?:delivery|branch|customer|support|catalog|store|website|site)\\b', 'i').test(normalized) ||
     new RegExp('\\b(?:delivery|shipping|support|branch|customer|catalog|store|website|site)\\s+(?:in|for|of)\\s+' + countryWord + '\\b', 'i').test(normalized) ||
     new RegExp('\\b(?:country|location)\\s*(?:is|:)?\\s+' + countryWord + '\\b', 'i').test(normalized) ||
-    new RegExp('\\b(?:customer|buyer|user)\\s+(?:from|in)\\s+' + countryWord + '\\b', 'i').test(normalized)
+    new RegExp('\\b(?:customer|buyer|user)\\s+(?:from|in)\\s+' + countryWord + '\\b', 'i').test(normalized) ||
+    new RegExp('\\b' + adjective + '\\s+(?:customer|buyer|user|branch|support|delivery|catalog|store|website|site)\\b', 'i').test(normalized)
   );
 }
 
