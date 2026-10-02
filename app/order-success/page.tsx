@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle2, ArrowRight, PackageCheck, ShieldCheck, CreditCard, Banknote } from 'lucide-react';
+import { CheckCircle2, ArrowRight, PackageCheck, ShieldCheck, CreditCard, Banknote, ShoppingBag, Truck } from 'lucide-react';
 import { useLang } from '@/components/site/language-provider';
 import { formatPrice } from '@/lib/data';
 
@@ -137,7 +137,7 @@ function OrderSuccessInner() {
                   [t('ডেলিভারিতে যাবে', 'Out for delivery'), t('কুরিয়ার আপনার প্যাকেট নিয়ে যাবে।', 'The courier will deliver your package.')],
                 ].map(([title, description], index) => (
                   <div key={title} className="flex gap-3">
-                    <span className={\`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold \${index === 0 ? 'bg-primary text-primary-foreground' : 'border border-primary/20 bg-primary/[0.05] text-primary'}\`}>{index + 1}</span>
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold \${index === 0 ? 'bg-primary text-primary-foreground' : 'border border-primary/20 bg-primary/[0.05] text-primary'}`}>{index + 1}</span>
                     <div><p className="text-sm font-semibold">{title}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p></div>
                   </div>
                 ))}
