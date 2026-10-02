@@ -700,7 +700,12 @@ export async function handleMessengerOrderFlow(args: {
       if (quantity > pending.stock) {
         return {
           handled: true,
-          reply: `দুঃখিত, বর্তমানে ${pending.stock}টি প্যাকেটের বেশি স্টক নেই। কতটি নিতে চান?`,
+          reply:
+            replyLanguage === 'Hindi'
+              ? `माफ़ कीजिए, अभी ${pending.stock} packet ही stock में हैं। कितने लेने हैं?`
+              : replyLanguage === 'English'
+                ? `Sorry, only ${pending.stock} packets are currently in stock. How many would you like?`
+                : `দুঃখিত, বর্তমানে ${pending.stock}টি প্যাকেটের বেশি স্টক নেই। কতটি নিতে চান?`,
           pending,
         };
       }
@@ -729,12 +734,7 @@ export async function handleMessengerOrderFlow(args: {
       if (customerName.length < 2) {
         return {
           handled: true,
-          reply:
-            replyLanguage === 'Hindi'
-              ? 'कृपया अपना पूरा नाम लिखें।'
-              : replyLanguage === 'English'
-                ? 'Please enter your full name.'
-                : 'দয়া করে আপনার সম্পূর্ণ নামটি লিখুন।',
+          reply: messengerOrderText(replyLanguage, 'invalid_name'),
           pending,
         };
       }
@@ -747,10 +747,10 @@ export async function handleMessengerOrderFlow(args: {
 
       return {
         handled: true,
-        reply:
-          args.country === 'BD'
-            ? 'আপনার ১১ সংখ্যার Bangladesh mobile number লিখুন।'
-            : 'আপনার ১০ সংখ্যার Indian mobile number লিখুন।',
+        reply: messengerOrderText(
+          replyLanguage,
+          args.country === 'BD' ? 'phone_bd' : 'phone_in',
+        ),
         pending: next,
       };
     }
@@ -776,10 +776,10 @@ export async function handleMessengerOrderFlow(args: {
 
       return {
         handled: true,
-        reply:
-          args.country === 'IN'
-            ? 'আপনার ৬ সংখ্যার PIN Code লিখুন।'
-            : 'আপনার সম্পূর্ণ delivery address লিখুন।',
+        reply: messengerOrderText(
+          replyLanguage,
+          args.country === 'IN' ? 'pincode' : 'address',
+        ),
         pending: next,
       };
     }
