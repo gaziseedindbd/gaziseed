@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:messenger": "rm -rf .tmp/messenger-tests && tsc -p tsconfig.messenger-tests.json && node .tmp/messenger-tests/tests/messenger-intents.test.js && rm -rf .tmp/messenger-tests"
+    "test:messenger": "rm -rf .tmp/messenger-tests && tsc -p tsconfig.messenger-tests.json && node .tmp/messenger-tests/tests/messenger-e2e.test.js && node .tmp/messenger-tests/tests/messenger-intents.test.js && rm -rf .tmp/messenger-tests"
   },
   "dependencies": {
     "browser-image-compression": "^2.0.2",
