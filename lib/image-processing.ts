@@ -19,8 +19,6 @@ export type ProcessOptions = {
   watermark?: WatermarkSettings;
 };
 
-const DEFAULT_LOGO = 'https://pfvwovplgwrsewwkkoir.supabase.co/storage/v1/object/public/product-images/site-logo-1786985837266.png';
-
 const DEFAULTS: Required<Omit<ProcessOptions, 'watermark'>> & { watermark: Required<WatermarkSettings> } = {
   maxWidth: 1600,
   maxHeight: 1600,
@@ -28,7 +26,7 @@ const DEFAULTS: Required<Omit<ProcessOptions, 'watermark'>> & { watermark: Requi
   quality: 0.82,
   watermark: {
     enabled: true,
-    logoUrl: DEFAULT_LOGO,
+    logoUrl: '',
     opacity: 0.35,
     size: 0.35,
     position: 'center',
@@ -54,7 +52,7 @@ function blobToImage(blob: Blob): Promise<HTMLImageElement> {
 async function loadLogoSafe(url: string): Promise<HTMLImageElement | null> {
   if (!url) return null;
   try {
-    const res = await fetch(url, { mode: 'cors', cache: 'force-cache' });
+    const res = await fetch(url, { mode: 'cors', cache: 'no-store' });
     if (!res.ok) throw new Error('Fetch failed');
     const blob = await res.blob();
     return await blobToImage(blob);
@@ -75,24 +73,29 @@ async function loadLogoSafe(url: string): Promise<HTMLImageElement | null> {
 
 async function resolveOptions(options?: ProcessOptions): Promise<Required<Omit<ProcessOptions, 'watermark'>> & { watermark: Required<WatermarkSettings> }> {
   let savedWatermark: WatermarkSettings = {};
+
   try {
     const { supabase } = await import('@/lib/supabase/client');
+    const { data: adminCountry } = await supabase.rpc('current_admin_country');
+    const branch = String(adminCountry).toUpperCase() === 'IN' ? 'IN' : 'BD';
+
     const { data } = await supabase
       .from('site_settings')
       .select('watermark_enabled, watermark_logo_url, watermark_opacity, watermark_size, watermark_position')
-      .eq('id', 1)
+      .eq('country_code', branch)
       .maybeSingle();
+
     if (data) {
       savedWatermark = {
         enabled: data.watermark_enabled ?? true,
-        logoUrl: data.watermark_logo_url || DEFAULT_LOGO,
+        logoUrl: data.watermark_logo_url || '',
         opacity: data.watermark_opacity ?? 0.35,
         size: data.watermark_size ?? 0.35,
         position: 'center',
       };
     }
-  } catch {
-    savedWatermark = {};
+  } catch (err) {
+    console.warn('Could not resolve current admin watermark settings:', err);
   }
 
   return {
@@ -119,10 +122,8 @@ export async function processLocalImage(file: File, options?: ProcessOptions): P
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas context not available');
 
-  // ১. মূল ছবি ড্র করা
   ctx.drawImage(mainImg, 0, 0, width, height);
 
-  // ২. ওয়াটারমার্ক স্ট্যাম্প করা
   if (opts.watermark.enabled) {
     const logoImg = await loadLogoSafe(opts.watermark.logoUrl);
     if (logoImg) {
@@ -143,7 +144,6 @@ export async function processLocalImage(file: File, options?: ProcessOptions): P
     }
   }
 
-  // ৩. প্রসেসড ব্লব থেকে ফাইল তৈরি
   const blob: Blob = await new Promise((resolve, reject) => {
     canvas.toBlob(
       (b) => b ? resolve(b) : reject(new Error('Failed to generate canvas blob')),
