@@ -519,6 +519,7 @@ export async function handleMessengerOrderFlow(args: {
   const pending = parsePendingMessengerOrder(metadata.pending_messenger_order);
   const cartItems = parseMessengerCartItems(metadata.messenger_cart_items);
   const currency = messengerCurrency(args.country);
+  const replyLanguage = detectMessengerReplyLanguage(args.text);
 
   if (pending) {
     if (pending.step === 'quantity') {
@@ -563,7 +564,12 @@ export async function handleMessengerOrderFlow(args: {
       if (customerName.length < 2) {
         return {
           handled: true,
-          reply: 'দয়া করে আপনার সম্পূর্ণ নামটি লিখুন।',
+          reply:
+            replyLanguage === 'Hindi'
+              ? 'कृपया अपना पूरा नाम लिखें।'
+              : replyLanguage === 'English'
+                ? 'Please enter your full name.'
+                : 'দয়া করে আপনার সম্পূর্ণ নামটি লিখুন।',
           pending,
         };
       }
@@ -591,8 +597,16 @@ export async function handleMessengerOrderFlow(args: {
           handled: true,
           reply:
             args.country === 'BD'
-              ? 'সঠিক Bangladesh mobile number দিন, যেমন 01XXXXXXXXX।'
-              : 'সঠিক Indian mobile number দিন, যেমন 9XXXXXXXXX।',
+              ? replyLanguage === 'Hindi'
+                ? 'सही Bangladesh mobile number दें, जैसे 01XXXXXXXXX।'
+                : replyLanguage === 'English'
+                  ? 'Please enter a valid Bangladesh mobile number, e.g. 01XXXXXXXXX.'
+                  : 'সঠিক Bangladesh mobile number দিন, যেমন 01XXXXXXXXX।'
+              : replyLanguage === 'Hindi'
+                ? 'सही Indian mobile number दें, जैसे 9XXXXXXXXX।'
+                : replyLanguage === 'English'
+                  ? 'Please enter a valid Indian mobile number, e.g. 9XXXXXXXXX.'
+                  : 'সঠিক Indian mobile number দিন, যেমন 9XXXXXXXXX।',
           pending,
         };
       }
@@ -955,7 +969,6 @@ export async function handleMessengerOrderFlow(args: {
     return { handled: false as const };
   }
 
-  const replyLanguage = detectMessengerReplyLanguage(args.text);
   const lastProduct = productFromMetadata(metadata.last_messenger_product);
   let product: MessengerProduct | null = null;
 
