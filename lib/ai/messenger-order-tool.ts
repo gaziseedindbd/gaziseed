@@ -760,18 +760,10 @@ export async function handleMessengerOrderFlow(args: {
       if (!phone) {
         return {
           handled: true,
-          reply:
-            args.country === 'BD'
-              ? replyLanguage === 'Hindi'
-                ? 'सही Bangladesh mobile number दें, जैसे 01XXXXXXXXX।'
-                : replyLanguage === 'English'
-                  ? 'Please enter a valid Bangladesh mobile number, e.g. 01XXXXXXXXX.'
-                  : 'সঠিক Bangladesh mobile number দিন, যেমন 01XXXXXXXXX।'
-              : replyLanguage === 'Hindi'
-                ? 'सही Indian mobile number दें, जैसे 9XXXXXXXXX।'
-                : replyLanguage === 'English'
-                  ? 'Please enter a valid Indian mobile number, e.g. 9XXXXXXXXX.'
-                  : 'সঠিক Indian mobile number দিন, যেমন 9XXXXXXXXX।',
+          reply: messengerOrderText(
+            replyLanguage,
+            args.country === 'BD' ? 'invalid_phone_bd' : 'invalid_phone_in',
+          ),
           pending,
         };
       }
@@ -992,13 +984,17 @@ export async function handleMessengerOrderFlow(args: {
       return {
         handled: true,
         reply:
-          'অর্ডারটি নিশ্চিত করার আগে বিস্তারিত দেখে নিন:\n\n' +
-          cartSummary +
-          '\n\n' +
-          'নাম: ' + (next.customer_name || 'সংরক্ষিত নেই') + '\n' +
-          'মোবাইল: ' + (next.customer_phone || 'সংরক্ষিত নেই') + '\n' +
-          'ঠিকানা: ' + (next.delivery_address || 'সংরক্ষিত নেই') + '\n\n' +
-          'সব ঠিক থাকলে “হ্যাঁ” লিখুন; অর্ডার বাতিল করতে “না” লিখুন।',
+          replyLanguage === 'Hindi'
+            ? 'Order details:\n\n' + cartSummary + '\n\nनाम: ' + (next.customer_name || 'saved नहीं है') +
+              '\nमोबाइल: ' + (next.customer_phone || 'saved नहीं है') + '\nपता: ' + (next.delivery_address || 'saved नहीं है') +
+              '\n\nसब सही है तो “हाँ” लिखें; cancel करने के लिए “ना” लिखें।'
+            : replyLanguage === 'English'
+              ? 'Order details:\n\n' + cartSummary + '\n\nName: ' + (next.customer_name || 'Not saved') +
+                '\nMobile: ' + (next.customer_phone || 'Not saved') + '\nAddress: ' + (next.delivery_address || 'Not saved') +
+                '\n\nType “yes” to confirm; “no” to cancel.'
+              : 'অর্ডারের বিস্তারিত:\n\n' + cartSummary + '\n\nনাম: ' + (next.customer_name || 'সংরক্ষিত নেই') +
+                '\nমোবাইল: ' + (next.customer_phone || 'সংরক্ষিত নেই') + '\nঠিকানা: ' + (next.delivery_address || 'সংরক্ষিত নেই') +
+                '\n\nসব ঠিক থাকলে “হ্যাঁ” লিখুন; অর্ডার বাতিল করতে “না” লিখুন।',
         pending: next,
       };
     }
@@ -1053,8 +1049,7 @@ export async function handleMessengerOrderFlow(args: {
       if (!isMessengerConfirmation(args.text)) {
         return {
           handled: true,
-          reply:
-            'অর্ডারটি তৈরি করতে “হ্যাঁ” এবং বাতিল করতে “না” লিখুন।',
+          reply: messengerOrderText(replyLanguage, 'invalid_confirmation'),
           pending,
         };
       }
@@ -1067,8 +1062,7 @@ export async function handleMessengerOrderFlow(args: {
       ) {
         return {
           handled: true,
-          reply:
-            'অর্ডারের কিছু তথ্য অসম্পূর্ণ আছে। আবার order শুরু করা যাক।',
+          reply: messengerOrderText(replyLanguage, 'incomplete'),
           pending: null,
         };
       }
@@ -1086,13 +1080,26 @@ export async function handleMessengerOrderFlow(args: {
           return {
             handled: true,
             reply:
-              '🇮🇳 আপনার India COD order-এর payment step প্রস্তুত।\n\n' +
-              cartSummary + '\n' +
-              `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}\n` +
-              `COD advance এখন: ${currency}${payment.advanceAmount.toFixed(0)}\n` +
-              `Delivery-এর সময় বাকি: ${currency}${payment.dueAmount.toFixed(0)}\n\n` +
-              '🔐 আগে COD advance payment সম্পন্ন করুন। Payment সফল হলে আপনার COD order automatically confirm হবে।\n\n' +
-              '🔐 Payment button নিচে দেওয়া হলো।',
+              replyLanguage === 'Hindi'
+                ? '🇮🇳 आपका India COD payment step तैयार है।\n\n' + cartSummary + '\n' +
+                  `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}\n` +
+                  `COD advance: ${currency}${payment.advanceAmount.toFixed(0)}\n` +
+                  `Delivery पर बाकी: ${currency}${payment.dueAmount.toFixed(0)}\n\n` +
+                  '🔐 पहले COD advance payment पूरा करें। Payment successful होने के बाद आपका COD order automatically confirm होगा।\n\n' +
+                  '🔐 Payment button नीचे दिया गया है।'
+                : replyLanguage === 'English'
+                  ? '🇮🇳 Your India COD payment step is ready.\n\n' + cartSummary + '\n' +
+                    `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}\n` +
+                    `COD advance: ${currency}${payment.advanceAmount.toFixed(0)}\n` +
+                    `Remaining on delivery: ${currency}${payment.dueAmount.toFixed(0)}\n\n` +
+                    '🔐 Complete the COD advance payment first. Your COD order will be confirmed automatically after successful payment.\n\n' +
+                    '🔐 The payment button is below.'
+                  : '🇮🇳 আপনার India COD order-এর payment step প্রস্তুত।\n\n' + cartSummary + '\n' +
+                    `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}\n` +
+                    `COD advance এখন: ${currency}${payment.advanceAmount.toFixed(0)}\n` +
+                    `Delivery-এর সময় বাকি: ${currency}${payment.dueAmount.toFixed(0)}\n\n` +
+                    '🔐 আগে COD advance payment সম্পন্ন করুন। Payment সফল হলে আপনার COD order automatically confirm হবে।\n\n' +
+                    '🔐 Payment button নিচে দেওয়া হলো।',
             paymentButton: {
               title: `Pay ${currency}${payment.advanceAmount.toFixed(0)} Now`,
               url: payment.paymentUrl,
