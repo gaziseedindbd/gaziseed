@@ -22,10 +22,10 @@ function compact(value: unknown, max = 12000) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const module = body.module as keyof AIFeatureFlags;
+    const moduleName = body.module as keyof AIFeatureFlags;
     const prompt = String(body.prompt || '').trim();
 
-    if (!module || !(module in MODULES)) {
+    if (!moduleName || !(moduleName in MODULES)) {
       return NextResponse.json({ success: false, message: 'Invalid AI module' }, { status: 400 });
     }
 
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     const ai = settings as AISettings;
     const flags = (ai.feature_flags || {}) as AIFeatureFlags;
     if (!ai.is_enabled) return NextResponse.json({ success: false, message: 'AI System is OFF' }, { status: 403 });
-    if (!flags[module]) return NextResponse.json({ success: false, message: `${MODULES[module]} is OFF in AI Settings` }, { status: 403 });
+    if (!flags[moduleName]) return NextResponse.json({ success: false, message: `${MODULES[moduleName]} is OFF in AI Settings` }, { status: 403 });
     if (!ai.api_key) return NextResponse.json({ success: false, message: 'AI API key is not configured' }, { status: 400 });
 
     const since = new Date();
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     let context: Record<string, unknown> = {};
 
-    if (module === 'business_analysis' || module === 'sales_analysis' || module === 'marketing_assistant' || module === 'ads_assistant') {
+    if (moduleName === 'business_analysis' || moduleName === 'sales_analysis' || moduleName === 'marketing_assistant' || moduleName === 'ads_assistant') {
       const [orders, products] = await Promise.all([
         supabase.from('orders').select('id,order_number,customer_name,order_source,grand_total,status,created_at').gte('created_at', sinceIso).order('created_at', { ascending: false }).limit(500),
         supabase.from('products').select('id,name_bn,name_en,stock,low_stock_threshold,price,sale_price,is_active').limit(500),
@@ -76,13 +76,13 @@ export async function POST(req: NextRequest) {
         order_sources: bySource,
         products: products.data || [],
       };
-    } else if (module === 'inventory_assistant') {
+    } else if (moduleName === 'inventory_assistant') {
       const { data } = await supabase.from('products').select('id,name_bn,name_en,stock,low_stock_threshold,price,sale_price,is_active').order('stock', { ascending: true }).limit(500);
       context = { products: data || [], note: 'Use the stored stock and low_stock_threshold fields. Do not invent stock levels.' };
-    } else if (module === 'customer_support_ai' || module === 'seed_expert') {
+    } else if (moduleName === 'customer_support_ai' || moduleName === 'seed_expert') {
       const { data } = await supabase.from('products').select('id,name_bn,name_en,short_description_bn,description_bn,description_en,price,sale_price,stock,is_active').eq('is_active', true).limit(300);
       context = { products: data || [] };
-    } else if (module === 'seo_aeo_assistant') {
+    } else if (moduleName === 'seo_aeo_assistant') {
       const productId = String(body.product_id || '').trim();
       if (productId) {
         const { data } = await supabase.from('products').select('*').eq('id', productId).maybeSingle();
@@ -93,12 +93,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const system = `You are the SEED BARI AI ${MODULES[module]}. Use only the supplied SEED BARI data for business facts. Never invent sales, stock, orders, customer details, ad spend, ROAS, or product claims. If required data is missing, say so clearly. Give practical, concise recommendations. For Seed Expert, distinguish general educational guidance from professional agronomic advice.`;
-    const user = `${prompt || `Perform a ${MODULES[module]} analysis for SEED BARI.`}\n\nDATA:\n${compact(context)}`;
+    const system = `You are the SEED BARI AI ${MODULES[moduleName]}. Use only the supplied SEED BARI data for business facts. Never invent sales, stock, orders, customer details, ad spend, ROAS, or product claims. If required data is missing, say so clearly. Give practical, concise recommendations. For Seed Expert, distinguish general educational guidance from professional agronomic advice.`;
+    const user = `${prompt || `Perform a ${MODULES[moduleName]} analysis for SEED BARI.`}\n\nDATA:\n${compact(context)}`;
     const adapter = getAdapter(ai.provider);
     const result = await adapter.chat({ messages: [{ role: 'system', content: system }, { role: 'user', content: user }], temperature: ai.temperature ?? undefined, max_tokens: ai.max_tokens ?? undefined }, ai);
 
-    return NextResponse.json({ success: true, module, result: result.content, model: result.model });
+    return NextResponse.json({ success: true, module: moduleName, result: result.content, model: result.model });
   } catch (error) {
     return NextResponse.json({ success: false, message: error instanceof Error ? error.message : 'AI module failed' }, { status: 500 });
   }

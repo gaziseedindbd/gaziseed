@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { getPageBySlug } from '@/lib/data';
 import { getVisitorCountry } from '@/lib/supabase/client';
 import type { Page as PageType } from '@/lib/supabase/types';
@@ -148,7 +149,7 @@ export default function PageDetail() {
     return (
       <div className="container-custom py-12 text-center">
         <h1 className="text-2xl font-bold">পেজ পাওয়া যায়নি</h1>
-        <a href="/" className="mt-4 inline-block text-primary hover:underline">হোমে ফিরুন</a>
+        <Link href="/" className="mt-4 inline-block text-primary hover:underline">হোমে ফিরুন</Link>
       </div>
     );
   }

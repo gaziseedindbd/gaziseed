@@ -105,7 +105,7 @@ export default function AdminPopupsPage() {
 
       {/* List */}
       <div className="space-y-3">
-        {popups.length === 0 && <p className="text-muted-foreground">No popups yet. Click "New Popup" to create one.</p>}
+        {popups.length === 0 && <p className="text-muted-foreground">No popups yet. Click &quot;New Popup&quot; to create one.</p>}
         {popups.map((p) => (
           <div key={p.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-4">
             <div className="flex items-center gap-4">
