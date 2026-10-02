@@ -1,5 +1,4 @@
 // Messenger AI runtime: keep seed research fallback deployable with the webhook module.
-import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { after, NextRequest, NextResponse } from 'next/server';
 import {
@@ -85,6 +84,11 @@ import {
 } from '@/lib/ai/messenger-language';
 
 import { shouldIncludeMessengerAIHistoryMessage } from '@/lib/ai/messenger-history';
+import {
+  getMessengerAIDeliveryActionStatus,
+  shouldTrackMessengerAIDeliveryStatus,
+} from '@/lib/ai/messenger-delivery-state';
+import { verifyMessengerWebhookSignature } from '@/lib/ai/messenger-webhook-security';
 
 export const dynamic = 'force-dynamic';
 
@@ -531,26 +535,6 @@ async function getMetaProfileSignal(senderId: string): Promise<MetaProfileSignal
   } catch {
     return { locale: null, countryHint: null };
   }
-}
-
-function safeEqual(expected: string, actual: string): boolean {
-  const expectedBuffer = Buffer.from(expected);
-  const actualBuffer = Buffer.from(actual);
-  if (expectedBuffer.length !== actualBuffer.length) return false;
-  return timingSafeEqual(expectedBuffer, actualBuffer);
-}
-
-function verifySignature(rawBody: string, signatureHeader: string | null): boolean {
-  if (!META_APP_SECRET || !signatureHeader) return false;
-
-  const [scheme, signature] = signatureHeader.split('=');
-  if (scheme !== 'sha256' || !signature) return false;
-
-  const expected = createHmac('sha256', META_APP_SECRET)
-    .update(rawBody, 'utf8')
-    .digest('hex');
-
-  return safeEqual(expected, signature);
 }
 
 async function hasSavedMessengerMessage(
@@ -2938,12 +2922,12 @@ async function processMessengerEvent(event: MessengerEvent) {
     try {
       await sendMessengerText(senderId, finalReply);
     } catch (sendError) {
-      if (finalReplyActionStatus === 'generated') {
+      if (shouldTrackMessengerAIDeliveryStatus(finalReplyActionStatus)) {
         try {
           await updateMessengerMessageActionStatus(
             sb,
             savedFinalReply.id,
-            'failed',
+            getMessengerAIDeliveryActionStatus('send_failure'),
           );
         } catch (statusError) {
           console.error(
@@ -2958,12 +2942,12 @@ async function processMessengerEvent(event: MessengerEvent) {
     // Meta has accepted the customer-facing reply. A database status-update
     // failure must not turn a successfully delivered reply into a false
     // provider failure/handoff.
-    if (finalReplyActionStatus === 'generated') {
+    if (shouldTrackMessengerAIDeliveryStatus(finalReplyActionStatus)) {
       try {
         await updateMessengerMessageActionStatus(
           sb,
           savedFinalReply.id,
-          'sent',
+          getMessengerAIDeliveryActionStatus('send_success'),
         );
       } catch (statusError) {
         console.error(
@@ -3035,7 +3019,7 @@ export async function POST(request: NextRequest) {
   const rawBody = await request.text();
   const signature = request.headers.get('x-hub-signature-256');
 
-  if (!verifySignature(rawBody, signature)) {
+  if (!verifyMessengerWebhookSignature(rawBody, signature, META_APP_SECRET)) {
     return NextResponse.json(
       { success: false, message: 'Invalid webhook signature' },
       { status: 401 },
