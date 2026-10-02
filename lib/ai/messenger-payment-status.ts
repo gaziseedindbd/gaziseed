@@ -359,7 +359,6 @@ export async function getMessengerPaymentStatusReply(args: {
       handled: true,
       reply: requestedOrderNumber
         ? replyLanguage === 'English'
-          ? replyLanguage === 'English'
           ? 'No Messenger order was found for this Order Number and mobile number.'
           : replyLanguage === 'Hindi'
             ? 'इस Order Number और mobile number से कोई Messenger order नहीं मिला।'
