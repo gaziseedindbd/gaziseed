@@ -1573,7 +1573,7 @@ async function processMessengerEvent(event: MessengerEvent) {
       ...resumeMetadata,
     };
 
-    const resumeReply = getMessengerOrderResumeReply(suspendedOrder);
+    const resumeReply = getMessengerOrderResumeReply(suspendedOrder, detectMessengerReplyLanguage(normalizedActionText));
     await saveMessage(sb, conversation.id, {
       role: 'assistant',
       content: resumeReply,

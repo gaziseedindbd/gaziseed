@@ -29,17 +29,17 @@ function tokenScore(text: string, hints: Set<string>): number {
 export function detectMessengerReplyLanguage(text: string): MessengerReplyLanguage {
   const value = text.trim();
 
-  // Script detection is authoritative when the customer uses native-script text.
+  // Native scripts are authoritative.
   if (/[\u0980-\u09FF]/.test(value)) return 'Bengali';
   if (/[\u0900-\u097F]/.test(value)) return 'Hindi';
 
-  // For Latin-script messages, distinguish English from common Hindi transliteration.
+  // Latin-script Hinglish/Roman-Hindi should remain Hindi even when the
+  // message is short, e.g. "2 packet chahiye", "haan", or "mujhe chahiye".
   const hindiScore = tokenScore(value, HINDI_LATIN_HINTS);
   const englishScore = tokenScore(value, ENGLISH_LATIN_HINTS);
 
-  if (hindiScore >= 2 && hindiScore > englishScore) return 'Hindi';
+  if (hindiScore > englishScore && hindiScore >= 1) return 'Hindi';
   if (englishScore > 0) return 'English';
 
-  // Neutral Latin text (brand names, SKUs, numbers) defaults to English.
   return 'English';
 }

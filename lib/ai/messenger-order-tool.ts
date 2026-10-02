@@ -303,52 +303,235 @@ export function applyMessengerCustomerProfileToPending(
   };
 }
 
+
+function messengerOrderText(
+  language: ReturnType<typeof detectMessengerReplyLanguage>,
+  key:
+    | 'name' | 'invalid_name' | 'phone_bd' | 'phone_in'
+    | 'invalid_phone_bd' | 'invalid_phone_in' | 'address' | 'invalid_address'
+    | 'pincode' | 'invalid_pincode' | 'india_address' | 'invalid_india_address'
+    | 'city' | 'invalid_city' | 'thana' | 'invalid_thana' | 'state' | 'invalid_state'
+    | 'confirmation' | 'invalid_confirmation' | 'cancel' | 'saved_details'
+    | 'saved_change' | 'saved_invalid' | 'incomplete' | 'payment' | 'payment_failed'
+    | 'order_failed' | 'order_success' | 'quantity' | 'invalid_quantity',
+): string {
+  const text = {
+    English: {
+      name: 'Please enter your name for the order.',
+      invalid_name: 'Please enter your full name.',
+      phone_bd: 'Please enter your 11-digit Bangladesh mobile number.',
+      phone_in: 'Please enter your 10-digit Indian mobile number.',
+      invalid_phone_bd: 'Please enter a valid Bangladesh mobile number, e.g. 01XXXXXXXXX.',
+      invalid_phone_in: 'Please enter a valid Indian mobile number, e.g. 9XXXXXXXXX.',
+      address: 'Please enter your complete delivery address.',
+      invalid_address: 'Please enter your complete delivery address.',
+      pincode: 'Please enter your 6-digit PIN code.',
+      invalid_pincode: 'Please enter a valid 6-digit PIN code.',
+      india_address: 'Please enter your detailed delivery address and nearby landmark.',
+      invalid_india_address: 'Please enter a detailed address and landmark.',
+      city: 'Please enter your city.',
+      invalid_city: 'Please enter a valid city name.',
+      thana: 'Please enter your thana / police station.',
+      invalid_thana: 'Please enter a valid thana / police station.',
+      state: 'Please enter your state.',
+      invalid_state: 'Please enter a valid state name.',
+      confirmation: 'Please review the order details and type “yes” to confirm or “no” to cancel.',
+      invalid_confirmation: 'Type “yes” to confirm the order or “no” to cancel.',
+      cancel: 'Okay, the order has been cancelled.',
+      saved_details: 'Your saved customer details were found. If everything is correct, type “yes”. To change them, type “change details”.',
+      saved_change: 'Okay. Please enter your name.',
+      saved_invalid: 'If everything is correct, type “yes”. To change the details, type “change details”.',
+      incomplete: 'Some order information is incomplete. Let’s start the order again.',
+      payment: '🇮🇳 Your India COD payment step is ready.',
+      payment_failed: 'Sorry, the COD advance payment link could not be created. Please try again later.',
+      order_failed: 'Sorry, the order could not be created. Please try again.',
+      order_success: '✅ Your order has been created successfully.',
+      quantity: 'How many packets would you like to order? Enter the quantity.',
+      invalid_quantity: 'How many packets would you like to order? Enter a valid quantity.',
+    },
+    Hindi: {
+      name: 'Order के लिए अपना नाम लिखें।',
+      invalid_name: 'कृपया अपना पूरा नाम लिखें।',
+      phone_bd: 'अपना 11 अंकों का Bangladesh mobile number लिखें।',
+      phone_in: 'अपना 10 अंकों का Indian mobile number लिखें।',
+      invalid_phone_bd: 'सही Bangladesh mobile number दें, जैसे 01XXXXXXXXX।',
+      invalid_phone_in: 'सही Indian mobile number दें, जैसे 9XXXXXXXXX।',
+      address: 'अपना पूरा delivery address लिखें।',
+      invalid_address: 'कृपया अपना पूरा delivery address लिखें।',
+      pincode: 'अपना 6 अंकों का PIN code लिखें।',
+      invalid_pincode: 'कृपया सही 6 अंकों का PIN code लिखें।',
+      india_address: 'अपना पूरा delivery address और पास का landmark लिखें।',
+      invalid_india_address: 'कृपया पूरा address और landmark लिखें।',
+      city: 'अपने City का नाम लिखें।',
+      invalid_city: 'कृपया सही City का नाम लिखें।',
+      thana: 'अपने Thana / Police Station का नाम लिखें।',
+      invalid_thana: 'कृपया सही Thana / Police Station का नाम लिखें।',
+      state: 'अपने State का नाम लिखें।',
+      invalid_state: 'कृपया सही State का नाम लिखें।',
+      confirmation: 'Order details check करें और confirm करने के लिए “हाँ”, cancel करने के लिए “ना” लिखें।',
+      invalid_confirmation: 'Order confirm करने के लिए “हाँ” और cancel करने के लिए “ना” लिखें।',
+      cancel: 'ठीक है, order cancel कर दिया गया है।',
+      saved_details: 'आपके saved customer details मिल गए हैं। सब सही है तो “हाँ” लिखें। बदलने के लिए “details change” लिखें।',
+      saved_change: 'ठीक है। अपना नाम लिखें।',
+      saved_invalid: 'सब सही है तो “हाँ” लिखें। Details बदलने के लिए “details change” लिखें।',
+      incomplete: 'Order की कुछ जानकारी अधूरी है। Order फिर से शुरू करते हैं।',
+      payment: '🇮🇳 आपका India COD payment step तैयार है।',
+      payment_failed: 'माफ़ कीजिए, COD advance payment link नहीं बन पाया। थोड़ी देर बाद फिर कोशिश करें।',
+      order_failed: 'माफ़ कीजिए, order नहीं बन पाया। कृपया फिर कोशिश करें।',
+      order_success: '✅ आपका order सफलतापूर्वक बन गया है।',
+      quantity: 'कितने packet order करने हैं? संख्या लिखें।',
+      invalid_quantity: 'कितने packet order करने हैं? सही संख्या लिखें।',
+    },
+    Bengali: {
+      name: 'অর্ডারের জন্য আপনার নামটি লিখুন।',
+      invalid_name: 'দয়া করে আপনার সম্পূর্ণ নামটি লিখুন।',
+      phone_bd: 'আপনার ১১ সংখ্যার Bangladesh mobile number লিখুন।',
+      phone_in: 'আপনার ১০ সংখ্যার Indian mobile number লিখুন।',
+      invalid_phone_bd: 'সঠিক Bangladesh mobile number দিন, যেমন 01XXXXXXXXX।',
+      invalid_phone_in: 'সঠিক Indian mobile number দিন, যেমন 9XXXXXXXXX।',
+      address: 'আপনার সম্পূর্ণ delivery address লিখুন।',
+      invalid_address: 'দয়া করে সম্পূর্ণ delivery address লিখুন।',
+      pincode: 'আপনার ৬ সংখ্যার PIN Code লিখুন।',
+      invalid_pincode: 'দয়া করে সঠিক ৬ সংখ্যার PIN Code লিখুন।',
+      india_address: 'আপনার বিস্তারিত delivery address ও কাছাকাছি landmark একসাথে লিখুন।',
+      invalid_india_address: 'দয়া করে বিস্তারিত address ও landmark লিখুন।',
+      city: 'আপনার City-এর নাম লিখুন।',
+      invalid_city: 'দয়া করে সঠিক City-এর নাম লিখুন।',
+      thana: 'আপনার Thana / Police Station-এর নাম লিখুন।',
+      invalid_thana: 'দয়া করে সঠিক Thana / Police Station-এর নাম লিখুন।',
+      state: 'আপনার State-এর নাম লিখুন।',
+      invalid_state: 'দয়া করে সঠিক State-এর নাম লিখুন।',
+      confirmation: 'অর্ডারটি নিশ্চিত করার আগে বিস্তারিত দেখে নিন। সব ঠিক থাকলে “হ্যাঁ” লিখুন; অর্ডার বাতিল করতে “না” লিখুন।',
+      invalid_confirmation: 'অর্ডারটি তৈরি করতে “হ্যাঁ” এবং বাতিল করতে “না” লিখুন।',
+      cancel: 'ঠিক আছে, অর্ডারটি বাতিল করা হয়েছে।',
+      saved_details: 'আপনার আগের Messenger order-এর saved details পাওয়া গেছে। সব ঠিক থাকলে “হ্যাঁ” লিখুন। তথ্য বদলাতে “তথ্য পরিবর্তন” লিখুন।',
+      saved_change: 'ঠিক আছে। আপনার নামটি লিখুন।',
+      saved_invalid: 'সব ঠিক থাকলে “হ্যাঁ” লিখুন; তথ্য বদলাতে “তথ্য পরিবর্তন” লিখুন।',
+      incomplete: 'অর্ডারের কিছু তথ্য অসম্পূর্ণ আছে। আবার order শুরু করা যাক।',
+      payment: '🇮🇳 আপনার India COD order-এর payment step প্রস্তুত।',
+      payment_failed: 'দুঃখিত, COD advance payment link তৈরি করা যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।',
+      order_failed: 'দুঃখিত, অর্ডার তৈরি করা যায়নি। দয়া করে আবার চেষ্টা করুন।',
+      order_success: '✅ আপনার অর্ডার সফলভাবে তৈরি হয়েছে।',
+      quantity: 'কত প্যাকেট অর্ডার করতে চান? সংখ্যাটি লিখুন।',
+      invalid_quantity: 'কত প্যাকেট অর্ডার করতে চান? সঠিক সংখ্যাটি লিখুন।',
+    },
+  } as const;
+  return text[language][key];
+}
+
+function formatMessengerOrderCartSummary(
+  items: MessengerCartItem[],
+  currency: string,
+  language: ReturnType<typeof detectMessengerReplyLanguage>,
+): string {
+  if (!items.length) {
+    return language === 'Hindi'
+      ? '🛒 Cart में अभी कोई product नहीं है।'
+      : language === 'English'
+        ? '🛒 There are no products in the cart yet.'
+        : '🛒 কার্টে এখনো কোনো পণ্য নেই।';
+  }
+
+  const lines = items.map(
+    (item) =>
+      `• ${item.product_name} × ${item.quantity} = ${currency}${(
+        item.unit_price * item.quantity
+      ).toFixed(0)}`,
+  );
+  const subtotal = items.reduce(
+    (sum, item) => sum + item.unit_price * item.quantity,
+    0,
+  );
+  const subtotalLabel =
+    language === 'Hindi' ? 'Subtotal' : language === 'English' ? 'Subtotal' : 'সাবটোটাল';
+  const cartLabel =
+    language === 'Hindi' || language === 'English' ? '🛒 Cart:' : '🛒 কার্ট:';
+
+  return [cartLabel, ...lines, '', `${subtotalLabel}: ${currency}${subtotal.toFixed(0)}`].join('\n');
+}
+
 function getMessengerSavedDetailsReply(
   pending: PendingMessengerOrder,
   cart: MessengerCartItem[],
   currency: string,
+  language: ReturnType<typeof detectMessengerReplyLanguage>,
 ): string {
   const orderItems = pending.quantity
     ? addPendingMessengerOrderToCart(cart, pending)
     : cart;
-
+  const summary = formatMessengerOrderCartSummary(orderItems, currency, language);
+  if (language === 'Hindi') {
+    return [
+      '✅ आपके saved Messenger order details मिल गए हैं।',
+      '',
+      summary,
+      '',
+      'नाम: ' + (pending.customer_name || 'saved नहीं है'),
+      'मोबाइल: ' + (pending.customer_phone || 'saved नहीं है'),
+      'पता: ' + (pending.delivery_address || 'saved नहीं है'),
+      '',
+      messengerOrderText(language, 'saved_details'),
+    ].join('\n');
+  }
+  if (language === 'English') {
+    return [
+      '✅ Your saved Messenger order details were found.',
+      '',
+      summary,
+      '',
+      'Name: ' + (pending.customer_name || 'Not saved'),
+      'Mobile: ' + (pending.customer_phone || 'Not saved'),
+      'Address: ' + (pending.delivery_address || 'Not saved'),
+      '',
+      messengerOrderText(language, 'saved_details'),
+    ].join('\n');
+  }
   return [
     '✅ আপনার আগের Messenger order-এর saved details পাওয়া গেছে।',
     '',
-    formatMessengerCartSummary(orderItems, currency),
+    summary,
     '',
     'নাম: ' + (pending.customer_name || 'সংরক্ষিত নেই'),
     'মোবাইল: ' + (pending.customer_phone || 'সংরক্ষিত নেই'),
     'ঠিকানা: ' + (pending.delivery_address || 'সংরক্ষিত নেই'),
     '',
-    'সব ঠিক থাকলে “হ্যাঁ” লিখুন। তথ্য বদলাতে “তথ্য পরিবর্তন” লিখুন।',
+    messengerOrderText(language, 'saved_details'),
   ].join('\n');
 }
-export function getMessengerOrderResumeReply(pending: PendingMessengerOrder): string {
-  const prefix = `আগের অর্ডারটি আবার চালু করেছি। ${pending.product_name}-এর অর্ডারটি যেখানে থেমেছিল, সেখান থেকেই চলছি।`;
+export function getMessengerOrderResumeReply(
+  pending: PendingMessengerOrder,
+  language: ReturnType<typeof detectMessengerReplyLanguage> = 'Bengali',
+): string {
+  const prefix =
+    language === 'Hindi'
+      ? `पिछला order फिर से शुरू कर दिया है। ${pending.product_name} का order जहाँ रुका था, वहीं से जारी करते हैं।`
+      : language === 'English'
+        ? `Your previous order has been resumed. We’ll continue the ${pending.product_name} order from where it stopped.`
+        : `আগের অর্ডারটি আবার চালু করেছি। ${pending.product_name}-এর অর্ডারটি যেখানে থেমেছিল, সেখান থেকেই চলছি।`;
+
   switch (pending.step) {
     case 'quantity':
-      return prefix + '\n\nকত প্যাকেট অর্ডার করতে চান? সংখ্যা লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'quantity');
     case 'name':
-      return prefix + '\n\nআপনার নামটি লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'name');
     case 'phone':
-      return prefix + '\n\nআপনার ফোন নম্বরটি লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'phone_bd');
     case 'address':
-      return prefix + '\n\nআপনার সম্পূর্ণ ডেলিভারি ঠিকানাটি লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'address');
     case 'india_pincode':
-      return prefix + '\n\nআপনার ৬ সংখ্যার PIN code লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'pincode');
     case 'india_address':
-      return prefix + '\n\nআপনার সম্পূর্ণ ঠিকানা ও কাছাকাছি landmark লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'india_address');
     case 'india_city':
-      return prefix + '\n\nআপনার City লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'city');
     case 'india_thana':
-      return prefix + '\n\nআপনার Thana লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'thana');
     case 'india_state':
-      return prefix + '\n\nআপনার State লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'state');
     case 'saved_details_confirmation':
-      return prefix + '\n\nআপনার saved customer details পাওয়া গেছে। সব ঠিক থাকলে “হ্যাঁ” লিখুন; তথ্য বদলাতে “তথ্য পরিবর্তন” লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'saved_details');
     case 'confirmation':
-      return prefix + '\n\nঅর্ডারের তথ্য নিশ্চিত করতে হ্যাঁ বা না লিখুন।';
+      return prefix + '\n\n' + messengerOrderText(language, 'confirmation');
   }
 }
 
@@ -527,12 +710,7 @@ export async function handleMessengerOrderFlow(args: {
       if (!quantity) {
         return {
           handled: true,
-          reply:
-            replyLanguage === 'Hindi'
-              ? 'कितने packet order करने हैं? संख्या लिखें।'
-              : replyLanguage === 'English'
-                ? 'How many packets would you like to order? Enter the quantity.'
-                : 'কত প্যাকেট অর্ডার করতে চান? সংখ্যাটি লিখুন।',
+          reply: messengerOrderText(replyLanguage, 'quantity'),
           pending: pending,
         };
       }
@@ -540,7 +718,12 @@ export async function handleMessengerOrderFlow(args: {
       if (quantity > pending.stock) {
         return {
           handled: true,
-          reply: `দুঃখিত, বর্তমানে ${pending.stock}টি প্যাকেটের বেশি স্টক নেই। কতটি নিতে চান?`,
+          reply:
+            replyLanguage === 'Hindi'
+              ? `माफ़ कीजिए, अभी ${pending.stock} packet ही stock में हैं। कितने लेने हैं?`
+              : replyLanguage === 'English'
+                ? `Sorry, only ${pending.stock} packets are currently in stock. How many would you like?`
+                : `দুঃখিত, বর্তমানে ${pending.stock}টি প্যাকেটের বেশি স্টক নেই। কতটি নিতে চান?`,
           pending,
         };
       }
@@ -558,12 +741,8 @@ export async function handleMessengerOrderFlow(args: {
         handled: true,
         reply:
           next.step === 'saved_details_confirmation'
-            ? getMessengerSavedDetailsReply(next, cartItems, currency)
-            : replyLanguage === 'Hindi'
-              ? 'Order के लिए अपना नाम लिखें।'
-              : replyLanguage === 'English'
-                ? 'Please enter your name for the order.'
-                : 'অর্ডারের জন্য আপনার নামটি লিখুন।',
+            ? getMessengerSavedDetailsReply(next, cartItems, currency, replyLanguage)
+            : messengerOrderText(replyLanguage, 'name'),
         pending: next,
       };
     }
@@ -573,12 +752,7 @@ export async function handleMessengerOrderFlow(args: {
       if (customerName.length < 2) {
         return {
           handled: true,
-          reply:
-            replyLanguage === 'Hindi'
-              ? 'कृपया अपना पूरा नाम लिखें।'
-              : replyLanguage === 'English'
-                ? 'Please enter your full name.'
-                : 'দয়া করে আপনার সম্পূর্ণ নামটি লিখুন।',
+          reply: messengerOrderText(replyLanguage, 'invalid_name'),
           pending,
         };
       }
@@ -591,10 +765,10 @@ export async function handleMessengerOrderFlow(args: {
 
       return {
         handled: true,
-        reply:
-          args.country === 'BD'
-            ? 'আপনার ১১ সংখ্যার Bangladesh mobile number লিখুন।'
-            : 'আপনার ১০ সংখ্যার Indian mobile number লিখুন।',
+        reply: messengerOrderText(
+          replyLanguage,
+          args.country === 'BD' ? 'phone_bd' : 'phone_in',
+        ),
         pending: next,
       };
     }
@@ -604,18 +778,10 @@ export async function handleMessengerOrderFlow(args: {
       if (!phone) {
         return {
           handled: true,
-          reply:
-            args.country === 'BD'
-              ? replyLanguage === 'Hindi'
-                ? 'सही Bangladesh mobile number दें, जैसे 01XXXXXXXXX।'
-                : replyLanguage === 'English'
-                  ? 'Please enter a valid Bangladesh mobile number, e.g. 01XXXXXXXXX.'
-                  : 'সঠিক Bangladesh mobile number দিন, যেমন 01XXXXXXXXX।'
-              : replyLanguage === 'Hindi'
-                ? 'सही Indian mobile number दें, जैसे 9XXXXXXXXX।'
-                : replyLanguage === 'English'
-                  ? 'Please enter a valid Indian mobile number, e.g. 9XXXXXXXXX.'
-                  : 'সঠিক Indian mobile number দিন, যেমন 9XXXXXXXXX।',
+          reply: messengerOrderText(
+            replyLanguage,
+            args.country === 'BD' ? 'invalid_phone_bd' : 'invalid_phone_in',
+          ),
           pending,
         };
       }
@@ -628,10 +794,10 @@ export async function handleMessengerOrderFlow(args: {
 
       return {
         handled: true,
-        reply:
-          args.country === 'IN'
-            ? 'আপনার ৬ সংখ্যার PIN Code লিখুন।'
-            : 'আপনার সম্পূর্ণ delivery address লিখুন।',
+        reply: messengerOrderText(
+          replyLanguage,
+          args.country === 'IN' ? 'pincode' : 'address',
+        ),
         pending: next,
       };
     }
@@ -641,14 +807,14 @@ export async function handleMessengerOrderFlow(args: {
       if (!/^\d{6}$/.test(pincode)) {
         return {
           handled: true,
-          reply: 'দয়া করে সঠিক ৬ সংখ্যার PIN Code লিখুন।',
+          reply: messengerOrderText(replyLanguage, 'invalid_pincode'),
           pending,
         };
       }
 
       return {
         handled: true,
-        reply: 'আপনার বিস্তারিত delivery address ও কাছাকাছি landmark একসাথে লিখুন।',
+        reply: messengerOrderText(replyLanguage, 'india_address'),
         pending: {
           ...pending,
           india_pincode: pincode,
@@ -662,14 +828,14 @@ export async function handleMessengerOrderFlow(args: {
       if (address.length < 8) {
         return {
           handled: true,
-          reply: 'দয়া করে বিস্তারিত address ও landmark লিখুন।',
+          reply: messengerOrderText(replyLanguage, 'invalid_india_address'),
           pending,
         };
       }
 
       return {
         handled: true,
-        reply: 'আপনার City-এর নাম লিখুন।',
+        reply: messengerOrderText(replyLanguage, 'city'),
         pending: {
           ...pending,
           india_address: address,
@@ -683,14 +849,14 @@ export async function handleMessengerOrderFlow(args: {
       if (city.length < 2) {
         return {
           handled: true,
-          reply: 'দয়া করে সঠিক City-এর নাম লিখুন।',
+          reply: messengerOrderText(replyLanguage, 'invalid_city'),
           pending,
         };
       }
 
       return {
         handled: true,
-        reply: 'আপনার Thana / Police Station-এর নাম লিখুন।',
+        reply: messengerOrderText(replyLanguage, 'thana'),
         pending: {
           ...pending,
           india_city: city,
@@ -704,14 +870,14 @@ export async function handleMessengerOrderFlow(args: {
       if (thana.length < 2) {
         return {
           handled: true,
-          reply: 'দয়া করে সঠিক Thana / Police Station-এর নাম লিখুন।',
+          reply: messengerOrderText(replyLanguage, 'invalid_thana'),
           pending,
         };
       }
 
       return {
         handled: true,
-        reply: 'আপনার State-এর নাম লিখুন।',
+        reply: messengerOrderText(replyLanguage, 'state'),
         pending: {
           ...pending,
           india_thana: thana,
@@ -725,7 +891,7 @@ export async function handleMessengerOrderFlow(args: {
       if (state.length < 2) {
         return {
           handled: true,
-          reply: 'দয়া করে সঠিক State-এর নাম লিখুন।',
+          reply: messengerOrderText(replyLanguage, 'invalid_state'),
           pending,
         };
       }
@@ -748,21 +914,40 @@ export async function handleMessengerOrderFlow(args: {
       const orderItems = pending.quantity
         ? addPendingMessengerOrderToCart(cartItems, pending)
         : cartItems;
-      const cartSummary = formatMessengerCartSummary(orderItems, currency);
+      const cartSummary = formatMessengerOrderCartSummary(orderItems, currency, replyLanguage);
 
       return {
         handled: true,
         reply:
-          `অর্ডারটি নিশ্চিত করার আগে বিস্তারিত দেখে নিন:\n\n` +
-          `${cartSummary}\n\n` +
-          `নাম: ${next.customer_name}\n` +
-          `মোবাইল: ${next.customer_phone}\n` +
-          `PIN Code: ${next.india_pincode}\n` +
-          `Detailed Address + Landmark: ${next.india_address}\n` +
-          `City: ${next.india_city}\n` +
-          `Thana: ${next.india_thana}\n` +
-          `State: ${next.india_state}\n\n` +
-          'সব ঠিক থাকলে “হ্যাঁ” লিখুন; অর্ডার বাতিল করতে “না” লিখুন।',
+          (replyLanguage === 'Hindi'
+            ? 'Order details:\n\n' + cartSummary + '\n\n' +
+              'नाम: ' + next.customer_name + '\n' +
+              'मोबाइल: ' + next.customer_phone + '\n' +
+              'PIN Code: ' + next.india_pincode + '\n' +
+              'Detailed Address + Landmark: ' + next.india_address + '\n' +
+              'City: ' + next.india_city + '\n' +
+              'Thana: ' + next.india_thana + '\n' +
+              'State: ' + next.india_state + '\n\n' +
+              'सब सही है तो “हाँ” लिखें; cancel करने के लिए “ना” लिखें।'
+            : replyLanguage === 'English'
+              ? 'Order details:\n\n' + cartSummary + '\n\n' +
+                'Name: ' + next.customer_name + '\n' +
+                'Mobile: ' + next.customer_phone + '\n' +
+                'PIN Code: ' + next.india_pincode + '\n' +
+                'Detailed Address + Landmark: ' + next.india_address + '\n' +
+                'City: ' + next.india_city + '\n' +
+                'Thana: ' + next.india_thana + '\n' +
+                'State: ' + next.india_state + '\n\n' +
+                'Type “yes” to confirm; “no” to cancel.'
+              : 'অর্ডারটি নিশ্চিত করার আগে বিস্তারিত দেখে নিন:\n\n' + cartSummary + '\n\n' +
+                'নাম: ' + next.customer_name + '\n' +
+                'মোবাইল: ' + next.customer_phone + '\n' +
+                'PIN Code: ' + next.india_pincode + '\n' +
+                'Detailed Address + Landmark: ' + next.india_address + '\n' +
+                'City: ' + next.india_city + '\n' +
+                'Thana: ' + next.india_thana + '\n' +
+                'State: ' + next.india_state + '\n\n' +
+                'সব ঠিক থাকলে “হ্যাঁ” লিখুন; অর্ডার বাতিল করতে “না” লিখুন।'),
         pending: next,
       };
     }
@@ -771,7 +956,7 @@ export async function handleMessengerOrderFlow(args: {
       if (isMessengerCancellation(args.text)) {
         return {
           handled: true,
-          reply: 'ঠিক আছে, অর্ডারটি বাতিল করা হয়েছে।',
+          reply: messengerOrderText(replyLanguage, 'cancel'),
           pending: null,
         };
       }
@@ -792,7 +977,7 @@ export async function handleMessengerOrderFlow(args: {
 
         return {
           handled: true,
-          reply: 'ঠিক আছে। আপনার নামটি লিখুন।',
+          reply: messengerOrderText(replyLanguage, 'saved_change'),
           pending: next,
         };
       }
@@ -800,7 +985,7 @@ export async function handleMessengerOrderFlow(args: {
       if (!isMessengerConfirmation(args.text)) {
         return {
           handled: true,
-          reply: 'সব ঠিক থাকলে “হ্যাঁ” লিখুন; তথ্য বদলাতে “তথ্য পরিবর্তন” লিখুন।',
+          reply: messengerOrderText(replyLanguage, 'saved_invalid'),
           pending,
         };
       }
@@ -812,18 +997,22 @@ export async function handleMessengerOrderFlow(args: {
       const orderItems = pending.quantity
         ? addPendingMessengerOrderToCart(cartItems, pending)
         : cartItems;
-      const cartSummary = formatMessengerCartSummary(orderItems, currency);
+      const cartSummary = formatMessengerOrderCartSummary(orderItems, currency, replyLanguage);
 
       return {
         handled: true,
         reply:
-          'অর্ডারটি নিশ্চিত করার আগে বিস্তারিত দেখে নিন:\n\n' +
-          cartSummary +
-          '\n\n' +
-          'নাম: ' + (next.customer_name || 'সংরক্ষিত নেই') + '\n' +
-          'মোবাইল: ' + (next.customer_phone || 'সংরক্ষিত নেই') + '\n' +
-          'ঠিকানা: ' + (next.delivery_address || 'সংরক্ষিত নেই') + '\n\n' +
-          'সব ঠিক থাকলে “হ্যাঁ” লিখুন; অর্ডার বাতিল করতে “না” লিখুন।',
+          replyLanguage === 'Hindi'
+            ? 'Order details:\n\n' + cartSummary + '\n\nनाम: ' + (next.customer_name || 'saved नहीं है') +
+              '\nमोबाइल: ' + (next.customer_phone || 'saved नहीं है') + '\nपता: ' + (next.delivery_address || 'saved नहीं है') +
+              '\n\nसब सही है तो “हाँ” लिखें; cancel करने के लिए “ना” लिखें।'
+            : replyLanguage === 'English'
+              ? 'Order details:\n\n' + cartSummary + '\n\nName: ' + (next.customer_name || 'Not saved') +
+                '\nMobile: ' + (next.customer_phone || 'Not saved') + '\nAddress: ' + (next.delivery_address || 'Not saved') +
+                '\n\nType “yes” to confirm; “no” to cancel.'
+              : 'অর্ডারের বিস্তারিত:\n\n' + cartSummary + '\n\nনাম: ' + (next.customer_name || 'সংরক্ষিত নেই') +
+                '\nমোবাইল: ' + (next.customer_phone || 'সংরক্ষিত নেই') + '\nঠিকানা: ' + (next.delivery_address || 'সংরক্ষিত নেই') +
+                '\n\nসব ঠিক থাকলে “হ্যাঁ” লিখুন; অর্ডার বাতিল করতে “না” লিখুন।',
         pending: next,
       };
     }
@@ -832,7 +1021,7 @@ export async function handleMessengerOrderFlow(args: {
       if (address.length < 8) {
         return {
           handled: true,
-          reply: 'দয়া করে সম্পূর্ণ delivery address লিখুন।',
+          reply: messengerOrderText(replyLanguage, 'invalid_address'),
           pending,
         };
       }
@@ -846,17 +1035,22 @@ export async function handleMessengerOrderFlow(args: {
       const orderItems = pending.quantity
         ? addPendingMessengerOrderToCart(cartItems, pending)
         : cartItems;
-      const cartSummary = formatMessengerCartSummary(orderItems, currency);
+      const cartSummary = formatMessengerOrderCartSummary(orderItems, currency, replyLanguage);
 
       return {
         handled: true,
         reply:
-          `অর্ডারটি নিশ্চিত করার আগে বিস্তারিত দেখে নিন:\n\n` +
-          `${cartSummary}\n\n` +
-          `নাম: ${next.customer_name}\n` +
-          `মোবাইল: ${next.customer_phone}\n` +
-          `ঠিকানা: ${next.delivery_address}\n\n` +
-          'সব ঠিক থাকলে “হ্যাঁ” লিখুন; অর্ডার বাতিল করতে “না” লিখুন।',
+          replyLanguage === 'Hindi'
+            ? 'Order details:\n\n' + cartSummary + '\n\nनाम: ' + next.customer_name +
+              '\nमोबाइल: ' + next.customer_phone + '\nपता: ' + next.delivery_address +
+              '\n\nसब सही है तो “हाँ” लिखें; cancel करने के लिए “ना” लिखें।'
+            : replyLanguage === 'English'
+              ? 'Order details:\n\n' + cartSummary + '\n\nName: ' + next.customer_name +
+                '\nMobile: ' + next.customer_phone + '\nAddress: ' + next.delivery_address +
+                '\n\nType “yes” to confirm; “no” to cancel.'
+              : 'অর্ডারটি নিশ্চিত করার আগে বিস্তারিত দেখে নিন:\n\n' + cartSummary +
+                '\n\nনাম: ' + next.customer_name + '\nমোবাইল: ' + next.customer_phone +
+                '\nঠিকানা: ' + next.delivery_address + '\n\nসব ঠিক থাকলে “হ্যাঁ” লিখুন; অর্ডার বাতিল করতে “না” লিখুন।',
         pending: next,
       };
     }
@@ -865,7 +1059,7 @@ export async function handleMessengerOrderFlow(args: {
       if (isMessengerCancellation(args.text)) {
         return {
           handled: true,
-          reply: 'ঠিক আছে, অর্ডারটি বাতিল করা হয়েছে।',
+          reply: messengerOrderText(replyLanguage, 'cancel'),
           pending: null,
         };
       }
@@ -873,8 +1067,7 @@ export async function handleMessengerOrderFlow(args: {
       if (!isMessengerConfirmation(args.text)) {
         return {
           handled: true,
-          reply:
-            'অর্ডারটি তৈরি করতে “হ্যাঁ” এবং বাতিল করতে “না” লিখুন।',
+          reply: messengerOrderText(replyLanguage, 'invalid_confirmation'),
           pending,
         };
       }
@@ -887,8 +1080,7 @@ export async function handleMessengerOrderFlow(args: {
       ) {
         return {
           handled: true,
-          reply:
-            'অর্ডারের কিছু তথ্য অসম্পূর্ণ আছে। আবার order শুরু করা যাক।',
+          reply: messengerOrderText(replyLanguage, 'incomplete'),
           pending: null,
         };
       }
@@ -902,19 +1094,37 @@ export async function handleMessengerOrderFlow(args: {
             deliveryAddress: pending.delivery_address,
             items: orderItems,
           });
-          const cartSummary = formatMessengerCartSummary(orderItems, currency);
+          const cartSummary = formatMessengerOrderCartSummary(orderItems, currency, replyLanguage);
           return {
             handled: true,
             reply:
-              '🇮🇳 আপনার India COD order-এর payment step প্রস্তুত।\n\n' +
-              cartSummary + '\n' +
-              `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}\n` +
-              `COD advance এখন: ${currency}${payment.advanceAmount.toFixed(0)}\n` +
-              `Delivery-এর সময় বাকি: ${currency}${payment.dueAmount.toFixed(0)}\n\n` +
-              '🔐 আগে COD advance payment সম্পন্ন করুন। Payment সফল হলে আপনার COD order automatically confirm হবে।\n\n' +
-              '🔐 Payment button নিচে দেওয়া হলো।',
+              replyLanguage === 'Hindi'
+                ? '🇮🇳 आपका India COD payment step तैयार है।\n\n' + cartSummary + '\n' +
+                  `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}\n` +
+                  `COD advance: ${currency}${payment.advanceAmount.toFixed(0)}\n` +
+                  `Delivery पर बाकी: ${currency}${payment.dueAmount.toFixed(0)}\n\n` +
+                  '🔐 पहले COD advance payment पूरा करें। Payment successful होने के बाद आपका COD order automatically confirm होगा।\n\n' +
+                  '🔐 Payment button नीचे दिया गया है।'
+                : replyLanguage === 'English'
+                  ? '🇮🇳 Your India COD payment step is ready.\n\n' + cartSummary + '\n' +
+                    `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}\n` +
+                    `COD advance: ${currency}${payment.advanceAmount.toFixed(0)}\n` +
+                    `Remaining on delivery: ${currency}${payment.dueAmount.toFixed(0)}\n\n` +
+                    '🔐 Complete the COD advance payment first. Your COD order will be confirmed automatically after successful payment.\n\n' +
+                    '🔐 The payment button is below.'
+                  : '🇮🇳 আপনার India COD order-এর payment step প্রস্তুত।\n\n' + cartSummary + '\n' +
+                    `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}\n` +
+                    `COD advance এখন: ${currency}${payment.advanceAmount.toFixed(0)}\n` +
+                    `Delivery-এর সময় বাকি: ${currency}${payment.dueAmount.toFixed(0)}\n\n` +
+                    '🔐 আগে COD advance payment সম্পন্ন করুন। Payment সফল হলে আপনার COD order automatically confirm হবে।\n\n' +
+                    '🔐 Payment button নিচে দেওয়া হলো।',
             paymentButton: {
-              title: `Pay ${currency}${payment.advanceAmount.toFixed(0)} Now`,
+              title:
+                replyLanguage === 'Hindi'
+                  ? `अभी ${currency}${payment.advanceAmount.toFixed(0)} Pay करें`
+                  : replyLanguage === 'English'
+                    ? `Pay ${currency}${payment.advanceAmount.toFixed(0)} Now`
+                    : `এখন ${currency}${payment.advanceAmount.toFixed(0)} Pay করুন`,
               url: payment.paymentUrl,
             },
             pending: null,
@@ -923,7 +1133,7 @@ export async function handleMessengerOrderFlow(args: {
           console.error('Messenger India COD payment start failed', paymentError);
           return {
             handled: true,
-            reply: 'দুঃখিত, COD advance payment link তৈরি করা যায়নি। কিছুক্ষণ পরে আবার চেষ্টা করুন।',
+            reply: messengerOrderText(replyLanguage, 'payment_failed'),
             pending,
           };
         }
@@ -950,25 +1160,27 @@ export async function handleMessengerOrderFlow(args: {
       if (!result?.success) {
         return {
           handled: true,
-          reply:
-            result?.error
-              ? `দুঃখিত, অর্ডার তৈরি করা যায়নি: ${result.error}`
-              : 'দুঃখিত, অর্ডার তৈরি করা যায়নি। দয়া করে আবার চেষ্টা করুন।',
+          reply: result?.error
+            ? (replyLanguage === 'Hindi'
+              ? `माफ़ कीजिए, order नहीं बन पाया: ${result.error}`
+              : replyLanguage === 'English'
+                ? `Sorry, the order could not be created: ${result.error}`
+                : `দুঃখিত, অর্ডার তৈরি করা যায়নি: ${result.error}`)
+            : messengerOrderText(replyLanguage, 'order_failed'),
           pending: null,
         };
       }
 
-      const cartSummary = formatMessengerCartSummary(orderItems, currency);
+      const cartSummary = formatMessengerOrderCartSummary(orderItems, currency, replyLanguage);
 
       return {
         handled: true,
         reply:
-          `✅ আপনার অর্ডার সফলভাবে তৈরি হয়েছে।\n\n` +
-          `অর্ডার নম্বর: ${result.order_number || 'পাওয়া যায়নি'}\n` +
-          `${cartSummary}\n` +
-          `Delivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\n` +
-          `Grand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\n` +
-          'অর্ডারটি GAZI SEED order system-এ যুক্ত হয়েছে।',
+          replyLanguage === 'Hindi'
+            ? `✅ आपका order सफलतापूर्वक बन गया है।\n\nOrder number: ${result.order_number || 'Not available'}\n${cartSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nOrder GAZI SEED order system में जोड़ दिया गया है।`
+            : replyLanguage === 'English'
+              ? `✅ Your order has been created successfully.\n\nOrder number: ${result.order_number || 'Not available'}\n${cartSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nThe order has been added to the GAZI SEED order system.`
+              : `✅ আপনার অর্ডার সফলভাবে তৈরি হয়েছে।\n\nঅর্ডার নম্বর: ${result.order_number || 'পাওয়া যায়নি'}\n${cartSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nঅর্ডারটি GAZI SEED order system-এ যুক্ত হয়েছে।`,
         pending: null,
       };
     }
@@ -1082,7 +1294,7 @@ export async function handleMessengerOrderFlow(args: {
     handled: true,
     reply:
       pendingOrder.step === 'saved_details_confirmation'
-        ? getMessengerSavedDetailsReply(pendingOrder, cartItems, currency)
+        ? getMessengerSavedDetailsReply(pendingOrder, cartItems, currency, replyLanguage)
         : quantity
           ? replyLanguage === 'English'
             ? 'Please enter your name for the order.'
