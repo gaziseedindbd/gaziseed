@@ -206,13 +206,14 @@ export function SiteHeader() {
           <Link
             key={link.href}
             href={link.href}
-            className={`group relative flex shrink-0 items-center rounded-[16px] font-extrabold transition-all duration-250 ${compact
-              ? 'gap-1.5 px-2 py-1.5 text-[9px] leading-none lg:px-2 lg:text-[9.5px] xl:gap-1.5 xl:px-2.5 xl:py-2 xl:text-[10px] 2xl:gap-2 2xl:px-3 2xl:py-2 2xl:text-[11px]'
-              : 'gap-2 px-4 py-2.5 text-[13px] leading-none'
-            } ${active
-              ? 'bg-gradient-to-r from-emerald-950 via-emerald-800 to-emerald-700 text-white shadow-[0_9px_22px_-13px_rgba(4,88,57,.8)] ring-1 ring-emerald-700/50'
-              : 'text-slate-700 hover:-translate-y-0.5 hover:bg-emerald-50/90 hover:text-emerald-900'
-            }`}
+            className={`group relative flex shrink-0 items-center rounded-[16px] ${country === 'BD' ? 'font-black' : 'font-extrabold'} transition-all duration-250 ${compact
+              ? country === 'BD'
+                ? 'gap-1.5 px-2 py-1.5 text-[9.5px] leading-none lg:px-2 lg:text-[10px] xl:gap-1.5 xl:px-2.5 xl:py-2 xl:text-[10.5px] 2xl:gap-2 2xl:px-3 2xl:py-2 2xl:text-[11px]'
+                : 'gap-1.5 px-2 py-1.5 text-[9px] leading-none lg:px-2 lg:text-[9.5px] xl:gap-1.5 xl:px-2.5 xl:py-2 xl:text-[10px] 2xl:gap-2 2xl:px-3 2xl:py-2 2xl:text-[11px]'
+              : country === 'BD'
+                ? 'gap-2 px-4 py-2.5 text-[13.5px] leading-none'
+                : 'gap-2 px-4 py-2.5 text-[13px] leading-none'
+            }}
           >
             <span
               className={`flex shrink-0 items-center justify-center rounded-[10px] transition-all duration-250 ${compact ? 'h-5 w-5 xl:h-5.5 xl:w-5.5' : 'h-7 w-7'} ${active
