@@ -137,6 +137,17 @@ export default function CheckoutPage() {
   }, [cart, country]);
 
   useEffect(() => {
+    // Cashfree return/verification belongs to the India checkout only.
+    // Clear stale payment state on the Bangladesh checkout so an old test
+    // cannot surface a false payment-verification error.
+    const visitorCountry = getVisitorCountry();
+    if (visitorCountry !== 'IN') {
+      localStorage.removeItem('cashfree_pending_order_id');
+      localStorage.removeItem('cashfree_pending_payment_intent_id');
+      localStorage.removeItem('cashfree_pending_payment_method');
+      return;
+    }
+
     const params = new URLSearchParams(window.location.search);
     const returnedFromCashfree = params.get('cashfree_return') === '1';
     const queryOrderId = params.get('order_id');
@@ -715,8 +726,15 @@ export default function CheckoutPage() {
                     </div>
                     <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary"><PackageCheck className="h-5 w-5" /></div>
                   </div>
-                  <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-[11px] font-black text-emerald-700 dark:text-emerald-300">
-                    <Truck className="h-3.5 w-3.5" /> {deliveryMessage}
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-[11px] font-black text-emerald-700 dark:text-emerald-300">
+                      <Truck className="h-3.5 w-3.5" /> {deliveryMessage}
+                    </div>
+                    {country === 'BD' && (
+                      <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5 text-[11px] font-black text-primary">
+                        <Banknote className="h-3.5 w-3.5" /> {t('ক্যাশ অন ডেলিভারি', 'Cash on Delivery')}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -771,7 +789,17 @@ export default function CheckoutPage() {
                   {cart.map((item) => (
                     <div key={`${item.product_id}-${item.variant_id || ''}-${item.bundle_id || ''}`} className="flex items-center gap-3">
                       <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-secondary/50">
-                        <img src={item.image || '/placeholder.svg'} alt="" className="h-full w-full object-cover" />
+                        <img
+                          src={item.image || '/placeholder.svg'}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          onError={(event) => {
+                            if (country === 'BD' && event.currentTarget.dataset.fallbackApplied !== '1') {
+                              event.currentTarget.dataset.fallbackApplied = '1';
+                              event.currentTarget.src = '/placeholder.svg';
+                            }
+                          }}
+                        />
                         <span className="absolute right-1 top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[9px] font-black text-background">{item.quantity}</span>
                       </div>
                       <div className="min-w-0 flex-1">
@@ -799,8 +827,9 @@ export default function CheckoutPage() {
                   </div>
 
                   {error && (
-                    <div role="alert" className="rounded-2xl border border-rose-200/80 bg-rose-500/10 px-4 py-3 text-xs font-bold leading-5 text-rose-700 dark:border-rose-900/60 dark:text-rose-300">
-                      {error}
+                    <div role="alert" className="flex items-start gap-2.5 rounded-2xl border border-rose-200/80 bg-rose-500/10 px-4 py-3 text-xs font-bold leading-5 text-rose-700 dark:border-rose-900/60 dark:text-rose-300">
+                      <X className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span>{error}</span>
                     </div>
                   )}
 
