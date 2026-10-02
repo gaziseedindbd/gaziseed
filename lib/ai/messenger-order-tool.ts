@@ -114,15 +114,8 @@ export function addPendingMessengerOrderToCart(
 export function formatMessengerCartSummary(
   items: MessengerCartItem[],
   currency: string,
-  language: 'English' | 'Bengali' | 'Hindi' = 'Bengali',
 ): string {
-  if (!items.length) {
-    return language === 'English'
-      ? '🛒 Cart is empty.'
-      : language === 'Hindi'
-        ? '🛒 Cart अभी खाली है।'
-        : '🛒 কার্টে এখনো কোনো পণ্য নেই।';
-  }
+  if (!items.length) return '🛒 কার্টে এখনো কোনো পণ্য নেই।';
 
   const lines = items.map(
     (item) =>
@@ -134,9 +127,10 @@ export function formatMessengerCartSummary(
     (sum, item) => sum + item.unit_price * item.quantity,
     0,
   );
-  const subtotalLabel =
-    language === 'Hindi' ? 'कुल:' : language === 'English' ? 'Subtotal:' : 'Subtotal:';
-  return ['🛒 Cart:', ...lines, '', `${subtotalLabel} ${currency}${subtotal.toFixed(0)}`].join('\n');
+
+  return ['🛒 Cart:', ...lines, '', `Subtotal: ${currency}${subtotal.toFixed(0)}`].join(
+    '\n',
+  );
 }
 
 
@@ -313,50 +307,22 @@ function getMessengerSavedDetailsReply(
   pending: PendingMessengerOrder,
   cart: MessengerCartItem[],
   currency: string,
-  language: 'English' | 'Bengali' | 'Hindi',
 ): string {
   const orderItems = pending.quantity
     ? addPendingMessengerOrderToCart(cart, pending)
     : cart;
 
-  const lines =
-    language === 'Hindi'
-      ? [
-          '✅ आपके पिछले Messenger order की saved details मिल गई हैं।',
-          '',
-          formatMessengerCartSummary(orderItems, currency, language),
-          '',
-          'नाम: ' + (pending.customer_name || 'सहेजा नहीं गया'),
-          'मोबाइल: ' + (pending.customer_phone || 'सहेजा नहीं गया'),
-          'पता: ' + (pending.delivery_address || 'सहेजा नहीं गया'),
-          '',
-          'सब सही है तो “हाँ” लिखें। जानकारी बदलने के लिए “जानकारी बदलें” लिखें।',
-        ]
-      : language === 'English'
-        ? [
-            '✅ Your saved details from the previous Messenger order were found.',
-            '',
-            formatMessengerCartSummary(orderItems, currency, language),
-            '',
-            'Name: ' + (pending.customer_name || 'Not saved'),
-            'Mobile: ' + (pending.customer_phone || 'Not saved'),
-            'Address: ' + (pending.delivery_address || 'Not saved'),
-            '',
-            'If everything is correct, reply “Yes”. To change the details, reply “Change details”.',
-          ]
-        : [
-            '✅ আপনার আগের Messenger order-এর saved details পাওয়া গেছে।',
-            '',
-            formatMessengerCartSummary(orderItems, currency, language),
-            '',
-            'নাম: ' + (pending.customer_name || 'সংরক্ষিত নেই'),
-            'মোবাইল: ' + (pending.customer_phone || 'সংরক্ষিত নেই'),
-            'ঠিকানা: ' + (pending.delivery_address || 'সংরক্ষিত নেই'),
-            '',
-            'সব ঠিক থাকলে “হ্যাঁ” লিখুন। তথ্য বদলাতে “তথ্য পরিবর্তন” লিখুন।',
-          ];
-
-  return lines.join('\n');
+  return [
+    '✅ আপনার আগের Messenger order-এর saved details পাওয়া গেছে।',
+    '',
+    formatMessengerCartSummary(orderItems, currency),
+    '',
+    'নাম: ' + (pending.customer_name || 'সংরক্ষিত নেই'),
+    'মোবাইল: ' + (pending.customer_phone || 'সংরক্ষিত নেই'),
+    'ঠিকানা: ' + (pending.delivery_address || 'সংরক্ষিত নেই'),
+    '',
+    'সব ঠিক থাকলে “হ্যাঁ” লিখুন। তথ্য বদলাতে “তথ্য পরিবর্তন” লিখুন।',
+  ].join('\n');
 }
 export function getMessengerOrderResumeReply(pending: PendingMessengerOrder): string {
   const prefix = `আগের অর্ডারটি আবার চালু করেছি। ${pending.product_name}-এর অর্ডারটি যেখানে থেমেছিল, সেখান থেকেই চলছি।`;
@@ -561,7 +527,12 @@ export async function handleMessengerOrderFlow(args: {
       if (!quantity) {
         return {
           handled: true,
-          reply: replyLanguage === 'Hindi' ? 'कितने packet order करने हैं? संख्या लिखें।' : replyLanguage === 'English' ? 'How many packets would you like to order? Enter the quantity.' : 'কত প্যাকেট অর্ডার করতে চান? সংখ্যাটি লিখুন।',
+          reply:
+            replyLanguage === 'Hindi'
+              ? 'कितने packet order करने हैं? संख्या लिखें।'
+              : replyLanguage === 'English'
+                ? 'How many packets would you like to order? Enter the quantity.'
+                : 'কত প্যাকেট অর্ডার করতে চান? সংখ্যাটি লিখুন।',
           pending: pending,
         };
       }
@@ -587,8 +558,8 @@ export async function handleMessengerOrderFlow(args: {
         handled: true,
         reply:
           next.step === 'saved_details_confirmation'
-            ? getMessengerSavedDetailsReply(next, cartItems, currency, replyLanguage)
-            : replyLanguage === 'Hindi' ? 'Order के लिए अपना नाम लिखें।' : replyLanguage === 'English' ? 'Please enter your name for the order.' : 'অর্ডারের জন্য আপনার নামটি লিখুন।',
+            ? getMessengerSavedDetailsReply(next, cartItems, currency)
+            : 'অর্ডারের জন্য আপনার নামটি লিখুন।',
         pending: next,
       };
     }
@@ -598,7 +569,12 @@ export async function handleMessengerOrderFlow(args: {
       if (customerName.length < 2) {
         return {
           handled: true,
-          reply: replyLanguage === 'Hindi' ? 'कृपया अपना पूरा नाम लिखें।' : replyLanguage === 'English' ? 'Please enter your full name.' : 'দয়া করে আপনার সম্পূর্ণ নামটি লিখুন।',
+          reply:
+            replyLanguage === 'Hindi'
+              ? 'कृपया अपना पूरा नाम लिखें।'
+              : replyLanguage === 'English'
+                ? 'Please enter your full name.'
+                : 'দয়া করে আপনার সম্পূর্ণ নামটি লিখুন।',
           pending,
         };
       }
@@ -626,8 +602,16 @@ export async function handleMessengerOrderFlow(args: {
           handled: true,
           reply:
             args.country === 'BD'
-              ? 'সঠিক Bangladesh mobile number দিন, যেমন 01XXXXXXXXX।'
-              : 'সঠিক Indian mobile number দিন, যেমন 9XXXXXXXXX।',
+              ? replyLanguage === 'Hindi'
+                ? 'सही Bangladesh mobile number दें, जैसे 01XXXXXXXXX।'
+                : replyLanguage === 'English'
+                  ? 'Please enter a valid Bangladesh mobile number, e.g. 01XXXXXXXXX.'
+                  : 'সঠিক Bangladesh mobile number দিন, যেমন 01XXXXXXXXX।'
+              : replyLanguage === 'Hindi'
+                ? 'सही Indian mobile number दें, जैसे 9XXXXXXXXX।'
+                : replyLanguage === 'English'
+                  ? 'Please enter a valid Indian mobile number, e.g. 9XXXXXXXXX.'
+                  : 'সঠিক Indian mobile number দিন, যেমন 9XXXXXXXXX।',
           pending,
         };
       }
@@ -760,7 +744,7 @@ export async function handleMessengerOrderFlow(args: {
       const orderItems = pending.quantity
         ? addPendingMessengerOrderToCart(cartItems, pending)
         : cartItems;
-      const cartSummary = formatMessengerCartSummary(orderItems, currency, replyLanguage);
+      const cartSummary = formatMessengerCartSummary(orderItems, currency);
 
       return {
         handled: true,
@@ -783,7 +767,7 @@ export async function handleMessengerOrderFlow(args: {
       if (isMessengerCancellation(args.text)) {
         return {
           handled: true,
-          reply: replyLanguage === 'Hindi' ? 'ठीक है, आपका order cancel कर दिया गया है।' : replyLanguage === 'English' ? 'Okay, the order has been cancelled.' : 'ঠিক আছে, অর্ডারটি বাতিল করা হয়েছে।',
+          reply: 'ঠিক আছে, অর্ডারটি বাতিল করা হয়েছে।',
           pending: null,
         };
       }
@@ -804,7 +788,7 @@ export async function handleMessengerOrderFlow(args: {
 
         return {
           handled: true,
-          reply: replyLanguage === 'Hindi' ? 'ठीक है। अपना नाम लिखें।' : replyLanguage === 'English' ? 'Okay. Please enter your name.' : 'ঠিক আছে। আপনার নামটি লিখুন।',
+          reply: 'ঠিক আছে। আপনার নামটি লিখুন।',
           pending: next,
         };
       }
@@ -812,7 +796,7 @@ export async function handleMessengerOrderFlow(args: {
       if (!isMessengerConfirmation(args.text)) {
         return {
           handled: true,
-          reply: replyLanguage === 'Hindi' ? 'सब सही है तो “हाँ” लिखें। जानकारी बदलने के लिए “जानकारी बदलें” लिखें।' : replyLanguage === 'English' ? 'If everything is correct, reply “Yes”. To change the details, reply “Change details”.' : 'সব ঠিক থাকলে “হ্যাঁ” লিখুন; তথ্য বদলাতে “তথ্য পরিবর্তন” লিখুন।',
+          reply: 'সব ঠিক থাকলে “হ্যাঁ” লিখুন; তথ্য বদলাতে “তথ্য পরিবর্তন” লিখুন।',
           pending,
         };
       }
@@ -824,7 +808,7 @@ export async function handleMessengerOrderFlow(args: {
       const orderItems = pending.quantity
         ? addPendingMessengerOrderToCart(cartItems, pending)
         : cartItems;
-      const cartSummary = formatMessengerCartSummary(orderItems, currency, replyLanguage);
+      const cartSummary = formatMessengerCartSummary(orderItems, currency);
 
       return {
         handled: true,
@@ -858,7 +842,7 @@ export async function handleMessengerOrderFlow(args: {
       const orderItems = pending.quantity
         ? addPendingMessengerOrderToCart(cartItems, pending)
         : cartItems;
-      const cartSummary = formatMessengerCartSummary(orderItems, currency, replyLanguage);
+      const cartSummary = formatMessengerCartSummary(orderItems, currency);
 
       return {
         handled: true,
@@ -877,7 +861,7 @@ export async function handleMessengerOrderFlow(args: {
       if (isMessengerCancellation(args.text)) {
         return {
           handled: true,
-          reply: replyLanguage === 'Hindi' ? 'ठीक है, आपका order cancel कर दिया गया है।' : replyLanguage === 'English' ? 'Okay, the order has been cancelled.' : 'ঠিক আছে, অর্ডারটি বাতিল করা হয়েছে।',
+          reply: 'ঠিক আছে, অর্ডারটি বাতিল করা হয়েছে।',
           pending: null,
         };
       }
@@ -886,7 +870,7 @@ export async function handleMessengerOrderFlow(args: {
         return {
           handled: true,
           reply:
-            replyLanguage === 'Hindi' ? 'Order बनाने के लिए “हाँ” और cancel करने के लिए “नहीं” लिखें।' : replyLanguage === 'English' ? 'Reply “Yes” to create the order or “No” to cancel it.' : 'অর্ডারটি তৈরি করতে “হ্যাঁ” এবং বাতিল করতে “না” লিখুন।',
+            'অর্ডারটি তৈরি করতে “হ্যাঁ” এবং বাতিল করতে “না” লিখুন।',
           pending,
         };
       }
@@ -900,7 +884,7 @@ export async function handleMessengerOrderFlow(args: {
         return {
           handled: true,
           reply:
-            replyLanguage === 'Hindi' ? 'Order की कुछ जानकारी अधूरी है। चलिए order फिर से शुरू करते हैं।' : replyLanguage === 'English' ? 'Some order details are incomplete. Let’s start the order again.' : 'অর্ডারের কিছু তথ্য অসম্পূর্ণ আছে। আবার order শুরু করা যাক।',
+            'অর্ডারের কিছু তথ্য অসম্পূর্ণ আছে। আবার order শুরু করা যাক।',
           pending: null,
         };
       }
@@ -914,7 +898,7 @@ export async function handleMessengerOrderFlow(args: {
             deliveryAddress: pending.delivery_address,
             items: orderItems,
           });
-          const cartSummary = formatMessengerCartSummary(orderItems, currency, replyLanguage);
+          const cartSummary = formatMessengerCartSummary(orderItems, currency);
           return {
             handled: true,
             reply:
@@ -970,7 +954,7 @@ export async function handleMessengerOrderFlow(args: {
         };
       }
 
-      const cartSummary = formatMessengerCartSummary(orderItems, currency, replyLanguage);
+      const cartSummary = formatMessengerCartSummary(orderItems, currency);
 
       return {
         handled: true,
@@ -990,6 +974,7 @@ export async function handleMessengerOrderFlow(args: {
     return { handled: false as const };
   }
 
+  const replyLanguage = detectMessengerReplyLanguage(args.text);
   const lastProduct = productFromMetadata(metadata.last_messenger_product);
   let product: MessengerProduct | null = null;
 
@@ -1094,13 +1079,13 @@ export async function handleMessengerOrderFlow(args: {
     handled: true,
     reply:
       pendingOrder.step === 'saved_details_confirmation'
-        ? getMessengerSavedDetailsReply(pendingOrder, cartItems, currency, replyLanguage)
+        ? getMessengerSavedDetailsReply(pendingOrder, cartItems, currency)
         : quantity
           ? replyLanguage === 'English'
             ? 'Please enter your name for the order.'
             : replyLanguage === 'Hindi'
               ? 'Order के लिए अपना नाम लिखें।'
-              : replyLanguage === 'Hindi' ? 'Order के लिए अपना नाम लिखें।' : replyLanguage === 'English' ? 'Please enter your name for the order.' : 'অর্ডারের জন্য আপনার নামটি লিখুন।'
+              : 'অর্ডারের জন্য আপনার নামটি লিখুন।'
           : replyLanguage === 'English'
             ? `${productDisplayName(product)} — ${currency}${price} per packet. How many packets would you like to order?`
             : replyLanguage === 'Hindi'
