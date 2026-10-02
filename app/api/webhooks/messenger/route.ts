@@ -2924,29 +2924,45 @@ async function processMessengerEvent(event: MessengerEvent) {
         knowledge_fallback: finalReply !== result.content,
         transactional_guard: transactionallyUnsafeAIReply,
         human_support_resume_guard: repeatedHumanSupportReply,
-        delivery_status: 'pending',
       },
     });
 
     try {
       await sendMessengerText(senderId, finalReply);
-
+    } catch (sendError) {
       if (finalReplyActionStatus === 'generated') {
+        try {
+          await updateMessengerMessageActionStatus(
+            sb,
+            savedFinalReply.id,
+            'failed',
+          );
+        } catch (statusError) {
+          console.error(
+            'Failed to mark Messenger AI reply delivery as failed:',
+            statusError instanceof Error ? statusError.message : 'Unknown status update error',
+          );
+        }
+      }
+      throw sendError;
+    }
+
+    // Meta has accepted the customer-facing reply. A database status-update
+    // failure must not turn a successfully delivered reply into a false
+    // provider failure/handoff.
+    if (finalReplyActionStatus === 'generated') {
+      try {
         await updateMessengerMessageActionStatus(
           sb,
           savedFinalReply.id,
           'sent',
         );
-      }
-    } catch (sendError) {
-      if (finalReplyActionStatus === 'generated') {
-        await updateMessengerMessageActionStatus(
-          sb,
-          savedFinalReply.id,
-          'failed',
+      } catch (statusError) {
+        console.error(
+          'Failed to mark Messenger AI reply delivery as sent:',
+          statusError instanceof Error ? statusError.message : 'Unknown status update error',
         );
       }
-      throw sendError;
     }
   } catch (error) {
     const reason =
