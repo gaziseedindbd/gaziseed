@@ -6,6 +6,7 @@ import { processLocalImage, processUrlImage, uploadProcessedFile } from '@/lib/i
 import { Upload, Link as LinkIcon, X, Star } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 import imageCompression from 'browser-image-compression';
+import { deleteProductImagesFromStorage } from '@/lib/storage/product-images';
 
 export type MediaUploaderProps = {
   images: string[];
@@ -14,11 +15,13 @@ export type MediaUploaderProps = {
   label?: string;
   maxImages?: number;
   recommendation?: string;
+  productId?: string | null;
 };
 
-export function MediaUploader({ images, setImages, bucket = 'product-images', label = 'পণ্যের ছবি', maxImages = 10, recommendation }: MediaUploaderProps) {
+export function MediaUploader({ images, setImages, bucket = 'product-images', label = 'পণ্যের ছবি', maxImages = 10, recommendation, productId }: MediaUploaderProps) {
   const [imageUrl, setImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Unified SEED BARI image pipeline: current General Settings watermark + resize + compression + upload.
@@ -110,7 +113,28 @@ export function MediaUploader({ images, setImages, bucket = 'product-images', la
     }
   };
 
-  const removeImage = (idx: number) => setImages(images.filter((_, i) => i !== idx));
+  const removeImage = async (idx: number) => {
+    const image = images[idx];
+    if (!image || deletingIndex !== null) return;
+
+    setDeletingIndex(idx);
+    try {
+      const result = await deleteProductImagesFromStorage(supabase, [image], bucket, productId);
+      if (result.failed.length > 0) {
+        toast('ছবি Storage থেকে মুছতে ব্যর্থ হয়েছে', 'error');
+        return;
+      }
+
+      setImages(images.filter((_, i) => i !== idx));
+      if (result.skippedReferenced.length > 0) {
+        toast('ছবিটি অন্য প্রোডাক্টেও ব্যবহার হচ্ছে, তাই Storage থেকে মুছিনি');
+      } else {
+        toast('ছবি মুছে ফেলা হয়েছে');
+      }
+    } finally {
+      setDeletingIndex(null);
+    }
+  };
   const setMain = (idx: number) => {
     const updated = [...images];
     const [img] = updated.splice(idx, 1);
@@ -141,7 +165,7 @@ export function MediaUploader({ images, setImages, bucket = 'product-images', la
               {idx === 0 && <span className="absolute left-1 top-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">Main</span>}
               <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                 {idx !== 0 && <button type="button" onClick={() => setMain(idx)} className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground"><Star className="h-3 w-3" /></button>}
-                <button type="button" onClick={() => removeImage(idx)} className="rounded bg-destructive p-1 text-destructive-foreground"><X className="h-3 w-3" /></button>
+                <button type="button" onClick={() => removeImage(idx)} disabled={deletingIndex === idx} className="rounded bg-destructive p-1 text-destructive-foreground disabled:opacity-50"><X className="h-3 w-3" /></button>
               </div>
             </div>
           ))}
