@@ -3,9 +3,10 @@
 Completed on 2026-10-02.
 
 - `package.json` now runs `eslint .` directly.
-- Added explicit `eslint.config.mjs` using the Next.js Core Web Vitals rules.
+- Added explicit `eslint.config.mjs` using the Next.js Core Web Vitals rules through a compatibility layer.
 - Added CI verification in `.github/workflows/lint.yml`.
 - Direct ESLint CI passes with the current codebase.
-- Removed the old `next.config.js` `eslint.ignoreDuringBuilds` bypass after lint verification.
+- `next.config.js` intentionally keeps `eslint.ignoreDuringBuilds: true` because the Next.js 15.5 production build on the current dependency set failed when build-time lint validation was enabled, while the standalone ESLint workflow passes successfully.
+- Runtime/application behavior is unchanged by the lint migration.
 
 Warnings remain (primarily image optimization and React Hook dependency warnings), but there are no ESLint errors in the verified codebase.
