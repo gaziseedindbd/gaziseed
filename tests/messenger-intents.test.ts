@@ -48,6 +48,7 @@ import {
   getMessengerHumanSupportQueueState,
 } from '../lib/ai/messenger-human-support';
 import {
+  classifyMessengerTransactionalReply,
   getMessengerTransactionalGuardReply,
   isUnsafeMessengerTransactionalReply,
 } from '../lib/ai/messenger-transactional-guard';
@@ -278,26 +279,51 @@ test('allows Messenger payment retry only for non-final payment states', () => {
   assert.match(formatMessengerPaymentIntentStatus('failed'), /failed/);
 });
 
-test('blocks AI-only transactional claims while allowing ordinary payment/order information', () => {
+test('classifies structured Messenger transactional risks safely', () => {
   assert.equal(
-    isUnsafeMessengerTransactionalReply('✅ আপনার অর্ডার তৈরি হয়েছে।'),
-    true,
+    classifyMessengerTransactionalReply('✅ আপনার অর্ডার তৈরি হয়েছে।'),
+    'order_success',
   );
   assert.equal(
-    isUnsafeMessengerTransactionalReply('🔐 Pay ₹90 Now - payment button নিচে দেওয়া হলো।'),
-    true,
+    classifyMessengerTransactionalReply('Your order has been processed successfully.'),
+    'order_success',
+  );
+  assert.equal(
+    classifyMessengerTransactionalReply('Your purchase is complete.'),
+    'order_success',
+  );
+  assert.equal(
+    classifyMessengerTransactionalReply('🔐 Pay ₹90 Now - payment button নিচে দেওয়া হলো।'),
+    'payment_action',
+  );
+  assert.equal(
+    classifyMessengerTransactionalReply('Please click the payment link to pay ₹90 now.'),
+    'payment_action',
+  );
+  assert.equal(
+    classifyMessengerTransactionalReply('Payment successful হয়েছে।'),
+    'payment_success',
+  );
+  assert.equal(
+    classifyMessengerTransactionalReply('Your transaction went through successfully.'),
+    'payment_success',
+  );
+  assert.equal(
+    classifyMessengerTransactionalReply('লেনদেন সফলভাবে সম্পন্ন হয়েছে।'),
+    'payment_success',
+  );
+
+  assert.equal(
+    classifyMessengerTransactionalReply('Bangladesh-এ Cash on Delivery (COD) payment গ্রহণ করি।'),
+    null,
+  );
+  assert.equal(
+    classifyMessengerTransactionalReply('অর্ডার করতে product-এর নাম লিখুন।'),
+    null,
   );
   assert.equal(
     isUnsafeMessengerTransactionalReply('Payment successful হয়েছে।'),
     true,
-  );
-  assert.equal(
-    isUnsafeMessengerTransactionalReply('Bangladesh-এ Cash on Delivery (COD) payment গ্রহণ করি।'),
-    false,
-  );
-  assert.equal(
-    isUnsafeMessengerTransactionalReply('অর্ডার করতে product-এর নাম লিখুন।'),
-    false,
   );
   assert.match(getMessengerTransactionalGuardReply(), /official order flow/);
 });
