@@ -36,8 +36,10 @@ import {
 } from '../lib/ai/messenger-intents';
 import {
   classifyMessengerProductMatch,
+  isTrustedMessengerProductMatch,
   normalizeMessengerSearchSlug,
   normalizeMessengerSearchTerm,
+  serializeMessengerProducts,
 } from '../lib/ai/messenger-product-tool';
 import {
   getBangladeshPaymentMethodReply,
@@ -129,6 +131,56 @@ test('recognizes common Messenger product spelling typos', () => {
   assert.equal(isProductListRequest('ki ki prodcut ase?'), true);
   assert.equal(isProductCatalogRequest('kono prodcut naie?'), true);
   assert.equal(isProductListRequest('ki ki prodcuts ase?'), true);
+});
+
+test('keeps similar Messenger matches out of transactional product data', () => {
+  assert.equal(
+    isTrustedMessengerProductMatch({ search_match_type: 'exact' }),
+    true,
+  );
+  assert.equal(
+    isTrustedMessengerProductMatch({ search_match_type: 'strong' }),
+    true,
+  );
+  assert.equal(
+    isTrustedMessengerProductMatch({ search_match_type: 'similar' }),
+    false,
+  );
+
+  const serialized = serializeMessengerProducts([
+    {
+      id: 'p-similar',
+      name_bn: 'লাল গোলাপ ফুলের বীজ',
+      name_en: 'Red Rose Flower Seeds',
+      slug: 'lal-golap-fuler-bij',
+      short_description: null,
+      image: null,
+      regular_price: 99,
+      sale_price: 89,
+      offer_price: null,
+      price: null,
+      stock: 25,
+      is_active: true,
+      seed_type: null,
+      variety: null,
+      season: null,
+      planting_season: null,
+      packet_weight: null,
+      germination_time: null,
+      germination_rate: null,
+      harvest_time: null,
+      country_code: 'IN',
+      search_match_type: 'similar',
+      search_match_score: 0.21,
+    },
+  ])[0];
+
+  assert.equal(serialized.transactional_data_verified, false);
+  assert.equal(serialized.effective_price, null);
+  assert.equal(serialized.stock, null);
+  assert.equal(serialized.regular_price, null);
+  assert.equal(serialized.sale_price, null);
+  assert.equal(serialized.offer_price, null);
 });
 
 test('normalizes and classifies Messenger product search matches', () => {

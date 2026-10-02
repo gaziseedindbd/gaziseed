@@ -30,6 +30,20 @@ export type MessengerProduct = {
   search_match_score?: number | null;
 };
 
+/**
+ * Exact and strong matches are safe for current price/stock/order claims.
+ * Similar matches may be shown as discovery hints, but their transactional
+ * fields must never be trusted.
+ */
+export function isTrustedMessengerProductMatch(
+  product: Pick<MessengerProduct, 'search_match_type'>,
+): boolean {
+  return (
+    product.search_match_type === 'exact' ||
+    product.search_match_type === 'strong'
+  );
+}
+
 const PRODUCT_FIELDS = [
   'id',
   'name_bn',
@@ -269,29 +283,38 @@ export async function searchMessengerProducts(
 }
 
 export function serializeMessengerProducts(products: MessengerProduct[]) {
-  return products.map((product) => ({
-    id: product.id,
-    name_bn: product.name_bn,
-    name_en: product.name_en,
-    slug: product.slug,
-    short_description: product.short_description,
-    image: product.image,
-    regular_price: product.regular_price,
-    sale_price: product.sale_price,
-    offer_price: product.offer_price,
-    effective_price: effectivePrice(product),
-    stock: product.stock,
-    is_active: product.is_active,
-    seed_type: product.seed_type,
-    variety: product.variety,
-    season: product.season,
-    planting_season: product.planting_season,
-    packet_weight: product.packet_weight,
-    germination_time: product.germination_time,
-    germination_rate: product.germination_rate,
-    harvest_time: product.harvest_time,
-    country_code: product.country_code,
-    search_match_type: product.search_match_type || null,
-    search_match_score: product.search_match_score ?? null,
-  }));
+  return products.map((product) => {
+    const transactionalDataVerified = isTrustedMessengerProductMatch(product);
+
+    return {
+      id: product.id,
+      name_bn: product.name_bn,
+      name_en: product.name_en,
+      slug: product.slug,
+      short_description: product.short_description,
+      image: product.image,
+      // Similar matches remain useful for discovery, but never expose their
+      // live price/stock to AI or customer-facing transactional formatting.
+      regular_price: transactionalDataVerified ? product.regular_price : null,
+      sale_price: transactionalDataVerified ? product.sale_price : null,
+      offer_price: transactionalDataVerified ? product.offer_price : null,
+      effective_price: transactionalDataVerified
+        ? effectivePrice(product)
+        : null,
+      stock: transactionalDataVerified ? product.stock : null,
+      is_active: product.is_active,
+      seed_type: product.seed_type,
+      variety: product.variety,
+      season: product.season,
+      planting_season: product.planting_season,
+      packet_weight: product.packet_weight,
+      germination_time: product.germination_time,
+      germination_rate: product.germination_rate,
+      harvest_time: product.harvest_time,
+      country_code: product.country_code,
+      search_match_type: product.search_match_type || null,
+      search_match_score: product.search_match_score ?? null,
+      transactional_data_verified: transactionalDataVerified,
+    };
+  });
 }

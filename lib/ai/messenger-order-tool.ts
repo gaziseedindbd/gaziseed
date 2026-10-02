@@ -1,5 +1,9 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { searchMessengerProducts, type MessengerProduct } from './messenger-product-tool';
+import {
+  isTrustedMessengerProductMatch,
+  searchMessengerProducts,
+  type MessengerProduct,
+} from './messenger-product-tool';
 import { isMessengerChangeDetailsRequest } from './messenger-intents';
 import { detectMessengerReplyLanguage } from './messenger-language';
 
@@ -1200,9 +1204,11 @@ export async function handleMessengerOrderFlow(args: {
     5,
   );
 
-  if (matches.length === 1) {
-    product = matches[0];
-  } else if (matches.length > 1) {
+  const trustedMatches = matches.filter(isTrustedMessengerProductMatch);
+
+  if (trustedMatches.length === 1) {
+    product = trustedMatches[0];
+  } else if (trustedMatches.length > 1 || matches.length > 1) {
     return {
       handled: true,
       reply:
@@ -1210,7 +1216,28 @@ export async function handleMessengerOrderFlow(args: {
           ? 'Which product would you like to order? Please enter the exact product name.'
           : replyLanguage === 'Hindi'
             ? 'आप कौन सा product order करना चाहते हैं? Product का सही नाम लिखें।'
-            : 'আপনি কোন পণ্যটি অর্ডার করতে চান? দয়া করে পণ্যের সঠিক নামটি লিখুন.',
+            : 'আপনি কোন পণ্যটি অর্ডার করতে চান? দয়া করে পণ্যের সঠিক নাম লিখুন.',
+      pending: null,
+    };
+  } else if (matches.length === 1) {
+    const similarProduct = matches[0];
+    const similarName =
+      similarProduct.name_bn ||
+      similarProduct.name_en ||
+      similarProduct.slug ||
+      'এই পণ্য';
+
+    return {
+      handled: true,
+      reply:
+        replyLanguage === 'English'
+          ? '🔎 You may be looking for ' + similarName +
+            '. Please enter the exact product name before ordering so I can verify the current price and stock.'
+          : replyLanguage === 'Hindi'
+            ? '🔎 शायद आप ' + similarName +
+              ' खोज रहे हैं। Order करने से पहले exact product name लिखें ताकि current price और stock verify किया जा सके।'
+            : '🔎 আপনি সম্ভবত ' + similarName +
+              ' খুঁজছেন। অর্ডার করার আগে সঠিক product name লিখুন, যাতে current price ও stock যাচাই করা যায়।',
       pending: null,
     };
   } else if (lastProduct) {
