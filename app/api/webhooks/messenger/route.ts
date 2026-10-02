@@ -2114,6 +2114,7 @@ async function processMessengerEvent(event: MessengerEvent) {
         externalUserId: senderId,
         country: activeCountry,
         text,
+        language: detectMessengerReplyLanguage(normalizedActionText),
         metadata: conversation.metadata,
       });
 
