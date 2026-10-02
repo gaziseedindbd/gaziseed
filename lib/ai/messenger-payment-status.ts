@@ -1,3 +1,5 @@
+import { detectMessengerReplyLanguage, type MessengerReplyLanguage } from './messenger-language';
+
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { extractMessengerPhone, normalizeMessengerPhone } from './messenger-phone';
 
@@ -36,75 +38,110 @@ function getMessengerPaymentRetryUrl(cashfreeOrderId: string | null): string | n
 
 export function formatMessengerPaymentIntentStatus(
   status: unknown,
-  language: 'English' | 'Bengali' = 'Bengali',
+  language: MessengerReplyLanguage = 'Bengali',
 ): string {
   const key = typeof status === 'string' ? status.toLowerCase() : '';
 
-  if (language === 'English') {
-    const labels: Record<string, string> = {
-      completed: '✅ Advance payment completed successfully',
-      processing: '⏳ Advance payment is being verified',
-      created: '🕒 Advance payment has not been completed yet',
-      pending: '🕒 Advance payment is still pending',
-      failed: '❌ Advance payment failed',
-      cancelled: '❌ Advance payment was cancelled',
-      canceled: '❌ Advance payment was cancelled',
-      expired: '❌ Advance payment session expired',
-    };
-    return labels[key] || 'ℹ️ The current advance payment status could not be confirmed.';
-  }
+  const labels =
+    language === 'English'
+      ? {
+          completed: '✅ Advance payment completed successfully',
+          processing: '⏳ Advance payment is being verified',
+          created: '🕒 Advance payment has not been completed yet',
+          pending: '🕒 Advance payment is still pending',
+          failed: '❌ Advance payment failed',
+          cancelled: '❌ Advance payment was cancelled',
+          canceled: '❌ Advance payment was cancelled',
+          expired: '❌ Advance payment session expired',
+        }
+      : language === 'Hindi'
+        ? {
+            completed: '✅ अग्रिम भुगतान सफलतापूर्वक पूरा हो गया है',
+            processing: '⏳ अग्रिम भुगतान सत्यापित किया जा रहा है',
+            created: '🕒 अग्रिम भुगतान अभी पूरा नहीं हुआ है',
+            pending: '🕒 अग्रिम भुगतान अभी लंबित है',
+            failed: '❌ अग्रिम भुगतान विफल हुआ',
+            cancelled: '❌ अग्रिम भुगतान रद्द किया गया',
+            canceled: '❌ अग्रिम भुगतान रद्द किया गया',
+            expired: '❌ अग्रिम भुगतान सत्र समाप्त हो गया',
+          }
+        : {
+            completed: '✅ অগ্রিম payment সফলভাবে সম্পন্ন হয়েছে',
+            processing: '⏳ অগ্রিম payment যাচাই হচ্ছে',
+            created: '🕒 অগ্রিম payment এখনো সম্পন্ন হয়নি',
+            pending: '🕒 অগ্রিম payment এখনো pending',
+            failed: '❌ অগ্রিম payment failed হয়েছে',
+            cancelled: '❌ অগ্রিম payment বাতিল হয়েছে',
+            canceled: '❌ অগ্রিম payment বাতিল হয়েছে',
+            expired: '❌ অগ্রিম payment session expired হয়েছে',
+          };
 
-  const labels: Record<string, string> = {
-    completed: '✅ অগ্রিম payment সফলভাবে সম্পন্ন হয়েছে',
-    processing: '⏳ অগ্রিম payment যাচাই হচ্ছে',
-    created: '🕒 অগ্রিম payment এখনো সম্পন্ন হয়নি',
-    pending: '🕒 অগ্রিম payment এখনো pending',
-    failed: '❌ অগ্রিম payment failed হয়েছে',
-    cancelled: '❌ অগ্রিম payment বাতিল হয়েছে',
-    canceled: '❌ অগ্রিম payment বাতিল হয়েছে',
-    expired: '❌ অগ্রিম payment session expired হয়েছে',
-  };
-  return labels[key] || 'ℹ️ অগ্রিম payment-এর বর্তমান status নিশ্চিতভাবে পাওয়া যায়নি';
+  const fallback =
+    language === 'English'
+      ? 'ℹ️ The current advance payment status could not be confirmed.'
+      : language === 'Hindi'
+        ? 'ℹ️ वर्तमान अग्रिम भुगतान स्थिति की पुष्टि नहीं हो सकी।'
+        : 'ℹ️ অগ্রিম payment-এর বর্তমান status নিশ্চিতভাবে পাওয়া যায়নি';
+
+  return labels[key as keyof typeof labels] || fallback;
 }
 
 function formatOrderPaymentStatus(
   order: Record<string, unknown>,
   paymentIntentStatus: unknown,
   country: MessengerPaymentStatusCountry,
-  language: 'English' | 'Bengali',
+  language: MessengerReplyLanguage,
 ): string {
   const paymentMethod =
     typeof order.payment_method === 'string' ? order.payment_method.toLowerCase() : '';
   const paymentStatus =
     typeof order.payment_status === 'string' ? order.payment_status.toLowerCase() : '';
 
+  const isEnglish = language === 'English';
+  const isHindi = language === 'Hindi';
+
   if (paymentIntentStatus) {
     const intentReply = formatMessengerPaymentIntentStatus(paymentIntentStatus, language);
     const advance = Number(order.payment_advance_amount || 0);
     const due = Number(order.payment_due_amount || 0);
     const lines = [
-      language === 'English' ? '💳 Your payment status' : '💳 আপনার payment status',
+      isEnglish
+        ? '💳 Your payment status'
+        : isHindi
+          ? '💳 आपका payment status'
+          : '💳 আপনার payment status',
       '',
       `Order: ${String(order.order_number || 'Unknown')}`,
       intentReply,
     ];
 
     if (advance > 0) {
-      lines.push(`Advance: ${currency(country)}${advance.toFixed(0)}`);
+      lines.push(
+        isEnglish
+          ? `Advance: ${currency(country)}${advance.toFixed(0)}`
+          : isHindi
+            ? `Advance: ${currency(country)}${advance.toFixed(0)}`
+            : `Advance: ${currency(country)}${advance.toFixed(0)}`,
+      );
     }
+
     if (due > 0) {
       lines.push(
-        language === 'English'
+        isEnglish
           ? `Due at delivery: ${currency(country)}${due.toFixed(0)}`
-          : `Delivery-এর সময় বাকি: ${currency(country)}${due.toFixed(0)}`,
+          : isHindi
+            ? `डिलीवरी के समय बाकी: ${currency(country)}${due.toFixed(0)}`
+            : `Delivery-এর সময় বাকি: ${currency(country)}${due.toFixed(0)}`,
       );
     }
 
     lines.push(
       '',
-      language === 'English'
+      isEnglish
         ? 'Type “order status” to check the order status.'
-        : 'Order status জানতে “order status” লিখুন。',
+        : isHindi
+          ? 'Order status देखने के लिए “order status” लिखें।'
+          : 'Order status জানতে “order status” লিখুন।',
     );
     return lines.join('\n');
   }
@@ -112,31 +149,45 @@ function formatOrderPaymentStatus(
   if (paymentMethod === 'cod' && paymentStatus !== 'paid') {
     const due = Number(order.payment_due_amount || order.final_amount || 0);
     return [
-      language === 'English' ? '💳 Your payment status' : '💳 আপনার payment status',
+      isEnglish
+        ? '💳 Your payment status'
+        : isHindi
+          ? '💳 आपका payment status'
+          : '💳 আপনার payment status',
       '',
       `Order: ${String(order.order_number || 'Unknown')}`,
       '✅ Payment method: Cash on Delivery (COD)',
-      language === 'English'
+      isEnglish
         ? '💰 Payment is due at delivery.'
-        : '💰 Delivery-এর সময় payment করতে হবে।',
+        : isHindi
+          ? '💰 भुगतान डिलीवरी के समय करना है।'
+          : '💰 Delivery-এর সময় payment করতে হবে।',
       `Due: ${currency(country)}${due.toFixed(0)}`,
       '',
-      language === 'English'
+      isEnglish
         ? 'Type “order status” to check the order status.'
-        : 'Order status জানতে “order status” লিখুন।',
+        : isHindi
+          ? 'Order status देखने के लिए “order status” लिखें।'
+          : 'Order status জানতে “order status” লিখুন।',
     ].join('\n');
   }
 
   return [
-    language === 'English' ? '💳 Your payment status' : '💳 আপনার payment status',
+    isEnglish
+      ? '💳 Your payment status'
+      : isHindi
+        ? '💳 आपका payment status'
+        : '💳 আপনার payment status',
     '',
     `Order: ${String(order.order_number || 'Unknown')}`,
     `Payment: ${paymentStatus || 'unknown'}`,
     `Total: ${currency(country)}${Number(order.final_amount || 0).toFixed(0)}`,
     '',
-    language === 'English'
+    isEnglish
       ? 'Type “order status” to check the order status.'
-      : 'Order status জানতে “order status” লিখুন।',
+      : isHindi
+        ? 'Order status देखने के लिए “order status” लिखें।'
+        : 'Order status জানতে “order status” লিখুন।',
   ].join('\n');
 }
 
@@ -146,7 +197,7 @@ export async function getMessengerPaymentStatusReply(args: {
   externalUserId: string;
   country: MessengerPaymentStatusCountry;
   text: string;
-  language?: 'English' | 'Bengali';
+  language?: MessengerReplyLanguage;
   metadata?: Record<string, unknown> | null;
 }): Promise<{
   handled: boolean;
@@ -155,8 +206,7 @@ export async function getMessengerPaymentStatusReply(args: {
   cashfreeOrderId?: string | null;
   paymentRetryButton?: { title: string; url: string };
 }> {
-  const replyLanguage =
-    args.language || (/^[\s\p{P}\p{N}A-Za-z]+$/u.test(args.text) ? 'English' : 'Bengali');
+  const replyLanguage = args.language || detectMessengerReplyLanguage(args.text);
   const requestedOrderNumber = parseOrderNumber(args.text);
   const metadataPayment = args.metadata?.messenger_payment;
   const metadataPaymentCountry =
@@ -309,11 +359,16 @@ export async function getMessengerPaymentStatusReply(args: {
       handled: true,
       reply: requestedOrderNumber
         ? replyLanguage === 'English'
+          ? replyLanguage === 'English'
           ? 'No Messenger order was found for this Order Number and mobile number.'
-          : 'এই Order Number এবং mobile number-এর সাথে কোনো Messenger order পাওয়া যায়নি।'
+          : replyLanguage === 'Hindi'
+            ? 'इस Order Number और mobile number से कोई Messenger order नहीं मिला।'
+            : 'এই Order Number এবং mobile number-এর সাথে কোনো Messenger order পাওয়া যায়নি।'
         : replyLanguage === 'English'
           ? 'No Messenger order was found for your linked mobile number.'
-          : 'আপনার linked mobile number-এর সাথে কোনো Messenger order পাওয়া যায়নি।',
+          : replyLanguage === 'Hindi'
+            ? 'आपके linked mobile number से कोई Messenger order नहीं मिला।'
+            : 'আপনার linked mobile number-এর সাথে কোনো Messenger order পাওয়া যায়নি।',
       cashfreeOrderId,
     };
   }
