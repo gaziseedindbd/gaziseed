@@ -1,9 +1,11 @@
 # Next.js 15 lint cleanup
 
-Deferred separately from the Next.js 15 upgrade.
+Completed on 2026-10-02.
 
-- `package.json` still uses `next lint`.
-- `next.config.js` currently has `eslint.ignoreDuringBuilds: true`.
-- Do not change the lint command until an explicit ESLint configuration is established and `npm run lint` can be verified safely.
+- `package.json` now runs `eslint .` directly.
+- Added explicit `eslint.config.mjs` using the Next.js Core Web Vitals rules.
+- Added CI verification in `.github/workflows/lint.yml`.
+- Direct ESLint CI passes with the current codebase.
+- Removed the old `next.config.js` `eslint.ignoreDuringBuilds` bypass after lint verification.
 
-This file is only a tracking note and does not affect application runtime or production behavior.
+Warnings remain (primarily image optimization and React Hook dependency warnings), but there are no ESLint errors in the verified codebase.
