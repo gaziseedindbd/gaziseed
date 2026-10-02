@@ -2665,7 +2665,9 @@ async function processMessengerEvent(event: MessengerEvent) {
     isMessengerDeliveryPolicyQuestion(normalizedActionText)
       ? getMessengerDeliveryPolicy(sb, activeCountry)
       : Promise.resolve(null),
-    Promise.resolve(''),
+    isGeneralSeedAdviceRequest(normalizedActionText)
+      ? getWebSeedContext(normalizedActionText)
+      : Promise.resolve(''),
   ]);
 
   if (
