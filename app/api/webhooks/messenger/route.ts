@@ -83,6 +83,8 @@ import {
   type MessengerReplyLanguage,
 } from '@/lib/ai/messenger-language';
 
+import { shouldIncludeMessengerAIHistoryMessage } from '@/lib/ai/messenger-history';
+
 export const dynamic = 'force-dynamic';
 
 const WEBHOOK_VERIFY_TOKEN =
@@ -1038,7 +1040,7 @@ async function getRecentMessages(
 
   if (error) throw error;
 
-  const recentMessages = data || [];
+  const recentMessages = (data || []).filter(shouldIncludeMessengerAIHistoryMessage);
   const filteredMessages = options?.excludeClosedHumanSupportMessages
     ? recentMessages.filter((message) => {
         const isQueueArtifact =
