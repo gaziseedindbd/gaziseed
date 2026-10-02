@@ -78,6 +78,10 @@ import {
 import {
   getMessengerPaymentStatusReply,
 } from '@/lib/ai/messenger-payment-status';
+import {
+  detectMessengerReplyLanguage,
+  type MessengerReplyLanguage,
+} from '@/lib/ai/messenger-language';
 
 export const dynamic = 'force-dynamic';
 
@@ -139,17 +143,6 @@ function isSeedKnowledgeRequest(text: string): boolean {
   return /(seed|seeds|বীজ|চারা|গাছ|ফসল|সবজি|ফুল|বাগান|কৃষি|চাষ|রোপণ|বপন|অঙ্কুরোদগম|germination|sowing|planting|cultivation|variety|season|fertilizer|সার|মাটি|soil)/i.test(
     normalized,
   );
-}
-
-type MessengerReplyLanguage = 'English' | 'Bengali';
-
-function detectMessengerReplyLanguage(text: string): MessengerReplyLanguage {
-  const bengaliChars = (text.match(/[\u0980-\u09FF]/g) || []).length;
-  const latinChars = (text.match(/[A-Za-z]/g) || []).length;
-
-  if (bengaliChars > 0 && bengaliChars >= latinChars) return 'Bengali';
-  if (latinChars > 0) return 'English';
-  return 'Bengali';
 }
 
 function isGeneralSeedAdviceRequest(text: string): boolean {
@@ -227,16 +220,29 @@ function formatMessengerCatalogReply(
   text: string,
   products: Array<Record<string, unknown>>,
   country: CountryCode,
+  language: MessengerReplyLanguage = detectMessengerReplyLanguage(text),
 ): string {
   const currency = formatMessengerCurrency(country);
+  const english = language === 'English';
+  const hindi = language === 'Hindi';
+
+  const displayName = (product: Record<string, unknown>) =>
+    english || hindi
+      ? ((typeof product.name_en === 'string' && product.name_en) ||
+          (typeof product.name_bn === 'string' && product.name_bn) ||
+          (typeof product.slug === 'string' && product.slug) ||
+          (hindi ? 'उत्पाद' : 'Product'))
+      : formatMessengerProductName(product);
 
   if (!products.length) {
+    if (english) return 'Sorry, no matching active product was found in this country.';
+    if (hindi) return 'माफ़ कीजिए, इस देश में कोई matching active product नहीं मिला।';
     return 'দুঃখিত, এই country-তে matching কোনো active product পাওয়া যায়নি।';
   }
 
   if (!isProductListRequest(text) && products.length === 1) {
     const product = products[0];
-    const name = formatMessengerProductName(product);
+    const name = displayName(product);
     const price =
       typeof product.effective_price === 'number'
         ? product.effective_price
@@ -252,8 +258,28 @@ function formatMessengerCatalogReply(
 
     const prefix =
       matchType === 'similar'
-        ? '🔎 আপনি সম্ভবত এই পণ্যটি খুঁজছেন:'
+        ? english
+          ? '🔎 You may be looking for:'
+          : hindi
+            ? '🔎 शायद आप यह उत्पाद खोज रहे हैं:'
+            : '🔎 আপনি সম্ভবত এই পণ্যটি খুঁজছেন:'
         : '🌱';
+
+    if (english) {
+      return (
+        `${prefix} ${name}\n\n` +
+        `💰 Price: ${currency}${price} per packet\n` +
+        `📦 Stock: ${stock} packets`
+      );
+    }
+
+    if (hindi) {
+      return (
+        `${prefix} ${name}\n\n` +
+        `💰 कीमत: ${currency}${price} प्रति पैकेट\n` +
+        `📦 स्टॉक: ${stock} पैकेट`
+      );
+    }
 
     return (
       `${prefix} ${name}\n\n` +
@@ -278,17 +304,33 @@ function formatMessengerCatalogReply(
   });
 
   const formatLine = (product: Record<string, unknown>) => {
-    const name = formatMessengerProductName(product);
+    const name = displayName(product);
     const price =
       typeof product.effective_price === 'number'
         ? `${currency}${product.effective_price}`
-        : 'দাম জানা নেই';
+        : english
+          ? 'Price unavailable'
+          : hindi
+            ? 'कीमत उपलब्ध नहीं'
+            : 'দাম জানা নেই';
     const stock =
       typeof product.stock === 'number'
-        ? `${product.stock} প্যাকেট`
-        : 'স্টক তথ্য নেই';
+        ? english
+          ? `${product.stock} packets`
+          : hindi
+            ? `${product.stock} पैकेट`
+            : `${product.stock} প্যাকেট`
+        : english
+          ? 'Stock unavailable'
+          : hindi
+            ? 'स्टॉक उपलब्ध नहीं'
+            : 'স্টক তথ্য নেই';
 
-    return `• ${name} — ${price} — স্টক: ${stock}`;
+    return english
+      ? `• ${name} — ${price} — Stock: ${stock}`
+      : hindi
+        ? `• ${name} — ${price} — स्टॉक: ${stock}`
+        : `• ${name} — ${price} — স্টক: ${stock}`;
   };
 
   const sections: string[] = [];
@@ -298,8 +340,29 @@ function formatMessengerCatalogReply(
 
   if (similarProducts.length) {
     sections.push(
-      '🔎 সম্ভাব্য similar products:\n' +
+      (english
+        ? '🔎 Potential similar products:'
+        : hindi
+          ? '🔎 संभावित similar products:'
+          : '🔎 সম্ভাব্য similar products:') +
+      '\n' +
       similarProducts.slice(0, 6).map(formatLine).join('\n'),
+    );
+  }
+
+  if (english) {
+    return (
+      '🌱 Matching GAZI SEED products:\n\n' +
+      sections.join('\n\n') +
+      '\n\nFor price, stock, or ordering information, type the product name.'
+    );
+  }
+
+  if (hindi) {
+    return (
+      '🌱 GAZI SEED के matching products:\n\n' +
+      sections.join('\n\n') +
+      '\n\nकीमत, स्टॉक या ऑर्डर की जानकारी के लिए product का नाम लिखें।'
     );
   }
 
@@ -2614,6 +2677,7 @@ async function processMessengerEvent(event: MessengerEvent) {
       normalizedActionText,
       products as Array<Record<string, unknown>>,
       activeCountry,
+      detectMessengerReplyLanguage(normalizedActionText),
     );
 
     if (products.length === 1) {
@@ -2703,7 +2767,7 @@ async function processMessengerEvent(event: MessengerEvent) {
   const replyLanguage = detectMessengerReplyLanguage(normalizedActionText);
   const systemPrompt =
     'You are GAZI SEED customer support AI on Facebook Messenger. ' +
-    `Reply in exactly the same language/script as the customer\'s latest message. The required reply language for this turn is ${replyLanguage}. If the latest message is in English or English-only Latin script, answer in English. If it is in Bengali script, answer in Bengali. Do not switch to Bengali merely because product names, catalog fields, or retrieved context are in Bengali. Translate the surrounding explanation into the required reply language while preserving verified product names where useful. ` +
+    `Reply in exactly the same language/script as the customer\'s latest message. The required reply language for this turn is ${replyLanguage}. English questions must receive English answers, Bengali questions must receive Bengali answers, and Hindi questions must receive Hindi answers. For Latin-script Hindi/transliterated Hindi, answer in Hindi as well. Never switch languages merely because product names, catalog fields, or retrieved context use another language. Translate the surrounding explanation into the required reply language while preserving verified product names where useful. ` +
     'The previous human-support request may already be closed. When human_support_state is closed, treat the current customer message as a fresh AI turn and do not repeat, quote, or imitate any earlier human-support waiting/active-support message. Only use a human-support waiting response when the webhook hard-stop has explicitly triggered it. ' +
     `The verified customer country is ${activeCountry}. Only use the catalog data for that country. ` +
     'Use ONLY the supplied GAZI SEED product data for current GAZI SEED prices, stock, offers, product lists, and product facts. For product-list questions, list the available products for the verified country from PRODUCT DATA. For price or stock questions, answer from PRODUCT DATA when a matching product is present; if it is not present for the verified country, say it is not available in that country rather than using another country. ' +
