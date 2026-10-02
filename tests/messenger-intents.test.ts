@@ -61,6 +61,7 @@ import {
 import {
   getMessengerRateLimitReply,
   hashMessengerMessage,
+  resolveMessengerRateLimitCountry,
 } from '../lib/ai/messenger-rate-limit';
 import {
   extractMessengerPhone,
@@ -540,6 +541,45 @@ test('maps Bangladesh human-support queue states', () => {
   assert.equal(getMessengerHumanSupportQueueState('resolved'), 'closed');
   assert.equal(getMessengerHumanSupportQueueState('cancelled'), 'closed');
 });
+
+test('keeps pre-verification rate limiting in a neutral country state', () => {
+  assert.equal(
+    resolveMessengerRateLimitCountry({
+      quickReplyCountry: null,
+      detectedCountry: null,
+      verifiedCountry: null,
+    }),
+    'UNKNOWN',
+  );
+
+  assert.equal(
+    resolveMessengerRateLimitCountry({
+      quickReplyCountry: null,
+      detectedCountry: null,
+      verifiedCountry: 'IN',
+    }),
+    'IN',
+  );
+
+  assert.equal(
+    resolveMessengerRateLimitCountry({
+      quickReplyCountry: 'BD',
+      detectedCountry: 'IN',
+      verifiedCountry: 'IN',
+    }),
+    'BD',
+  );
+
+  assert.equal(
+    resolveMessengerRateLimitCountry({
+      quickReplyCountry: null,
+      detectedCountry: 'IN',
+      verifiedCountry: null,
+    }),
+    'IN',
+  );
+});
+
 
 test('provides deterministic Messenger abuse-protection helpers', () => {
   assert.equal(hashMessengerMessage('hello'), hashMessengerMessage('hello'));
