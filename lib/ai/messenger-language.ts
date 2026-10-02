@@ -1,7 +1,8 @@
 export type MessengerReplyLanguage = 'English' | 'Bengali' | 'Hindi';
 
 const HINDI_LATIN_HINTS = new Set([
-  'kaise', 'kya', 'hai', 'hain', 'ka', 'ki', 'ke', 'ko', 'mein', 'me',
+  'kaise', 'kya', 'hai', 'hain', 'ka', 'ki', 'ke',
+  'haan', 'han', 'nahi', 'nahin', 'theek', 'sahi', 'ko', 'mein', 'me',
   'se', 'par', 'kab', 'kahan', 'kahaan', 'kitna', 'kitne', 'kitni',
   'chahiye', 'ugana', 'ugaye', 'ugayein', 'ugao', 'ugane', 'batao',
   'bataiye', 'bataye', 'karna', 'kare', 'karo', 'kijiye', 'mujhe',
