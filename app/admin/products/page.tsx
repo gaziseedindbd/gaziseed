@@ -8,6 +8,7 @@ import { toast } from '@/components/site/toast-provider';
 import { MediaUploader } from '@/components/admin/media-uploader';
 import { MultilingualFields } from '@/components/admin/multilingual-fields';
 import { generateProductSeo } from '@/lib/seo/auto-seo';
+import { deleteProductImagesFromStorage, getProductImageUrls } from '@/lib/storage/product-images';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -154,6 +155,9 @@ export default function AdminProductsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('প্রোডাক্ট মুছে ফেলতে চান?')) return;
+    const product = products.find((p) => p.id === id);
+    const imageUrls = product ? getProductImageUrls(product) : [];
+
     const { error } = await supabase
       .from('products')
       .delete()
@@ -164,7 +168,20 @@ export default function AdminProductsPage() {
       console.error('Product delete failed:', error);
       return;
     }
-    toast('প্রোডাক্ট মুছে ফেলা হয়েছে');
+
+    if (imageUrls.length > 0) {
+      const cleanup = await deleteProductImagesFromStorage(supabase, imageUrls, 'product-images', id);
+      if (cleanup.failed.length > 0) {
+        toast('প্রোডাক্ট মুছে গেছে, তবে কিছু ছবি Storage থেকে মুছতে পারেনি', 'error');
+      } else if (cleanup.skippedReferenced.length === 0) {
+        toast('প্রোডাক্ট ও তার ছবি মুছে ফেলা হয়েছে');
+      } else {
+        toast('প্রোডাক্ট মুছে গেছে; অন্য প্রোডাক্টে ব্যবহৃত ছবি রাখা হয়েছে');
+      }
+    } else {
+      toast('প্রোডাক্ট মুছে ফেলা হয়েছে');
+    }
+
     loadProducts();
   };
 
@@ -412,7 +429,7 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
 
           <div><label className="mb-1 block text-sm font-medium">সংক্ষিপ্ত বিবরণ</label><textarea value={form.short_description} onChange={(e) => setForm({ ...form, short_description: e.target.value })} className="input-bangla min-h-[60px]" /></div>
 
-          <MediaUploader images={form.images} setImages={(v) => setForm({ ...form, images: v, image: v[0] || form.image })} bucket="product-images" label="পণ্যের ছবি (একাধিক)" recommendation="800 × 800 px" />
+          <MediaUploader images={form.images} setImages={(v) => setForm({ ...form, images: v, image: v[0] || '' })} productId={product?.id} bucket="product-images" label="পণ্যের ছবি (একাধিক)" recommendation="800 × 800 px" />
 
           {/* বিস্তারিত বিবরণ (গোছানো টেক্সট লেখার জন্য সাইজ ও গাইডলাইন আপডেট করা হয়েছে) */}
           <div>
