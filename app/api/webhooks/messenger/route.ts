@@ -110,9 +110,14 @@ type CountryCode = 'IN' | 'BD';
 
 type ConversationRecord = {
   id: string;
-  status: 'actifunction detectExplicitCountry(text: string): CountryCode | null {
+  status: 'active' | 'handoff' | 'closed';
+  metadata?: Record<string, unknown> | null;
+};
+
+function detectExplicitCountry(text: string): CountryCode | null {
   return detectExplicitMessengerCountry(text);
 }
+
 function getVerifiedCountry(conversation: ConversationRecord): CountryCode | null {
   const metadata = conversation.metadata || {};
   if (metadata.country_verified !== true) return null;
