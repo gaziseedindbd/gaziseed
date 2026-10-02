@@ -15,6 +15,7 @@
   },
   "include": [
     "tests/messenger-intents.test.ts",
+    "tests/messenger-e2e.test.ts",
     "lib/ai/messenger-intents.ts",
     "lib/ai/messenger-monitoring.ts",
     "lib/ai/messenger-order-tool.ts",
