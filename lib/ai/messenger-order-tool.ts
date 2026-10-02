@@ -990,7 +990,6 @@ export async function handleMessengerOrderFlow(args: {
     return { handled: false as const };
   }
 
-  const replyLanguage = detectMessengerReplyLanguage(args.text);
   const lastProduct = productFromMetadata(metadata.last_messenger_product);
   let product: MessengerProduct | null = null;
 
