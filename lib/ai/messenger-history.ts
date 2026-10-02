@@ -3,12 +3,14 @@ export type MessengerAIHistoryMessage = {
 };
 
 /**
- * provider_result rows are internal provider telemetry. They must remain
- * available for monitoring/debugging, but they are not conversation turns
- * and must never be supplied back to the AI as customer history.
+ * Internal AI/provider states are never valid conversation turns.
+ * They remain in the database for monitoring/debugging, but future AI prompts
+ * should only see customer-visible messages.
  */
 export function shouldIncludeMessengerAIHistoryMessage(
   message: MessengerAIHistoryMessage,
 ): boolean {
-  return message.action_status !== 'provider_result';
+  return !new Set(['provider_result', 'generated', 'failed']).has(
+    message.action_status || '',
+  );
 }
