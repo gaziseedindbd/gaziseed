@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { getProductBySlug } from '@/lib/data';
 import { getCart } from '@/lib/cart';
-import { trackMarketingEvent, trackPageView } from '@/lib/marketing';
+import { getMarketingCartFingerprint, trackMarketingEvent, trackPageView } from '@/lib/marketing';
 import { getMetaPurchaseEventId } from '@/lib/marketing-event-id';
 
 type MarketingSettings = {
@@ -170,10 +170,11 @@ async function trackRouteCommerceEvents(pathname: string, search: string) {
     }
 
     if (pathname === '/checkout') {
-      const key = `seed-bari-checkout-event-${countryCode}`;
-      if (sessionStorage.getItem(key) === '1') return;
       const cart = getCart();
       if (!cart.length) return;
+      const cartFingerprint = getMarketingCartFingerprint(cart);
+      const key = `seed-bari-checkout-event-${countryCode}-${cartFingerprint}`;
+      if (sessionStorage.getItem(key) === '1') return;
       const value = cart.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
       trackMarketingEvent('begin_checkout', {
         currency,
