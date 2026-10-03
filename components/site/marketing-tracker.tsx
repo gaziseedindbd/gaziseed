@@ -33,13 +33,17 @@ function getTrackingContext() {
   } as const;
 }
 
-function loadScript(src: string, id: string) {
-  if (typeof document === 'undefined' || document.getElementById(id)) return;
-  const script = document.createElement('script');
-  script.id = id;
-  script.async = true;
-  script.src = src;
-  document.head.appendChild(script);
+function loadScript(src: string, id: string): Promise<void> {
+  if (typeof document === 'undefined' || document.getElementById(id)) return Promise.resolve();
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.id = id;
+    script.async = true;
+    script.src = src;
+    script.onload = () => resolve();
+    script.onerror = () => resolve();
+    document.head.appendChild(script);
+  });
 }
 
 function initMetaPixel(pixelId: string) {
@@ -61,16 +65,19 @@ function initMetaPixel(pixelId: string) {
   }
 }
 
-function initGoogleAnalytics(measurementId: string) {
+async function initGoogleAnalytics(measurementId: string) {
   const w = window as WindowWithPixels;
   w.dataLayer = w.dataLayer || [];
   if (!w.gtag) w.gtag = (...args: unknown[]) => w.dataLayer!.push(args);
-  if ((w.gtag as any).__seedBariInitialized !== measurementId) {
-    w.gtag('js', new Date());
-    w.gtag('config', measurementId, { send_page_view: false });
-    (w.gtag as any).__seedBariInitialized = measurementId;
-    loadScript(`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`, 'seed-bari-ga4');
-  }
+  if ((w.gtag as any).__seedBariInitialized === measurementId) return;
+
+  w.gtag('js', new Date());
+  w.gtag('config', measurementId, { send_page_view: false });
+  (w.gtag as any).__seedBariInitialized = measurementId;
+  await loadScript(
+    `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`,
+    'seed-bari-ga4',
+  );
 }
 
 function initGtm(containerId: string) {
@@ -120,10 +127,10 @@ function initTikTokPixel(pixelId: string) {
   ttq.page?.();
 }
 
-function initialiseProviders(settings: MarketingSettings) {
+async function initialiseProviders(settings: MarketingSettings) {
   if (typeof window === 'undefined') return;
   if (settings.meta_pixel_id?.trim()) initMetaPixel(settings.meta_pixel_id.trim());
-  if (settings.ga4_measurement_id?.trim()) initGoogleAnalytics(settings.ga4_measurement_id.trim());
+  if (settings.ga4_measurement_id?.trim()) await initGoogleAnalytics(settings.ga4_measurement_id.trim());
   if (settings.gtm_id?.trim()) initGtm(settings.gtm_id.trim());
   if (settings.tiktok_pixel_id?.trim()) initTikTokPixel(settings.tiktok_pixel_id.trim());
 }
@@ -249,9 +256,10 @@ export function MarketingTracker() {
       .eq('id', 1)
       .eq('country_code', countryCode)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         if (cancelled) return;
-        initialiseProviders((data || {}) as MarketingSettings);
+        await initialiseProviders((data || {}) as MarketingSettings);
+        if (cancelled) return;
         readyRef.current = true;
         if (pathname) {
           lastPathRef.current = pathname;
