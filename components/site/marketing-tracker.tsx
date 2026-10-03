@@ -71,7 +71,14 @@ async function initGoogleAnalytics(measurementId: string) {
   if (!w.gtag) w.gtag = (...args: unknown[]) => w.dataLayer!.push(args);
   if ((w.gtag as any).__seedBariInitialized === measurementId) return;
 
-  // Start loading gtag.js first, matching Google's canonical bootstrap order.
+  // RootLayout provides the canonical GA4 bootstrap in the server-rendered head.
+  // Keep the dynamic fallback for environments where that bootstrap is absent.
+  const canonicalScript = document.getElementById('seed-bari-ga4');
+  if (canonicalScript && w.gtag) {
+    (w.gtag as any).__seedBariInitialized = measurementId;
+    return;
+  }
+
   const scriptPromise = loadScript(
     `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`,
     'seed-bari-ga4',
@@ -267,7 +274,10 @@ export function MarketingTracker() {
         readyRef.current = true;
         if (pathname) {
           lastPathRef.current = pathname;
-          trackPageView(pathname);
+          // Canonical server-rendered GA4 config already sends the initial page_view.
+          if (!document.getElementById('seed-bari-ga4')) {
+            trackPageView(pathname);
+          }
           void trackRouteCommerceEvents(pathname, window.location.search);
         }
       });
