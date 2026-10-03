@@ -20,7 +20,17 @@ type WindowWithPixels = Window & {
   fbq?: (...args: unknown[]) => void;
   ttq?: any;
   TiktokAnalyticsObject?: string;
+  __GAZI_COUNTRY__?: 'BD' | 'IN';
 };
+
+function getTrackingContext() {
+  const w = window as WindowWithPixels;
+  const countryCode = w.__GAZI_COUNTRY__ === 'IN' ? 'IN' : 'BD';
+  return {
+    countryCode,
+    currency: countryCode === 'IN' ? 'INR' : 'BDT',
+  } as const;
+}
 
 function loadScript(src: string, id: string) {
   if (typeof document === 'undefined' || document.getElementById(id)) return;
@@ -119,6 +129,7 @@ function initialiseProviders(settings: MarketingSettings) {
 
 async function trackRouteCommerceEvents(pathname: string, search: string) {
   try {
+    const { countryCode, currency } = getTrackingContext();
     if (pathname.startsWith('/product/')) {
       const slug = decodeURIComponent(pathname.replace(/^\/product\//, '').split('/')[0]);
       if (!slug) return;
@@ -128,7 +139,7 @@ async function trackRouteCommerceEvents(pathname: string, search: string) {
         ? product.sale_price
         : product.regular_price;
       trackMarketingEvent('view_item', {
-        currency: 'BDT',
+        currency,
         value: price,
         items: [{ item_id: product.sku || product.id, item_name: product.name_bn || product.name_en, price, quantity: 1 }],
         content_ids: [product.id],
@@ -140,7 +151,7 @@ async function trackRouteCommerceEvents(pathname: string, search: string) {
     }
 
     if (pathname === '/checkout') {
-      const key = 'seed-bari-checkout-event';
+      const key = `seed-bari-checkout-event-${countryCode}`;
       if (sessionStorage.getItem(key) === '1') return;
       const cart = getCart();
       if (!cart.length) return;
@@ -171,6 +182,7 @@ async function trackRouteCommerceEvents(pathname: string, search: string) {
       const { data: order } = await supabase
         .from('orders')
         .select('id, order_number, final_amount, grand_total, delivery_charge, coupon_code')
+        .eq('country_code', countryCode)
         .eq('order_number', orderNumber)
         .maybeSingle();
 
@@ -178,11 +190,12 @@ async function trackRouteCommerceEvents(pathname: string, search: string) {
         const { data: orderItems } = await supabase
           .from('order_items')
           .select('product_id, product_name, quantity, unit_price, variant_id')
+          .eq('country_code', countryCode)
           .eq('order_id', order.id);
         const value = Number(order.final_amount ?? order.grand_total ?? 0);
         trackMarketingEvent('purchase', {
           transaction_id: order.order_number,
-          currency: 'BDT',
+          currency,
           value,
           shipping: Number(order.delivery_charge || 0),
           coupon: order.coupon_code || undefined,
@@ -198,7 +211,7 @@ async function trackRouteCommerceEvents(pathname: string, search: string) {
         });
       } else {
         // Guest orders are still recorded as a conversion when RLS prevents reading the order row.
-        trackMarketingEvent('purchase', { transaction_id: orderNumber, currency: 'BDT', content_type: 'product' });
+        trackMarketingEvent('purchase', { transaction_id: orderNumber, currency, content_type: 'product' });
       }
       sessionStorage.setItem(key, '1');
     }
@@ -214,10 +227,12 @@ export function MarketingTracker() {
 
   useEffect(() => {
     let cancelled = false;
+    const { countryCode } = getTrackingContext();
     supabase
       .from('marketing_settings')
       .select('meta_pixel_id, ga4_measurement_id, gtm_id, tiktok_pixel_id')
       .eq('id', 1)
+      .eq('country_code', countryCode)
       .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return;
