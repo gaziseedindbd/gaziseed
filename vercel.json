@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/messenger-restock",
       "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/meta-capi",
+      "schedule": "0 4 * * *"
     }
   ]
 }

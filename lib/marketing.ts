@@ -35,7 +35,16 @@ export function trackMarketingEvent(event: MarketingEventName, params: Marketing
   }
 
   try {
-    w.fbq?.('track', mapping.meta, params);
+    const eventId =
+      typeof params.event_id === 'string' ? params.event_id : undefined;
+    const metaParams = { ...params };
+    delete metaParams.event_id;
+    w.fbq?.(
+      'track',
+      mapping.meta,
+      metaParams,
+      eventId ? { eventID: eventId } : undefined,
+    );
   } catch {
     // Analytics providers must never break the storefront.
   }
