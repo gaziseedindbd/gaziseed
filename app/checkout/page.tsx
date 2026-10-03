@@ -163,43 +163,74 @@ export default function CheckoutPage() {
     setError('');
 
     (async () => {
+      const maxAttempts = 5;
+      const retryDelayMs = 1500;
+
       try {
         const isCodReturn = pendingPaymentMethod === 'cod' && Boolean(pendingPaymentIntentId);
-        const { data, error: verifyError } = isCodReturn
-          ? await supabase.functions.invoke('cashfree-complete-cod-order', {
-              body: { payment_intent_id: pendingPaymentIntentId },
-            })
-          : await supabase.functions.invoke('cashfree-complete-order', {
-              body: { cashfree_order_id: cashfreeOrderId },
-            });
-        if (!active) return;
-        if (verifyError) throw verifyError;
-        if (data?.completed && data?.order_number) {
-          localStorage.removeItem('gazi_cart');
-          localStorage.removeItem('cashfree_pending_order_id');
-          localStorage.removeItem('cashfree_pending_payment_intent_id');
-          localStorage.removeItem('cashfree_pending_payment_method');
-          window.dispatchEvent(new Event('cart-updated'));
-          navigatedToSuccess = true;
-          const successStatus = isCodReturn ? 'cod' : 'paid';
-          router.replace(`/order-success?number=${encodeURIComponent(data.order_number)}&amount=${encodeURIComponent(data.amount ?? data.advance_amount ?? "")}&payment_status=${successStatus}&due_amount=${encodeURIComponent(isCodReturn ? data.due_amount ?? "" : "")}`);
-          return;
+
+        for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+          if (!active) return;
+
+          try {
+            const { data, error: verifyError } = isCodReturn
+              ? await supabase.functions.invoke('cashfree-complete-cod-order', {
+                  body: { payment_intent_id: pendingPaymentIntentId },
+                })
+              : await supabase.functions.invoke('cashfree-complete-order', {
+                  body: { cashfree_order_id: cashfreeOrderId },
+                });
+
+            if (!active) return;
+            if (verifyError) throw verifyError;
+
+            if (data?.completed && data?.order_number) {
+              localStorage.removeItem('gazi_cart');
+              localStorage.removeItem('cashfree_pending_order_id');
+              localStorage.removeItem('cashfree_pending_payment_intent_id');
+              localStorage.removeItem('cashfree_pending_payment_method');
+              window.dispatchEvent(new Event('cart-updated'));
+              navigatedToSuccess = true;
+              const successStatus = isCodReturn ? 'cod' : 'paid';
+              router.replace(`/order-success?number=${encodeURIComponent(data.order_number)}&amount=${encodeURIComponent(data.amount ?? data.advance_amount ?? "")}&payment_status=${successStatus}&due_amount=${encodeURIComponent(isCodReturn ? data.due_amount ?? "" : "")}`);
+              return;
+            }
+
+            if (data?.already_completed && data?.order_id) {
+              localStorage.removeItem('cashfree_pending_order_id');
+              localStorage.removeItem('cashfree_pending_payment_intent_id');
+              localStorage.removeItem('cashfree_pending_payment_method');
+              navigatedToSuccess = true;
+              router.replace(data.order_number ? `/order-success?number=${encodeURIComponent(data.order_number)}&amount=${encodeURIComponent(data.amount ?? data.advance_amount ?? "")}&payment_status=${isCodReturn ? 'cod' : 'paid'}&due_amount=${encodeURIComponent(isCodReturn ? data.due_amount ?? "" : "")}` : `/order-success?order_id=${data.order_id}`);
+              return;
+            }
+
+            const shouldRetry = attempt < maxAttempts - 1 && (
+              data?.processing === true ||
+              data?.paid === false
+            );
+
+            if (shouldRetry) {
+              await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+              continue;
+            }
+
+            if (data?.processing === true) {
+              setError(t('পেমেন্ট সম্পন্ন হয়েছে, অর্ডার চূড়ান্ত করা হচ্ছে। একটু পরে আবার দেখুন।', 'Payment received, but the order is still being finalized. Please wait a moment and try again.'));
+            } else if (data?.paid === false) {
+              setError(t('পেমেন্ট সম্পন্ন হয়নি। আবার চেষ্টা করুন।', 'Payment was not completed. Please try again.'));
+            } else {
+              setError(data?.error || t('পেমেন্ট যাচাই করা যায়নি।', 'Payment could not be verified.'));
+            }
+            return;
+          } catch {
+            if (attempt < maxAttempts - 1) {
+              await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+              continue;
+            }
+            if (active) setError(t('পেমেন্ট যাচাই করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।', 'Unable to verify the payment. Please try again.'));
+          }
         }
-        if (data?.already_completed && data?.order_id) {
-          localStorage.removeItem('cashfree_pending_order_id');
-          localStorage.removeItem('cashfree_pending_payment_intent_id');
-          localStorage.removeItem('cashfree_pending_payment_method');
-          navigatedToSuccess = true;
-          router.replace(data.order_number ? `/order-success?number=${encodeURIComponent(data.order_number)}&amount=${encodeURIComponent(data.amount ?? data.advance_amount ?? "")}&payment_status=${isCodReturn ? 'cod' : 'paid'}&due_amount=${encodeURIComponent(isCodReturn ? data.due_amount ?? "" : "")}` : `/order-success?order_id=${data.order_id}`);
-          return;
-        }
-        if (data?.paid === false) {
-          setError(t('পেমেন্ট সম্পন্ন হয়নি। আবার চেষ্টা করুন।', 'Payment was not completed. Please try again.'));
-        } else {
-          setError(data?.error || t('পেমেন্ট যাচাই করা যায়নি।', 'Payment could not be verified.'));
-        }
-      } catch {
-        if (active) setError(t('পেমেন্ট যাচাই করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।', 'Unable to verify the payment. Please try again.'));
       } finally {
         if (active) setLoading(false);
         if (!navigatedToSuccess) {
