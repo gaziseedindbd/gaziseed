@@ -26,6 +26,7 @@ import PageShare from '@/components/site/page-share';
 import { AuthSessionBridge } from '@/components/site/auth-session-bridge';
 import HomePromoSync from '@/components/site/home-promo-sync';
 import IndiaHomeCountry from '@/components/site/india-home-country';
+import { createServerSupabase } from '@/lib/supabase/server';
 
 const hind = Hind({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'], variable: '--font-hind', display: 'swap' });
 
@@ -75,6 +76,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ? cookieOverride
     : detectedCountry === 'IN' ? 'IN' : 'BD';
 
+  const serverSupabase = await createServerSupabase(visitorCountry);
+  const { data: marketingSettings } = await serverSupabase
+    .from('marketing_settings')
+    .select('ga4_measurement_id')
+    .eq('id', 1)
+    .eq('country_code', visitorCountry)
+    .maybeSingle();
+  const ga4MeasurementId = marketingSettings?.ga4_measurement_id?.trim() || null;
+
   const organizationLd = {
     '@type': 'Organization',
     '@id': SITE_URL + '/#organization',
@@ -112,6 +122,24 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="bn" suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="/home-hero-responsive-standard-v1.css" />
+        {ga4MeasurementId ? (
+          <>
+            <script
+              id="seed-bari-ga4"
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ga4MeasurementId)}`}
+            />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', ${JSON.stringify(ga4MeasurementId)});
+`,
+              }}
+            />
+          </>
+        ) : null}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeLd) }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p=window.location.pathname;var css=[];if(p==='/checkout')css.push('/checkout-premium-v1.css?v=2');if(p.indexOf('/combo/')===0)css.push('/combo-quick-checkout-v2.css?v=1');for(var i=0;i<css.length;i++){var l=document.createElement('link');l.rel='stylesheet';l.href=css[i];document.head.appendChild(l)}}catch(e){}})()` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){window.__GAZI_COUNTRY__='${visitorCountry}';})();` }} />
