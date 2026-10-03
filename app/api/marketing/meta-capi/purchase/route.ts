@@ -9,6 +9,10 @@ function isCountryCode(value: unknown): value is 'BD' | 'IN' {
   return value === 'BD' || value === 'IN';
 }
 
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204 });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => null);
