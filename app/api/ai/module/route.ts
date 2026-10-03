@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
     if (moduleName === 'business_analysis' || moduleName === 'sales_analysis' || moduleName === 'marketing_assistant' || moduleName === 'ads_assistant') {
       const [orders, products, orderItems] = await Promise.all([
-        supabase.from('orders').select('id,order_number,customer_name,order_source,grand_total,status,created_at').eq('country_code', countryCode).gte('created_at', sinceIso).order('created_at', { ascending: false }).limit(500),
+        supabase.from('orders').select('id,order_number,customer_name,order_source,grand_total,status,payment_status,created_at,utm_source,utm_medium,utm_campaign,utm_content,utm_term,fbclid,gclid').eq('country_code', countryCode).gte('created_at', sinceIso).order('created_at', { ascending: false }).limit(500),
         supabase.from('products').select('id,name_bn,name_en,stock,low_stock_threshold,price,sale_price,is_active').eq('country_code', countryCode).limit(500),
         supabase.from('order_items').select('order_id,product_id,product_name,quantity,unit_price,total_price,created_at').eq('country_code', countryCode).gte('created_at', sinceIso).limit(2000),
       ]);
@@ -84,11 +84,33 @@ export async function POST(req: NextRequest) {
       const completed = orderRows.filter((o: any) => !['cancelled', 'rejected'].includes(o.status));
       const revenue = completed.reduce((sum: number, o: any) => sum + Number(o.grand_total || 0), 0);
       const bySource: Record<string, { orders: number; revenue: number }> = {};
+      const byAttribution: Record<string, { orders: number; revenue: number; paid_orders: number; paid_revenue: number; fbclid_orders: number; gclid_orders: number }> = {};
       for (const o of completed) {
         const key = o.order_source || 'unknown';
         bySource[key] ||= { orders: 0, revenue: 0 };
         bySource[key].orders += 1;
         bySource[key].revenue += Number(o.grand_total || 0);
+
+        const source = String(o.utm_source || 'direct').trim() || 'direct';
+        const medium = String(o.utm_medium || 'none').trim() || 'none';
+        const campaign = String(o.utm_campaign || 'none').trim() || 'none';
+        const attributionKey = `${source} / ${medium} / ${campaign}`;
+        byAttribution[attributionKey] ||= {
+          orders: 0,
+          revenue: 0,
+          paid_orders: 0,
+          paid_revenue: 0,
+          fbclid_orders: 0,
+          gclid_orders: 0,
+        };
+        byAttribution[attributionKey].orders += 1;
+        byAttribution[attributionKey].revenue += Number(o.grand_total || 0);
+        if (String(o.payment_status || '').toLowerCase() === 'paid') {
+          byAttribution[attributionKey].paid_orders += 1;
+          byAttribution[attributionKey].paid_revenue += Number(o.grand_total || 0);
+        }
+        if (o.fbclid) byAttribution[attributionKey].fbclid_orders += 1;
+        if (o.gclid) byAttribution[attributionKey].gclid_orders += 1;
       }
       const salesByProduct: Record<string, { product_id: string | null; product_name: string; quantity: number; revenue: number }> = {};
       for (const item of orderItems.data || []) {
@@ -105,11 +127,15 @@ export async function POST(req: NextRequest) {
         revenue,
         average_order_value: completed.length ? revenue / completed.length : 0,
         order_sources: bySource,
+        attribution_by_campaign: Object.entries(byAttribution)
+          .map(([attribution, metrics]) => ({ attribution, ...metrics }))
+          .sort((a, b) => b.revenue - a.revenue),
+        attribution_note: 'UTM/fbclid/gclid values come from stored first-party order attribution. They do not represent ad spend, impressions, clicks or Meta-reported ROAS.',
         sales_by_product: Object.values(salesByProduct).sort((a, b) => b.revenue - a.revenue),
         products: products.data || [],
         data_notes: [
           'Revenue is based on non-cancelled/non-rejected orders and may include unpaid/pending orders.',
-          'Ads metrics, actual ad spend, ROAS and GA4 attribution are not included unless explicitly supplied by a connected data source.',
+          'Ads spend, impressions, clicks and Meta-reported ROAS are not included unless a connected ads data source is supplied. Stored UTM/fbclid/gclid attribution is included as first-party order attribution.'
         ],
       };
     } else if (moduleName === 'inventory_assistant') {
