@@ -217,7 +217,7 @@ async function trackRouteCommerceEvents(pathname: string, search: string) {
         trackMarketingEvent('purchase', { event_id: purchaseEventId, transaction_id: orderNumber, currency, content_type: 'product' });
       }
 
-      void fetch('/api/marketing/meta-capi/purchase', {
+      await fetch('/api/marketing/meta-capi/purchase', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -225,7 +225,7 @@ async function trackRouteCommerceEvents(pathname: string, search: string) {
           country_code: countryCode,
           source_url: window.location.href,
         }),
-        keepalive: true,
+        cache: 'no-store',
       }).catch(() => undefined);
 
       sessionStorage.setItem(key, '1');
