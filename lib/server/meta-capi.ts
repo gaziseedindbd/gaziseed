@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { getMetaPurchaseEventId } from '@/lib/marketing-event-id';
 
 type CountryCode = 'BD' | 'IN';
 
@@ -61,13 +62,6 @@ function normalizePhone(value: string | null | undefined, countryCode: CountryCo
 
 function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex');
-}
-
-export function getMetaPurchaseEventId(
-  countryCode: CountryCode,
-  orderNumber: string,
-): string {
-  return 'purchase:' + countryCode + ':' + orderNumber;
 }
 
 function getCurrency(countryCode: CountryCode): 'BDT' | 'INR' {
