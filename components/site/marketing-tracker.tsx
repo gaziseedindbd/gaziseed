@@ -157,7 +157,7 @@ async function trackRouteCommerceEvents(pathname: string, search: string) {
       if (!cart.length) return;
       const value = cart.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
       trackMarketingEvent('begin_checkout', {
-        currency: 'BDT',
+        currency,
         value,
         items: cart.map((item) => ({
           item_id: item.product_id,
