@@ -486,6 +486,31 @@ export default function CheckoutPage() {
         sessionStorage.setItem(shippingEventKey, '1');
       }
 
+      const paymentEventKey = `seed-bari-payment-info-${country}-${paymentMethod}`;
+      if (sessionStorage.getItem(paymentEventKey) !== '1') {
+        const currency = country === 'IN' ? 'INR' : 'BDT';
+        const cartValue = cart.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+        const paymentType = country === 'IN'
+          ? (paymentMethod === 'cod' ? 'Cash on Delivery' : 'Cashfree')
+          : 'Cash on Delivery';
+        trackMarketingEvent('add_payment_info', {
+          currency,
+          value: cartValue,
+          payment_type: paymentType,
+          coupon: appliedCoupon?.code || undefined,
+          items: cart.map((item) => ({
+            item_id: item.product_id,
+            item_name: item.name,
+            price: item.unit_price,
+            quantity: item.quantity,
+            item_variant: item.variant_name,
+          })),
+          content_ids: cart.map((item) => item.product_id),
+          content_type: 'product',
+        });
+        sessionStorage.setItem(paymentEventKey, '1');
+      }
+
       const items = cart.map((item) => ({
         product_id: item.product_id,
         quantity: item.quantity,
