@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { getAdapter } from '@/lib/ai/adapters';
 import type { AIFeatureFlags, AISettings } from '@/lib/ai/types';
+import { getMetaAdsAiContext } from '@/lib/server/meta-ads';
 
 const MODULES: Record<keyof AIFeatureFlags, string> = {
   business_analysis: 'Business Analysis',
@@ -72,10 +73,11 @@ export async function POST(req: NextRequest) {
     let context: Record<string, unknown> = {};
 
     if (moduleName === 'business_analysis' || moduleName === 'sales_analysis' || moduleName === 'marketing_assistant' || moduleName === 'ads_assistant') {
-      const [orders, products, orderItems] = await Promise.all([
+      const [orders, products, orderItems, metaAds] = await Promise.all([
         supabase.from('orders').select('id,order_number,customer_name,order_source,grand_total,status,payment_status,created_at,utm_source,utm_medium,utm_campaign,utm_content,utm_term,fbclid,gclid').eq('country_code', countryCode).gte('created_at', sinceIso).order('created_at', { ascending: false }).limit(500),
         supabase.from('products').select('id,name_bn,name_en,stock,low_stock_threshold,price,sale_price,is_active').eq('country_code', countryCode).limit(500),
         supabase.from('order_items').select('order_id,product_id,product_name,quantity,unit_price,total_price,created_at').eq('country_code', countryCode).gte('created_at', sinceIso).limit(2000),
+        getMetaAdsAiContext(countryCode, 30),
       ]);
       if (orders.error || products.error || orderItems.error) {
         return NextResponse.json({ success: false, message: 'AI analytics data could not be loaded' }, { status: 500 });
@@ -131,11 +133,14 @@ export async function POST(req: NextRequest) {
           .map(([attribution, metrics]) => ({ attribution, ...metrics }))
           .sort((a, b) => b.revenue - a.revenue),
         attribution_note: 'UTM/fbclid/gclid values come from stored first-party order attribution. They do not represent ad spend, impressions, clicks or Meta-reported ROAS.',
+        meta_ads_30d_summary: metaAds.summary,
+        meta_ads_by_campaign: metaAds.by_campaign,
+        meta_ads_data_note: metaAds.data_note,
         sales_by_product: Object.values(salesByProduct).sort((a, b) => b.revenue - a.revenue),
         products: products.data || [],
         data_notes: [
           'Revenue is based on non-cancelled/non-rejected orders and may include unpaid/pending orders.',
-          'Ads spend, impressions, clicks and Meta-reported ROAS are not included unless a connected ads data source is supplied. Stored UTM/fbclid/gclid attribution is included as first-party order attribution.'
+          'Meta Ads spend, impressions, clicks, CPC, CTR and Meta-attributed purchase value are supplied from the Meta Ads Insights API only when configured and synced. Purchase ROAS is calculated as Meta-attributed purchase value divided by spend; it is not profitability.'
         ],
       };
     } else if (moduleName === 'inventory_assistant') {
