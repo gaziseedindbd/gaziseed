@@ -83,7 +83,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     .eq('id', 1)
     .eq('country_code', visitorCountry)
     .maybeSingle();
-  const ga4MeasurementId = marketingSettings?.ga4_measurement_id?.trim() || null;
+  const ga4MeasurementId = marketingSettings?.ga4_measurement_id?.trim()
+    || process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim()
+    || 'G-6RKL3GB80V';
 
   const organizationLd = {
     '@type': 'Organization',
