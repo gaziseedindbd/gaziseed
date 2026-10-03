@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     const { data: countryData, error: countryError } = await supabase.rpc('current_admin_country');
     if (countryError) return NextResponse.json({ success: false, message: 'Admin branch could not be resolved' }, { status: 500 });
 
-    const countryCode = String(countryData || '').toUpperCase();
+    const countryCode = String(countryData || '').toUpperCase() as 'BD' | 'IN';
     if (!['BD', 'IN'].includes(countryCode)) {
       return NextResponse.json({ success: false, message: 'Invalid admin branch' }, { status: 403 });
     }
