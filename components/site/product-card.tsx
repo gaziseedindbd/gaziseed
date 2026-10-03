@@ -51,6 +51,9 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
     const sourceRect = image?.getBoundingClientRect();
 
     addToCart(product, 1);
+
+
+
     toast(t('কার্টে যোগ করা হয়েছে', 'Added to cart', 'कार्ट में जोड़ा गया'));
 
     if (image && sourceRect) {

@@ -173,6 +173,9 @@ export default function ProductDetailPage() {
       variant_id: selectedVariant?.id,
       variant_name: selectedVariant?.name,
     });
+
+
+
     toast(t('কার্টে যোগ করা হয়েছে', 'Added to cart'));
     return true;
   };

@@ -84,8 +84,10 @@ export function addToCart(product: Product, quantity: number = 1, overrides?: Pa
   }
   saveCart(cart);
 
+  const countryCode = (window as Window & { __GAZI_COUNTRY__?: 'BD' | 'IN' }).__GAZI_COUNTRY__ === 'IN' ? 'IN' : 'BD';
+  const currency = countryCode === 'IN' ? 'INR' : 'BDT';
   trackMarketingEvent('add_to_cart', {
-    currency: 'BDT',
+    currency,
     value: price * quantity,
     items: [{
       item_id: product.sku || product.id,
