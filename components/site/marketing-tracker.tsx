@@ -71,13 +71,17 @@ async function initGoogleAnalytics(measurementId: string) {
   if (!w.gtag) w.gtag = (...args: unknown[]) => w.dataLayer!.push(args);
   if ((w.gtag as any).__seedBariInitialized === measurementId) return;
 
-  w.gtag('js', new Date());
-  w.gtag('config', measurementId, { send_page_view: false });
-  (w.gtag as any).__seedBariInitialized = measurementId;
-  await loadScript(
+  // Start loading gtag.js first, matching Google's canonical bootstrap order.
+  const scriptPromise = loadScript(
     `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`,
     'seed-bari-ga4',
   );
+
+  w.gtag('js', new Date());
+  w.gtag('config', measurementId, { send_page_view: false });
+  (w.gtag as any).__seedBariInitialized = measurementId;
+
+  await scriptPromise;
 }
 
 function initGtm(containerId: string) {
