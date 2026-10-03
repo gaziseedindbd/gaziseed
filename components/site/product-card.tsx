@@ -9,6 +9,7 @@ import { addToCart } from '@/lib/cart';
 import { toast } from './toast-provider';
 import { useRouter } from 'next/navigation';
 import { useLang } from './language-provider';
+import { trackMarketingEvent } from '@/lib/marketing';
 
 export function ProductCard({ product, stackedActions = false }: { product: Product; stackedActions?: boolean }) {
   const router = useRouter();
@@ -51,6 +52,22 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
     const sourceRect = image?.getBoundingClientRect();
 
     addToCart(product, 1);
+
+    trackMarketingEvent('add_to_cart', {
+      currency: window.__GAZI_COUNTRY__ === 'IN' ? 'INR' : 'BDT',
+      value: price,
+      items: [{
+        item_id: product.sku || product.id,
+        item_name: name,
+        price,
+        quantity: 1,
+      }],
+      content_ids: [product.id],
+      content_type: 'product',
+      content_name: name,
+      content_id: product.id,
+    });
+
     toast(t('কার্টে যোগ করা হয়েছে', 'Added to cart', 'कार्ट में जोड़ा गया'));
 
     if (image && sourceRect) {
