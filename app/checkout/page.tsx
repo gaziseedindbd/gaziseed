@@ -8,6 +8,7 @@ import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/data';
 import type { CustomerAddress } from '@/lib/supabase/types';
 import { AddressSelector, formatAddressToString, type AddressValue } from '@/components/site/address-selector';
+import { trackMarketingEvent } from '@/lib/marketing';
 import { useLang } from '@/components/site/language-provider';
 import {
   Banknote,
@@ -464,6 +465,27 @@ export default function CheckoutPage() {
     setLoading(true);
     try {
       const fullAddress = formatAddressToString(addrValue);
+      const shippingEventKey = `seed-bari-shipping-info-${country}`;
+      if (sessionStorage.getItem(shippingEventKey) !== '1') {
+        const currency = country === 'IN' ? 'INR' : 'BDT';
+        const cartValue = cart.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+        trackMarketingEvent('add_shipping_info', {
+          currency,
+          value: cartValue,
+          shipping: Number(deliveryCharge || 0),
+          items: cart.map((item) => ({
+            item_id: item.product_id,
+            item_name: item.name,
+            price: item.unit_price,
+            quantity: item.quantity,
+            item_variant: item.variant_name,
+          })),
+          content_ids: cart.map((item) => item.product_id),
+          content_type: 'product',
+        });
+        sessionStorage.setItem(shippingEventKey, '1');
+      }
+
       const items = cart.map((item) => ({
         product_id: item.product_id,
         quantity: item.quantity,
