@@ -201,7 +201,7 @@ async function trackRouteCommerceEvents(pathname: string, search: string) {
 
       const { data: order } = await supabase
         .from('orders')
-        .select('id, order_number, final_amount, grand_total, delivery_charge, coupon_code')
+        .select('id, order_number, subtotal, discount, discount_amount, final_amount, grand_total, delivery_charge, coupon_code')
         .eq('country_code', countryCode)
         .eq('order_number', orderNumber)
         .maybeSingle();
@@ -212,7 +212,12 @@ async function trackRouteCommerceEvents(pathname: string, search: string) {
           .select('product_id, product_name, quantity, unit_price, variant_id')
           .eq('country_code', countryCode)
           .eq('order_id', order.id);
-        const value = Number(order.final_amount ?? order.grand_total ?? 0);
+        // GA4 purchase value must represent item revenue only (price × quantity),
+        // excluding shipping/tax. Use the order's merchandise subtotal after discounts
+        // instead of final_amount/grand_total, which can include delivery/payment adjustments.
+        const merchandiseSubtotal = Number(order.subtotal ?? 0);
+        const orderDiscount = Number(order.discount_amount ?? order.discount ?? 0);
+        const value = Math.max(0, merchandiseSubtotal - orderDiscount);
         trackMarketingEvent('purchase', {
           event_id: purchaseEventId,
           transaction_id: order.order_number,
