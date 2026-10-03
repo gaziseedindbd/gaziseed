@@ -11,6 +11,7 @@ import { ProductCard } from '@/components/site/product-card';
 import { ReviewForm } from '@/components/site/review-form';
 import { supabase } from '@/lib/supabase/client';
 import { useLang } from '@/components/site/language-provider';
+import { trackMarketingEvent } from '@/lib/marketing';
 import type { Product, Review, ProductFaq, BundleOffer, Promotion, PromotionGift, ProductVariant, BulkPricing } from '@/lib/supabase/types';
 
 export default function ProductDetailPage() {
@@ -173,6 +174,23 @@ export default function ProductDetailPage() {
       variant_id: selectedVariant?.id,
       variant_name: selectedVariant?.name,
     });
+
+    trackMarketingEvent('add_to_cart', {
+      currency: window.__GAZI_COUNTRY__ === 'IN' ? 'INR' : 'BDT',
+      value: finalUnitPrice * quantity,
+      items: [{
+        item_id: product.sku || product.id,
+        item_name: productName,
+        price: finalUnitPrice,
+        quantity,
+        item_variant: selectedVariant?.id || undefined,
+      }],
+      content_ids: [product.id],
+      content_type: 'product',
+      content_name: productName,
+      content_id: product.id,
+    });
+
     toast(t('কার্টে যোগ করা হয়েছে', 'Added to cart'));
     return true;
   };
