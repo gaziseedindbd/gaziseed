@@ -176,7 +176,7 @@ export default function ProductDetailPage() {
     });
 
     trackMarketingEvent('add_to_cart', {
-      currency: window.__GAZI_COUNTRY__ === 'IN' ? 'INR' : 'BDT',
+      currency: (window as Window & { __GAZI_COUNTRY__?: 'BD' | 'IN' }).__GAZI_COUNTRY__ === 'IN' ? 'INR' : 'BDT',
       value: finalUnitPrice * quantity,
       items: [{
         item_id: product.sku || product.id,
