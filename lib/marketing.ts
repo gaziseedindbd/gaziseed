@@ -58,6 +58,25 @@ export function trackMarketingEvent(event: MarketingEventName, params: Marketing
   }
 }
 
+export function getMarketingCartFingerprint(items: Array<{
+  product_id: string;
+  quantity: number;
+  unit_price: number;
+  variant_id?: string;
+  bundle_id?: string;
+}>) {
+  return items
+    .map((item) => [
+      item.product_id,
+      item.variant_id || '',
+      item.bundle_id || '',
+      item.quantity,
+      item.unit_price,
+    ].join(':'))
+    .sort()
+    .join('|');
+}
+
 export function trackPageView(pathname: string) {
   if (typeof window === 'undefined') return;
   trackMarketingEvent('page_view', {

@@ -8,7 +8,7 @@ import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/data';
 import type { CustomerAddress } from '@/lib/supabase/types';
 import { AddressSelector, formatAddressToString, type AddressValue } from '@/components/site/address-selector';
-import { trackMarketingEvent } from '@/lib/marketing';
+import { getMarketingCartFingerprint, trackMarketingEvent } from '@/lib/marketing';
 import { useLang } from '@/components/site/language-provider';
 import {
   Banknote,
@@ -465,7 +465,8 @@ export default function CheckoutPage() {
     setLoading(true);
     try {
       const fullAddress = formatAddressToString(addrValue);
-      const shippingEventKey = `seed-bari-shipping-info-${country}`;
+      const cartFingerprint = getMarketingCartFingerprint(cart);
+      const shippingEventKey = `seed-bari-shipping-info-${country}-${cartFingerprint}`;
       if (sessionStorage.getItem(shippingEventKey) !== '1') {
         const currency = country === 'IN' ? 'INR' : 'BDT';
         const cartValue = cart.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
@@ -486,7 +487,7 @@ export default function CheckoutPage() {
         sessionStorage.setItem(shippingEventKey, '1');
       }
 
-      const paymentEventKey = `seed-bari-payment-info-${country}-${paymentMethod}`;
+      const paymentEventKey = `seed-bari-payment-info-${country}-${paymentMethod}-${cartFingerprint}`
       if (sessionStorage.getItem(paymentEventKey) !== '1') {
         const currency = country === 'IN' ? 'INR' : 'BDT';
         const cartValue = cart.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
