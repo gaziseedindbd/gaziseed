@@ -15,6 +15,7 @@ const EVENT_MAP = {
   add_to_cart: { meta: 'AddToCart', tiktok: 'AddToCart' },
   begin_checkout: { meta: 'InitiateCheckout', tiktok: 'InitiateCheckout' },
   add_shipping_info: { meta: 'AddShippingInfo', tiktok: 'AddShippingInfo' },
+  add_payment_info: { meta: 'AddPaymentInfo', tiktok: 'AddPaymentInfo' },
   purchase: { meta: 'Purchase', tiktok: 'CompletePayment' },
 } as const;
 
