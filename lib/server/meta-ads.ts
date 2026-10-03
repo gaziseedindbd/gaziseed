@@ -149,6 +149,7 @@ async function fetchCampaignInsights(
     time_range: JSON.stringify({ since, until }),
     fields,
     limit: '500',
+    action_report_time: 'conversion',
   };
 
   if (config.campaignIds.length) {
@@ -422,6 +423,15 @@ export async function getMetaAdsAiContext(
     }),
     { spend: 0, impressions: 0, clicks: 0, purchases: 0, purchase_value: 0 },
   );
+
+  if (!campaigns.length) {
+    return {
+      configured: true,
+      summary: { spend: 0, impressions: 0, clicks: 0, purchases: 0, purchase_value: 0, ctr: 0, cpc: 0, purchase_roas: 0 },
+      by_campaign: [],
+      data_note: 'Meta Ads is configured, but no synced campaign insights are available for this branch yet.',
+    };
+  }
 
   return {
     configured: true,
