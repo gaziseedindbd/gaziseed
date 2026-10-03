@@ -54,7 +54,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
     addToCart(product, 1);
 
     trackMarketingEvent('add_to_cart', {
-      currency: window.__GAZI_COUNTRY__ === 'IN' ? 'INR' : 'BDT',
+      currency: (window as Window & { __GAZI_COUNTRY__?: 'BD' | 'IN' }).__GAZI_COUNTRY__ === 'IN' ? 'INR' : 'BDT',
       value: price,
       items: [{
         item_id: product.sku || product.id,
