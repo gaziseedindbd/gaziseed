@@ -214,7 +214,7 @@ const PURCHASE_ACTION_TYPES = [
   'offsite_conversion.purchase',
 ];
 
-function mapInsight(row: MetaAdsInsightRow, countryCode: CountryCode, configuredAccountId: string) {
+function mapInsight(row: MetaAdsInsightRow, countryCode: CountryCode, configuredAccountId: string): Record<string, unknown> | null {
   const impressions = Math.max(0, Math.round(numberValue(row.impressions)));
   const clicks = Math.max(0, Math.round(numberValue(row.clicks)));
   const spend = Math.max(0, numberValue(row.spend));
