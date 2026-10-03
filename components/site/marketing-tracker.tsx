@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase/client';
 import { getProductBySlug } from '@/lib/data';
 import { getCart } from '@/lib/cart';
 import { trackMarketingEvent, trackPageView } from '@/lib/marketing';
+import { getMetaPurchaseEventId } from '@/lib/marketing-event-id';
 
 type MarketingSettings = {
   meta_pixel_id?: string | null;
@@ -178,6 +179,7 @@ async function trackRouteCommerceEvents(pathname: string, search: string) {
       if (!orderNumber) return;
       const key = `seed-bari-purchase-${orderNumber}`;
       if (sessionStorage.getItem(key) === '1') return;
+      const purchaseEventId = getMetaPurchaseEventId(countryCode, orderNumber);
 
       const { data: order } = await supabase
         .from('orders')
@@ -194,6 +196,7 @@ async function trackRouteCommerceEvents(pathname: string, search: string) {
           .eq('order_id', order.id);
         const value = Number(order.final_amount ?? order.grand_total ?? 0);
         trackMarketingEvent('purchase', {
+          event_id: purchaseEventId,
           transaction_id: order.order_number,
           currency,
           value,
@@ -211,8 +214,20 @@ async function trackRouteCommerceEvents(pathname: string, search: string) {
         });
       } else {
         // Guest orders are still recorded as a conversion when RLS prevents reading the order row.
-        trackMarketingEvent('purchase', { transaction_id: orderNumber, currency, content_type: 'product' });
+        trackMarketingEvent('purchase', { event_id: purchaseEventId, transaction_id: orderNumber, currency, content_type: 'product' });
       }
+
+      void fetch('/api/marketing/meta-capi/purchase', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          order_number: orderNumber,
+          country_code: countryCode,
+          source_url: window.location.href,
+        }),
+        keepalive: true,
+      }).catch(() => undefined);
+
       sessionStorage.setItem(key, '1');
     }
   } catch {
