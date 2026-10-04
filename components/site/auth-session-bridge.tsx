@@ -26,25 +26,14 @@ export function AuthSessionBridge() {
   useEffect(() => {
     let mounted = true;
 
-    const sync = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!mounted) return;
-
-      updateHeaderAuth(data.session?.user ?? null);
-
-      // A successful email/password sign-in must never leave the user on the login page.
-      if (data.session && pathname === '/login') {
-        window.location.replace('/account');
-      }
-    };
-
-    void sync();
-
+    // Supabase emits INITIAL_SESSION when the client finishes loading the
+    // existing session, so avoid a separate getSession() request here.
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
       updateHeaderAuth(session?.user ?? null);
 
-      if (session && pathname === '/login' && event === 'SIGNED_IN') {
+      // Handle both the initial restored session and fresh sign-ins.
+      if (session && pathname === '/login' && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')) {
         window.location.replace('/account');
       }
     });
