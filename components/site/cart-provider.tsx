@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 import { getCart, saveCart, type CartItem } from '@/lib/cart';
 import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 
@@ -22,6 +23,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [count, setCount] = useState(0);
   const [total, setTotal] = useState(0);
+  const pathname = usePathname();
 
   const refresh = useCallback(() => {
     const cart = getCart();
@@ -29,9 +31,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCount(cart.reduce((sum, item) => sum + item.quantity, 0));
     setTotal(cart.reduce((sum, item) => sum + item.unit_price * item.quantity, 0));
 
-    // Keep a persisted cart from carrying inactive or wrong-country products
-    // into checkout after a country switch or product deactivation.
-    if (cart.length === 0) return;
+    // Checkout performs its own authoritative product/country validation.
+    // Skip the same network validation here to avoid a duplicate Supabase query.
+    if (cart.length === 0 || pathname === '/checkout') return;
     const country = getVisitorCountry();
     const productIds = Array.from(new Set(cart.map((item) => item.product_id).filter(Boolean)));
     void supabase
@@ -50,7 +52,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setCount(validCart.reduce((sum, item) => sum + item.quantity, 0));
         setTotal(validCart.reduce((sum, item) => sum + item.unit_price * item.quantity, 0));
       });
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     refresh();
