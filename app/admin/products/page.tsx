@@ -381,23 +381,33 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
     promotional_offer_enabled: product?.promotional_offer_enabled ?? false,
     promotional_offer_badge: product?.promotional_offer_badge || 'SPECIAL OFFER',
     promotional_offer_badge_en: product?.promotional_offer_badge_en || 'SPECIAL OFFER',
+    promotional_offer_badge_hi: product?.promotional_offer_badge_hi || 'विशेष ऑफ़र',
     promotional_offer_title: product?.promotional_offer_title || '',
     promotional_offer_title_en: product?.promotional_offer_title_en || '',
+    promotional_offer_title_hi: product?.promotional_offer_title_hi || '',
     promotional_offer_description: product?.promotional_offer_description || '',
     promotional_offer_description_en: product?.promotional_offer_description_en || '',
+    promotional_offer_description_hi: product?.promotional_offer_description_hi || '',
     promotional_offer_benefits: Array.isArray(product?.promotional_offer_benefits) ? product.promotional_offer_benefits : [],
     promotional_offer_benefits_en: Array.isArray(product?.promotional_offer_benefits_en) ? product.promotional_offer_benefits_en : [],
+    promotional_offer_benefits_hi: Array.isArray(product?.promotional_offer_benefits_hi) ? product.promotional_offer_benefits_hi : [],
     promotional_offer_image: product?.promotional_offer_image || '',
+    promotional_offer_image_en: product?.promotional_offer_image_en || '',
+    promotional_offer_image_hi: product?.promotional_offer_image_hi || '',
     promotional_offer_cta_text: product?.promotional_offer_cta_text || 'অফারটি নিন',
     promotional_offer_cta_text_en: product?.promotional_offer_cta_text_en || 'Shop This Offer',
+    promotional_offer_cta_text_hi: product?.promotional_offer_cta_text_hi || 'ऑफ़र लें',
     promotional_offer_cta_link: product?.promotional_offer_cta_link || '',
     promotional_offer_end_date: product?.promotional_offer_end_date ? product.promotional_offer_end_date.slice(0, 10) : '',
     promotional_offer_note: product?.promotional_offer_note || '',
     promotional_offer_note_en: product?.promotional_offer_note_en || '',
+    promotional_offer_note_hi: product?.promotional_offer_note_hi || '',
   });
 
   const [offerBenefitBn, setOfferBenefitBn] = useState('');
   const [offerBenefitEn, setOfferBenefitEn] = useState('');
+  const [offerBenefitHi, setOfferBenefitHi] = useState('');
+  const [offerPreviewLang, setOfferPreviewLang] = useState<'bn' | 'hi' | 'en'>('bn');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -435,19 +445,27 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
       promotional_offer_enabled: form.promotional_offer_enabled,
       promotional_offer_badge: form.promotional_offer_badge || null,
       promotional_offer_badge_en: form.promotional_offer_badge_en || null,
+      promotional_offer_badge_hi: adminBranch === 'IN' ? form.promotional_offer_badge_hi || null : null,
       promotional_offer_title: form.promotional_offer_title || null,
       promotional_offer_title_en: form.promotional_offer_title_en || null,
+      promotional_offer_title_hi: adminBranch === 'IN' ? form.promotional_offer_title_hi || null : null,
       promotional_offer_description: form.promotional_offer_description || null,
       promotional_offer_description_en: form.promotional_offer_description_en || null,
+      promotional_offer_description_hi: adminBranch === 'IN' ? form.promotional_offer_description_hi || null : null,
       promotional_offer_benefits: form.promotional_offer_benefits || [],
       promotional_offer_benefits_en: form.promotional_offer_benefits_en || [],
+      promotional_offer_benefits_hi: adminBranch === 'IN' ? form.promotional_offer_benefits_hi || [] : [],
       promotional_offer_image: form.promotional_offer_image || null,
+      promotional_offer_image_en: form.promotional_offer_image_en || null,
+      promotional_offer_image_hi: adminBranch === 'IN' ? form.promotional_offer_image_hi || null : null,
       promotional_offer_cta_text: form.promotional_offer_cta_text || null,
       promotional_offer_cta_text_en: form.promotional_offer_cta_text_en || null,
+      promotional_offer_cta_text_hi: adminBranch === 'IN' ? form.promotional_offer_cta_text_hi || null : null,
       promotional_offer_cta_link: form.promotional_offer_cta_link || null,
       promotional_offer_end_date: form.promotional_offer_end_date ? new Date(form.promotional_offer_end_date + 'T23:59:59').toISOString() : null,
       promotional_offer_note: form.promotional_offer_note || null,
       promotional_offer_note_en: form.promotional_offer_note_en || null,
+      promotional_offer_note_hi: adminBranch === 'IN' ? form.promotional_offer_note_hi || null : null,
     };
     onSave({ payload, faqs, variants, bulkTiers, removedFaqs, removedVariants, removedBulkTiers });
   };
@@ -540,7 +558,7 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h3 className="flex items-center gap-2 font-bold text-gray-900">🎁 Promotional Spotlight</h3>
-                <p className="mt-1 text-xs text-muted-foreground">এই product-এর জন্য optional visual offer. এটি checkout price বা order logic পরিবর্তন করবে না।</p>
+                <p className="mt-1 text-xs text-muted-foreground">Language অনুযায়ী আলাদা offer text ও image দিন। এটি checkout price বা order logic পরিবর্তন করবে না।</p>
               </div>
               <label className="flex items-center gap-2 rounded-full border border-orange-200 bg-white px-3 py-2 text-sm font-semibold">
                 <input type="checkbox" checked={form.promotional_offer_enabled} onChange={(e) => setForm({ ...form, promotional_offer_enabled: e.target.checked })} className="accent-primary" />
@@ -550,27 +568,54 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
 
             {form.promotional_offer_enabled && (
               <div className="mt-4 space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-orange-200/80 bg-white p-3">
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <button type="button" onClick={() => setOfferPreviewLang('bn')} className={`rounded-xl px-3 py-2 text-xs font-bold transition ${offerPreviewLang === 'bn' ? 'bg-orange-100 text-orange-800 ring-1 ring-orange-300' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}>বাংলা</button>
+                    {adminBranch === 'IN' && <button type="button" onClick={() => setOfferPreviewLang('hi')} className={`rounded-xl px-3 py-2 text-xs font-bold transition ${offerPreviewLang === 'hi' ? 'bg-orange-100 text-orange-800 ring-1 ring-orange-300' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}>हिन्दी</button>}
+                    <button type="button" onClick={() => setOfferPreviewLang('en')} className={`rounded-xl px-3 py-2 text-xs font-bold transition ${offerPreviewLang === 'en' ? 'bg-orange-100 text-orange-800 ring-1 ring-orange-300' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}>English</button>
+                  </div>
+                  <p className="mt-2 text-[11px] text-muted-foreground">যে ভাষাটি নির্বাচন করবেন, নিচের live preview-তে সেই ভাষার text + image দেখাবে।</p>
+                </div>
+
+                <div className={`grid gap-3 ${adminBranch === 'IN' ? 'lg:grid-cols-3' : 'sm:grid-cols-2'}`}>
                   <div>
                     <label className="mb-1 block text-xs font-semibold">Offer Badge (বাংলা)</label>
                     <input value={form.promotional_offer_badge} onChange={(e) => setForm({ ...form, promotional_offer_badge: e.target.value })} className="input-bangla" placeholder="বিশেষ অফার" />
                   </div>
+                  {adminBranch === 'IN' && (
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold">Offer Badge (हिन्दी)</label>
+                      <input value={form.promotional_offer_badge_hi} onChange={(e) => setForm({ ...form, promotional_offer_badge_hi: e.target.value })} className="input-bangla" placeholder="विशेष ऑफ़र" />
+                    </div>
+                  )}
                   <div>
                     <label className="mb-1 block text-xs font-semibold">Offer Badge (English)</label>
                     <input value={form.promotional_offer_badge_en} onChange={(e) => setForm({ ...form, promotional_offer_badge_en: e.target.value })} className="input-bangla" placeholder="SPECIAL OFFER" />
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-semibold">Offer Title (বাংলা)</label>
-                    <textarea value={form.promotional_offer_title} onChange={(e) => setForm({ ...form, promotional_offer_title: e.target.value })} className="input-bangla min-h-[80px]" placeholder="এই প্যাকেটের সাথে ১টি অতিরিক্ত বীজ প্যাকেট FREE!" />
+                    <textarea value={form.promotional_offer_title} onChange={(e) => setForm({ ...form, promotional_offer_title: e.target.value })} className="input-bangla min-h-[80px]" placeholder="এই প্যাকেটের সাথে ৬ ধরনের বীজ FREE!" />
                   </div>
+                  {adminBranch === 'IN' && (
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold">Offer Title (हिन्दी)</label>
+                      <textarea value={form.promotional_offer_title_hi} onChange={(e) => setForm({ ...form, promotional_offer_title_hi: e.target.value })} className="input-bangla min-h-[80px]" placeholder="एक पैकेट के साथ 6 प्रकार के बीज FREE!" />
+                    </div>
+                  )}
                   <div>
                     <label className="mb-1 block text-xs font-semibold">Offer Title (English)</label>
-                    <textarea value={form.promotional_offer_title_en} onChange={(e) => setForm({ ...form, promotional_offer_title_en: e.target.value })} className="input-bangla min-h-[80px]" placeholder="Get an extra seed pack FREE with this product!" />
+                    <textarea value={form.promotional_offer_title_en} onChange={(e) => setForm({ ...form, promotional_offer_title_en: e.target.value })} className="input-bangla min-h-[80px]" placeholder="Get 6 types of seeds FREE!" />
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-semibold">Offer Description (বাংলা)</label>
                     <textarea value={form.promotional_offer_description} onChange={(e) => setForm({ ...form, promotional_offer_description: e.target.value })} className="input-bangla min-h-[80px]" />
                   </div>
+                  {adminBranch === 'IN' && (
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold">Offer Description (हिन्दी)</label>
+                      <textarea value={form.promotional_offer_description_hi} onChange={(e) => setForm({ ...form, promotional_offer_description_hi: e.target.value })} className="input-bangla min-h-[80px]" />
+                    </div>
+                  )}
                   <div>
                     <label className="mb-1 block text-xs font-semibold">Offer Description (English)</label>
                     <textarea value={form.promotional_offer_description_en} onChange={(e) => setForm({ ...form, promotional_offer_description_en: e.target.value })} className="input-bangla min-h-[80px]" />
@@ -578,58 +623,99 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
                 </div>
 
                 <div className="rounded-xl border border-orange-200/80 bg-white p-3">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-semibold">Offer Benefits</p>
-                      <p className="text-[11px] text-muted-foreground">সর্বোচ্চ ৬টি দেখানো হবে</p>
-                    </div>
+                  <div className="mb-2">
+                    <p className="text-sm font-semibold">Offer Benefits</p>
+                    <p className="text-[11px] text-muted-foreground">সর্বোচ্চ ৬টি দেখানো হবে। India branch-এ বাংলা + हिन्दी + English তিন ভাষার copy রাখা যাবে।</p>
                   </div>
                   <div className="space-y-2">
                     {form.promotional_offer_benefits.map((benefit: string, idx: number) => (
-                      <div key={idx} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                      <div key={idx} className={`grid gap-2 ${adminBranch === 'IN' ? 'sm:grid-cols-[1fr_1fr_1fr_auto]' : 'sm:grid-cols-[1fr_1fr_auto]'}`}>
                         <input value={benefit} onChange={(e) => {
                           const next = [...form.promotional_offer_benefits];
                           next[idx] = e.target.value;
                           setForm({ ...form, promotional_offer_benefits: next });
                         }} className="input-bangla" placeholder="Benefit বাংলা" />
+                        {adminBranch === 'IN' && (
+                          <input value={form.promotional_offer_benefits_hi[idx] || ''} onChange={(e) => {
+                            const next = [...form.promotional_offer_benefits_hi];
+                            while (next.length <= idx) next.push('');
+                            next[idx] = e.target.value;
+                            setForm({ ...form, promotional_offer_benefits_hi: next });
+                          }} className="input-bangla" placeholder="Benefit हिन्दी" />
+                        )}
                         <input value={form.promotional_offer_benefits_en[idx] || ''} onChange={(e) => {
                           const next = [...form.promotional_offer_benefits_en];
+                          while (next.length <= idx) next.push('');
                           next[idx] = e.target.value;
                           setForm({ ...form, promotional_offer_benefits_en: next });
                         }} className="input-bangla" placeholder="Benefit English" />
                         <button type="button" onClick={() => {
                           const bn = form.promotional_offer_benefits.filter((_: string, i: number) => i !== idx);
                           const en = form.promotional_offer_benefits_en.filter((_: string, i: number) => i !== idx);
-                          setForm({ ...form, promotional_offer_benefits: bn, promotional_offer_benefits_en: en });
+                          const hi = form.promotional_offer_benefits_hi.filter((_: string, i: number) => i !== idx);
+                          setForm({ ...form, promotional_offer_benefits: bn, promotional_offer_benefits_en: en, promotional_offer_benefits_hi: hi });
                         }} className="rounded-lg p-2 text-destructive hover:bg-destructive/10"><X className="h-4 w-4" /></button>
                       </div>
                     ))}
                   </div>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <div className={`mt-3 grid gap-2 ${adminBranch === 'IN' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
                     <input value={offerBenefitBn} onChange={(e) => setOfferBenefitBn(e.target.value)} className="input-bangla" placeholder="নতুন benefit (বাংলা)" />
+                    {adminBranch === 'IN' && <input value={offerBenefitHi} onChange={(e) => setOfferBenefitHi(e.target.value)} className="input-bangla" placeholder="नया benefit (हिन्दी)" />}
                     <input value={offerBenefitEn} onChange={(e) => setOfferBenefitEn(e.target.value)} className="input-bangla" placeholder="New benefit (English)" />
                   </div>
                   <button type="button" onClick={() => {
-                    if (!offerBenefitBn.trim() && !offerBenefitEn.trim()) return;
+                    if (!offerBenefitBn.trim() && !offerBenefitEn.trim() && !offerBenefitHi.trim()) return;
                     if (form.promotional_offer_benefits.length >= 6) { toast('সর্বোচ্চ ৬টি benefit রাখা যাবে', 'error'); return; }
                     setForm({
                       ...form,
                       promotional_offer_benefits: [...form.promotional_offer_benefits, offerBenefitBn.trim()],
                       promotional_offer_benefits_en: [...form.promotional_offer_benefits_en, offerBenefitEn.trim()],
+                      promotional_offer_benefits_hi: adminBranch === 'IN' ? [...form.promotional_offer_benefits_hi, offerBenefitHi.trim()] : form.promotional_offer_benefits_hi,
                     });
                     setOfferBenefitBn('');
                     setOfferBenefitEn('');
+                    setOfferBenefitHi('');
                   }} className="mt-2 rounded-lg bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/20">+ Benefit যোগ করুন</button>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className={`grid gap-3 ${adminBranch === 'IN' ? 'lg:grid-cols-3' : 'sm:grid-cols-2'}`}>
                   <div>
-                    <label className="mb-1 block text-xs font-semibold">Offer Image URL (optional)</label>
-                    <input value={form.promotional_offer_image} onChange={(e) => setForm({ ...form, promotional_offer_image: e.target.value })} className="input-bangla" placeholder="https://..." />
+                    <label className="mb-1 block text-xs font-semibold">Offer Image URL — বাংলা</label>
+                    <input value={form.promotional_offer_image} onChange={(e) => setForm({ ...form, promotional_offer_image: e.target.value })} className="input-bangla" placeholder="https://.../offer-bn.jpg" />
                     {form.images.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-2">
                         {form.images.slice(0, 5).map((img: string) => (
                           <button key={img} type="button" onClick={() => setForm({ ...form, promotional_offer_image: img })} className={'overflow-hidden rounded-lg border-2 ' + (form.promotional_offer_image === img ? 'border-orange-500' : 'border-transparent')}>
+                            <img src={img} alt="" className="h-12 w-12 object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {adminBranch === 'IN' && (
+                    <>
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold">Offer Image URL — हिन्दी</label>
+                        <input value={form.promotional_offer_image_hi} onChange={(e) => setForm({ ...form, promotional_offer_image_hi: e.target.value })} className="input-bangla" placeholder="https://.../offer-hi.jpg" />
+                        {form.images.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {form.images.slice(0, 5).map((img: string) => (
+                              <button key={img} type="button" onClick={() => setForm({ ...form, promotional_offer_image_hi: img })} className={'overflow-hidden rounded-lg border-2 ' + (form.promotional_offer_image_hi === img ? 'border-orange-500' : 'border-transparent')}>
+                                <img src={img} alt="" className="h-12 w-12 object-cover" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold">Offer Image URL — English</label>
+                    <input value={form.promotional_offer_image_en} onChange={(e) => setForm({ ...form, promotional_offer_image_en: e.target.value })} className="input-bangla" placeholder="https://.../offer-en.jpg" />
+                    {form.images.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {form.images.slice(0, 5).map((img: string) => (
+                          <button key={img} type="button" onClick={() => setForm({ ...form, promotional_offer_image_en: img })} className={'overflow-hidden rounded-lg border-2 ' + (form.promotional_offer_image_en === img ? 'border-orange-500' : 'border-transparent')}>
                             <img src={img} alt="" className="h-12 w-12 object-cover" />
                           </button>
                         ))}
@@ -641,10 +727,19 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
                     <input type="date" value={form.promotional_offer_end_date} onChange={(e) => setForm({ ...form, promotional_offer_end_date: e.target.value })} className="input-bangla" />
                     <p className="mt-1 text-[11px] text-muted-foreground">তারিখ শেষ হলে spotlight customer-কে আর দেখানো হবে না।</p>
                   </div>
+                </div>
+
+                <div className={`grid gap-3 ${adminBranch === 'IN' ? 'lg:grid-cols-3' : 'sm:grid-cols-2'}`}>
                   <div>
                     <label className="mb-1 block text-xs font-semibold">CTA Text (বাংলা)</label>
                     <input value={form.promotional_offer_cta_text} onChange={(e) => setForm({ ...form, promotional_offer_cta_text: e.target.value })} className="input-bangla" />
                   </div>
+                  {adminBranch === 'IN' && (
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold">CTA Text (हिन्दी)</label>
+                      <input value={form.promotional_offer_cta_text_hi} onChange={(e) => setForm({ ...form, promotional_offer_cta_text_hi: e.target.value })} className="input-bangla" />
+                    </div>
+                  )}
                   <div>
                     <label className="mb-1 block text-xs font-semibold">CTA Text (English)</label>
                     <input value={form.promotional_offer_cta_text_en} onChange={(e) => setForm({ ...form, promotional_offer_cta_text_en: e.target.value })} className="input-bangla" />
@@ -654,10 +749,19 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
                     <input value={form.promotional_offer_cta_link} onChange={(e) => setForm({ ...form, promotional_offer_cta_link: e.target.value })} className="input-bangla" placeholder="/all-products অথবা https://..." />
                     <p className="mt-1 text-[11px] text-muted-foreground">খালি রাখলে product purchase area-তে scroll করবে।</p>
                   </div>
+                </div>
+
+                <div className={`grid gap-3 ${adminBranch === 'IN' ? 'lg:grid-cols-3' : 'sm:grid-cols-2'}`}>
                   <div>
                     <label className="mb-1 block text-xs font-semibold">Small Note (বাংলা)</label>
                     <input value={form.promotional_offer_note} onChange={(e) => setForm({ ...form, promotional_offer_note: e.target.value })} className="input-bangla" placeholder="শুধুমাত্র এই product-এর জন্য" />
                   </div>
+                  {adminBranch === 'IN' && (
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold">Small Note (हिन्दी)</label>
+                      <input value={form.promotional_offer_note_hi} onChange={(e) => setForm({ ...form, promotional_offer_note_hi: e.target.value })} className="input-bangla" placeholder="केवल इस product के लिए" />
+                    </div>
+                  )}
                   <div>
                     <label className="mb-1 block text-xs font-semibold">Small Note (English)</label>
                     <input value={form.promotional_offer_note_en} onChange={(e) => setForm({ ...form, promotional_offer_note_en: e.target.value })} className="input-bangla" placeholder="Valid only for this product" />
@@ -670,20 +774,28 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
                     enabled={true}
                     badge={form.promotional_offer_badge}
                     badgeEn={form.promotional_offer_badge_en}
+                    badgeHi={form.promotional_offer_badge_hi}
                     title={form.promotional_offer_title}
                     titleEn={form.promotional_offer_title_en}
+                    titleHi={form.promotional_offer_title_hi}
                     description={form.promotional_offer_description}
                     descriptionEn={form.promotional_offer_description_en}
+                    descriptionHi={form.promotional_offer_description_hi}
                     benefits={form.promotional_offer_benefits}
                     benefitsEn={form.promotional_offer_benefits_en}
+                    benefitsHi={form.promotional_offer_benefits_hi}
                     image={form.promotional_offer_image}
+                    imageEn={form.promotional_offer_image_en}
+                    imageHi={form.promotional_offer_image_hi}
                     fallbackImage={form.images[0] || null}
                     ctaText={form.promotional_offer_cta_text}
                     ctaTextEn={form.promotional_offer_cta_text_en}
+                    ctaTextHi={form.promotional_offer_cta_text_hi}
                     ctaLink={null}
                     note={form.promotional_offer_note}
                     noteEn={form.promotional_offer_note_en}
-                    lang="bn"
+                    noteHi={form.promotional_offer_note_hi}
+                    lang={offerPreviewLang}
                     preview
                   />
                 </div>
