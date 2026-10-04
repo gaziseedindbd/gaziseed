@@ -280,7 +280,7 @@ export function MarketingTracker({ initialSettings }: { initialSettings: Marketi
     });
 
     return () => { cancelled = true; };
-  }, [initialSettings, pathname]);
+  }, [initialSettings]);
 
   useEffect(() => {
     if (!readyRef.current || !pathname || lastPathRef.current === pathname) return;
