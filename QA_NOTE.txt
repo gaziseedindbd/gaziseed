@@ -1,1 +1,3 @@
 QA note: ProductCard previously placed Add to Cart and Buy Now buttons inside a Next Link. The buttons are now outside the product link so each interaction has an independent click target.
+
+Temporary Preview QA: Meta CAPI Test Events code is configured only for the fix/meta-pixel-capi-final-audit Preview deployment.
