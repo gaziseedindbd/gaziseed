@@ -8,7 +8,7 @@ import { getCart } from '@/lib/cart';
 import { getMarketingCartFingerprint, trackMarketingEvent, trackPageView } from '@/lib/marketing';
 import { getMetaPurchaseEventId } from '@/lib/marketing-event-id';
 
-type MarketingSettings = {
+export type MarketingSettings = {
   meta_pixel_id?: string | null;
   ga4_measurement_id?: string | null;
   gtm_id?: string | null;
@@ -259,37 +259,28 @@ async function trackRouteCommerceEvents(pathname: string, search: string) {
   }
 }
 
-export function MarketingTracker() {
+export function MarketingTracker({ initialSettings }: { initialSettings: MarketingSettings }) {
   const pathname = usePathname();
   const readyRef = useRef(false);
   const lastPathRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    const { countryCode } = getTrackingContext();
-    supabase
-      .from('marketing_settings')
-      .select('meta_pixel_id, ga4_measurement_id, gtm_id, tiktok_pixel_id')
-      .eq('id', 1)
-      .eq('country_code', countryCode)
-      .maybeSingle()
-      .then(async ({ data }) => {
-        if (cancelled) return;
-        await initialiseProviders((data || {}) as MarketingSettings);
-        if (cancelled) return;
-        readyRef.current = true;
-        if (pathname) {
-          lastPathRef.current = pathname;
-          // Canonical server-rendered GA4 config already sends the initial page_view.
-          if (!document.getElementById('seed-bari-ga4')) {
-            trackPageView(pathname);
-          }
-          void trackRouteCommerceEvents(pathname, window.location.search);
+    void initialiseProviders(initialSettings).then(() => {
+      if (cancelled) return;
+      readyRef.current = true;
+      if (pathname) {
+        lastPathRef.current = pathname;
+        // Canonical server-rendered GA4 config already sends the initial page_view.
+        if (!document.getElementById('seed-bari-ga4')) {
+          trackPageView(pathname);
         }
-      });
+        void trackRouteCommerceEvents(pathname, window.location.search);
+      }
+    });
 
     return () => { cancelled = true; };
-  }, []);
+  }, [initialSettings]);
 
   useEffect(() => {
     if (!readyRef.current || !pathname || lastPathRef.current === pathname) return;
