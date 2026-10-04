@@ -22,6 +22,7 @@ type ProductOfferSpotlightProps = {
   noteEn?: string | null;
   lang?: string;
   onPreviewCta?: () => void;
+  preview?: boolean;
 };
 
 function isSafeOfferLink(link?: string | null) {
@@ -49,6 +50,7 @@ export default function ProductOfferSpotlight({
   noteEn,
   lang = 'bn',
   onPreviewCta,
+  preview = false,
 }: ProductOfferSpotlightProps) {
   if (!enabled) return null;
 
@@ -66,6 +68,7 @@ export default function ProductOfferSpotlight({
   const safeLink = isSafeOfferLink(ctaLink) ? ctaLink : null;
 
   const handleCta = () => {
+    if (preview) return;
     if (safeLink) {
       window.location.href = safeLink;
       return;
@@ -127,6 +130,7 @@ export default function ProductOfferSpotlight({
             <button
               type="button"
               onClick={handleCta}
+              disabled={preview}
               className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-600/20 transition hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
             >
               <ShoppingCart className="h-4 w-4" />
