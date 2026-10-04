@@ -96,17 +96,25 @@ export default function CheckoutPage() {
 
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session?.user) return;
-      setUserId(data.session.user.id);
-      const { data: addrs } = await supabase
-        .from('customer_addresses')
-        .select('*')
-        .eq('user_id', data.session.user.id)
-        .eq('country_code', visitorCountry)
-        .order('is_default', { ascending: false });
+      const user = data.session.user;
+      setUserId(user.id);
+      setWalletLoading(true);
+
+      const [
+        { data: addrs },
+        { data: summary, error: walletError },
+      ] = await Promise.all([
+        supabase
+          .from('customer_addresses')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('country_code', visitorCountry)
+          .order('is_default', { ascending: false }),
+        supabase.rpc('get_referral_wallet_summary', { p_user_id: user.id }),
+      ]);
+
       setSavedAddresses((addrs || []) as CustomerAddress[]);
 
-      setWalletLoading(true);
-      const { data: summary, error: walletError } = await supabase.rpc('get_referral_wallet_summary', { p_user_id: data.session.user.id });
       if (!walletError && summary?.[0]) {
         const nextWallet = {
           balance: Number(summary[0].balance || 0),
@@ -124,22 +132,7 @@ export default function CheckoutPage() {
     return () => window.removeEventListener('cart-updated', handler);
   }, []);
 
-  useEffect(() => {
-    if (country !== 'IN' || cart.length === 0) {
-      setFreeDeliveryProductIds(new Set());
-      return;
-    }
 
-    const productIds = Array.from(new Set(cart.map((item) => item.product_id)));
-    supabase
-      .from('products')
-      .select('id, free_delivery')
-      .in('id', productIds)
-      .then(({ data }) => {
-        const rows = (data || []) as Array<{ id: string; free_delivery: boolean }>;
-        setFreeDeliveryProductIds(new Set(rows.filter((product) => product.free_delivery).map((product) => product.id)));
-      });
-  }, [cart, country]);
 
   useEffect(() => {
     // Cashfree return/verification belongs to the India checkout only.
@@ -261,33 +254,58 @@ export default function CheckoutPage() {
   const discountPercent = originalTotal > 0 ? Math.round((savingsTotal / originalTotal) * 100) : 0;
   useEffect(() => {
     let cancelled = false;
+
     const syncDeliveryCharge = async () => {
       if (cart.length === 0) {
         setDeliveryRules([]);
         setDeliveryCharge(0);
+        setFreeDeliveryProductIds(new Set());
         return;
       }
 
-      const [{ data: rulesData }, { data: chargeData, error: chargeError }] = await Promise.all([
-        supabase
-          .from('delivery_charge_rules')
-          .select('min_order, max_order, charge, is_free')
-          .eq('country_code', country)
-          .eq('is_active', true)
-          .order('min_order', { ascending: false }),
-        supabase.rpc('calculate_delivery_charge', {
-          p_order_value: subtotal,
-          p_free_delivery: freeDeliveryProductIds.size > 0,
-        }),
+      const productIds = Array.from(new Set(cart.map((item) => item.product_id)));
+      const rulesPromise = supabase
+        .from('delivery_charge_rules')
+        .select('min_order, max_order, charge, is_free')
+        .eq('country_code', country)
+        .eq('is_active', true)
+        .order('min_order', { ascending: false });
+
+      const freeDeliveryPromise = country === 'IN'
+        ? supabase
+            .from('products')
+            .select('id, free_delivery')
+            .in('id', productIds)
+        : Promise.resolve({ data: [] as Array<{ id: string; free_delivery: boolean }> });
+
+      const [{ data: rulesData }, { data: freeDeliveryData }] = await Promise.all([
+        rulesPromise,
+        freeDeliveryPromise,
       ]);
 
       if (cancelled) return;
+
+      const freeDeliveryRows = (freeDeliveryData || []) as Array<{ id: string; free_delivery: boolean }>;
+      const freeDeliveryIds = new Set(
+        freeDeliveryRows.filter((product) => product.free_delivery).map((product) => product.id),
+      );
+      const hasFreeDeliveryProduct = country === 'IN' && freeDeliveryIds.size > 0;
+      setFreeDeliveryProductIds(freeDeliveryIds);
+
+      const { data: chargeData, error: chargeError } = await supabase.rpc('calculate_delivery_charge', {
+        p_order_value: subtotal,
+        p_free_delivery: hasFreeDeliveryProduct,
+      });
+
+      if (cancelled) return;
+
       if (chargeError) {
         console.error('Delivery charge calculation failed:', chargeError);
         setDeliveryCharge(0);
       } else {
         setDeliveryCharge(Number(chargeData || 0));
       }
+
       setDeliveryRules((rulesData || []).map((rule) => ({
         min_order: Number(rule.min_order || 0),
         max_order: rule.max_order == null ? null : Number(rule.max_order),
@@ -298,7 +316,7 @@ export default function CheckoutPage() {
 
     void syncDeliveryCharge();
     return () => { cancelled = true; };
-  }, [cart.length, country, subtotal, freeDeliveryProductIds]);
+  }, [cart.length, country, subtotal]);
   const couponDiscount = appliedCoupon
     ? appliedCoupon.type === 'percentage'
       ? Math.min(subtotal * (appliedCoupon.value / 100), appliedCoupon.max_discount || Infinity)
