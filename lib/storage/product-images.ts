@@ -66,22 +66,22 @@ export async function deleteProductImagesFromStorage(
       continue;
     }
 
-    let arrayQuery = supabaseClient
+    let jsonQuery = supabaseClient
       .from('products')
       .select('id')
-      .contains('images', [publicUrl])
+      .filter('images', 'cs', JSON.stringify([publicUrl]))
       .limit(1);
 
-    if (excludeProductId) arrayQuery = arrayQuery.neq('id', excludeProductId);
+    if (excludeProductId) jsonQuery = jsonQuery.neq('id', excludeProductId);
 
-    const { data: arrayReferences, error: arrayReferenceError } = await arrayQuery;
+    const { data: jsonReferences, error: jsonReferenceError } = await jsonQuery;
 
-    if (arrayReferenceError) {
+    if (jsonReferenceError) {
       failed.push(path);
       continue;
     }
 
-    if ((directReferences?.length ?? 0) > 0 || (arrayReferences?.length ?? 0) > 0) {
+    if ((directReferences?.length ?? 0) > 0 || (jsonReferences?.length ?? 0) > 0) {
       skippedReferenced.push(path);
       continue;
     }
