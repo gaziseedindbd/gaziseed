@@ -19,12 +19,14 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
   const existing = siteSettingsRequests.get(country);
   if (existing) return existing;
 
-  const request = supabase
-    .from('site_settings')
-    .select('*')
-    .eq('country_code', country)
-    .maybeSingle()
-    .then(({ data }) => data as SiteSettings | null);
+  const request = Promise.resolve(
+    supabase
+      .from('site_settings')
+      .select('*')
+      .eq('country_code', country)
+      .maybeSingle()
+      .then(({ data }) => data as SiteSettings | null),
+  );
 
   siteSettingsRequests.set(country, request);
   request.then(
