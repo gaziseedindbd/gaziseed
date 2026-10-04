@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getValidatedCart } from '@/lib/cart';
+import { getCart, getValidatedCart } from '@/lib/cart';
 import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/data';
 import type { CustomerAddress } from '@/lib/supabase/types';
@@ -86,6 +86,10 @@ export default function CheckoutPage() {
   useEffect(() => {
     const visitorCountry = getVisitorCountry();
     setCountry(visitorCountry);
+
+    // Render the locally stored cart immediately; validate product activity/country in the background.
+    const localCart = getCart();
+    setCart(localCart as CartItemWithDiscount[]);
     void getValidatedCart(visitorCountry).then((validCart) => setCart(validCart as CartItemWithDiscount[]));
     const handler = () => void getValidatedCart(getVisitorCountry()).then((validCart) => setCart(validCart as CartItemWithDiscount[]));
     window.addEventListener('cart-updated', handler);
