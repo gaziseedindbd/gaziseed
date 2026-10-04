@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { TouchEvent } from 'react';
 import { Check, Quote, Star } from 'lucide-react';
 import type { Review } from '@/lib/supabase/types';
 
 type ReviewTrackProps = {
   reviews: Review[];
-  visibleCount: 1 | 3;
+  visibleCount: number;
   label: (bn: string, en: string) => string;
 };
 
@@ -41,12 +42,12 @@ function ReviewTrack({ reviews, visibleCount, label }: ReviewTrackProps) {
     }
   };
 
-  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
     touchStartX.current = event.touches[0]?.clientX ?? null;
     setPaused(true);
   };
 
-  const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+  const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
     const startX = touchStartX.current;
     touchStartX.current = null;
     setPaused(false);
@@ -169,7 +170,7 @@ export default function ProductReviewShowcase({
       </div>
 
       <div className="hidden sm:block">
-        <ReviewTrack reviews={reviews} visibleCount={3} label={label} />
+        <ReviewTrack reviews={reviews} visibleCount={Math.min(3, reviews.length)} label={label} />
       </div>
       <div className="sm:hidden">
         <ReviewTrack reviews={reviews} visibleCount={1} label={label} />
