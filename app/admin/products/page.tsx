@@ -680,7 +680,7 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
 
                 <div className={`grid gap-3 ${adminBranch === 'IN' ? 'lg:grid-cols-3' : 'sm:grid-cols-2'}`}>
                   <div>
-                    <label className="mb-1 block text-xs font-semibold">Offer Image URL — বাংলা</label>
+                    <label className="mb-1 block text-xs font-semibold">Offer Image URL — বাংলা <span className="font-normal text-muted-foreground">(Best: 800×1000 px · 4:5 · crop-free)</span></label>
                     <input value={form.promotional_offer_image} onChange={(e) => setForm({ ...form, promotional_offer_image: e.target.value })} className="input-bangla" placeholder="https://.../offer-bn.jpg" />
                     {form.images.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-2">
@@ -695,7 +695,7 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
                   {adminBranch === 'IN' && (
                     <>
                       <div>
-                        <label className="mb-1 block text-xs font-semibold">Offer Image URL — हिन्दी</label>
+                        <label className="mb-1 block text-xs font-semibold">Offer Image URL — हिन्दी <span className="font-normal text-muted-foreground">(Best: 800×1000 px · 4:5 · crop-free)</span></label>
                         <input value={form.promotional_offer_image_hi} onChange={(e) => setForm({ ...form, promotional_offer_image_hi: e.target.value })} className="input-bangla" placeholder="https://.../offer-hi.jpg" />
                         {form.images.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-2">
@@ -710,7 +710,7 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
                     </>
                   )}
                   <div>
-                    <label className="mb-1 block text-xs font-semibold">Offer Image URL — English</label>
+                    <label className="mb-1 block text-xs font-semibold">Offer Image URL — English <span className="font-normal text-muted-foreground">(Best: 800×1000 px · 4:5 · crop-free)</span></label>
                     <input value={form.promotional_offer_image_en} onChange={(e) => setForm({ ...form, promotional_offer_image_en: e.target.value })} className="input-bangla" placeholder="https://.../offer-en.jpg" />
                     {form.images.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-2">
