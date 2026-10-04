@@ -11,14 +11,36 @@ import type {
   ProductVariant, BulkPricing, Wishlist, SupportTicket, SupportTicketReply, CustomerTag,
 } from './supabase/types';
 
+// Deduplicate simultaneous site-settings reads across the header/footer.
+const siteSettingsRequests = new Map<'BD' | 'IN', Promise<SiteSettings | null>>();
+
 export async function getSiteSettings(): Promise<SiteSettings | null> {
   const country = getVisitorCountry();
-  const { data } = await supabase
+  const existing = siteSettingsRequests.get(country);
+  if (existing) return existing;
+
+  const request = supabase
     .from('site_settings')
     .select('*')
     .eq('country_code', country)
-    .maybeSingle();
-  return data as SiteSettings | null;
+    .maybeSingle()
+    .then(({ data }) => data as SiteSettings | null);
+
+  siteSettingsRequests.set(country, request);
+  request.then(
+    () => {
+      if (siteSettingsRequests.get(country) === request) {
+        siteSettingsRequests.delete(country);
+      }
+    },
+    () => {
+      if (siteSettingsRequests.get(country) === request) {
+        siteSettingsRequests.delete(country);
+      }
+    },
+  );
+
+  return request;
 }
 
 export async function getNavigation(): Promise<Navigation[]> {
