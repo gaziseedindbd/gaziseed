@@ -29,6 +29,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const fbp = request.cookies.get('_fbp')?.value?.trim() || undefined;
+    const fbc = request.cookies.get('_fbc')?.value?.trim() || undefined;
+
     const sourceUrl =
       body?.source_url && typeof body.source_url === 'string'
         ? body.source_url
@@ -41,6 +44,8 @@ export async function POST(request: NextRequest) {
       clientIpAddress:
         request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined,
       clientUserAgent: request.headers.get('user-agent') || undefined,
+      fbp,
+      fbc,
     });
 
     const status =
