@@ -401,7 +401,7 @@ export async function processMetaCapiPurchases(limit = 20): Promise<{
   const { data: orders, error } = await admin
     .from('orders')
     .select(
-      'id, order_number, user_id, customer_phone, customer_email, customer_name, district, country_code, final_amount, grand_total, delivery_charge, shipping_fee, coupon_code, created_at',
+      'id, order_number, user_id, customer_phone, customer_email, customer_name, district, country_code, subtotal, discount_amount, final_amount, grand_total, delivery_charge, shipping_fee, coupon_code, created_at',
     )
     .eq('order_source', 'website')
     .in('country_code', ['BD', 'IN'])
