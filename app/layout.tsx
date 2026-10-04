@@ -18,7 +18,6 @@ import { BottomNav } from '@/components/site/bottom-nav';
 import { ThemeSwitcher } from '@/components/site/theme-switcher';
 import AccountPasswordLauncher from '@/components/site/account-password-launcher';
 import { MarketingTracker } from '@/components/site/marketing-tracker';
-import { FeatureProvider } from '@/components/site/feature-provider';
 import { ReferralTracker } from '@/components/site/referral-tracker';
 import HomeFloatingReviews from '@/components/site/home-floating-reviews';
 import BrandNormalizer from '@/components/site/brand-normalizer';
@@ -149,32 +148,30 @@ gtag('config', ${JSON.stringify(ga4MeasurementId)});
         <script dangerouslySetInnerHTML={{ __html: `(function(){if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})}})()` }} />
       </head>
       <body className={hind.variable} suppressHydrationWarning>
-        <FeatureProvider>
-          <MarketingTracker />
-          <ReferralTracker />
-          <BrandNormalizer />
-          <LanguageProvider>
-            <ToastProvider>
-              <CartProvider>
-                <AnnouncementBar />
-                <SiteHeader />
-                <FloatingCartDrawer />
-                <AuthSessionBridge />
-                <HomePromoSync />
-                <IndiaHomeCountry />
-                <main className="min-h-screen">{children}</main>
-                <SiteFooter />
-                <WhatsAppButton />
-                <PromotionalPopup location="main" />
-                <BottomNav />
-                <ThemeSwitcher />
-                <AccountPasswordLauncher />
-                <HomeFloatingReviews />
-                <PageShare />
-              </CartProvider>
-            </ToastProvider>
-          </LanguageProvider>
-        </FeatureProvider>
+        <MarketingTracker />
+        <ReferralTracker />
+        <BrandNormalizer />
+        <LanguageProvider>
+          <ToastProvider>
+            <CartProvider>
+              <AnnouncementBar />
+              <SiteHeader />
+              <FloatingCartDrawer />
+              <AuthSessionBridge />
+              <HomePromoSync />
+              <IndiaHomeCountry />
+              <main className="min-h-screen">{children}</main>
+              <SiteFooter />
+              <WhatsAppButton />
+              <PromotionalPopup location="main" />
+              <BottomNav />
+              <ThemeSwitcher />
+              <AccountPasswordLauncher />
+              <HomeFloatingReviews />
+              <PageShare />
+            </CartProvider>
+          </ToastProvider>
+        </LanguageProvider>
       </body>
     </html>
   );
