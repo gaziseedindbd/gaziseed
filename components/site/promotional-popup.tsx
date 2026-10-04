@@ -23,7 +23,7 @@ export function PromotionalPopup({ location }: { location: 'main' | 'offers' }) 
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (pathname === '/checkout' || pathname.startsWith('/admin') || pathname.startsWith('/allahmohammad/admin/')) return;
+    if (pathname === '/checkout' || pathname.startsWith('/admin')) return;
 
     supabase
       .from('promotional_popups')
