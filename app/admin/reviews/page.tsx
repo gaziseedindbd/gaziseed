@@ -17,8 +17,44 @@ export default function AdminReviewsPage() {
   useEffect(() => { const init = async () => { const { data, error } = await supabase.rpc('current_admin_country'); if (error) { toast('Admin branch নির্ধারণ ব্যর্থ', 'error'); return; } const country = String(data).toUpperCase() === 'IN' ? 'IN' : 'BD'; setAdminCountry(country); await loadReviews(country); }; void init(); }, []);
 
   const loadReviews = async (country = adminCountry) => {
-    const { data } = await supabase.from('reviews').select('*, products(name_bn, name_en)').eq('country_code', country).order('created_at', { ascending: false });
-    setReviews(data || []);
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('country_code', country)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast('রিভিউ লোড করা ব্যর্থ হয়েছে', 'error');
+      setReviews([]);
+      setLoading(false);
+      return;
+    }
+
+    const rows = data || [];
+    const productIds = Array.from(
+      new Set(rows.map((review) => review.product_id).filter(Boolean))
+    ) as string[];
+
+    let productMap = new Map<string, { name_bn?: string | null; name_en?: string | null }>();
+
+    if (productIds.length > 0) {
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('id, name_bn, name_en')
+        .eq('country_code', country)
+        .in('id', productIds);
+
+      if (productsError) {
+        toast('প্রোডাক্ট তথ্য লোড করা যায়নি', 'error');
+      } else {
+        productMap = new Map((products || []).map((product) => [product.id, product]));
+      }
+    }
+
+    setReviews(rows.map((review) => ({
+      ...review,
+      products: productMap.get(review.product_id) || null,
+    })));
     setLoading(false);
   };
 
