@@ -1,16 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { getAnnouncements } from '@/lib/data';
 import type { Announcement } from '@/lib/supabase/types';
 
 export function AnnouncementBar() {
+  const pathname = usePathname();
+  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
+
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
 
   useEffect(() => {
+    if (isAdminRoute) return;
     getAnnouncements().then(setAnnouncements);
-  }, []);
+  }, [isAdminRoute]);
 
   useEffect(() => {
     if (announcements.length <= 1) return;
@@ -20,7 +25,7 @@ export function AnnouncementBar() {
     return () => clearInterval(interval);
   }, [announcements.length]);
 
-  if (announcements.length === 0) return null;
+  if (isAdminRoute || announcements.length === 0) return null;
 
   const current = announcements[currentIdx];
 
