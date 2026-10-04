@@ -13,6 +13,8 @@ type MetaCapiOrder = {
   customer_name: string;
   district: string | null;
   country_code: CountryCode;
+  subtotal: number | null;
+  discount_amount: number | null;
   final_amount: number | null;
   grand_total: number | null;
   delivery_charge: number | null;
@@ -33,6 +35,8 @@ type MetaEventContext = {
   sourceUrl?: string;
   clientIpAddress?: string;
   clientUserAgent?: string;
+  fbp?: string;
+  fbc?: string;
 };
 
 function getAdminClient(): SupabaseClient {
@@ -76,7 +80,7 @@ async function getOrder(
   const { data: order, error } = await admin
     .from('orders')
     .select(
-      'id, order_number, user_id, customer_phone, customer_email, customer_name, district, country_code, final_amount, grand_total, delivery_charge, shipping_fee, coupon_code, created_at',
+      'id, order_number, user_id, customer_phone, customer_email, customer_name, district, country_code, subtotal, discount_amount, final_amount, grand_total, delivery_charge, shipping_fee, coupon_code, created_at',
     )
     .eq('country_code', countryCode)
     .eq('order_number', orderNumber)
@@ -125,7 +129,9 @@ async function postPurchaseToMeta(
   const eventId = getMetaPurchaseEventId(order.country_code, order.order_number);
   const currency = getCurrency(order.country_code);
   const eventTime = Math.floor(new Date(order.created_at).getTime() / 1000);
-  const value = Number(order.final_amount ?? order.grand_total ?? 0);
+  const merchandiseSubtotal = Number(order.subtotal ?? 0);
+  const orderDiscount = Number(order.discount_amount ?? 0);
+  const value = Math.max(0, merchandiseSubtotal - orderDiscount);
   const shipping = Number(order.delivery_charge ?? order.shipping_fee ?? 0);
 
   const phone = normalizePhone(order.customer_phone, order.country_code);
@@ -133,6 +139,8 @@ async function postPurchaseToMeta(
   const externalId = order.user_id ? order.user_id.trim().toLowerCase() : null;
 
   const userData: Record<string, unknown> = {};
+  if (context.fbp) userData.fbp = context.fbp;
+  if (context.fbc) userData.fbc = context.fbc;
   if (phone) userData.ph = [sha256(phone)];
   if (email) userData.em = [sha256(email)];
   if (externalId) userData.external_id = [sha256(externalId)];
@@ -140,6 +148,9 @@ async function postPurchaseToMeta(
   if (order.district?.trim()) {
     userData.ct = [sha256(order.district.trim().toLowerCase())];
   }
+  const nameParts = order.customer_name.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (nameParts.length > 0) userData.fn = [sha256(nameParts[0])];
+  if (nameParts.length > 1) userData.ln = [sha256(nameParts.slice(1).join(' '))];
   if (context.clientIpAddress) userData.client_ip_address = context.clientIpAddress;
   if (context.clientUserAgent) userData.client_user_agent = context.clientUserAgent;
 
