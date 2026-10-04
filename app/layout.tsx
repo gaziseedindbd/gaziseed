@@ -17,7 +17,7 @@ import { PromotionalPopup } from '@/components/site/promotional-popup';
 import { BottomNav } from '@/components/site/bottom-nav';
 import { ThemeSwitcher } from '@/components/site/theme-switcher';
 import AccountPasswordLauncher from '@/components/site/account-password-launcher';
-import { MarketingTracker } from '@/components/site/marketing-tracker';
+import { MarketingTracker, type MarketingSettings } from '@/components/site/marketing-tracker';
 import { ReferralTracker } from '@/components/site/referral-tracker';
 import HomeFloatingReviews from '@/components/site/home-floating-reviews';
 import BrandNormalizer from '@/components/site/brand-normalizer';
@@ -78,10 +78,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const serverSupabase = await createServerSupabase(visitorCountry);
   const { data: marketingSettings } = await serverSupabase
     .from('marketing_settings')
-    .select('ga4_measurement_id')
+    .select('meta_pixel_id, ga4_measurement_id, gtm_id, tiktok_pixel_id')
     .eq('id', 1)
     .eq('country_code', visitorCountry)
     .maybeSingle();
+
+  const marketingSettingsForClient: MarketingSettings = {
+    meta_pixel_id: marketingSettings?.meta_pixel_id ?? null,
+    ga4_measurement_id: marketingSettings?.ga4_measurement_id ?? null,
+    gtm_id: marketingSettings?.gtm_id ?? null,
+    tiktok_pixel_id: marketingSettings?.tiktok_pixel_id ?? null,
+  };
+
   const ga4MeasurementId = marketingSettings?.ga4_measurement_id?.trim()
     || process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim()
     || 'G-6RKL3GB80V';
@@ -148,7 +156,7 @@ gtag('config', ${JSON.stringify(ga4MeasurementId)});
         <script dangerouslySetInnerHTML={{ __html: `(function(){if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})}})()` }} />
       </head>
       <body className={hind.variable} suppressHydrationWarning>
-        <MarketingTracker />
+        <MarketingTracker initialSettings={marketingSettingsForClient} />
         <ReferralTracker />
         <BrandNormalizer />
         <LanguageProvider>
