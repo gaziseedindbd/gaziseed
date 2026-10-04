@@ -661,9 +661,7 @@ export default function CheckoutPage() {
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
                       placeholder={t('যেমন: মো: আরিফুল ইসলাম', 'e.g. Md. Ariful Islam')}
-                      className={country === 'BD'
-                        ? 'min-h-14 w-full rounded-[18px] border border-border/80 bg-slate-50/80 px-4 text-sm font-bold text-foreground shadow-sm transition-all placeholder:text-muted-foreground/70 hover:border-primary/30 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/15 focus:shadow-md focus:outline-none dark:bg-slate-900/40'
-                        : 'n-h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15'}
+                      className="min-h-14 w-full rounded-[18px] border border-border/80 bg-slate-50/80 px-4 text-sm font-bold text-foreground shadow-sm transition-all placeholder:text-muted-foreground/70 hover:border-primary/30 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/15 focus:shadow-md focus:outline-none dark:bg-slate-900/40"
                       required
                     />
                   </div>
@@ -682,9 +680,7 @@ export default function CheckoutPage() {
                       value={form.phone}
                       onChange={(e) => setForm({ ...form, phone: e.target.value })}
                       placeholder={country === 'IN' ? '10-digit mobile number' : '01XXXXXXXXX'}
-                      className={country === 'BD'
-                        ? 'min-h-14 w-full rounded-[18px] border border-border/80 bg-slate-50/80 px-4 text-sm font-bold tracking-wide text-foreground shadow-sm transition-all placeholder:text-muted-foreground/70 hover:border-primary/30 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/15 focus:shadow-md focus:outline-none dark:bg-slate-900/40'
-                        : 'n-h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15'}
+                      className="min-h-14 w-full rounded-[18px] border border-border/80 bg-slate-50/80 px-4 text-sm font-bold tracking-wide text-foreground shadow-sm transition-all placeholder:text-muted-foreground/70 hover:border-primary/30 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/15 focus:shadow-md focus:outline-none dark:bg-slate-900/40"
                       required
                     />
                   </div>
@@ -919,9 +915,7 @@ export default function CheckoutPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className={country === 'BD'
-                    ? 'mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[18px] bg-primary px-6 text-base font-black tracking-tight text-primary-foreground shadow-xl shadow-primary/30 transition-all hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-2xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-15'
-                    : 'mt-2 inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-sm font-black text-primary-foreground shadow-lg shadow-primary/25 transition hover:-translate-y-0.5 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60'}
+                    className="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[18px] bg-primary px-6 text-base font-black tracking-tight text-primary-foreground shadow-xl shadow-primary/30 transition-all hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-2xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-15"
                   >
                     {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম পরিশোধ করুন', 'Pay COD advance') : t('অনলাইনে পেমেন্ট করুন', 'Pay online')) : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
                   </button>
