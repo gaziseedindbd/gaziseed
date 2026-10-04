@@ -242,7 +242,6 @@ export default function ProductOfferSpotlight({
               {isHindi ? 'सीমিত অফ़र' : isEnglish ? 'LIMITED' : 'সীমিত অফার'}
             </div>
           </div>
-</div>
         </div>
       </section>
     </>
