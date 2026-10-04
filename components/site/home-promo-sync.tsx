@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 
 type Promo = {
@@ -53,7 +54,10 @@ function applyPromos(promos: Promo[]) {
 }
 
 export default function HomePromoSync() {
+  const pathname = usePathname();
+
   useEffect(() => {
+    if (pathname !== '/') return;
     let cancelled = false;
     let observer: MutationObserver | null = null;
 
@@ -82,7 +86,7 @@ export default function HomePromoSync() {
       cancelled = true;
       observer?.disconnect();
     };
-  }, []);
+  }, [pathname]);
 
   return <style jsx global>{`
     .home-promo-grid .home-promo-card.home-promo-awaiting { visibility: hidden; }

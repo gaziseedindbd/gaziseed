@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { X, Zap } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import type { PromotionalPopup } from '@/lib/supabase/types';
 
@@ -17,10 +18,13 @@ function setDismissedMap(map: Record<string, string>) {
 function todayKey() { return new Date().toISOString().slice(0, 10); }
 
 export function PromotionalPopup({ location }: { location: 'main' | 'offers' }) {
+  const pathname = usePathname();
   const [popup, setPopup] = useState<PromotionalPopup | null>(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (pathname === '/checkout' || pathname.startsWith('/admin')) return;
+
     supabase
       .from('promotional_popups')
       .select('*')
@@ -40,7 +44,7 @@ export function PromotionalPopup({ location }: { location: 'main' | 'offers' }) 
         setPopup(p);
         setTimeout(() => setVisible(true), 800);
       });
-  }, [location]);
+  }, [location, pathname]);
 
   const shouldShow = (p: PromotionalPopup) => {
     const map = getDismissedMap();
