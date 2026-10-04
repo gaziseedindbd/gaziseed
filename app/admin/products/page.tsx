@@ -7,6 +7,7 @@ import { Plus, Edit, Trash2, X, Search, Upload, Link as LinkIcon, Star, HelpCirc
 import { toast } from '@/components/site/toast-provider';
 import { MediaUploader } from '@/components/admin/media-uploader';
 import { MultilingualFields } from '@/components/admin/multilingual-fields';
+import ProductOfferSpotlight from '@/components/site/product-offer-spotlight';
 import { generateProductSeo } from '@/lib/seo/auto-seo';
 import { deleteProductImagesFromStorage, getProductImageUrls } from '@/lib/storage/product-images';
 
@@ -377,7 +378,26 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
     cost_price: product?.cost_price || '',
     show_low_stock: product?.show_low_stock ?? true,
     translations: product?.translations || {},
+    promotional_offer_enabled: product?.promotional_offer_enabled ?? false,
+    promotional_offer_badge: product?.promotional_offer_badge || 'SPECIAL OFFER',
+    promotional_offer_badge_en: product?.promotional_offer_badge_en || 'SPECIAL OFFER',
+    promotional_offer_title: product?.promotional_offer_title || '',
+    promotional_offer_title_en: product?.promotional_offer_title_en || '',
+    promotional_offer_description: product?.promotional_offer_description || '',
+    promotional_offer_description_en: product?.promotional_offer_description_en || '',
+    promotional_offer_benefits: Array.isArray(product?.promotional_offer_benefits) ? product.promotional_offer_benefits : [],
+    promotional_offer_benefits_en: Array.isArray(product?.promotional_offer_benefits_en) ? product.promotional_offer_benefits_en : [],
+    promotional_offer_image: product?.promotional_offer_image || '',
+    promotional_offer_cta_text: product?.promotional_offer_cta_text || 'অফারটি নিন',
+    promotional_offer_cta_text_en: product?.promotional_offer_cta_text_en || 'Shop This Offer',
+    promotional_offer_cta_link: product?.promotional_offer_cta_link || '',
+    promotional_offer_end_date: product?.promotional_offer_end_date ? product.promotional_offer_end_date.slice(0, 10) : '',
+    promotional_offer_note: product?.promotional_offer_note || '',
+    promotional_offer_note_en: product?.promotional_offer_note_en || '',
   });
+
+  const [offerBenefitBn, setOfferBenefitBn] = useState('');
+  const [offerBenefitEn, setOfferBenefitEn] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -394,7 +414,41 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
       seo_title: form.seo_title,
       meta_description: form.meta_description,
     });
-    const payload = { ...form, ...autoSeo, country_code: adminBranch, translations: form.translations || {}, regular_price: Number(form.regular_price), sale_price: form.sale_price ? Number(form.sale_price) : null, stock: Number(form.stock), low_stock_threshold: Number(form.low_stock_threshold), images: form.images, related_product_ids: form.related_product_ids, min_order_qty: form.min_order_qty ? Number(form.min_order_qty) : null, max_order_qty: form.max_order_qty ? Number(form.max_order_qty) : null, cost_price: form.cost_price ? Number(form.cost_price) : null, suitable_months: form.suitable_months, growing_type: form.growing_type || null, season_tags: form.season_tags, show_low_stock: form.show_low_stock };
+    const payload = {
+      ...form,
+      ...autoSeo,
+      country_code: adminBranch,
+      translations: form.translations || {},
+      regular_price: Number(form.regular_price),
+      sale_price: form.sale_price ? Number(form.sale_price) : null,
+      stock: Number(form.stock),
+      low_stock_threshold: Number(form.low_stock_threshold),
+      images: form.images,
+      related_product_ids: form.related_product_ids,
+      min_order_qty: form.min_order_qty ? Number(form.min_order_qty) : null,
+      max_order_qty: form.max_order_qty ? Number(form.max_order_qty) : null,
+      cost_price: form.cost_price ? Number(form.cost_price) : null,
+      suitable_months: form.suitable_months,
+      growing_type: form.growing_type || null,
+      season_tags: form.season_tags,
+      show_low_stock: form.show_low_stock,
+      promotional_offer_enabled: form.promotional_offer_enabled,
+      promotional_offer_badge: form.promotional_offer_badge || null,
+      promotional_offer_badge_en: form.promotional_offer_badge_en || null,
+      promotional_offer_title: form.promotional_offer_title || null,
+      promotional_offer_title_en: form.promotional_offer_title_en || null,
+      promotional_offer_description: form.promotional_offer_description || null,
+      promotional_offer_description_en: form.promotional_offer_description_en || null,
+      promotional_offer_benefits: form.promotional_offer_benefits || [],
+      promotional_offer_benefits_en: form.promotional_offer_benefits_en || [],
+      promotional_offer_image: form.promotional_offer_image || null,
+      promotional_offer_cta_text: form.promotional_offer_cta_text || null,
+      promotional_offer_cta_text_en: form.promotional_offer_cta_text_en || null,
+      promotional_offer_cta_link: form.promotional_offer_cta_link || null,
+      promotional_offer_end_date: form.promotional_offer_end_date ? new Date(form.promotional_offer_end_date + 'T23:59:59').toISOString() : null,
+      promotional_offer_note: form.promotional_offer_note || null,
+      promotional_offer_note_en: form.promotional_offer_note_en || null,
+    };
     onSave({ payload, faqs, variants, bulkTiers, removedFaqs, removedVariants, removedBulkTiers });
   };
 
@@ -479,6 +533,162 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
                 {label}
               </label>
             ))}
+          </div>
+
+          {/* Promotional Spotlight */}
+          <div className="rounded-2xl border border-orange-200 bg-gradient-to-br from-amber-50/70 via-orange-50/50 to-white p-4 sm:p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="flex items-center gap-2 font-bold text-gray-900">🎁 Promotional Spotlight</h3>
+                <p className="mt-1 text-xs text-muted-foreground">এই product-এর জন্য optional visual offer. এটি checkout price বা order logic পরিবর্তন করবে না।</p>
+              </div>
+              <label className="flex items-center gap-2 rounded-full border border-orange-200 bg-white px-3 py-2 text-sm font-semibold">
+                <input type="checkbox" checked={form.promotional_offer_enabled} onChange={(e) => setForm({ ...form, promotional_offer_enabled: e.target.checked })} className="accent-primary" />
+                Offer দেখান
+              </label>
+            </div>
+
+            {form.promotional_offer_enabled && (
+              <div className="mt-4 space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold">Offer Badge (বাংলা)</label>
+                    <input value={form.promotional_offer_badge} onChange={(e) => setForm({ ...form, promotional_offer_badge: e.target.value })} className="input-bangla" placeholder="বিশেষ অফার" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold">Offer Badge (English)</label>
+                    <input value={form.promotional_offer_badge_en} onChange={(e) => setForm({ ...form, promotional_offer_badge_en: e.target.value })} className="input-bangla" placeholder="SPECIAL OFFER" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold">Offer Title (বাংলা)</label>
+                    <textarea value={form.promotional_offer_title} onChange={(e) => setForm({ ...form, promotional_offer_title: e.target.value })} className="input-bangla min-h-[80px]" placeholder="এই প্যাকেটের সাথে ১টি অতিরিক্ত বীজ প্যাকেট FREE!" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold">Offer Title (English)</label>
+                    <textarea value={form.promotional_offer_title_en} onChange={(e) => setForm({ ...form, promotional_offer_title_en: e.target.value })} className="input-bangla min-h-[80px]" placeholder="Get an extra seed pack FREE with this product!" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold">Offer Description (বাংলা)</label>
+                    <textarea value={form.promotional_offer_description} onChange={(e) => setForm({ ...form, promotional_offer_description: e.target.value })} className="input-bangla min-h-[80px]" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold">Offer Description (English)</label>
+                    <textarea value={form.promotional_offer_description_en} onChange={(e) => setForm({ ...form, promotional_offer_description_en: e.target.value })} className="input-bangla min-h-[80px]" />
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-orange-200/80 bg-white p-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold">Offer Benefits</p>
+                      <p className="text-[11px] text-muted-foreground">সর্বোচ্চ ৬টি দেখানো হবে</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {form.promotional_offer_benefits.map((benefit: string, idx: number) => (
+                      <div key={idx} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                        <input value={benefit} onChange={(e) => {
+                          const next = [...form.promotional_offer_benefits];
+                          next[idx] = e.target.value;
+                          setForm({ ...form, promotional_offer_benefits: next });
+                        }} className="input-bangla" placeholder="Benefit বাংলা" />
+                        <input value={form.promotional_offer_benefits_en[idx] || ''} onChange={(e) => {
+                          const next = [...form.promotional_offer_benefits_en];
+                          next[idx] = e.target.value;
+                          setForm({ ...form, promotional_offer_benefits_en: next });
+                        }} className="input-bangla" placeholder="Benefit English" />
+                        <button type="button" onClick={() => {
+                          const bn = form.promotional_offer_benefits.filter((_: string, i: number) => i !== idx);
+                          const en = form.promotional_offer_benefits_en.filter((_: string, i: number) => i !== idx);
+                          setForm({ ...form, promotional_offer_benefits: bn, promotional_offer_benefits_en: en });
+                        }} className="rounded-lg p-2 text-destructive hover:bg-destructive/10"><X className="h-4 w-4" /></button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <input value={offerBenefitBn} onChange={(e) => setOfferBenefitBn(e.target.value)} className="input-bangla" placeholder="নতুন benefit (বাংলা)" />
+                    <input value={offerBenefitEn} onChange={(e) => setOfferBenefitEn(e.target.value)} className="input-bangla" placeholder="New benefit (English)" />
+                  </div>
+                  <button type="button" onClick={() => {
+                    if (!offerBenefitBn.trim() && !offerBenefitEn.trim()) return;
+                    if (form.promotional_offer_benefits.length >= 6) { toast('সর্বোচ্চ ৬টি benefit রাখা যাবে', 'error'); return; }
+                    setForm({
+                      ...form,
+                      promotional_offer_benefits: [...form.promotional_offer_benefits, offerBenefitBn.trim()],
+                      promotional_offer_benefits_en: [...form.promotional_offer_benefits_en, offerBenefitEn.trim()],
+                    });
+                    setOfferBenefitBn('');
+                    setOfferBenefitEn('');
+                  }} className="mt-2 rounded-lg bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/20">+ Benefit যোগ করুন</button>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold">Offer Image URL (optional)</label>
+                    <input value={form.promotional_offer_image} onChange={(e) => setForm({ ...form, promotional_offer_image: e.target.value })} className="input-bangla" placeholder="https://..." />
+                    {form.images.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {form.images.slice(0, 5).map((img: string) => (
+                          <button key={img} type="button" onClick={() => setForm({ ...form, promotional_offer_image: img })} className={'overflow-hidden rounded-lg border-2 ' + (form.promotional_offer_image === img ? 'border-orange-500' : 'border-transparent')}>
+                            <img src={img} alt="" className="h-12 w-12 object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold">Offer End Date (optional)</label>
+                    <input type="date" value={form.promotional_offer_end_date} onChange={(e) => setForm({ ...form, promotional_offer_end_date: e.target.value })} className="input-bangla" />
+                    <p className="mt-1 text-[11px] text-muted-foreground">তারিখ শেষ হলে spotlight customer-কে আর দেখানো হবে না।</p>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold">CTA Text (বাংলা)</label>
+                    <input value={form.promotional_offer_cta_text} onChange={(e) => setForm({ ...form, promotional_offer_cta_text: e.target.value })} className="input-bangla" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold">CTA Text (English)</label>
+                    <input value={form.promotional_offer_cta_text_en} onChange={(e) => setForm({ ...form, promotional_offer_cta_text_en: e.target.value })} className="input-bangla" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold">CTA Link (optional)</label>
+                    <input value={form.promotional_offer_cta_link} onChange={(e) => setForm({ ...form, promotional_offer_cta_link: e.target.value })} className="input-bangla" placeholder="/all-products অথবা https://..." />
+                    <p className="mt-1 text-[11px] text-muted-foreground">খালি রাখলে product purchase area-তে scroll করবে।</p>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold">Small Note (বাংলা)</label>
+                    <input value={form.promotional_offer_note} onChange={(e) => setForm({ ...form, promotional_offer_note: e.target.value })} className="input-bangla" placeholder="শুধুমাত্র এই product-এর জন্য" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold">Small Note (English)</label>
+                    <input value={form.promotional_offer_note_en} onChange={(e) => setForm({ ...form, promotional_offer_note_en: e.target.value })} className="input-bangla" placeholder="Valid only for this product" />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-orange-200/80 bg-white p-2">
+                  <p className="mb-2 px-2 text-xs font-semibold text-muted-foreground">Live Preview</p>
+                  <ProductOfferSpotlight
+                    enabled={true}
+                    badge={form.promotional_offer_badge}
+                    badgeEn={form.promotional_offer_badge_en}
+                    title={form.promotional_offer_title}
+                    titleEn={form.promotional_offer_title_en}
+                    description={form.promotional_offer_description}
+                    descriptionEn={form.promotional_offer_description_en}
+                    benefits={form.promotional_offer_benefits}
+                    benefitsEn={form.promotional_offer_benefits_en}
+                    image={form.promotional_offer_image}
+                    fallbackImage={form.images[0] || null}
+                    ctaText={form.promotional_offer_cta_text}
+                    ctaTextEn={form.promotional_offer_cta_text_en}
+                    ctaLink={null}
+                    note={form.promotional_offer_note}
+                    noteEn={form.promotional_offer_note_en}
+                    lang="bn"
+                    preview
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Related Seeds */}

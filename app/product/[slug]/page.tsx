@@ -10,6 +10,7 @@ import { toast } from '@/components/site/toast-provider';
 import { ProductCard } from '@/components/site/product-card';
 import { ReviewForm } from '@/components/site/review-form';
 import ProductReviewShowcase from '@/components/site/product-review-showcase';
+import ProductOfferSpotlight from '@/components/site/product-offer-spotlight';
 import { supabase } from '@/lib/supabase/client';
 import { useLang } from '@/components/site/language-provider';
 import type { Product, Review, ProductFaq, BundleOffer, Promotion, PromotionGift, ProductVariant, BulkPricing } from '@/lib/supabase/types';
@@ -226,13 +227,33 @@ export default function ProductDetailPage() {
   return (
     <div className="min-h-screen bg-[#fafbfc] py-6 sm:py-10 pb-36 lg:pb-12 text-gray-900 overflow-x-hidden">
       <div className="max-w-6xl w-full mx-auto px-4">
+        <ProductOfferSpotlight
+          enabled={product.promotional_offer_enabled}
+          badge={product.promotional_offer_badge}
+          badgeEn={product.promotional_offer_badge_en}
+          title={product.promotional_offer_title}
+          titleEn={product.promotional_offer_title_en}
+          description={product.promotional_offer_description}
+          descriptionEn={product.promotional_offer_description_en}
+          benefits={product.promotional_offer_benefits}
+          benefitsEn={product.promotional_offer_benefits_en}
+          image={product.promotional_offer_image}
+          fallbackImage={images[0] || null}
+          ctaText={product.promotional_offer_cta_text}
+          ctaTextEn={product.promotional_offer_cta_text_en}
+          ctaLink={product.promotional_offer_cta_link}
+          endDate={product.promotional_offer_end_date}
+          note={product.promotional_offer_note}
+          noteEn={product.promotional_offer_note_en}
+          lang={lang}
+        />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-start w-full">
           <div className="w-full min-w-0">
             <div className="rounded-3xl border border-gray-200/80 bg-white p-3 shadow-md w-full overflow-hidden">
               <ProductGallery images={images} alt={productName} discount={discount} />
             </div>
           </div>
-          <div className="space-y-5 w-full min-w-0">
+          <div id="product-purchase" className="scroll-mt-24 space-y-5 w-full min-w-0">
             <div>
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2 flex-wrap">
