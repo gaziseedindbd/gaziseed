@@ -167,7 +167,7 @@ export default function ProductOfferSpotlight({
         className="mb-8 overflow-hidden rounded-[2rem] border border-orange-200/90 bg-gradient-to-r from-amber-50 via-orange-50/80 to-white shadow-[0_18px_50px_-28px_rgba(234,88,12,.35)]"
         aria-label={resolvedBadge}
       >
-        <div className="grid items-stretch lg:grid-cols-[minmax(0,1.35fr)_minmax(240px,.65fr)]">
+        <div className="grid items-start lg:grid-cols-[minmax(0,1.35fr)_minmax(240px,.65fr)]">
           <div className="relative p-5 sm:p-7 lg:p-8">
             <div className="flex flex-wrap items-center gap-2">
               <span className="offer-text-animate inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wide text-white shadow-sm">
@@ -225,21 +225,21 @@ export default function ProductOfferSpotlight({
             </div>
           </div>
 
-          <div className="relative min-h-[210px] overflow-hidden bg-gradient-to-br from-orange-100 to-amber-50 lg:min-h-full">
+          <div className="relative w-full max-h-[480px] overflow-hidden bg-gradient-to-br from-orange-100 to-amber-50 aspect-[4/5] lg:max-h-[520px]">
             {resolvedImage ? (
               <img
                 src={resolvedImage}
                 alt=""
-                className="h-full min-h-[210px] w-full object-cover"
+                className="block h-full w-full object-contain object-center"
                 loading="lazy"
               />
             ) : (
-              <div className="flex h-full min-h-[210px] items-center justify-center p-8 text-center text-sm font-bold text-orange-900/70">
+              <div className="flex h-full w-full items-center justify-center p-8 text-center text-sm font-bold text-orange-900/70">
                 {isHindi ? 'विशेष ऑफ़र' : isEnglish ? 'Special offer' : 'বিশেষ অফার'}
               </div>
             )}
             <div className="absolute bottom-4 right-4 rounded-full bg-red-600 px-4 py-2 text-xs font-black text-white shadow-lg shadow-red-600/30">
-              {isHindi ? 'सीमित ऑफ़र' : isEnglish ? 'LIMITED' : 'সীমিত অফার'}
+              {isHindi ? 'सीমিত অফ़र' : isEnglish ? 'LIMITED' : 'সীমিত অফার'}
             </div>
           </div>
         </div>
