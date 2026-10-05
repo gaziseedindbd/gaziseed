@@ -294,60 +294,6 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
     setVariants(variants.filter((_, i) => i !== idx));
   };
 
-  const bulkBaseUnitPrice = (() => {
-    const regular = Number(form.regular_price) || 0;
-    const sale = Number(form.sale_price) || 0;
-    return sale > 0 && sale < regular ? sale : regular;
-  })();
-
-  const calculateBulkSavings = (minQuantity: number, totalOfferPrice: number) =>
-    Math.max(0, bulkBaseUnitPrice * minQuantity - totalOfferPrice);
-
-  const addBulkTier = () => {
-    const minQuantity = Number(bulkForm.min_quantity);
-    const totalOfferPrice = Number(bulkForm.offer_price);
-
-    if (!Number.isInteger(minQuantity) || minQuantity < 2) {
-      toast('কমপক্ষে ২টি প্যাকেটের অফার দিন', 'error');
-      return;
-    }
-    if (!Number.isFinite(totalOfferPrice) || totalOfferPrice <= 0) {
-      toast('অফার মূল্য সঠিকভাবে দিন', 'error');
-      return;
-    }
-    if (bulkBaseUnitPrice <= 0) {
-      toast('আগে সাধারণ পণ্যের দাম দিন', 'error');
-      return;
-    }
-    if (totalOfferPrice >= bulkBaseUnitPrice * minQuantity) {
-      toast('অফার মূল্য সাধারণ মোট মূল্যের চেয়ে কম হতে হবে', 'error');
-      return;
-    }
-    if (bulkTiers.some((tier) => Number(tier.min_quantity) === minQuantity)) {
-      toast('এই পরিমাণের অফার আগে থেকেই আছে', 'error');
-      return;
-    }
-
-    setBulkTiers([
-      ...bulkTiers,
-      {
-        ...bulkForm,
-        min_quantity: minQuantity,
-        unit_price: Number((totalOfferPrice / minQuantity).toFixed(2)),
-        product_id: product?.id,
-        variant_id: null,
-        _new: true,
-      },
-    ]);
-    setBulkForm({ min_quantity: '', offer_price: '', is_active: true });
-  };
-
-  const removeBulkTier = (idx: number) => {
-    const b = bulkTiers[idx];
-    if (b.id && !b._new) setRemovedBulkTiers([...removedBulkTiers, b.id]);
-    setBulkTiers(bulkTiers.filter((_, i) => i !== idx));
-  };
-
   const toggleMonth = (m: string) => {
     const months = form.suitable_months || [];
     setForm({ ...form, suitable_months: months.includes(m) ? months.filter((x: string) => x !== m) : [...months, m] });
@@ -451,6 +397,61 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
   const [offerBenefitEn, setOfferBenefitEn] = useState('');
   const [offerBenefitHi, setOfferBenefitHi] = useState('');
   const [offerPreviewLang, setOfferPreviewLang] = useState<'bn' | 'hi' | 'en'>('bn');
+  const bulkBaseUnitPrice = (() => {
+    const regular = Number(form.regular_price) || 0;
+    const sale = Number(form.sale_price) || 0;
+    return sale > 0 && sale < regular ? sale : regular;
+  })();
+
+  const calculateBulkSavings = (minQuantity: number, totalOfferPrice: number) =>
+    Math.max(0, bulkBaseUnitPrice * minQuantity - totalOfferPrice);
+
+  const addBulkTier = () => {
+    const minQuantity = Number(bulkForm.min_quantity);
+    const totalOfferPrice = Number(bulkForm.offer_price);
+
+    if (!Number.isInteger(minQuantity) || minQuantity < 2) {
+      toast('কমপক্ষে ২টি প্যাকেটের অফার দিন', 'error');
+      return;
+    }
+    if (!Number.isFinite(totalOfferPrice) || totalOfferPrice <= 0) {
+      toast('অফার মূল্য সঠিকভাবে দিন', 'error');
+      return;
+    }
+    if (bulkBaseUnitPrice <= 0) {
+      toast('আগে সাধারণ পণ্যের দাম দিন', 'error');
+      return;
+    }
+    if (totalOfferPrice >= bulkBaseUnitPrice * minQuantity) {
+      toast('অফার মূল্য সাধারণ মোট মূল্যের চেয়ে কম হতে হবে', 'error');
+      return;
+    }
+    if (bulkTiers.some((tier) => Number(tier.min_quantity) === minQuantity)) {
+      toast('এই পরিমাণের অফার আগে থেকেই আছে', 'error');
+      return;
+    }
+
+    setBulkTiers([
+      ...bulkTiers,
+      {
+        ...bulkForm,
+        min_quantity: minQuantity,
+        unit_price: Number((totalOfferPrice / minQuantity).toFixed(2)),
+        product_id: product?.id,
+        variant_id: null,
+        _new: true,
+      },
+    ]);
+    setBulkForm({ min_quantity: '', offer_price: '', is_active: true });
+  };
+
+  const removeBulkTier = (idx: number) => {
+    const b = bulkTiers[idx];
+    if (b.id && !b._new) setRemovedBulkTiers([...removedBulkTiers, b.id]);
+    setBulkTiers(bulkTiers.filter((_, i) => i !== idx));
+  };
+
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
