@@ -136,7 +136,7 @@ export default function AdminProductsPage() {
     }
     if (productId && formData.bulkTiers) {
       for (const b of formData.bulkTiers) {
-        const { _new, ...rest } = b;
+        const { _new, offer_price, ...rest } = b;
         if (_new) {
           await supabase.from('bulk_pricing').insert({ ...rest, product_id: productId, variant_id: null });
         } else {
