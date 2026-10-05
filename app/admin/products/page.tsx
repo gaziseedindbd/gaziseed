@@ -136,7 +136,7 @@ export default function AdminProductsPage() {
     }
     if (productId && formData.bulkTiers) {
       for (const b of formData.bulkTiers) {
-        const { _new, ...rest } = b;
+        const { _new, offer_price, ...rest } = b;
         if (_new) {
           await supabase.from('bulk_pricing').insert({ ...rest, product_id: productId, variant_id: null });
         } else {
@@ -268,7 +268,7 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
   const [variantForm, setVariantForm] = useState({ name: '', sku: '', regular_price: '', sale_price: '', stock: '', weight_or_count: '', is_active: true, display_order: 0 });
   const [bulkTiers, setBulkTiers] = useState<any[]>([]);
   const [removedBulkTiers, setRemovedBulkTiers] = useState<string[]>([]);
-  const [bulkForm, setBulkForm] = useState({ min_quantity: '', unit_price: '', is_active: true });
+  const [bulkForm, setBulkForm] = useState({ min_quantity: '', offer_price: '', is_active: true });
   const [showSeasonal, setShowSeasonal] = useState(false);
   const allMonths = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
   const allSeasonTags = ['Winter', 'Summer', 'Rainy Season', 'Fast Growing', 'Hybrid', 'Local/Desi'];
@@ -292,17 +292,6 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
     const v = variants[idx];
     if (v.id && !v._new) setRemovedVariants([...removedVariants, v.id]);
     setVariants(variants.filter((_, i) => i !== idx));
-  };
-
-  const addBulkTier = () => {
-    if (!bulkForm.min_quantity || !bulkForm.unit_price) { toast('পরিমাণ ও দাম দিন', 'error'); return; }
-    setBulkTiers([...bulkTiers, { ...bulkForm, min_quantity: Number(bulkForm.min_quantity), unit_price: Number(bulkForm.unit_price), product_id: product?.id, _new: true }]);
-    setBulkForm({ min_quantity: '', unit_price: '', is_active: true });
-  };
-  const removeBulkTier = (idx: number) => {
-    const b = bulkTiers[idx];
-    if (b.id && !b._new) setRemovedBulkTiers([...removedBulkTiers, b.id]);
-    setBulkTiers(bulkTiers.filter((_, i) => i !== idx));
   };
 
   const toggleMonth = (m: string) => {
@@ -408,6 +397,61 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
   const [offerBenefitEn, setOfferBenefitEn] = useState('');
   const [offerBenefitHi, setOfferBenefitHi] = useState('');
   const [offerPreviewLang, setOfferPreviewLang] = useState<'bn' | 'hi' | 'en'>('bn');
+  const bulkBaseUnitPrice = (() => {
+    const regular = Number(form.regular_price) || 0;
+    const sale = Number(form.sale_price) || 0;
+    return sale > 0 && sale < regular ? sale : regular;
+  })();
+
+  const calculateBulkSavings = (minQuantity: number, totalOfferPrice: number) =>
+    Math.max(0, bulkBaseUnitPrice * minQuantity - totalOfferPrice);
+
+  const addBulkTier = () => {
+    const minQuantity = Number(bulkForm.min_quantity);
+    const totalOfferPrice = Number(bulkForm.offer_price);
+
+    if (!Number.isInteger(minQuantity) || minQuantity < 2) {
+      toast('কমপক্ষে ২টি প্যাকেটের অফার দিন', 'error');
+      return;
+    }
+    if (!Number.isFinite(totalOfferPrice) || totalOfferPrice <= 0) {
+      toast('অফার মূল্য সঠিকভাবে দিন', 'error');
+      return;
+    }
+    if (bulkBaseUnitPrice <= 0) {
+      toast('আগে সাধারণ পণ্যের দাম দিন', 'error');
+      return;
+    }
+    if (totalOfferPrice >= bulkBaseUnitPrice * minQuantity) {
+      toast('অফার মূল্য সাধারণ মোট মূল্যের চেয়ে কম হতে হবে', 'error');
+      return;
+    }
+    if (bulkTiers.some((tier) => Number(tier.min_quantity) === minQuantity)) {
+      toast('এই পরিমাণের অফার আগে থেকেই আছে', 'error');
+      return;
+    }
+
+    setBulkTiers([
+      ...bulkTiers,
+      {
+        ...bulkForm,
+        min_quantity: minQuantity,
+        unit_price: Number((totalOfferPrice / minQuantity).toFixed(2)),
+        product_id: product?.id,
+        variant_id: null,
+        _new: true,
+      },
+    ]);
+    setBulkForm({ min_quantity: '', offer_price: '', is_active: true });
+  };
+
+  const removeBulkTier = (idx: number) => {
+    const b = bulkTiers[idx];
+    if (b.id && !b._new) setRemovedBulkTiers([...removedBulkTiers, b.id]);
+    setBulkTiers(bulkTiers.filter((_, i) => i !== idx));
+  };
+
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -880,22 +924,76 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
             </div>
           </div>
 
-          {/* Bulk Pricing */}
-          <div className="rounded-xl bg-secondary/20 p-4">
-            <h3 className="mb-3 font-semibold">হোলসেল / বাল্ক প্রাইসিং</h3>
-            <div className="space-y-2">
-              {bulkTiers.map((b, idx) => (
-                <div key={idx} className="flex items-center gap-2 rounded-lg bg-background p-2 text-sm">
-                  <span className="flex-1">{b.min_quantity}+ টি → ৳{b.unit_price}/টি</span>
-                  <button type="button" onClick={() => removeBulkTier(idx)} className="text-destructive"><X className="h-4 w-4" /></button>
-                </div>
-              ))}
+          {/* Quantity / Bulk Offer */}
+          <div className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50 via-orange-50/60 to-background p-4 sm:p-5">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h3 className="font-black text-gray-900">🔥 একসাথে বেশি নিলে বেশি সাশ্রয়</h3>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  যেমন: ২ প্যাকেট মোট ৳১৮০। সিস্টেম নিজে একক মূল্য ও সাশ্রয় হিসাব করবে।
+                </p>
+              </div>
+              {bulkBaseUnitPrice > 0 && (
+                <span className="rounded-full border border-amber-200 bg-white px-3 py-1 text-[11px] font-bold text-amber-800">
+                  সাধারণ দাম: {formatPrice(bulkBaseUnitPrice)} / প্যাকেট
+                </span>
+              )}
             </div>
-            <div className="mt-2 flex gap-2 rounded-lg border border-dashed border-border p-3">
-              <input value={bulkForm.min_quantity} onChange={(e) => setBulkForm({ ...bulkForm, min_quantity: e.target.value })} placeholder="ন্যূনতম পরিমাণ" type="number" className="input-bangla" />
-              <input value={bulkForm.unit_price} onChange={(e) => setBulkForm({ ...bulkForm, unit_price: e.target.value })} placeholder="একক দাম" type="number" className="input-bangla" />
-              <button type="button" onClick={addBulkTier} className="flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-2 text-sm font-medium text-primary"><Plus className="h-4 w-4" /> যোগ করুন</button>
+
+            {bulkTiers.length > 0 && (
+              <div className="space-y-2">
+                {[...bulkTiers].sort((a, b) => Number(a.min_quantity) - Number(b.min_quantity)).map((b, idx) => {
+                  const quantity = Number(b.min_quantity) || 0;
+                  const totalOfferPrice = Number(b.unit_price || 0) * quantity;
+                  const savings = calculateBulkSavings(quantity, totalOfferPrice);
+                  return (
+                    <div key={b.id || ("new-" + idx)} className="flex flex-col gap-2 rounded-xl border border-amber-200/70 bg-white p-3 sm:flex-row sm:items-center">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2 text-sm font-black text-gray-900">
+                          <span>{quantity} প্যাকেট</span>
+                          <span className="text-gray-300">→</span>
+                          <span className="text-emerald-700">{formatPrice(totalOfferPrice)} মোট</span>
+                        </div>
+                        <div className="mt-0.5 text-[11px] text-muted-foreground">
+                          সাশ্রয় {formatPrice(savings)} · একক মূল্য {formatPrice(b.unit_price)}
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => removeBulkTier(idx)} className="self-end rounded-lg p-2 text-destructive hover:bg-destructive/10 sm:self-auto" aria-label="অফার মুছুন">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="mt-3 grid gap-2 rounded-xl border border-dashed border-amber-300 bg-white/80 p-3 sm:grid-cols-[1fr_1.2fr_auto]">
+              <input
+                value={bulkForm.min_quantity}
+                onChange={(e) => setBulkForm({ ...bulkForm, min_quantity: e.target.value })}
+                placeholder="কত প্যাকেট? (যেমন ২)"
+                type="number"
+                min="2"
+                step="1"
+                className="input-bangla"
+              />
+              <input
+                value={bulkForm.offer_price}
+                onChange={(e) => setBulkForm({ ...bulkForm, offer_price: e.target.value })}
+                placeholder="মোট অফার মূল্য (যেমন ১৮০)"
+                type="number"
+                min="1"
+                step="0.01"
+                className="input-bangla"
+              />
+              <button type="button" onClick={addBulkTier} className="flex items-center justify-center gap-1 rounded-lg bg-primary/10 px-3 py-2 text-sm font-bold text-primary hover:bg-primary/20">
+                <Plus className="h-4 w-4" /> নতুন অফার
+              </button>
             </div>
+
+            <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+              প্রতিটি পরিমাণ আলাদা হতে হবে। অফার মূল্য সাধারণ মোট মূল্যের চেয়ে কম হলেই সেভ হবে।
+            </p>
           </div>
 
           {/* Purchase Limits */}

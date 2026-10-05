@@ -4,6 +4,11 @@ import { supabase } from './supabase/client';
 import type { Product } from './supabase/types';
 import { trackMarketingEvent } from './marketing';
 
+export type CartBulkTier = {
+  min_quantity: number;
+  unit_price: number;
+};
+
 export type CartItem = {
   product_id: string;
   name: string;
@@ -11,10 +16,12 @@ export type CartItem = {
   image: string;
   unit_price: number;
   regular_price: number;
+  base_unit_price?: number;
   quantity: number;
   variant_id?: string;
   variant_name?: string;
   bundle_id?: string;
+  bulk_tiers?: CartBulkTier[];
 };
 
 const CART_KEY = 'gazi_cart';
@@ -54,20 +61,32 @@ export function saveCart(items: CartItem[]) {
   window.dispatchEvent(new Event('cart-updated'));
 }
 
-export function addToCart(product: Product, quantity: number = 1, overrides?: Partial<Pick<CartItem, 'name' | 'unit_price' | 'variant_id' | 'variant_name' | 'bundle_id'>>) {
+const getBulkUnitPrice = (quantity: number, baseUnitPrice: number, tiers?: CartBulkTier[]) => {
+  const applicable = (tiers || [])
+    .filter((tier) => tier.min_quantity <= quantity && tier.unit_price > 0)
+    .sort((a, b) => b.min_quantity - a.min_quantity)[0];
+  return applicable?.unit_price ?? baseUnitPrice;
+};
+
+export function addToCart(product: Product, quantity: number = 1, overrides?: Partial<Pick<CartItem, 'name' | 'unit_price' | 'base_unit_price' | 'variant_id' | 'variant_name' | 'bundle_id' | 'bulk_tiers'>>) {
   const cart = getCart();
   const existing = cart.find((item) =>
     item.product_id === product.id &&
     normalizeOptionId(item.variant_id) === normalizeOptionId(overrides?.variant_id) &&
     normalizeOptionId(item.bundle_id) === normalizeOptionId(overrides?.bundle_id)
   );
-  const price = overrides?.unit_price ?? (product.sale_price && product.sale_price > 0 && product.sale_price < product.regular_price
+  const baseUnitPrice = overrides?.base_unit_price ?? (product.sale_price && product.sale_price > 0 && product.sale_price < product.regular_price
     ? product.sale_price
     : product.regular_price);
+  const price = overrides?.unit_price ?? getBulkUnitPrice(quantity, baseUnitPrice, overrides?.bulk_tiers);
   const itemName = overrides?.name || product.name_bn || product.name_en;
 
   if (existing) {
     existing.quantity += quantity;
+    if (overrides?.bulk_tiers) existing.bulk_tiers = overrides.bulk_tiers;
+    if (overrides?.base_unit_price) existing.base_unit_price = overrides.base_unit_price;
+    const recalcBase = existing.base_unit_price ?? baseUnitPrice;
+    existing.unit_price = getBulkUnitPrice(existing.quantity, recalcBase, existing.bulk_tiers);
   } else {
     cart.push({
       product_id: product.id,
@@ -76,10 +95,12 @@ export function addToCart(product: Product, quantity: number = 1, overrides?: Pa
       image: product.image,
       unit_price: price,
       regular_price: product.regular_price,
+      base_unit_price: baseUnitPrice,
       quantity,
       variant_id: overrides?.variant_id,
       variant_name: overrides?.variant_name,
       bundle_id: overrides?.bundle_id,
+      bulk_tiers: overrides?.bulk_tiers,
     });
   }
   saveCart(cart);
@@ -116,6 +137,13 @@ export function updateCartQuantity(productId: string, quantity: number, variantI
       removeFromCart(productId, variantId, bundleId);
     } else {
       item.quantity = quantity;
+      if (item.bulk_tiers?.length) {
+        item.unit_price = getBulkUnitPrice(
+          quantity,
+          item.base_unit_price ?? item.regular_price,
+          item.bulk_tiers
+        );
+      }
       saveCart(cart);
     }
   }
