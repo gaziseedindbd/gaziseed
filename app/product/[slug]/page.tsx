@@ -180,6 +180,7 @@ export default function ProductDetailPage() {
     addToCart(product, quantity, {
       name: selectedVariant ? `${productName} (${selectedVariant.name})` : productName,
       unit_price: finalUnitPrice,
+      base_unit_price: effectivePrice,
       variant_id: selectedVariant?.id,
       variant_name: selectedVariant?.name,
       bulk_tiers: selectedBulkTiers,
