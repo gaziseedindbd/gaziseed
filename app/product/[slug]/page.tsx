@@ -68,8 +68,13 @@ export default function ProductDetailPage() {
             if (cancelled) return;
             setVariants(vs);
             if (vs.length > 0) setSelectedVariant(vs[0]);
-            else getBulkPricing(p.id).then(setBulkTiers).catch(() => setBulkTiers([]));
           }).catch(() => setVariants([]));
+          getBulkPricing(p.id)
+            .then((tiers) => {
+              if (cancelled) return;
+              setBulkTiers(tiers || []);
+            })
+            .catch(() => setBulkTiers([]));
           if (p.related_product_ids && p.related_product_ids.length > 0) {
             getRelatedProducts(p.id, p.related_product_ids).then(setRelated).catch(() => setRelated([]));
           } else {
@@ -156,7 +161,10 @@ export default function ProductDetailPage() {
   const effectiveStock = selectedVariant ? selectedVariant.stock : product.stock;
   const inStock = effectiveStock > 0;
 
-  const applicableBulk = bulkTiers.filter((b) => b.min_quantity <= quantity).sort((a, b) => b.min_quantity - a.min_quantity)[0];
+  const selectedBulkTiers = bulkTiers
+    .filter((b) => b.is_active && (selectedVariant ? b.variant_id === selectedVariant.id : b.variant_id === null))
+    .sort((a, b) => a.min_quantity - b.min_quantity);
+  const applicableBulk = selectedBulkTiers.filter((b) => b.min_quantity <= quantity).sort((a, b) => b.min_quantity - a.min_quantity)[0];
   const finalUnitPrice = applicableBulk ? applicableBulk.unit_price : effectivePrice;
   const totalPrice = finalUnitPrice * quantity;
 
@@ -174,6 +182,7 @@ export default function ProductDetailPage() {
       unit_price: finalUnitPrice,
       variant_id: selectedVariant?.id,
       variant_name: selectedVariant?.name,
+      bulk_tiers: selectedBulkTiers,
     });
 
 
@@ -286,7 +295,52 @@ export default function ProductDetailPage() {
               {discount > 0 && <div className="rounded-full bg-red-500 text-white text-xs font-black px-3.5 py-1.5 shadow-xs shrink-0 whitespace-nowrap">{discount}% {t('ছাড়', 'OFF')}</div>}
             </div>
             {variants.length > 0 && <div className="space-y-2"><label className="block text-xs font-bold text-gray-700 uppercase tracking-wide">{t('প্যাকেট বা জাত নির্বাচন করুন', 'Select Packet or Variety')}</label><div className="flex flex-wrap gap-2">{variants.map((v) => { const isSelected = selectedVariant?.id === v.id; const vPrice = v.sale_price && v.sale_price > 0 && v.sale_price < v.regular_price ? v.sale_price : v.regular_price; return <button key={v.id} type="button" onClick={() => setSelectedVariant(v)} aria-pressed={isSelected} className={`rounded-2xl border-2 px-3.5 py-2 min-h-11 text-xs sm:text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${isSelected ? 'border-emerald-600 bg-emerald-50/80 text-emerald-900 shadow-xs ring-1 ring-emerald-500/30' : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-300'}`}>{v.name} — <span className="text-emerald-700 font-extrabold">{formatPrice(vPrice)}</span></button>; })}</div></div>}
-            {bulkTiers.length > 0 && <div className="rounded-2xl bg-amber-50/70 border border-amber-200/80 p-3 text-xs space-y-1"><p className="font-bold text-amber-900 flex items-center gap-1.5"><Package className="h-4 w-4 text-amber-600" /> {t('একসাথে বেশি নিলে বিশেষ ছাড়:', 'Special discount for bulk purchase:')}</p><div className="flex flex-wrap gap-2 pt-1">{bulkTiers.map((b, idx) => <span key={idx} className="bg-white px-2.5 py-1 rounded-lg border border-amber-200 font-semibold text-gray-700">{b.min_quantity}+ {t('টি', 'pcs')} = <b className="text-emerald-700">{formatPrice(b.unit_price)}</b>/{t('টি', 'pc')}</span>)}</div></div>}
+            {selectedBulkTiers.length > 0 && <div className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50 via-orange-50/60 to-white p-3.5 sm:p-4 shadow-sm">
+              <div className="mb-3 flex items-start justify-between gap-2">
+                <div>
+                  <p className="flex items-center gap-1.5 text-sm font-black text-amber-950">
+                    <Package className="h-4 w-4 text-amber-600" />
+                    {t('🔥 একসাথে বেশি নিলে বেশি সাশ্রয়', '🔥 Buy More, Save More')}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-amber-900/70">
+                    {t('আপনার পরিমাণ অনুযায়ী সেরা অফারটি নিজে থেকে প্রযোজ্য হবে।', 'The best eligible offer applies automatically as quantity increases.')}
+                  </p>
+                </div>
+                {applicableBulk && <span className="shrink-0 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-black text-white">
+                  {t('সাশ্রয় চলছে', 'Saving')}
+                </span>}
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {selectedBulkTiers.map((b) => {
+                  const offerTotal = b.unit_price * b.min_quantity;
+                  const normalTotal = effectivePrice * b.min_quantity;
+                  const savings = Math.max(0, normalTotal - offerTotal);
+                  const isActive = !!applicableBulk && applicableBulk.id === b.id;
+                  return (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => setQuantity(Math.max(quantity, b.min_quantity))}
+                      className={`rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${isActive ? 'border-amber-400 bg-amber-100/70 shadow-sm ring-1 ring-amber-300/60' : 'border-amber-200/80 bg-white hover:border-amber-300'}`}
+                      aria-label={t(`${b.min_quantity} প্যাকেটের অফার নিন`, `Choose ${b.min_quantity} packet offer`)}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-black text-gray-900">{b.min_quantity} {t('প্যাকেট', 'packets')}</span>
+                        {isActive && <span className="text-[9px] font-black uppercase tracking-wide text-amber-800">{t('সক্রিয়', 'Active')}</span>}
+                      </div>
+                      <div className="mt-1 flex items-baseline gap-1.5">
+                        <span className="text-base font-black text-emerald-700">{formatPrice(offerTotal)}</span>
+                        <span className="text-[10px] font-semibold text-gray-400">{t('মোট', 'total')}</span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px]">
+                        <span className="text-gray-400 line-through">{formatPrice(normalTotal)}</span>
+                        <span className="font-black text-amber-700">{t('সাশ্রয়', 'Save')} {formatPrice(savings)}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>}
             <div>{inStock ? <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200"><Check className="h-3.5 w-3.5" /> {t('স্টকে এভেইলেবল আছে', 'In Stock')}{product.show_low_stock && effectiveStock <= (product.low_stock_threshold || 5) && <span className="text-red-600"> ({t(`মাত্র ${effectiveStock} টি বাকি!`, `Only ${effectiveStock} left!`)})</span>}</div> : <div className="inline-flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">{t('স্টক শেষ হয়ে গেছে', 'Out of Stock')}</div>}</div>
             {productShortDesc && <div className="rounded-2xl bg-gray-50/90 border border-gray-200/80 p-4 text-xs sm:text-sm text-gray-700 leading-relaxed font-medium whitespace-pre-line space-y-2 shadow-2xs">{productShortDesc}</div>}
             {inStock && <div className="flex items-center gap-4 pt-1 flex-wrap"><div className="flex items-center rounded-2xl border-2 border-gray-200 bg-white p-1 shadow-2xs"><button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="h-9 w-9 rounded-xl flex items-center justify-center hover:bg-gray-100 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label={t('কমান', 'Decrease quantity')}><Minus className="h-4 w-4" /></button><span className="w-10 text-center font-black text-sm" aria-live="polite">{quantity}</span><button type="button" onClick={() => setQuantity(quantity + 1)} className="h-9 w-9 rounded-xl flex items-center justify-center hover:bg-gray-100 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label={t('বাড়ান', 'Increase quantity')}><Plus className="h-4 w-4" /></button></div><div className="text-xs"><span className="text-gray-400 block font-medium">{t('সর্বমোট মূল্য', 'Total Price')}</span><span className="text-lg font-black text-gray-900">{formatPrice(totalPrice)}</span></div></div>}
