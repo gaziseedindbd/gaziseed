@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Facebook, Instagram, Youtube, Phone, Mail, MapPin, ArrowUpRight, ShieldCheck, Truck } from 'lucide-react';
@@ -33,7 +34,17 @@ export function SiteFooter() {
     <div className="container-custom pt-10 sm:pt-14">
       <div className="mb-8 grid gap-3 sm:grid-cols-3"><div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-4"><ShieldCheck className="h-5 w-5 shrink-0 text-primary" /><div><p className="text-sm font-bold">{t('নিরাপদ শপিং', 'Secure Shopping')}</p><p className="text-xs text-muted-foreground">{t('বিশ্বস্ত অর্ডার প্রক্রিয়া', 'Trusted ordering')}</p></div></div><div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-4"><Truck className="h-5 w-5 shrink-0 text-primary" /><div><p className="text-sm font-bold">{t('সারাদেশে ডেলিভারি', 'Nationwide Delivery')}</p><p className="text-xs text-muted-foreground">{t('সহজ ও নির্ভরযোগ্য ডেলিভারি', 'Easy, reliable delivery')}</p></div></div><Link href="/track-order" className="flex items-center justify-between gap-3 rounded-2xl border border-primary/15 bg-primary/[0.045] p-4 transition hover:-translate-y-0.5 hover:border-primary/30"><div className="flex items-center gap-3"><MapPin className="h-5 w-5 shrink-0 text-primary" /><div><p className="text-sm font-bold">{t('অর্ডার ট্র্যাক করুন', 'Track Your Order')}</p><p className="text-xs text-muted-foreground">{t('ডেলিভারির অবস্থা দেখুন', 'Check delivery status')}</p></div></div><ArrowUpRight className="h-4 w-4 text-primary" /></Link></div>
       <div className="grid grid-cols-1 gap-10 border-t border-border/70 py-10 sm:grid-cols-2 lg:grid-cols-4">
-        <div><div className="mb-4 flex items-center gap-2">{settings?.logo ? <img src={settings.logo} alt={settings.website_name || fallbackBrand} className="h-11 w-auto max-w-[155px] object-contain" /> : <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground"><span className="text-xl font-bold">G</span></div>}<div><div className="text-lg font-bold text-primary">{settings?.website_name || fallbackBrand}</div><div className="text-[10px] text-muted-foreground">{fallbackTagline}</div></div></div><p className="max-w-sm text-sm leading-6 text-muted-foreground">{fallbackDescription}</p><div className="mt-5 flex gap-2">{settings?.facebook && <a href={settings.facebook} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-border bg-card p-2.5 transition hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary" aria-label="Facebook"><Facebook className="h-4 w-4" /></a>}{settings?.instagram && <a href={settings.instagram} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-border bg-card p-2.5 transition hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary" aria-label="Instagram"><Instagram className="h-4 w-4" /></a>}{settings?.youtube && <a href={settings.youtube} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-border bg-card p-2.5 transition hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary" aria-label="YouTube"><Youtube className="h-4 w-4" /></a>}</div></div>
+        <div><div className="mb-4 flex items-center gap-2">{settings?.logo ? (
+            <Image
+              src={settings.logo}
+              alt={settings.website_name || fallbackBrand}
+              width={220}
+              height={115}
+              sizes="155px"
+              quality={70}
+              className="h-11 w-auto max-w-[155px] object-contain"
+            />
+          ) : <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground"><span className="text-xl font-bold">G</span></div>}<div><div className="text-lg font-bold text-primary">{settings?.website_name || fallbackBrand}</div><div className="text-[10px] text-muted-foreground">{fallbackTagline}</div></div></div><p className="max-w-sm text-sm leading-6 text-muted-foreground">{fallbackDescription}</p><div className="mt-5 flex gap-2">{settings?.facebook && <a href={settings.facebook} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-border bg-card p-2.5 transition hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary" aria-label="Facebook"><Facebook className="h-4 w-4" /></a>}{settings?.instagram && <a href={settings.instagram} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-border bg-card p-2.5 transition hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary" aria-label="Instagram"><Instagram className="h-4 w-4" /></a>}{settings?.youtube && <a href={settings.youtube} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-border bg-card p-2.5 transition hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary" aria-label="YouTube"><Youtube className="h-4 w-4" /></a>}</div></div>
         <div>
           <h3 className="mb-4 text-sm font-black uppercase tracking-wider text-foreground">{t('কুইক লিংক', 'Quick Links')}</h3>
           <ul className="space-y-2.5 text-sm">
