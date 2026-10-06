@@ -1,4 +1,6 @@
 import { cookies, headers } from 'next/headers';
+import { readFileSync } from 'fs';
+import path from 'path';
 import Home from '@/components/site/home';
 import { getImageProps } from 'next/image';
 import type { Banner } from '@/lib/supabase/types';
@@ -48,5 +50,12 @@ export default async function Page() {
       alt: firstBanner.title || 'GAZI SEED',
     }).props,
   } : null;
-  return <Home initialBanners={initialBanners} initialHeroImage={heroImage} initialVisitorCountry={visitorCountry} />;
+  const homeStyles = readFileSync(path.join(process.cwd(), 'public/home-styles-v1.css'), 'utf8');
+
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: homeStyles }} />
+      <Home initialBanners={initialBanners} initialHeroImage={heroImage} initialVisitorCountry={visitorCountry} />
+    </>
+  );
 }
