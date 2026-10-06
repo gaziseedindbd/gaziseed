@@ -18,8 +18,7 @@ export default async function Page() {
   bannerQuery.searchParams.set('select', '*');
   bannerQuery.searchParams.set('is_active', 'eq.true');
   bannerQuery.searchParams.set('country_code', `eq.${visitorCountry}`);
-  bannerQuery.searchParams.set('or', `(start_date.is.null,start_date.lte.${now})`);
-  bannerQuery.searchParams.set('or', `(end_date.is.null,end_date.gte.${now})`);
+  bannerQuery.searchParams.set('and', `(or(start_date.is.null,start_date.lte.${now}),or(end_date.is.null,end_date.gte.${now}))`);
   bannerQuery.searchParams.set('order', 'display_order.asc');
 
   const bannerResponse = await fetch(bannerQuery.toString(), {
