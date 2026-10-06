@@ -19,14 +19,14 @@ type HeroImageProps = {
   mobile: ComponentProps<'img'>;
 };
 
-export default function Home({ initialBanners = [], initialHeroImage = null, initialVisitorCountry }: { initialBanners?: Banner[]; initialHeroImage?: HeroImageProps | null; initialVisitorCountry?: 'BD' | 'IN' }) {
+export default function Home({ initialBanners = [], initialCategories = [], initialFeaturedProducts = [], initialHeroImage = null, initialVisitorCountry }: { initialBanners?: Banner[]; initialCategories?: Category[]; initialFeaturedProducts?: Product[]; initialHeroImage?: HeroImageProps | null; initialVisitorCountry?: 'BD' | 'IN' }) {
   const { t, tDb, tCategoryName } = useLang();
   const visitorCountry = initialVisitorCountry || getVisitorCountry();
   const cached = memoryCache.country === visitorCountry ? memoryCache : {};
   const [banners, setBanners] = useState<Banner[]>(cached.banners || initialBanners);
-  const [categories, setCategories] = useState<Category[]>(cached.categories || []);
-  const [categoriesLoaded, setCategoriesLoaded] = useState(Boolean(cached.categories));
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>(cached.featuredProducts || []);
+  const [categories, setCategories] = useState<Category[]>(cached.categories || initialCategories);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(Boolean(cached.categories) || initialCategories.length > 0);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>(cached.featuredProducts || initialFeaturedProducts);
   const [bestSellers, setBestSellers] = useState<Product[]>(cached.bestSellers || []);
   const [newArrivals, setNewArrivals] = useState<Product[]>(cached.newArrivals || []);
   const [seasonal, setSeasonal] = useState<Product[]>(cached.seasonal || []);
