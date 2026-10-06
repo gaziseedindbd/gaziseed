@@ -11,7 +11,7 @@ const nextConfig = {
       },
     ],
   },
-  experimental: { cpus: 1 },
+  experimental: { cpus: 1, inlineCss: true },
   webpack: (config) => {
     config.parallelism = 1;
     return config;
