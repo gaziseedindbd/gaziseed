@@ -48,10 +48,10 @@ export default function Home({ initialBanners = [], initialHeroImage = null }: {
     const isCacheValid = memoryCache.country === country && memoryCache.timestamp && Date.now() - memoryCache.timestamp < 60000;
     if (isCacheValid) return;
 
-    const applyCore = (c: Category[], fp: Product[]) => {
+    const applyCore = (bannersForCache: Banner[], c: Category[], fp: Product[]) => {
       if (cancelled) return;
       setCategories(c); setCategoriesLoaded(true); setFeaturedProducts(fp);
-      memoryCache = { ...memoryCache, country, banners: bannerRes, categories: c, featuredProducts: fp, timestamp: Date.now() };
+      memoryCache = { ...memoryCache, country, banners: bannersForCache, categories: c, featuredProducts: fp, timestamp: Date.now() };
     };
     const applySecondary = (bs: Product[], na: Product[], ss: Product[], tms: Product[]) => {
       if (cancelled) return;
@@ -67,7 +67,7 @@ export default function Home({ initialBanners = [], initialHeroImage = null }: {
         ]);
         const c = cRes.status === 'fulfilled' ? cRes.value : [];
         const fp = fpRes.status === 'fulfilled' ? fpRes.value : [];
-        applyCore(c, fp);
+        applyCore(bannerRes, c, fp);
 
         const idle = (typeof window !== 'undefined' && 'requestIdleCallback' in window)
           ? (window as Window & { requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number }).requestIdleCallback
