@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronRight, Truck, ShieldCheck, Sprout, Phone, Heart, Users, Headphones, MapPin } from 'lucide-react';
 import { ProductCard } from './product-card';
-import { getBanners, getCategories, getProducts, getServices, getTestimonials, getBlogPosts, getSiteSettings, getHomepageSections, getThisMonthSeeds } from '@/lib/data';
+import { getCategories, getProducts, getServices, getTestimonials, getBlogPosts, getSiteSettings, getHomepageSections, getThisMonthSeeds } from '@/lib/data';
 import { detectAndStoreReferralCode } from '@/lib/referral';
 import { getVisitorCountry } from '@/lib/supabase/client';
 import { useLang } from './language-provider';
@@ -14,11 +14,11 @@ import type { Banner, Category, Product, Service, Testimonial, BlogPost, SiteSet
 
 let memoryCache: { country?: 'BD' | 'IN'; banners?: Banner[]; categories?: Category[]; featuredProducts?: Product[]; bestSellers?: Product[]; newArrivals?: Product[]; seasonal?: Product[]; thisMonthSeeds?: Product[]; services?: Service[]; testimonials?: Testimonial[]; blogPosts?: BlogPost[]; settings?: SiteSettings | null; sections?: HomepageSection[]; timestamp?: number } = {};
 
-export default function Home() {
+export default function Home({ initialBanners = [] }: { initialBanners?: Banner[] }) {
   const { t, tDb, tCategoryName } = useLang();
   const visitorCountry = getVisitorCountry();
   const cached = memoryCache.country === visitorCountry ? memoryCache : {};
-  const [banners, setBanners] = useState<Banner[]>(cached.banners || []);
+  const [banners, setBanners] = useState<Banner[]>(cached.banners || initialBanners);
   const [categories, setCategories] = useState<Category[]>(cached.categories || []);
   const [categoriesLoaded, setCategoriesLoaded] = useState(Boolean(cached.categories));
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>(cached.featuredProducts || []);
@@ -43,10 +43,10 @@ export default function Home() {
     const isCacheValid = memoryCache.country === country && memoryCache.timestamp && Date.now() - memoryCache.timestamp < 60000;
     if (isCacheValid) return;
 
-    const applyCore = (b: Banner[], c: Category[], fp: Product[]) => {
+    const applyCore = (c: Category[], fp: Product[]) => {
       if (cancelled) return;
-      setBanners(b); setCategories(c); setCategoriesLoaded(true); setFeaturedProducts(fp);
-      memoryCache = { ...memoryCache, country, banners: b, categories: c, featuredProducts: fp, timestamp: Date.now() };
+      setCategories(c); setCategoriesLoaded(true); setFeaturedProducts(fp);
+      memoryCache = { ...memoryCache, country, banners: initialBanners, categories: c, featuredProducts: fp, timestamp: Date.now() };
     };
     const applySecondary = (bs: Product[], na: Product[], ss: Product[], tms: Product[]) => {
       if (cancelled) return;
@@ -55,13 +55,12 @@ export default function Home() {
     };
     const loadHomepageData = async () => {
       try {
-        const [bRes, cRes, fpRes] = await Promise.allSettled([
-          getBanners(), getCategories(), getProducts({ is_featured: true, limit: 8 }),
+        const [cRes, fpRes] = await Promise.allSettled([
+          getCategories(), getProducts({ is_featured: true, limit: 8 }),
         ]);
-        const b = bRes.status === 'fulfilled' ? bRes.value : [];
         const c = cRes.status === 'fulfilled' ? cRes.value : [];
         const fp = fpRes.status === 'fulfilled' ? fpRes.value : [];
-        applyCore(b, c, fp);
+        applyCore(c, fp);
 
         const idle = (typeof window !== 'undefined' && 'requestIdleCallback' in window)
           ? (window as Window & { requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number }).requestIdleCallback
