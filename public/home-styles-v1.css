@@ -965,3 +965,10 @@
   scroll-margin-top:96px!important;
 }
 
+
+
+/* Hero fallback animation hardening: initial viewport geometry must not move after paint. */
+.home-premium-scope .hero-inner>div:first-child,
+.home-premium-scope .hero-wrap>div>div:first-child{
+  animation:none!important;
+}
