@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { Plus, Edit, Trash2, X, Upload, Link as LinkIcon, Star } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
-import { processLocalImage, processUrlImage, uploadProcessedFile } from '@/lib/image-processing';
+import { processUrlImage, uploadProcessedFile } from '@/lib/image-processing';
+import { optimizeImageForUpload } from '@/lib/client-image-upload';
 import { generateCategorySeo } from '@/lib/seo/auto-seo';
 
 export default function AdminCategoriesPage() {
@@ -147,7 +148,7 @@ function CategoryImageUploader({ image, setImage, label, recommendation }: { ima
   const uploadFile = async (file: File) => {
     setUploading(true);
     try {
-      const processed = await processLocalImage(file, { maxWidth: 1200, maxHeight: 1200 });
+      const processed = await optimizeImageForUpload(file, label === 'ব্যানার ছবি' ? 'category-banner' : 'category');
       const url = await uploadProcessedFile(processed, 'product-images', supabase);
       setImage(url);
       toast('ছবি প্রসেস ও আপলোড হয়েছে');
@@ -159,7 +160,13 @@ function CategoryImageUploader({ image, setImage, label, recommendation }: { ima
     if (!urlInput.trim()) return;
     setUploading(true);
     try {
-      const processed = await processUrlImage(urlInput.trim(), { maxWidth: 1200, maxHeight: 1200 });
+      const downloaded = await processUrlImage(urlInput.trim(), {
+        maxWidth: label === 'ব্যানার ছবি' ? 1200 : 800,
+        maxHeight: label === 'ব্যানার ছবি' ? 400 : 800,
+        format: 'image/webp',
+        quality: 0.8,
+      });
+      const processed = await optimizeImageForUpload(downloaded, label === 'ব্যানার ছবি' ? 'category-banner' : 'category');
       const url = await uploadProcessedFile(processed, 'product-images', supabase);
       setImage(url);
       setUrlInput('');
