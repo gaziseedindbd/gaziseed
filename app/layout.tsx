@@ -24,7 +24,7 @@ import IndiaHomeCountry from '@/components/site/india-home-country';
 import DeferredHomeWidgets from '@/components/site/deferred-home-widgets';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-const hind = Hind({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'], variable: '--font-hind', display: 'swap' });
+const hind = Hind({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'], variable: '--font-hind', display: 'optional' });
 
 const FAVICON_URL = '/favicon.svg?v=3';
 const SITE_URL = 'https://www.gaziseed.com';
