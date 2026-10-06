@@ -296,51 +296,72 @@ export default function ProductDetailPage() {
               {discount > 0 && <div className="rounded-full bg-red-500 text-white text-xs font-black px-3.5 py-1.5 shadow-xs shrink-0 whitespace-nowrap">{discount}% {t('ছাড়', 'OFF')}</div>}
             </div>
             {variants.length > 0 && <div className="space-y-2"><label className="block text-xs font-bold text-gray-700 uppercase tracking-wide">{t('প্যাকেট বা জাত নির্বাচন করুন', 'Select Packet or Variety')}</label><div className="flex flex-wrap gap-2">{variants.map((v) => { const isSelected = selectedVariant?.id === v.id; const vPrice = v.sale_price && v.sale_price > 0 && v.sale_price < v.regular_price ? v.sale_price : v.regular_price; return <button key={v.id} type="button" onClick={() => setSelectedVariant(v)} aria-pressed={isSelected} className={`rounded-2xl border-2 px-3.5 py-2 min-h-11 text-xs sm:text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${isSelected ? 'border-emerald-600 bg-emerald-50/80 text-emerald-900 shadow-xs ring-1 ring-emerald-500/30' : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-300'}`}>{v.name} — <span className="text-emerald-700 font-extrabold">{formatPrice(vPrice)}</span></button>; })}</div></div>}
-            {selectedBulkTiers.length > 0 && <div className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50 via-orange-50/60 to-white p-3.5 sm:p-4 shadow-sm">
-              <div className="mb-3 flex items-start justify-between gap-2">
-                <div>
-                  <p className="flex items-center gap-1.5 text-sm font-black text-amber-950">
-                    <Package className="h-4 w-4 text-amber-600" />
-                    {t('🔥 একসাথে বেশি নিলে বেশি সাশ্রয়', '🔥 Buy More, Save More')}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-amber-900/70">
-                    {t('আপনার পরিমাণ অনুযায়ী সেরা অফারটি নিজে থেকে প্রযোজ্য হবে।', 'The best eligible offer applies automatically as quantity increases.')}
+            {selectedBulkTiers.length > 0 && <div className="relative overflow-hidden rounded-2xl border-2 border-orange-300 bg-gradient-to-br from-orange-50 via-amber-50 to-white p-3.5 sm:p-4 shadow-lg shadow-orange-100/70">
+              <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-orange-300/20 blur-2xl" />
+              <div className="pointer-events-none absolute -left-10 bottom-0 h-20 w-20 rounded-full bg-amber-300/20 blur-2xl" />
+              <div className="relative mb-3 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 px-3 py-1.5 text-white shadow-md shadow-red-200/60 animate-pulse">
+                    <Sparkles className="h-4 w-4 shrink-0 text-yellow-200" />
+                    <span className="text-sm sm:text-base font-black tracking-wide">{t('🔥 বেশি কিনুন, বেশি সাশ্রয় করুন', '🔥 BUY MORE, SAVE MORE')}</span>
+                  </div>
+                  <p className="mt-2 text-[11px] sm:text-xs font-bold text-orange-950">
+                    {t('বেশি প্যাকেট নিলে আরও বেশি সাশ্রয় — সেরা অফারটি অটোমেটিক প্রযোজ্য হবে।', 'Buy more packs and save more — the best eligible offer applies automatically.')}
                   </p>
                 </div>
-                {applicableBulk && <span className="shrink-0 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-black text-white">
-                  {t('সাশ্রয় চলছে', 'Saving')}
-                </span>}
+                <span className="hidden sm:inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-200 bg-emerald-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow-sm animate-bounce">
+                  <Zap className="h-3 w-3 fill-current text-yellow-300" />
+                  {t('সেরা অফার', 'BEST VALUE')}
+                </span>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="relative grid gap-2 sm:grid-cols-2">
                 {selectedBulkTiers.map((b) => {
                   const offerTotal = b.unit_price * b.min_quantity;
                   const normalTotal = effectivePrice * b.min_quantity;
                   const savings = Math.max(0, normalTotal - offerTotal);
+                  const discountPct = normalTotal > 0 ? Math.round((savings / normalTotal) * 100) : 0;
                   const isActive = !!applicableBulk && applicableBulk.id === b.id;
                   return (
                     <button
                       key={b.id}
                       type="button"
                       onClick={() => setQuantity(Math.max(quantity, b.min_quantity))}
-                      className={`rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${isActive ? 'border-amber-400 bg-amber-100/70 shadow-sm ring-1 ring-amber-300/60' : 'border-amber-200/80 bg-white hover:border-amber-300'}`}
+                      className={`group relative overflow-hidden rounded-xl border-2 p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${isActive ? 'border-red-400 bg-gradient-to-br from-red-50 to-orange-50 shadow-md ring-2 ring-red-200/70' : 'border-orange-200 bg-white hover:border-orange-300'}`}
                       aria-label={t(`${b.min_quantity} প্যাকেটের অফার নিন`, `Choose ${b.min_quantity} packet offer`)}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-black text-gray-900">{b.min_quantity} {t('প্যাকেট', 'packets')}</span>
-                        {isActive && <span className="text-[9px] font-black uppercase tracking-wide text-amber-800">{t('সক্রিয়', 'Active')}</span>}
+                      {isActive && <span className="absolute right-2 top-2 rounded-full bg-red-600 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white shadow-sm animate-pulse">{t('সক্রিয়', 'ACTIVE')}</span>}
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-orange-100 px-2 text-xs font-black text-orange-900 ring-1 ring-orange-200">{b.min_quantity}×</span>
+                        <span className="text-xs sm:text-sm font-black text-gray-950">{t('প্যাকেট', 'PACKETS')}</span>
+                        {discountPct > 0 && <span className="ml-auto rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black text-emerald-800">-{discountPct}%</span>}
                       </div>
-                      <div className="mt-1 flex items-baseline gap-1.5">
-                        <span className="text-base font-black text-emerald-700">{formatPrice(offerTotal)}</span>
-                        <span className="text-[10px] font-semibold text-gray-400">{t('মোট', 'total')}</span>
+                      <div className="mt-2 flex items-end justify-between gap-2">
+                        <div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-lg sm:text-xl font-black text-emerald-700">{formatPrice(offerTotal)}</span>
+                            <span className="text-[10px] font-bold text-gray-500">{t('মোট', 'TOTAL')}</span>
+                          </div>
+                          <div className="mt-0.5 text-[10px] font-bold text-gray-500">
+                            {formatPrice(b.unit_price)} {t('প্রতি প্যাকেট', 'per pack')}
+                          </div>
+                        </div>
+                        <div className="rounded-lg bg-yellow-100 px-2 py-1 text-right ring-1 ring-yellow-200">
+                          <span className="block text-[9px] font-black uppercase text-orange-900">{t('সাশ্রয়', 'SAVE')}</span>
+                          <span className="block text-xs font-black text-orange-800">{formatPrice(savings)}</span>
+                        </div>
                       </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px]">
-                        <span className="text-gray-400 line-through">{formatPrice(normalTotal)}</span>
-                        <span className="font-black text-amber-700">{t('সাশ্রয়', 'Save')} {formatPrice(savings)}</span>
+                      <div className="mt-2 border-t border-orange-100 pt-1.5 text-[10px] font-bold text-gray-400">
+                        <span className="line-through">{formatPrice(normalTotal)}</span>
+                        <span className="ml-2 text-emerald-700">{t('সেরা দাম অটোমেটিক প্রযোজ্য', 'Best price applied automatically')}</span>
                       </div>
                     </button>
                   );
                 })}
               </div>
+              {applicableBulk && <div className="relative mt-3 flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[10px] sm:text-xs font-black text-emerald-800">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                {t(`${applicableBulk.min_quantity} প্যাকেটের সেরা অফারটি এখন আপনার অর্ডারে প্রযোজ্য`, `Best offer for ${applicableBulk.min_quantity}+ packs is now applied to your order`)}
+              </div>}
             </div>}
             <div>{inStock ? <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200"><Check className="h-3.5 w-3.5" /> {t('স্টকে এভেইলেবল আছে', 'In Stock')}{product.show_low_stock && effectiveStock <= (product.low_stock_threshold || 5) && <span className="text-red-600"> ({t(`মাত্র ${effectiveStock} টি বাকি!`, `Only ${effectiveStock} left!`)})</span>}</div> : <div className="inline-flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">{t('স্টক শেষ হয়ে গেছে', 'Out of Stock')}</div>}</div>
             {productShortDesc && <div className="rounded-2xl bg-gray-50/90 border border-gray-200/80 p-4 text-xs sm:text-sm text-gray-700 leading-relaxed font-medium whitespace-pre-line space-y-2 shadow-2xs">{productShortDesc}</div>}
