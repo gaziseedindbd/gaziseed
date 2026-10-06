@@ -4,7 +4,6 @@ import './globals.css';
 
 import type { Metadata, Viewport } from 'next';
 import { cookies, headers } from 'next/headers';
-import dynamic from 'next/dynamic';
 import { Hind } from 'next/font/google';
 import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
@@ -174,12 +173,9 @@ gtag('config', ${JSON.stringify(ga4MeasurementId)});
               <main className="min-h-screen">{children}</main>
               <SiteFooter />
               <WhatsAppButton />
-              <PromotionalPopup location="main" />
               <BottomNav />
               <ThemeSwitcher />
-              <AccountPasswordLauncher />
-              <HomeFloatingReviews />
-              <PageShare />
+              <DeferredHomeWidgets />
             </CartProvider>
           </ToastProvider>
         </LanguageProvider>
