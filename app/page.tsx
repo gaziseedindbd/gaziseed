@@ -54,7 +54,7 @@ export default async function Page() {
 
   return (
     <>
-      <style precedence="default" dangerouslySetInnerHTML={{ __html: homeStyles }} />
+      <style dangerouslySetInnerHTML={{ __html: homeStyles }} />
       <Home initialBanners={initialBanners} initialHeroImage={heroImage} initialVisitorCountry={visitorCountry} />
     </>
   );
