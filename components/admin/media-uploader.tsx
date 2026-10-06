@@ -2,10 +2,10 @@
 
 import { useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { processLocalImage, processUrlImage, uploadProcessedFile } from '@/lib/image-processing';
+import { uploadProcessedFile } from '@/lib/image-processing';
 import { Upload, Link as LinkIcon, X, Star } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
-import { optimizeImageForUpload } from '@/lib/client-image-upload';
+import { optimizeImageForUpload, optimizeImageUrlForUpload } from '@/lib/client-image-upload';
 import { deleteProductImagesFromStorage } from '@/lib/storage/product-images';
 
 export type MediaUploaderProps = {
@@ -31,13 +31,7 @@ export function MediaUploader({ images, setImages, bucket = 'product-images', la
   };
 
   const processAndUploadUrl = async (url: string) => {
-    const processed = await processUrlImage(url, {
-      maxWidth: 1200,
-      maxHeight: 1200,
-      format: 'image/webp',
-      quality: 0.82,
-    });
-    const optimizedFile = await optimizeImageForUpload(processed, 'product');
+    const optimizedFile = await optimizeImageUrlForUpload(url, 'product');
     return uploadProcessedFile(optimizedFile, bucket, supabase);
   };
 
