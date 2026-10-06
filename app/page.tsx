@@ -1,4 +1,3 @@
-import { createServerSupabase } from '@/lib/supabase/server';
 import { cookies, headers } from 'next/headers';
 import Home from '@/components/site/home';
 import { getImageProps } from 'next/image';
@@ -12,17 +11,27 @@ export default async function Page() {
   const cookieOverride = cookieStore.get('gazi_country_override')?.value?.toUpperCase();
   const detectedCountry = (requestHeaders.get('x-vercel-ip-country') || requestHeaders.get('cf-ipcountry') || 'BD').toUpperCase();
   const visitorCountry: 'BD' | 'IN' = cookieOverride === 'IN' || detectedCountry === 'IN' ? 'IN' : 'BD';
-  const supabase = await createServerSupabase(visitorCountry);
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const now = new Date().toISOString();
-  const { data } = await supabase
-    .from('banners')
-    .select('*')
-    .eq('is_active', true)
-    .or(`start_date.is.null,start_date.lte.${now}`)
-    .or(`end_date.is.null,end_date.gte.${now}`)
-    .order('display_order', { ascending: true });
+  const bannerQuery = new URL('/rest/v1/banners', supabaseUrl || 'https://ufxsthshyebahkwbmioe.supabase.co');
+  bannerQuery.searchParams.set('select', '*');
+  bannerQuery.searchParams.set('is_active', 'eq.true');
+  bannerQuery.searchParams.set('country_code', `eq.${visitorCountry}`);
+  bannerQuery.searchParams.set('or', `(start_date.is.null,start_date.lte.${now})`);
+  bannerQuery.searchParams.set('or', `(end_date.is.null,end_date.gte.${now})`);
+  bannerQuery.searchParams.set('order', 'display_order.asc');
 
-  const initialBanners = (data || []) as Banner[];
+  const bannerResponse = await fetch(bannerQuery.toString(), {
+    headers: {
+      apikey: supabaseAnonKey || '',
+      Authorization: `Bearer ${supabaseAnonKey || ''}`,
+      'x-gazi-country': visitorCountry,
+    },
+    next: { revalidate: 60 },
+  }).catch(() => null);
+
+  const initialBanners = bannerResponse?.ok ? ((await bannerResponse.json()) as Banner[]) : [];
   const firstBanner = initialBanners[0];
   const heroImage = firstBanner?.desktop_image ? {
     desktop: getImageProps({
