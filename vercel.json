@@ -12,5 +12,8 @@
       "path": "/api/cron/meta-ads",
       "schedule": "0 5 * * *"
     }
+  ],
+  "regions": [
+    "sin1"
   ]
 }
