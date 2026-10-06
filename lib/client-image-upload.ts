@@ -62,3 +62,21 @@ export async function optimizeImageForUpload(
     return processed;
   }
 }
+
+export async function optimizeImageUrlForUpload(
+  url: string,
+  preset: ImageUploadPreset = 'product',
+): Promise<File> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Failed to download image URL.');
+  }
+
+  const blob = await response.blob();
+  const source = new File([blob], 'url-image', {
+    type: blob.type || 'image/jpeg',
+    lastModified: Date.now(),
+  });
+
+  return optimizeImageForUpload(source, preset);
+}
