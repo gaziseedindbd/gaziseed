@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, getVisitorCountry } from '@/lib/supabase/client';
 import { getProductBySlug } from '@/lib/data';
 import { getCart } from '@/lib/cart';
 import { getMarketingCartFingerprint, trackMarketingEvent, trackPageView } from '@/lib/marketing';
@@ -266,19 +266,30 @@ export function MarketingTracker({ initialSettings }: { initialSettings: Marketi
 
   useEffect(() => {
     let cancelled = false;
-    void initialiseProviders(initialSettings).then(() => {
+    const initialise = async () => {
+      let settings: MarketingSettings = initialSettings;
+      try {
+        const countryCode = getVisitorCountry();
+        const { data } = await supabase
+          .from('marketing_settings')
+          .select('meta_pixel_id, ga4_measurement_id, gtm_id, tiktok_pixel_id')
+          .eq('id', 1)
+          .eq('country_code', countryCode)
+          .maybeSingle();
+        if (data) settings = { ...initialSettings, ...data };
+      } catch {
+        // Tracking config is non-critical; keep the server-provided fallback values.
+      }
+      await initialiseProviders(settings);
       if (cancelled) return;
       readyRef.current = true;
       if (pathname) {
         lastPathRef.current = pathname;
-        // Canonical server-rendered GA4 config already sends the initial page_view.
-        if (!document.getElementById('seed-bari-ga4')) {
-          trackPageView(pathname);
-        }
+        trackPageView(pathname);
         void trackRouteCommerceEvents(pathname, window.location.search);
       }
-    });
-
+    };
+    void initialise();
     return () => { cancelled = true; };
   }, [initialSettings]);
 
