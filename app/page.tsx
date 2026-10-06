@@ -55,6 +55,28 @@ export default async function Page() {
 
   return (
     <>
+      {heroImage?.desktop?.src && (
+        <link
+          rel="preload"
+          as="image"
+          href={String(heroImage.desktop.src)}
+          imageSrcSet={heroImage.desktop.srcSet}
+          imageSizes="100vw"
+          media="(min-width: 768px)"
+          fetchPriority="high"
+        />
+      )}
+      {heroImage?.mobile?.src && (
+        <link
+          rel="preload"
+          as="image"
+          href={String(heroImage.mobile.src)}
+          imageSrcSet={heroImage.mobile.srcSet}
+          imageSizes="100vw"
+          media="(max-width: 767px)"
+          fetchPriority="high"
+        />
+      )}
       <HomeStyleRegistry css={homeStyles} />
       <Home initialBanners={initialBanners} initialHeroImage={heroImage} initialVisitorCountry={visitorCountry} />
     </>
