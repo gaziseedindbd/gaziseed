@@ -138,9 +138,9 @@ export default function AdminProductsPage() {
       for (const b of formData.bulkTiers) {
         const { _new, offer_price, ...rest } = b;
         if (_new) {
-          await supabase.from('bulk_pricing').insert({ ...rest, product_id: productId, variant_id: null });
+          await supabase.from('bulk_pricing').insert({ ...rest, product_id: productId, variant_id: null, country_code: adminBranch });
         } else {
-          await supabase.from('bulk_pricing').update({ min_quantity: rest.min_quantity, unit_price: rest.unit_price, is_active: rest.is_active }).eq('id', b.id);
+          await supabase.from('bulk_pricing').update({ min_quantity: rest.min_quantity, unit_price: rest.unit_price, is_active: rest.is_active, country_code: adminBranch }).eq('id', b.id);
         }
       }
     }
@@ -278,9 +278,9 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
     if (product?.id) {
       supabase.from('product_faqs').select('*').eq('product_id', product.id).order('display_order').then(({ data }) => setFaqs(data || []));
       supabase.from('product_variants').select('*').eq('product_id', product.id).order('display_order').then(({ data }) => setVariants(data || []));
-      supabase.from('bulk_pricing').select('*').eq('product_id', product.id).is('variant_id', null).eq('is_active', true).order('min_quantity').then(({ data }) => setBulkTiers(data || []));
+      supabase.from('bulk_pricing').select('*').eq('product_id', product.id).eq('country_code', adminBranch).is('variant_id', null).eq('is_active', true).order('min_quantity').then(({ data }) => setBulkTiers(data || []));
     }
-  }, [product]);
+  }, [product, adminBranch]);
 
   const addVariant = () => {
     if (!variantForm.name || !variantForm.regular_price) { toast('নাম ও দাম দিন', 'error'); return; }
