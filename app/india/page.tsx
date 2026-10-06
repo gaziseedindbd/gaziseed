@@ -293,6 +293,47 @@ export default async function IndiaLandingPage() {
           </div>
         </section>
 
+        <section className="border-t border-emerald-100 bg-white">
+          <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+              <div>
+                <h2 className="text-2xl font-black text-emerald-950 sm:text-3xl">
+                  India Seed & Gardening Guides
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+                  Practical resources for Indian growers, suitable for home gardens, terraces,
+                  containers and small growing spaces.
+                </p>
+              </div>
+              <Link
+                href="/india/guides"
+                className="text-sm font-black text-emerald-800 hover:text-emerald-950"
+              >
+                View all guides →
+              </Link>
+            </div>
+
+            <div className="mt-7 grid gap-4 md:grid-cols-3">
+              {[
+                ['Naga Bombay Chili Growing Guide', '/india/guides/naga-bombay-chili-growing-guide'],
+                ['Best Seeds for Terrace Gardening in India', '/india/guides/terrace-gardening-seeds-india'],
+                ['Red Rose Seed Growing Guide for India', '/india/guides/rose-seeds-india-growing-guide'],
+              ].map(([title, href]) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5 transition hover:-translate-y-0.5 hover:border-emerald-300"
+                >
+                  <h3 className="font-black text-emerald-950">{title}</h3>
+                  <span className="mt-3 inline-flex text-xs font-black text-emerald-800">
+                    Read guide →
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
           <div className="grid gap-4 md:grid-cols-3">
             {[
