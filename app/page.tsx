@@ -1,7 +1,52 @@
+import { cookies, headers } from 'next/headers';
+import Home from '@/components/site/home';
+import { getImageProps } from 'next/image';
+import type { Banner } from '@/lib/supabase/types';
+
 export const revalidate = 60;
 
-import Home from '@/components/site/home';
+export default async function Page() {
+  const requestHeaders = await headers();
+  const cookieStore = await cookies();
+  const cookieOverride = cookieStore.get('gazi_country_override')?.value?.toUpperCase();
+  const detectedCountry = (requestHeaders.get('x-vercel-ip-country') || requestHeaders.get('cf-ipcountry') || 'BD').toUpperCase();
+  const visitorCountry: 'BD' | 'IN' = cookieOverride === 'IN' || detectedCountry === 'IN' ? 'IN' : 'BD';
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const now = new Date().toISOString();
+  const bannerQuery = new URL('/rest/v1/banners', supabaseUrl || 'https://ufxsthshyebahkwbmioe.supabase.co');
+  bannerQuery.searchParams.set('select', '*');
+  bannerQuery.searchParams.set('is_active', 'eq.true');
+  bannerQuery.searchParams.set('country_code', `eq.${visitorCountry}`);
+  bannerQuery.searchParams.set('and', `(or(start_date.is.null,start_date.lte.${now}),or(end_date.is.null,end_date.gte.${now}))`);
+  bannerQuery.searchParams.set('order', 'display_order.asc');
 
-export default function Page() {
-  return <Home />;
+  const bannerResponse = await fetch(bannerQuery.toString(), {
+    headers: {
+      apikey: supabaseAnonKey || '',
+      Authorization: `Bearer ${supabaseAnonKey || ''}`,
+      'x-gazi-country': visitorCountry,
+    },
+    next: { revalidate: 60 },
+  }).catch(() => null);
+
+  const initialBanners = bannerResponse?.ok ? ((await bannerResponse.json()) as Banner[]) : [];
+  const firstBanner = initialBanners[0];
+  const heroImage = firstBanner?.desktop_image ? {
+    desktop: getImageProps({
+      src: firstBanner.desktop_image,
+      width: 1280,
+      height: 533,
+      quality: 75,
+      alt: firstBanner.title || 'GAZI SEED',
+    }).props,
+    mobile: getImageProps({
+      src: firstBanner.mobile_image || firstBanner.desktop_image,
+      width: 800,
+      height: 1200,
+      quality: 75,
+      alt: firstBanner.title || 'GAZI SEED',
+    }).props,
+  } : null;
+  return <Home initialBanners={initialBanners} initialHeroImage={heroImage} initialVisitorCountry={visitorCountry} />;
 }

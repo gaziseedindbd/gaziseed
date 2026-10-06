@@ -13,18 +13,15 @@ import { CartProvider } from '@/components/site/cart-provider';
 import FloatingCartDrawer from '@/components/site/floating-cart-drawer';
 import { ToastProvider } from '@/components/site/toast-provider';
 import { LanguageProvider } from '@/components/site/language-provider';
-import { PromotionalPopup } from '@/components/site/promotional-popup';
 import { BottomNav } from '@/components/site/bottom-nav';
 import { ThemeSwitcher } from '@/components/site/theme-switcher';
-import AccountPasswordLauncher from '@/components/site/account-password-launcher';
 import { MarketingTracker, type MarketingSettings } from '@/components/site/marketing-tracker';
 import { ReferralTracker } from '@/components/site/referral-tracker';
-import HomeFloatingReviews from '@/components/site/home-floating-reviews';
 import BrandNormalizer from '@/components/site/brand-normalizer';
-import PageShare from '@/components/site/page-share';
 import { AuthSessionBridge } from '@/components/site/auth-session-bridge';
 import HomePromoSync from '@/components/site/home-promo-sync';
 import IndiaHomeCountry from '@/components/site/india-home-country';
+import DeferredHomeWidgets from '@/components/site/deferred-home-widgets';
 import { createServerSupabase } from '@/lib/supabase/server';
 
 const hind = Hind({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'], variable: '--font-hind', display: 'swap' });
@@ -131,6 +128,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="bn" suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="/home-hero-responsive-standard-v1.css" />
+        <link rel="stylesheet" href="/home-premium-v2.css" />
+        <link rel="stylesheet" href="/home-modern-v1.css" />
         {ga4MeasurementId ? (
           <>
             <script
@@ -171,12 +170,9 @@ gtag('config', ${JSON.stringify(ga4MeasurementId)});
               <main className="min-h-screen">{children}</main>
               <SiteFooter />
               <WhatsAppButton />
-              <PromotionalPopup location="main" />
               <BottomNav />
               <ThemeSwitcher />
-              <AccountPasswordLauncher />
-              <HomeFloatingReviews />
-              <PageShare />
+              <DeferredHomeWidgets />
             </CartProvider>
           </ToastProvider>
         </LanguageProvider>

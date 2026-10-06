@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 import { toast } from '@/components/site/toast-provider';
 import { Save, Sparkles, Zap, Users, Upload, Image as ImageIcon } from 'lucide-react';
 import { AI_PROVIDER_OPTIONS, AI_FEATURE_FLAG_LIST, isApiKeyMasked, DEFAULT_FEATURE_FLAGS } from '@/lib/ai';
+import { optimizeImageForUpload } from '@/lib/client-image-upload';
 
 export default function AdminSettingsPage() {
   const [tab, setTab] = useState<'general' | 'marketing' | 'features' | 'ai' | 'referral'>('general');
@@ -59,28 +60,44 @@ export default function AdminSettingsPage() {
 
   const uploadLogo = async (file: File) => {
     setSaving(true);
-    const ext = file.name.split('.').pop() || 'png';
-    const path = `site-logo-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('product-images').upload(path, file, { contentType: file.type, upsert: false });
-    if (!error) {
+    try {
+      const optimized = await optimizeImageForUpload(file, 'logo');
+      const path = `site-logo-${Date.now()}.webp`;
+      const { error } = await supabase.storage.from('product-images').upload(path, optimized, {
+        contentType: 'image/webp',
+        cacheControl: '31536000',
+        upsert: false,
+      });
+      if (error) throw error;
       const { data } = supabase.storage.from('product-images').getPublicUrl(path);
       setSiteForm({ ...siteForm, logo: data.publicUrl, logo_url: data.publicUrl });
-      toast('লোগো আপলোড হয়েছে');
-    } else toast(`আপলোড ব্যর্থ: ${error.message}`, 'error');
-    setSaving(false);
+      toast('লোগো WebP হিসেবে অপটিমাইজ ও আপলোড হয়েছে');
+    } catch (err: any) {
+      toast(`আপলোড ব্যর্থ: ${err.message}`, 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const uploadWatermarkLogo = async (file: File) => {
     setSaving(true);
-    const ext = file.name.split('.').pop() || 'png';
-    const path = `watermark-logo-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('product-images').upload(path, file, { contentType: file.type, upsert: false });
-    if (!error) {
+    try {
+      const optimized = await optimizeImageForUpload(file, 'watermark');
+      const path = `watermark-logo-${Date.now()}.webp`;
+      const { error } = await supabase.storage.from('product-images').upload(path, optimized, {
+        contentType: 'image/webp',
+        cacheControl: '31536000',
+        upsert: false,
+      });
+      if (error) throw error;
       const { data } = supabase.storage.from('product-images').getPublicUrl(path);
       setSiteForm({ ...siteForm, watermark_logo_url: data.publicUrl });
-      toast('ওয়াটারমার্ক লোগো আপলোড হয়েছে');
-    } else toast(`আপলোড ব্যর্থ: ${error.message}`, 'error');
-    setSaving(false);
+      toast('ওয়াটারমার্ক লোগো WebP হিসেবে অপটিমাইজ ও আপলোড হয়েছে');
+    } catch (err: any) {
+      toast(`আপলোড ব্যর্থ: ${err.message}`, 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const saveSite = async () => {

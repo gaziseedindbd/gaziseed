@@ -2,10 +2,10 @@
 
 import { useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { processLocalImage, processUrlImage, uploadProcessedFile } from '@/lib/image-processing';
+import { uploadProcessedFile } from '@/lib/image-processing';
 import { Upload, Link as LinkIcon, X, Star } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
-import imageCompression from 'browser-image-compression';
+import { optimizeImageForUpload, optimizeImageUrlForUpload } from '@/lib/client-image-upload';
 import { deleteProductImagesFromStorage } from '@/lib/storage/product-images';
 
 export type MediaUploaderProps = {
@@ -24,52 +24,14 @@ export function MediaUploader({ images, setImages, bucket = 'product-images', la
   const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Unified SEED BARI image pipeline: current General Settings watermark + resize + compression + upload.
+  // Central upload pipeline: resize + WebP + compression + current watermark settings.
   const processAndUploadFile = async (file: File) => {
-    const processed = await processLocalImage(file, {
-      maxWidth: 1200,
-      maxHeight: 1200,
-      format: 'image/webp',
-      quality: 0.85,
-    });
-
-    let optimizedFile = processed;
-    try {
-      optimizedFile = await imageCompression(processed, {
-        maxSizeMB: 0.5,
-        maxWidthOrHeight: 1200,
-        useWebWorker: true,
-        fileType: 'image/webp',
-        initialQuality: 0.85,
-      });
-    } catch {
-      // Keep the already watermarked file as a safe fallback.
-    }
-
+    const optimizedFile = await optimizeImageForUpload(file, 'product');
     return uploadProcessedFile(optimizedFile, bucket, supabase);
   };
 
   const processAndUploadUrl = async (url: string) => {
-    const processed = await processUrlImage(url, {
-      maxWidth: 1200,
-      maxHeight: 1200,
-      format: 'image/webp',
-      quality: 0.85,
-    });
-
-    let optimizedFile = processed;
-    try {
-      optimizedFile = await imageCompression(processed, {
-        maxSizeMB: 0.5,
-        maxWidthOrHeight: 1200,
-        useWebWorker: true,
-        fileType: 'image/webp',
-        initialQuality: 0.85,
-      });
-    } catch {
-      // Keep the already watermarked file as a safe fallback.
-    }
-
+    const optimizedFile = await optimizeImageUrlForUpload(url, 'product');
     return uploadProcessedFile(optimizedFile, bucket, supabase);
   };
 
