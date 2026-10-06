@@ -55,6 +55,8 @@ export function SiteFooter() {
               ['/combos','কম্বো','Combo'],
               ['/offers','অফার','Offers'],
               ['/blog','চাষাবাদ','Guides'],
+              ['/india','ভারত স্টোর','India Store'],
+              ['/india/guides','ইন্ডিয়া গাইড','India Guides'],
             ].map(([href, bn, en]) => (
               <li key={href}>
                 <Link href={href} className="inline-flex font-semibold text-muted-foreground transition hover:translate-x-1 hover:text-primary">
