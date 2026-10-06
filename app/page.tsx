@@ -2,6 +2,7 @@ import { cookies, headers } from 'next/headers';
 import { readFileSync } from 'fs';
 import path from 'path';
 import Home from '@/components/site/home';
+import HomeStyleRegistry from '@/components/site/home-style-registry';
 import { getImageProps } from 'next/image';
 import type { Banner } from '@/lib/supabase/types';
 
@@ -54,7 +55,7 @@ export default async function Page() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: homeStyles }} />
+      <HomeStyleRegistry css={homeStyles} />
       <Home initialBanners={initialBanners} initialHeroImage={heroImage} initialVisitorCountry={visitorCountry} />
     </>
   );
