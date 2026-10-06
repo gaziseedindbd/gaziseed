@@ -99,8 +99,8 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
               alt={translated.image_alt || product.image_alt || product.image_alt_bn || name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
-              quality={78}
-              className="relative z-[1] object-contain p-1.5 transition-transform duration-500 ease-out group-hover:scale-[1.045] sm:p-5"
+              quality={92}
+              className="relative z-[1] object-cover object-center p-0 transition-transform duration-500 ease-out group-hover:scale-[1.025]"
             />
           ) : (
             <div className="relative z-[1] flex h-full w-full items-center justify-center">

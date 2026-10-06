@@ -20,10 +20,10 @@ export type ProcessOptions = {
 };
 
 const DEFAULTS: Required<Omit<ProcessOptions, 'watermark'>> & { watermark: Required<WatermarkSettings> } = {
-  maxWidth: 1600,
-  maxHeight: 1600,
+  maxWidth: 1800,
+  maxHeight: 1800,
   format: 'image/webp',
-  quality: 0.82,
+  quality: 0.9,
   watermark: {
     enabled: true,
     logoUrl: '',
