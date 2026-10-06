@@ -15,12 +15,13 @@ const PRESETS: Record<ImageUploadPreset, {
   maxHeight: number;
   maxSizeMB: number;
   quality: number;
+  watermark: boolean;
 }> = {
-  product: { maxWidth: 1200, maxHeight: 1200, maxSizeMB: 0.4, quality: 0.82 },
-  category: { maxWidth: 800, maxHeight: 800, maxSizeMB: 0.22, quality: 0.8 },
-  'category-banner': { maxWidth: 1200, maxHeight: 400, maxSizeMB: 0.28, quality: 0.8 },
-  logo: { maxWidth: 360, maxHeight: 240, maxSizeMB: 0.12, quality: 0.78 },
-  watermark: { maxWidth: 600, maxHeight: 400, maxSizeMB: 0.16, quality: 0.78 },
+  product: { maxWidth: 1200, maxHeight: 1200, maxSizeMB: 0.4, quality: 0.82, watermark: true },
+  category: { maxWidth: 800, maxHeight: 800, maxSizeMB: 0.22, quality: 0.8, watermark: true },
+  'category-banner': { maxWidth: 1200, maxHeight: 400, maxSizeMB: 0.28, quality: 0.8, watermark: true },
+  logo: { maxWidth: 360, maxHeight: 240, maxSizeMB: 0.12, quality: 0.78, watermark: false },
+  watermark: { maxWidth: 600, maxHeight: 400, maxSizeMB: 0.16, quality: 0.78, watermark: false },
 };
 
 export async function optimizeImageForUpload(
@@ -41,6 +42,7 @@ export async function optimizeImageForUpload(
     maxHeight: target.maxHeight,
     format: 'image/webp',
     quality: target.quality,
+    watermark: { enabled: target.watermark },
   });
 
   try {
