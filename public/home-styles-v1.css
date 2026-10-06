@@ -764,6 +764,8 @@
   align-items:flex-start!important;
   gap:5px!important;
   min-width:0!important;
+  min-height:120px!important;
+  box-sizing:border-box!important;
   padding:14px 15px 15px!important;
   background:linear-gradient(180deg,#fff 0%,#f8fcfa 100%)!important;
 }
@@ -819,6 +821,57 @@
   color:#fff!important;
   transform:translateY(-1px)!important;
 }
+
+/* CLS guard: skeletons reserve the same content geometry as loaded category cards. */
+.home-premium-scope .home-category-section .category-card-skeleton::after{content:none!important;display:none!important;}
+.home-premium-scope .home-category-section .category-skeleton-content{
+  min-height:120px!important;
+  height:120px!important;
+  box-sizing:border-box!important;
+}
+.home-premium-scope .home-category-section .category-skeleton-label{
+  flex:0 0 auto!important;
+  width:72%!important;
+  height:17px!important;
+  min-height:17px!important;
+  margin:0!important;
+  border-radius:999px!important;
+  background:#e8f1ec!important;
+}
+.home-premium-scope .home-category-section .category-skeleton-description{
+  display:block!important;
+  width:100%!important;
+  height:7px!important;
+  margin:0 0 5px!important;
+  border-radius:999px!important;
+  background:#edf4ef!important;
+}
+.home-premium-scope .home-category-section .category-skeleton-description.short{width:68%!important;margin-bottom:0!important;}
+.home-premium-scope .home-category-section .category-skeleton-explore{
+  display:block!important;
+  width:86px!important;
+  height:30px!important;
+  border:1px solid #e1eee7!important;
+  border-radius:999px!important;
+  background:#f0f7f3!important;
+}
+@media(max-width:767px){
+  .home-premium-scope .home-category-section .cat-card-content,
+  .home-premium-scope .home-category-section .category-skeleton-content{
+    min-height:112px!important;
+  }
+  .home-premium-scope .home-category-section .category-skeleton-content{height:112px!important;}
+  .home-premium-scope .home-category-section .category-skeleton-label{height:15px!important;min-height:15px!important;}
+  .home-premium-scope .home-category-section .category-skeleton-explore{height:27px!important;}
+}
+@media(max-width:420px){
+  .home-premium-scope .home-category-section .cat-card-content,
+  .home-premium-scope .home-category-section .category-skeleton-content{
+    min-height:108px!important;
+  }
+  .home-premium-scope .home-category-section .category-skeleton-content{height:108px!important;}
+}
+
 @media(max-width:767px){
   .home-premium-scope .home-category-section .cat-card{
     border-radius:17px!important;
