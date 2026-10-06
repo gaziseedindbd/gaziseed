@@ -54,67 +54,6 @@
 .theme-premium .pc-price, .theme-farm .pc-price, .theme-marketplace .pc-price { @apply text-lg font-black text-primary; }
 .theme-premium .pc-add-btn, .theme-farm .pc-add-btn, .theme-marketplace .pc-add-btn { @apply flex items-center justify-center gap-1 rounded-xl border border-primary/25 bg-primary/5 py-2 text-xs font-bold text-primary transition hover:bg-primary hover:text-primary-foreground; }
 
-/* Checkout visual pass: presentation-only styles targeting the existing checkout surface. */
-.min-h-screen[class*="bg-[#f8fafc]"] { background: radial-gradient(circle at 8% 0%, hsl(var(--primary) / 0.08), transparent 30%), radial-gradient(circle at 92% 12%, hsl(var(--accent) / 0.10), transparent 28%), hsl(var(--background)); }
-.min-h-screen[class*="bg-[#f8fafc]"] .rounded-\[32px\] { border-color: hsl(var(--primary) / 0.14); box-shadow: 0 14px 38px hsl(var(--foreground) / 0.055); transition: box-shadow .2s ease, border-color .2s ease; }
-.min-h-screen[class*="bg-[#f8fafc]"] .rounded-\[32px\]:hover { border-color: hsl(var(--primary) / 0.22); box-shadow: 0 18px 44px hsl(var(--foreground) / 0.075); }
-.min-h-screen[class*="bg-[#f8fafc]"] input, .min-h-screen[class*="bg-[#f8fafc]"] textarea, .min-h-screen[class*="bg-[#f8fafc]"] select { transition: border-color .2s ease, box-shadow .2s ease; }
-.min-h-screen[class*="bg-[#f8fafc]"] input:focus, .min-h-screen[class*="bg-[#f8fafc]"] textarea:focus, .min-h-screen[class*="bg-[#f8fafc]"] select:focus { box-shadow: 0 0 0 4px hsl(var(--primary) / 0.10); }
-@media (max-width: 640px) { .min-h-screen[class*="bg-[#f8fafc]"] .rounded-\[32px\] { border-radius: 1.5rem; } }
-
-/* CHECKOUT — LIGHT NEUMORPHIC / EMBOSSED UI
-   Strictly presentation-only and scoped to the existing checkout form. */
-html:not(.dark) body:has(#checkout-form) { background: #eef2f7 !important; }
-html:not(.dark) main:has(#checkout-form) { background: radial-gradient(circle at 12% 0%, rgba(255,255,255,.98), transparent 32%), radial-gradient(circle at 90% 8%, rgba(216,229,244,.9), transparent 30%), #eef2f7 !important; }
-html:not(.dark) main:has(#checkout-form) .rounded-\[2rem\] { border: 1px solid rgba(255,255,255,.88) !important; background: rgba(238,242,247,.92) !important; box-shadow: 14px 14px 32px rgba(163,177,198,.28), -12px -12px 28px rgba(255,255,255,.92) !important; }
-html:not(.dark) main:has(#checkout-form) .rounded-\[2rem\]:hover { box-shadow: 16px 16px 36px rgba(163,177,198,.32), -13px -13px 30px rgba(255,255,255,.96) !important; }
-html:not(.dark) main:has(#checkout-form) input, html:not(.dark) main:has(#checkout-form) textarea, html:not(.dark) main:has(#checkout-form) select { border-color: transparent !important; background: #eef2f7 !important; box-shadow: inset 6px 6px 12px rgba(163,177,198,.22), inset -6px -6px 12px rgba(255,255,255,.92) !important; }
-html:not(.dark) main:has(#checkout-form) input:focus, html:not(.dark) main:has(#checkout-form) textarea:focus, html:not(.dark) main:has(#checkout-form) select:focus { border-color: rgba(20,184,166,.34) !important; box-shadow: inset 5px 5px 10px rgba(163,177,198,.20), inset -5px -5px 10px rgba(255,255,255,.94), 0 0 0 4px rgba(20,184,166,.10) !important; }
-html:not(.dark) main:has(#checkout-form) button:not([type="submit"]):not([role="switch"]) { box-shadow: 7px 7px 15px rgba(163,177,198,.25), -7px -7px 15px rgba(255,255,255,.90) !important; }
-html:not(.dark) main:has(#checkout-form) button[role="switch"] { box-shadow: 6px 6px 14px rgba(163,177,198,.22), -6px -6px 14px rgba(255,255,255,.90) !important; }
-html:not(.dark) main:has(#checkout-form) button[type="submit"] { box-shadow: 9px 9px 18px rgba(163,177,198,.30), -7px -7px 16px rgba(255,255,255,.86), 0 12px 26px rgba(20,184,166,.16) !important; }
-html:not(.dark) main:has(#checkout-form) .rounded-2xl { border-color: rgba(255,255,255,.72) !important; }
-html:not(.dark) main:has(#checkout-form) .rounded-2xl.bg-background, html:not(.dark) main:has(#checkout-form) .rounded-2xl.bg-secondary\/70, html:not(.dark) main:has(#checkout-form) .rounded-2xl.bg-background\/70 { background: #eef2f7 !important; box-shadow: 6px 6px 14px rgba(163,177,198,.20), -6px -6px 14px rgba(255,255,255,.90) !important; }
-html:not(.dark) main:has(#checkout-form) .max-h-72 { scrollbar-color: rgba(120,140,160,.35) transparent; }
-html:not(.dark) main:has(#checkout-form) .fixed.inset-x-3.bottom-3 > div { border-color: rgba(255,255,255,.9) !important; background: rgba(238,242,247,.94) !important; box-shadow: 12px 12px 28px rgba(163,177,198,.34), -10px -10px 24px rgba(255,255,255,.94) !important; }
-html:not(.dark) main:has(#checkout-form) .text-primary { text-shadow: 0 1px 0 rgba(255,255,255,.8); }
-@media (max-width: 640px) {
-  html:not(.dark) main:has(#checkout-form) .rounded-\[2rem\] { border-radius: 1.5rem !important; }
-  html:not(.dark) main:has(#checkout-form) .rounded-2xl { border-radius: 1rem; }
-}
-
-/* CHECKOUT MOBILE POLISH — UI ONLY
-   No markup, state, navigation, payment, order, cart, coupon, wallet, or stock logic is changed. */
-@media (max-width: 640px) {
-  html:not(.dark) main:has(#checkout-form) { padding-bottom: 7rem !important; }
-  html:not(.dark) main:has(#checkout-form) > div { padding-top: 1rem !important; }
-  html:not(.dark) main:has(#checkout-form) form#checkout-form > div { gap: 1rem !important; }
-  html:not(.dark) main:has(#checkout-form) form#checkout-form > div > div { gap: 1rem !important; }
-  html:not(.dark) main:has(#checkout-form) section { border-radius: 1.35rem !important; }
-  html:not(.dark) main:has(#checkout-form) section > div { min-width: 0; }
-  html:not(.dark) main:has(#checkout-form) input,
-  html:not(.dark) main:has(#checkout-form) select { min-height: 3rem; font-size: 16px !important; }
-  html:not(.dark) main:has(#checkout-form) textarea { font-size: 16px !important; }
-  html:not(.dark) main:has(#checkout-form) input::placeholder,
-  html:not(.dark) main:has(#checkout-form) textarea::placeholder { font-size: .78rem; }
-  html:not(.dark) main:has(#checkout-form) form#checkout-form section { padding: 1rem !important; }
-  html:not(.dark) main:has(#checkout-form) form#checkout-form section > .mb-6 { margin-bottom: 1rem !important; padding-bottom: .85rem !important; }
-  html:not(.dark) main:has(#checkout-form) form#checkout-form section h2 { font-size: 1rem !important; line-height: 1.35; }
-  html:not(.dark) main:has(#checkout-form) form#checkout-form section .grid.sm\:grid-cols-2 { gap: .65rem !important; }
-  html:not(.dark) main:has(#checkout-form) form#checkout-form section .grid.sm\:grid-cols-2 > button { min-height: 4.5rem !important; padding: .75rem !important; }
-  html:not(.dark) main:has(#checkout-form) form#checkout-form section .flex.gap-3 { gap: .5rem !important; }
-  html:not(.dark) main:has(#checkout-form) aside.lg\:sticky { margin-top: 0 !important; }
-  html:not(.dark) main:has(#checkout-form) aside.lg\:sticky > section { border-radius: 1.35rem !important; }
-  html:not(.dark) main:has(#checkout-form) aside.lg\:sticky > section > div { padding: 1rem !important; }
-  html:not(.dark) main:has(#checkout-form) aside.lg\:sticky .max-h-72 { max-height: 15rem; }
-  html:not(.dark) main:has(#checkout-form) aside.lg\:sticky .text-2xl { font-size: 1.35rem !important; }
-  html:not(.dark) main:has(#checkout-form) .fixed.inset-x-3.bottom-3 { left: .65rem !important; right: .65rem !important; bottom: .65rem !important; }
-  html:not(.dark) main:has(#checkout-form) .fixed.inset-x-3.bottom-3 > div { gap: .65rem !important; padding: .65rem !important; border-radius: 1.15rem !important; }
-  html:not(.dark) main:has(#checkout-form) .fixed.inset-x-3.bottom-3 button { min-height: 3rem !important; padding-inline: 1rem !important; }
-  html:not(.dark) main:has(#checkout-form) .fixed.inset-x-3.bottom-3 .text-lg { font-size: 1.05rem !important; }
-}
-
-
 /* MOBILE NAV SAFE AREA — keep fixed cart/navigation controls from covering product content. */
 @media (max-width: 767px) {
   body { padding-bottom: 5.5rem !important; }
