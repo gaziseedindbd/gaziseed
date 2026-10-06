@@ -22,7 +22,6 @@ import { AuthSessionBridge } from '@/components/site/auth-session-bridge';
 import HomePromoSync from '@/components/site/home-promo-sync';
 import IndiaHomeCountry from '@/components/site/india-home-country';
 import DeferredHomeWidgets from '@/components/site/deferred-home-widgets';
-import { createServerSupabase } from '@/lib/supabase/server';
 
 const hind = Hind({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'], variable: '--font-hind', display: 'swap' });
 
@@ -72,24 +71,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ? cookieOverride
     : detectedCountry === 'IN' ? 'IN' : 'BD';
 
-  const serverSupabase = await createServerSupabase(visitorCountry);
-  const { data: marketingSettings } = await serverSupabase
-    .from('marketing_settings')
-    .select('meta_pixel_id, ga4_measurement_id, gtm_id, tiktok_pixel_id')
-    .eq('id', 1)
-    .eq('country_code', visitorCountry)
-    .maybeSingle();
+  // Marketing providers are initialized client-side after the page is interactive.
+  // Do not block the initial HTML response on a Supabase marketing_settings query.
+  const marketingSettingsForClient: MarketingSettings = {};
 
-  const marketingSettingsForClient: MarketingSettings = {
-    meta_pixel_id: marketingSettings?.meta_pixel_id ?? null,
-    ga4_measurement_id: marketingSettings?.ga4_measurement_id ?? null,
-    gtm_id: marketingSettings?.gtm_id ?? null,
-    tiktok_pixel_id: marketingSettings?.tiktok_pixel_id ?? null,
-  };
 
-  const ga4MeasurementId = marketingSettings?.ga4_measurement_id?.trim()
-    || process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim()
-    || 'G-6RKL3GB80V';
 
   const organizationLd = {
     '@type': 'Organization',
@@ -128,24 +114,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="bn" suppressHydrationWarning>
       <head>
         {/* Homepage styles are inlined in app/page.tsx to keep them off the initial render-blocking request path. */}
-        {ga4MeasurementId ? (
-          <>
-            <script
-              id="seed-bari-ga4"
-              async
-              src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ga4MeasurementId)}`}
-            />
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', ${JSON.stringify(ga4MeasurementId)});
-`,
-              }}
-            />
-          </>
-        ) : null}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeLd) }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p=window.location.pathname;var css=[];if(p==='/checkout')css.push('/checkout-premium-v1.css?v=2');if(p.indexOf('/combo/')===0)css.push('/combo-quick-checkout-v2.css?v=1');for(var i=0;i<css.length;i++){var l=document.createElement('link');l.rel='stylesheet';l.href=css[i];document.head.appendChild(l)}}catch(e){}})()` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){window.__GAZI_COUNTRY__='${visitorCountry}';})();` }} />
