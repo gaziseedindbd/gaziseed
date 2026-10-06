@@ -199,3 +199,98 @@ html:not(.dark) main:has(#checkout-form) .text-primary { text-shadow: 0 1px 0 rg
     gap:20px !important;
   }
 }
+
+
+/* HOMEPAGE PREPAINT GUARD — keep hero geometry/styling available from the head-loaded globals.css.
+   The full homepage visual stylesheet remains page-scoped in app/page.tsx.
+   These small above-the-fold rules prevent late critical-style application from moving the main content. */
+.home-premium-scope .home-hero-section{padding-top:10px!important;padding-bottom:28px!important}
+.home-premium-scope .home-hero-section .container-custom{width:100%!important;max-width:1380px!important}
+.home-premium-scope .home-hero-section .hero-wrap{
+  position:relative!important;
+  width:100%!important;
+  aspect-ratio:2048/366!important;
+  min-height:0!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:hidden!important;
+  isolation:isolate!important;
+  border-radius:18px!important;
+  background:#0b2418!important;
+}
+.home-premium-scope .home-hero-section .hero-inner{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+.home-premium-scope .home-hero-fallback{
+  background:radial-gradient(circle at 82% 18%,rgba(34,197,94,.2),transparent 34%),linear-gradient(135deg,#052e1c 0%,#087b43 55%,#16a34a 100%)!important;
+}
+.home-premium-scope .home-hero-fallback .hero-fallback-content{
+  position:absolute!important;
+  inset:0!important;
+  z-index:4!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  justify-content:flex-end!important;
+  width:min(760px,88%)!important;
+  padding:clamp(28px,5vw,68px)!important;
+  color:#fff!important;
+}
+.home-premium-scope .home-hero-fallback .hero-fallback-badge{
+  display:inline-flex!important;
+  align-items:center!important;
+  border:1px solid rgba(255,255,255,.24)!important;
+  border-radius:999px!important;
+  background:rgba(255,255,255,.1)!important;
+  padding:.38rem .8rem!important;
+  font-size:.78rem!important;
+  font-weight:800!important;
+  letter-spacing:.08em!important;
+}
+.home-premium-scope .home-hero-fallback .hero-fallback-content h1{
+  margin:.75rem 0 0!important;
+  max-width:680px!important;
+  color:#fff!important;
+  font-size:clamp(2rem,4.4vw,4rem)!important;
+  line-height:1.05!important;
+  font-weight:800!important;
+  letter-spacing:-.04em!important;
+}
+.home-premium-scope .home-hero-fallback .hero-fallback-content p{
+  margin:.8rem 0 0!important;
+  max-width:600px!important;
+  color:rgba(255,255,255,.9)!important;
+  font-size:clamp(.95rem,1.4vw,1.15rem)!important;
+  line-height:1.55!important;
+}
+.home-premium-scope .home-hero-fallback .hero-btn{
+  margin-top:1.2rem!important;
+  min-height:42px!important;
+  background:#fff!important;
+  color:#166534!important;
+}
+@media(max-width:767px){
+  .home-premium-scope .home-hero-section{padding-top:0!important;padding-bottom:18px!important}
+  .home-premium-scope .home-hero-section .container-custom{width:calc(100% - 20px)!important}
+  .home-premium-scope .home-hero-section .hero-wrap{
+    width:100%!important;
+    max-width:none!important;
+    aspect-ratio:2.25/1!important;
+    min-height:0!important;
+    border-radius:14px!important;
+  }
+  .home-premium-scope .home-hero-fallback .hero-fallback-content{
+    width:100%!important;
+    padding:24px!important;
+    justify-content:flex-end!important;
+  }
+  .home-premium-scope .home-hero-fallback .hero-fallback-content h1{font-size:clamp(1.6rem,8vw,2.5rem)!important}
+  .home-premium-scope .home-hero-fallback .hero-fallback-content p{font-size:.88rem!important}
+}
