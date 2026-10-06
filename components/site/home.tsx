@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ComponentType } from 'react';
+import { useEffect, useState, type ComponentProps, type ComponentType } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronRight, Truck, ShieldCheck, Sprout, Phone, Heart, Users, Headphones, MapPin } from 'lucide-react';
@@ -15,8 +15,8 @@ import type { Banner, Category, Product, Service, Testimonial, BlogPost, SiteSet
 let memoryCache: { country?: 'BD' | 'IN'; banners?: Banner[]; categories?: Category[]; featuredProducts?: Product[]; bestSellers?: Product[]; newArrivals?: Product[]; seasonal?: Product[]; thisMonthSeeds?: Product[]; services?: Service[]; testimonials?: Testimonial[]; blogPosts?: BlogPost[]; settings?: SiteSettings | null; sections?: HomepageSection[]; timestamp?: number } = {};
 
 type HeroImageProps = {
-  desktop: React.ComponentProps<'img'>;
-  mobile: React.ComponentProps<'img'>;
+  desktop: ComponentProps<'img'>;
+  mobile: ComponentProps<'img'>;
 };
 
 export default function Home({ initialBanners = [], initialHeroImage = null }: { initialBanners?: Banner[]; initialHeroImage?: HeroImageProps | null }) {
