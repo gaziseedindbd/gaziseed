@@ -131,6 +131,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="bn" suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="/home-hero-responsive-standard-v1.css" />
+        <link rel="stylesheet" href="/home-premium-v2.css" />
+        <link rel="stylesheet" href="/home-modern-v1.css" />
         {ga4MeasurementId ? (
           <>
             <script
