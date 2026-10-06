@@ -10,41 +10,36 @@ export function CountrySelector({ mobile = false }: { mobile?: boolean }) {
   const [value, setValue] = useState<CountryOption>('AUTO');
 
   useLayoutEffect(() => {
-    const saved = localStorage.getItem('gazi_country_override')?.toUpperCase();
-    setValue(saved === 'BD' || saved === 'IN' ? saved : 'AUTO');
-  }, []);
-
-  useLayoutEffect(() => {
     const header = document.querySelector('header');
     if (!header) return;
 
+    const topBar = header.querySelector('.top-green-bar > div') as HTMLElement | null;
+    const topBarLeft = topBar?.firstElementChild as HTMLElement | null;
+    const topBarRight = topBar?.lastElementChild as HTMLElement | null;
+    const topBarTagline = topBarLeft?.querySelector(':scope > span') as HTMLElement | null;
+
+    if (topBarLeft) {
+      topBarLeft.style.minWidth = '0';
+      topBarLeft.style.flex = '1 1 auto';
+    }
+    if (topBarRight) {
+      topBarRight.style.flexShrink = '0';
+    }
+    if (topBarTagline) {
+      topBarTagline.style.minWidth = '0';
+      topBarTagline.style.overflow = 'hidden';
+      topBarTagline.style.textOverflow = 'ellipsis';
+      topBarTagline.style.whiteSpace = 'nowrap';
+    }
+
+    // The homepage already reserves its fixed-header offset in CSS.
+    // Do not mutate body padding or homepage padding after first paint;
+    // that can move the entire <main> and create a large CLS.
+    if (window.location.pathname === '/') return;
+
     const syncHeaderOffset = () => {
       const height = Math.ceil(header.getBoundingClientRect().height);
-      document.body.style.setProperty('padding-top', `${height}px`, 'important');
-
-      const homeScope = document.querySelector('.home-premium-scope') as HTMLElement | null;
-      if (homeScope) {
-        homeScope.style.setProperty('padding-top', '0px', 'important');
-      }
-
-      const topBar = header.querySelector('.top-green-bar > div') as HTMLElement | null;
-      const topBarLeft = topBar?.firstElementChild as HTMLElement | null;
-      const topBarRight = topBar?.lastElementChild as HTMLElement | null;
-      const topBarTagline = topBarLeft?.querySelector(':scope > span') as HTMLElement | null;
-
-      if (topBarLeft) {
-        topBarLeft.style.minWidth = '0';
-        topBarLeft.style.flex = '1 1 auto';
-      }
-      if (topBarRight) {
-        topBarRight.style.flexShrink = '0';
-      }
-      if (topBarTagline) {
-        topBarTagline.style.minWidth = '0';
-        topBarTagline.style.overflow = 'hidden';
-        topBarTagline.style.textOverflow = 'ellipsis';
-        topBarTagline.style.whiteSpace = 'nowrap';
-      }
+      document.body.style.setProperty('padding-top', String(height) + 'px', 'important');
     };
 
     syncHeaderOffset();
