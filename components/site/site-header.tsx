@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Home,
@@ -280,7 +281,15 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-[1760px] items-center gap-1.5 px-3 py-2 sm:px-5 lg:gap-1.5 lg:px-6 lg:py-2 xl:gap-3 2xl:gap-4">
         <Link href="/" className="group flex shrink-0 items-center rounded-2xl px-1 py-0.5 transition-transform duration-200 hover:scale-[1.015]" aria-label="GAZI SEED Home">
           {settings?.logo ? (
-            <img src={logoSrc} alt={settings.website_name || 'GAZI SEED'} className="h-9 w-auto max-w-[145px] object-contain sm:h-10 sm:max-w-[160px] lg:h-10 lg:max-w-[165px] xl:h-11 xl:max-w-[185px] 2xl:h-[52px] 2xl:max-w-[220px]" />
+            <Image
+              src={logoSrc}
+              alt={settings.website_name || 'GAZI SEED'}
+              width={220}
+              height={115}
+              sizes="(max-width: 640px) 145px, (max-width: 1024px) 165px, (max-width: 1536px) 185px, 220px"
+              quality={70}
+              className="h-9 w-auto max-w-[145px] object-contain sm:h-10 sm:max-w-[160px] lg:h-10 lg:max-w-[165px] xl:h-11 xl:max-w-[185px] 2xl:h-[52px] 2xl:max-w-[220px]"
+            />
           ) : (
             <div className="flex items-center gap-2.5"><SproutMark large /><div><div className="text-2xl font-black leading-none tracking-tight text-emerald-950">GAZI SEED</div><div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">Better Seeds · Better Future</div></div></div>
           )}
