@@ -62,3 +62,24 @@
 .home-premium-scope .hero-wrap > div.block > .hero-inner > .hero-content-overlay .hero-title,.home-premium-scope .hero-wrap > div.block > .hero-inner > .hero-content-overlay .hero-subtitle{position:relative!important;z-index:11!important;align-self:flex-end!important;text-align:right!important}
 .home-premium-scope .hero-wrap > div.block > .hero-inner > .hero-content-overlay .hero-btn{position:relative!important;z-index:12!important;display:inline-flex!important;align-self:flex-end!important;margin-top:.9rem!important;margin-right:0!important;pointer-events:auto!important}
 @media(max-width:767px){.home-premium-scope .hero-wrap > div.block > .hero-inner > .hero-content-overlay{padding:14px!important}.home-premium-scope .hero-wrap > div.block > .hero-inner > .hero-content-overlay > div{max-width:100%!important}}
+
+
+/* Server-rendered India homepage hero: no client DOM insertion required for LCP. */
+.home-premium-scope .home-india-hero-section{padding-top:10px!important;padding-bottom:28px!important}
+.home-premium-scope .home-india-hero-card{position:relative;overflow:hidden;border-radius:24px;padding:clamp(28px,5vw,58px);background:linear-gradient(135deg,#064e3b 0%,#047857 55%,#16a34a 100%);color:#fff;box-shadow:0 24px 60px -30px rgba(6,78,59,.55);isolation:isolate}
+.home-premium-scope .home-india-hero-content{position:relative;z-index:2;max-width:780px}
+.home-premium-scope .home-india-hero-badge{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.10);border-radius:999px;padding:8px 14px;font-size:12px;font-weight:800;letter-spacing:.04em}
+.home-premium-scope .home-india-hero-card h1{margin:18px 0 10px;font-size:clamp(30px,5vw,58px);line-height:1.05;font-weight:900;letter-spacing:-.03em}
+.home-premium-scope .home-india-hero-card p{margin:0;max-width:650px;font-size:clamp(15px,2vw,19px);line-height:1.7;color:rgba(236,253,245,.92)}
+.home-premium-scope .home-india-hero-pills{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.home-premium-scope .home-india-hero-pills span{display:inline-flex;align-items:center;border-radius:999px;background:#fff;color:#065f46;padding:10px 15px;font-size:13px;font-weight:900}
+.home-premium-scope .home-india-hero-pills span.secondary{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.20);color:#fff;font-weight:800}
+.home-premium-scope .home-india-hero-orb{position:absolute;border-radius:999px;z-index:1;pointer-events:none}
+.home-premium-scope .home-india-hero-orb-top{right:-70px;top:-90px;width:260px;height:260px;background:rgba(255,255,255,.09);filter:blur(2px)}
+.home-premium-scope .home-india-hero-orb-bottom{left:42%;bottom:-120px;width:280px;height:280px;background:rgba(190,242,100,.10);filter:blur(4px)}
+@media(max-width:767px){
+  .home-premium-scope .home-india-hero-section{padding-top:0!important;padding-bottom:18px!important}
+  .home-premium-scope .home-india-hero-card{border-radius:14px;padding:26px 20px}
+  .home-premium-scope .home-india-hero-card h1{font-size:clamp(30px,9vw,44px)}
+  .home-premium-scope .home-india-hero-card p{font-size:15px;line-height:1.6}
+}
