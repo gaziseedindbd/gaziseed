@@ -24,16 +24,39 @@ export default async function Page() {
   bannerQuery.searchParams.set('and', `(or(start_date.is.null,start_date.lte.${now}),or(end_date.is.null,end_date.gte.${now}))`);
   bannerQuery.searchParams.set('order', 'display_order.asc');
 
-  const bannerResponse = await fetch(bannerQuery.toString(), {
-    headers: {
-      apikey: supabaseAnonKey || '',
-      Authorization: `Bearer ${supabaseAnonKey || ''}`,
-      'x-gazi-country': visitorCountry,
-    },
-    next: { revalidate: 60 },
-  }).catch(() => null);
+  let initialBanners: Banner[] = [];
 
-  const initialBanners = bannerResponse?.ok ? ((await bannerResponse.json()) as Banner[]) : [];
+  // The homepage must never wait for an upstream data service long enough to
+  // hit Vercel's function timeout. The CSS hero fallback is intentionally
+  // independent of Supabase so a slow/unavailable banner query degrades
+  // gracefully instead of returning a 504.
+  if (supabaseUrl && supabaseAnonKey) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
+    try {
+      const bannerResponse = await fetch(bannerQuery.toString(), {
+        headers: {
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${supabaseAnonKey}`,
+          'x-gazi-country': visitorCountry,
+        },
+        next: { revalidate: 60 },
+        signal: controller.signal,
+      });
+
+      if (bannerResponse.ok) {
+        try {
+          initialBanners = (await bannerResponse.json()) as Banner[];
+        } catch {
+          initialBanners = [];
+        }
+      }
+    } catch {
+      initialBanners = [];
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
   const firstBanner = initialBanners[0];
   const heroImage = firstBanner?.desktop_image ? {
     desktop: getImageProps({
