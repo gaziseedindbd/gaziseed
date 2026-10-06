@@ -4,7 +4,7 @@ import path from 'path';
 import Home from '@/components/site/home';
 import HomeStyleRegistry from '@/components/site/home-style-registry';
 import { getImageProps } from 'next/image';
-import type { Banner } from '@/lib/supabase/types';
+import type { Banner, Category, Product } from '@/lib/supabase/types';
 
 export const revalidate = 60;
 
@@ -24,16 +24,34 @@ export default async function Page() {
   bannerQuery.searchParams.set('and', `(or(start_date.is.null,start_date.lte.${now}),or(end_date.is.null,end_date.gte.${now}))`);
   bannerQuery.searchParams.set('order', 'display_order.asc');
 
-  const bannerResponse = await fetch(bannerQuery.toString(), {
-    headers: {
-      apikey: supabaseAnonKey || '',
-      Authorization: `Bearer ${supabaseAnonKey || ''}`,
-      'x-gazi-country': visitorCountry,
-    },
-    next: { revalidate: 60 },
-  }).catch(() => null);
+  const baseHeaders = {
+    apikey: supabaseAnonKey || '',
+    Authorization: `Bearer ${supabaseAnonKey || ''}`,
+    'x-gazi-country': visitorCountry,
+  };
+
+  const categoriesQuery = new URL('/rest/v1/categories', supabaseUrl || 'https://ufxsthshyebahkwbmioe.supabase.co');
+  categoriesQuery.searchParams.set('select', '*');
+  categoriesQuery.searchParams.set('is_active', 'eq.true');
+  categoriesQuery.searchParams.set('order', 'display_order.asc');
+
+  const featuredQuery = new URL('/rest/v1/products', supabaseUrl || 'https://ufxsthshyebahkwbmioe.supabase.co');
+  featuredQuery.searchParams.set('select', '*');
+  featuredQuery.searchParams.set('is_active', 'eq.true');
+  featuredQuery.searchParams.set('is_ads_only', 'eq.false');
+  featuredQuery.searchParams.set('is_featured', 'eq.true');
+  featuredQuery.searchParams.set('order', 'created_at.desc');
+  featuredQuery.searchParams.set('limit', '8');
+
+  const [bannerResponse, categoriesResponse, featuredResponse] = await Promise.all([
+    fetch(bannerQuery.toString(), { headers: baseHeaders, next: { revalidate: 60 } }).catch(() => null),
+    fetch(categoriesQuery.toString(), { headers: baseHeaders, next: { revalidate: 60 } }).catch(() => null),
+    fetch(featuredQuery.toString(), { headers: baseHeaders, next: { revalidate: 60 } }).catch(() => null),
+  ]);
 
   const initialBanners = bannerResponse?.ok ? ((await bannerResponse.json()) as Banner[]) : [];
+  const initialCategories = categoriesResponse?.ok ? ((await categoriesResponse.json()) as Category[]) : [];
+  const initialFeaturedProducts = featuredResponse?.ok ? ((await featuredResponse.json()) as Product[]) : [];
   const firstBanner = initialBanners[0];
   const heroImage = firstBanner?.desktop_image ? {
     desktop: getImageProps({
@@ -56,7 +74,13 @@ export default async function Page() {
   return (
     <>
       <HomeStyleRegistry css={homeStyles} />
-      <Home initialBanners={initialBanners} initialHeroImage={heroImage} initialVisitorCountry={visitorCountry} />
+      <Home
+        initialBanners={initialBanners}
+        initialCategories={initialCategories}
+        initialFeaturedProducts={initialFeaturedProducts}
+        initialHeroImage={heroImage}
+        initialVisitorCountry={visitorCountry}
+      />
     </>
   );
 }
