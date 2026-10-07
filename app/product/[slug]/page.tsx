@@ -327,7 +327,14 @@ export default function ProductDetailPage() {
                       type="button"
                       onClick={() => setQuantity(Math.max(quantity, b.min_quantity))}
                       className={`group relative overflow-hidden rounded-xl border-2 p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${isActive ? 'border-red-400 bg-gradient-to-br from-red-50 to-orange-50 shadow-md ring-2 ring-red-200/70' : 'border-orange-200 bg-white hover:border-orange-300'}`}
-                      aria-label={t(`${b.min_quantity} প্যাকেটের অফার নিন`, `Choose ${b.min_quantity} packet offer`)}
+                      aria-label={t(
+                        b.free_item_text
+                          ? `${b.min_quantity} প্যাকেট নিলে ${b.free_item_text} — অফার নিন`
+                          : `${b.min_quantity} প্যাকেটের অফার নিন`,
+                        b.free_item_text
+                          ? `Choose ${b.min_quantity} packet offer with ${b.free_item_text}`
+                          : `Choose ${b.min_quantity} packet offer`
+                      )}
                     >
                       {isActive && <span className="absolute right-2 top-2 rounded-full bg-red-600 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white shadow-sm animate-pulse">{t('সক্রিয়', 'ACTIVE')}</span>}
                       <div className="flex items-center gap-2">
@@ -335,6 +342,11 @@ export default function ProductDetailPage() {
                         <span className="text-xs sm:text-sm font-black text-gray-950">{t('প্যাকেট', 'PACKETS')}</span>
                         {discountPct > 0 && <span className="ml-auto rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black text-emerald-800">-{discountPct}%</span>}
                       </div>
+                      {b.free_item_text && (
+                        <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-[10px] font-extrabold text-emerald-800">
+                          🎁 {b.free_item_text}
+                        </div>
+                      )}
                       <div className="mt-2 flex items-end justify-between gap-2">
                         <div>
                           <div className="flex items-baseline gap-1.5">

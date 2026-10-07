@@ -140,7 +140,7 @@ export default function AdminProductsPage() {
         if (_new) {
           await supabase.from('bulk_pricing').insert({ ...rest, product_id: productId, variant_id: null, country_code: adminBranch });
         } else {
-          await supabase.from('bulk_pricing').update({ min_quantity: rest.min_quantity, unit_price: rest.unit_price, is_active: rest.is_active, country_code: adminBranch }).eq('id', b.id);
+          await supabase.from('bulk_pricing').update({ min_quantity: rest.min_quantity, unit_price: rest.unit_price, free_item_text: rest.free_item_text || null, is_active: rest.is_active, country_code: adminBranch }).eq('id', b.id);
         }
       }
     }
@@ -268,7 +268,7 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
   const [variantForm, setVariantForm] = useState({ name: '', sku: '', regular_price: '', sale_price: '', stock: '', weight_or_count: '', is_active: true, display_order: 0 });
   const [bulkTiers, setBulkTiers] = useState<any[]>([]);
   const [removedBulkTiers, setRemovedBulkTiers] = useState<string[]>([]);
-  const [bulkForm, setBulkForm] = useState({ min_quantity: '', offer_price: '', is_active: true });
+  const [bulkForm, setBulkForm] = useState({ min_quantity: '', free_item_text: '', offer_price: '', is_active: true });
   const [showSeasonal, setShowSeasonal] = useState(false);
   const allMonths = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
   const allSeasonTags = ['Winter', 'Summer', 'Rainy Season', 'Fast Growing', 'Hybrid', 'Local/Desi'];
@@ -440,13 +440,14 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
       {
         ...bulkForm,
         min_quantity: minQuantity,
+        free_item_text: bulkForm.free_item_text.trim(),
         unit_price: Number((totalOfferPrice / minQuantity).toFixed(2)),
         product_id: product?.id,
         variant_id: null,
         _new: true,
       },
     ]);
-    setBulkForm({ min_quantity: '', offer_price: '', is_active: true });
+    setBulkForm({ min_quantity: '', free_item_text: '', offer_price: '', is_active: true });
   };
 
   const removeBulkTier = (idx: number) => {
@@ -960,8 +961,9 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
                           <span className="text-gray-300">→</span>
                           <span className="text-emerald-700">{formatPrice(totalOfferPrice)} মোট</span>
                         </div>
-                        <div className="mt-0.5 text-[11px] text-muted-foreground">
-                          সাশ্রয় {formatPrice(savings)} · একক মূল্য {formatPrice(b.unit_price)}
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                          <span className="text-muted-foreground">সাশ্রয় {formatPrice(savings)} · একক মূল্য {formatPrice(b.unit_price)}</span>
+                          {b.free_item_text && <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-bold text-emerald-700">🎁 {b.free_item_text}</span>}
                         </div>
                       </div>
                       <button type="button" onClick={() => removeBulkTier(idx)} className="self-end rounded-lg p-2 text-destructive hover:bg-destructive/10 sm:self-auto" aria-label="অফার মুছুন">
@@ -973,7 +975,7 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
               </div>
             )}
 
-            <div className="mt-3 grid gap-2 rounded-xl border border-dashed border-amber-300 bg-white/80 p-3 sm:grid-cols-[1fr_1.2fr_auto]">
+            <div className="mt-3 grid gap-2 rounded-xl border border-dashed border-amber-300 bg-white/80 p-3 sm:grid-cols-1 md:grid-cols-[1fr_1.35fr_1.2fr_auto]">
               <input
                 value={bulkForm.min_quantity}
                 onChange={(e) => setBulkForm({ ...bulkForm, min_quantity: e.target.value })}
@@ -981,6 +983,12 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
                 type="number"
                 min="2"
                 step="1"
+                className="input-bangla"
+              />
+              <input
+                value={bulkForm.free_item_text}
+                onChange={(e) => setBulkForm({ ...bulkForm, free_item_text: e.target.value })}
+                placeholder="সাথে কী ফ্রি? (যেমন ৬ প্রকার বীজ ফ্রি)"
                 className="input-bangla"
               />
               <input
