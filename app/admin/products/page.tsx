@@ -151,7 +151,7 @@ export default function AdminProductsPage() {
     }
     setShowForm(false);
     setEditing(null);
-    loadProducts();
+    await Promise.all([loadProducts(), loadAllProducts()]);
   };
 
   const handleDelete = async (id: string) => {
@@ -362,7 +362,11 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
     min_order_qty: product?.min_order_qty || '',
     max_order_qty: product?.max_order_qty || '',
     suitable_months: product?.suitable_months || [],
-    growing_type: product?.growing_type || '',
+    growing_type: Array.isArray(product?.growing_type)
+      ? product.growing_type
+      : product?.growing_type
+        ? [product.growing_type]
+        : [],
     season_tags: product?.season_tags || [],
     cost_price: product?.cost_price || '',
     show_low_stock: product?.show_low_stock ?? true,
@@ -483,7 +487,11 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
       max_order_qty: form.max_order_qty ? Number(form.max_order_qty) : null,
       cost_price: form.cost_price ? Number(form.cost_price) : null,
       suitable_months: form.suitable_months,
-      growing_type: form.growing_type || null,
+      growing_type: Array.isArray(form.growing_type)
+        ? form.growing_type
+        : form.growing_type
+          ? [form.growing_type]
+          : [],
       season_tags: form.season_tags,
       show_low_stock: form.show_low_stock,
       promotional_offer_enabled: form.promotional_offer_enabled,
@@ -1019,11 +1027,32 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
                   </div>
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium">চাষের ধরন</label>
-                  <select value={form.growing_type} onChange={(e) => setForm({ ...form, growing_type: e.target.value })} className="input-bangla">
-                    <option value="">— নির্বাচন করুন —</option>
-                    {allGrowingTypes.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
+                  <div className="mb-1 flex items-center justify-between gap-3">
+                    <label className="block text-sm font-medium">চাষের ধরন</label>
+                    <span className="text-xs text-muted-foreground">একাধিক নির্বাচন করা যাবে</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {allGrowingTypes.map((t) => {
+                      const selectedGrowingTypes = Array.isArray(form.growing_type) ? form.growing_type : [];
+                      const selected = selectedGrowingTypes.includes(t);
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setForm({
+                            ...form,
+                            growing_type: selected
+                              ? selectedGrowingTypes.filter((x: string) => x !== t)
+                              : [...selectedGrowingTypes, t],
+                          })}
+                          className={"rounded-lg px-3 py-1.5 text-sm transition " + (selected ? "bg-primary text-primary-foreground" : "border border-border bg-background hover:bg-secondary/50")}
+                          aria-pressed={selected}
+                        >
+                          {selected ? '✓ ' : ''}{t}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium">সিজন ট্যাগ</label>
