@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ShoppingCart, Zap, Heart, Star, ArrowUpRight, Leaf, Package } from 'lucide-react';
 import { formatPrice, getEffectivePrice, getDiscountPercent } from '@/lib/utils';
 import type { Product } from '@/lib/supabase/types';
-import { addToCart } from '@/lib/cart';
+import { addToCart, getCart } from '@/lib/cart';
 import { toast } from './toast-provider';
 import { useRouter } from 'next/navigation';
 import { useLang } from './language-provider';
@@ -49,7 +49,12 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
     const image = e.currentTarget.closest('article')?.querySelector('img');
     const sourceRect = image?.getBoundingClientRect();
 
-    addToCart(product, 1);
+    const existingQuantity = getCart().filter((item) => item.product_id === product.id && !item.variant_id).reduce((sum, item) => sum + item.quantity, 0);
+    if (existingQuantity + 1 > Math.min(product.stock, product.max_order_qty || product.stock)) {
+      toast(t('স্টকের সীমা পৌঁছে গেছে', 'Available stock or order limit reached', 'उपलब्ध स्टॉक या ऑर्डर सीमा पूरी हुई'), 'error');
+      return;
+    }
+    addToCart(product, 1, { name });
 
 
 
@@ -81,7 +86,12 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
       return;
     }
 
-    addToCart(product, 1);
+    const existingQuantity = getCart().filter((item) => item.product_id === product.id && !item.variant_id).reduce((sum, item) => sum + item.quantity, 0);
+    if (existingQuantity + 1 > Math.min(product.stock, product.max_order_qty || product.stock)) {
+      toast(t('স্টকের সীমা পৌঁছে গেছে', 'Available stock or order limit reached', 'उपलब्ध स्टॉक या ऑर्डर सीमा पूरी हुई'), 'error');
+      return;
+    }
+    addToCart(product, 1, { name });
     router.push('/checkout');
   };
 

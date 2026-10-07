@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getCart, getValidatedCart } from '@/lib/cart';
+import { getCart, getValidatedCart, isCartAvailable } from '@/lib/cart';
 import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/data';
 import type { CustomerAddress } from '@/lib/supabase/types';
@@ -486,6 +486,17 @@ export default function CheckoutPage() {
 
     setLoading(true);
     try {
+      let available = false;
+      try {
+        available = await isCartAvailable(cart, country);
+      } catch {
+        setError(t('স্টক যাচাই করা যায়নি। আবার চেষ্টা করুন।', 'Unable to verify stock. Please try again.', 'स्टॉक की पुष्टि नहीं हुई। फिर कोशिश करें।'));
+        return;
+      }
+      if (!available) {
+        setError(t('কার্টের পণ্য বা পরিমাণ এখন উপলব্ধ নেই। কার্ট আপডেট করুন।', 'Some items or quantities are no longer available. Please update your cart.', 'कुछ उत्पाद या मात्रा उपलब्ध नहीं हैं। अपना कार्ट अपडेट करें।'));
+        return;
+      }
       const fullAddress = formatAddressToString(addrValue);
       const cartFingerprint = getMarketingCartFingerprint(cart);
       const shippingEventKey = `seed-bari-shipping-info-${country}-${cartFingerprint}`;

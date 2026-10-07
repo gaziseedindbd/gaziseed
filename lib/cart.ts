@@ -55,6 +55,31 @@ export async function getValidatedCart(country: 'BD' | 'IN'): Promise<CartItem[]
   return validCart;
 }
 
+// Read fresh inventory before creating an order. The order API remains authoritative.
+export async function isCartAvailable(cart: CartItem[], country: 'BD' | 'IN'): Promise<boolean> {
+  if (!cart.length) return false;
+  const ids = Array.from(new Set(cart.map((item) => item.product_id)));
+  const variantIds = Array.from(new Set(cart.flatMap((item) => item.variant_id ? [item.variant_id] : [])));
+  const [products, variants] = await Promise.all([
+    supabase.from('products').select('id,stock,min_order_qty,max_order_qty').eq('country_code', country).eq('is_active', true).in('id', ids),
+    variantIds.length
+      ? supabase.from('product_variants').select('id,product_id,stock').eq('is_active', true).in('id', variantIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (products.error || variants.error) throw new Error('Inventory check failed');
+  const totals = new Map<string, number>();
+  return cart.every((item) => {
+    const product = products.data?.find((row) => row.id === item.product_id);
+    const variant = item.variant_id ? variants.data?.find((row) => row.id === item.variant_id && row.product_id === item.product_id) : null;
+    if (!product || (item.variant_id && !variant) || !Number.isSafeInteger(item.quantity) || item.quantity < 1) return false;
+    if (product.min_order_qty && item.quantity < product.min_order_qty) return false;
+    const key = item.variant_id || item.product_id;
+    const total = (totals.get(key) || 0) + item.quantity;
+    totals.set(key, total);
+    return total <= (variant?.stock ?? product.stock) && (!product.max_order_qty || total <= product.max_order_qty);
+  });
+}
+
 export function saveCart(items: CartItem[]) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(CART_KEY, JSON.stringify(items));
