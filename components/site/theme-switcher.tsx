@@ -110,7 +110,7 @@ export function ThemeSwitcher({ defaultTheme }: { defaultTheme?: HomePageTheme }
     setOpen(false);
   };
 
-  if (isCategoryPage || isHomePage) return null;
+  if (isCategoryPage || isHomePage || pathname === '/all-products' || pathname.startsWith('/product/') || pathname === '/cart' || pathname === '/checkout') return null;
 
   return (
     <>

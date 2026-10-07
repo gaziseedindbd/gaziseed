@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Minus, Plus, ShoppingCart, Zap, Truck, ShieldCheck, Check, Star, MessageCircle, Gift, Package, ChevronDown, Heart, Sparkles, Sprout, Info, BookOpen, HelpCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
+import PageShare from '@/components/site/page-share';
 import { ProductGallery } from '@/components/site/product-gallery';
 import { getProductBySlug, getReviews, getProducts, getEffectivePrice, getDiscountPercent, formatPrice, getRelatedProducts, getProductFaqs, getBundleOffers, getActivePromotions, getProductVariants, getBulkPricing, addRecentlyViewed, toggleWishlist } from '@/lib/data';
 import { addToCart, getCart } from '@/lib/cart';
@@ -283,9 +284,9 @@ export default function ProductDetailPage() {
                   </span>
                   {product.sku && <span className="text-xs text-gray-400 font-medium">SKU: {product.sku}</span>}
                 </div>
-                <button onClick={handleWishlist} aria-label={inWishlist ? t('উইশলিস্ট থেকে সরান', 'Remove from wishlist') : t('উইশলিস্টে রাখুন', 'Add to wishlist')} aria-pressed={inWishlist} className={`rounded-full p-2.5 border transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${inWishlist ? 'border-red-200 bg-red-50 text-red-500' : 'border-gray-200 bg-white text-gray-400 hover:text-red-500'}`} title="উইশলিস্টে রাখুন">
+                <div className="flex items-center gap-2"><PageShare inline /><button onClick={handleWishlist} aria-label={inWishlist ? t('উইশলিস্ট থেকে সরান', 'Remove from wishlist') : t('উইশলিস্টে রাখুন', 'Add to wishlist')} aria-pressed={inWishlist} className={`rounded-full p-2.5 border transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${inWishlist ? 'border-red-200 bg-red-50 text-red-500' : 'border-gray-200 bg-white text-gray-400 hover:text-red-500'}`} title={t('উইশলিস্টে রাখুন', 'Add to wishlist', 'पसंदीदा में जोड़ें')}>
                   <Heart className={`h-4 w-4 ${inWishlist ? 'fill-current' : ''}`} />
-                </button>
+                </button></div>
               </div>
               {lang !== 'en' && product.name_en && <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{product.name_en}</p>}
               <h1 className="mt-1 text-xl sm:text-3xl font-black text-gray-900 leading-tight break-words">{productName}</h1>

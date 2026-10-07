@@ -8,7 +8,7 @@ import { useLang } from './language-provider';
 
 const TARGETS = ['/product/', '/combo/', '/offer/', '/animated-landing/'];
 
-export default function PageShare() {
+export default function PageShare({ inline = false }: { inline?: boolean }) {
   const { t } = useLang();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -21,7 +21,7 @@ export default function PageShare() {
     setCopied(false);
   }, [pathname]);
 
-  if (!enabled) return null;
+  if (!enabled || (pathname.startsWith('/product/') && !inline)) return null;
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
   const title = typeof document !== 'undefined' ? document.title : 'GAZI SEED';
@@ -59,27 +59,26 @@ export default function PageShare() {
   };
 
   return (
-    <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom)+4.75rem)] right-4 z-[70] sm:bottom-24 sm:right-6">
+    <div className={inline ? "relative shrink-0" : "fixed bottom-[calc(5rem+env(safe-area-inset-bottom)+4.75rem)] right-4 z-[70] sm:bottom-24 sm:right-6"}>
       {open && (
-        <div className="mb-3 w-[250px] overflow-hidden rounded-2xl border border-emerald-100 bg-white/95 p-3 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-2 fade-in duration-200">
+        <div className={`${inline ? "absolute right-0 top-full mt-2 z-[70]" : "mb-3"} w-[250px] overflow-hidden rounded-2xl border border-emerald-100 bg-white/95 p-3 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-2 fade-in duration-200`}>
           <div className="flex items-center justify-between px-1 pb-2">
             <div>
               <p className="text-sm font-extrabold text-emerald-950">{t('শেয়ার করুন', 'Share this product', 'यह उत्पाद साझा करें')}</p>
               <p className="text-[11px] text-slate-500">{t('বন্ধু ও পরিচিত কৃষকদের জানান', 'Share with friends and fellow growers', 'दोस्तों और किसानों के साथ साझा करें')}</p>
             </div>
-            <button onClick={() => setOpen(false)} className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100" aria-label="Close share menu"><X className="h-4 w-4" /></button>
+            <button onClick={() => setOpen(false)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100" aria-label={t('শেয়ার মেনু বন্ধ করুন', 'Close share menu', 'साझा मेनू बंद करें')}><X className="h-4 w-4" /></button>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button onClick={() => openShare(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`)} className="flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2.5 text-xs font-bold text-blue-700 hover:bg-blue-100"><Facebook className="h-4 w-4" /> Facebook</button>
             <button onClick={() => openShare(`https://wa.me/?text=${encodedText}`)} className="flex items-center gap-2 rounded-xl bg-green-50 px-3 py-2.5 text-xs font-bold text-green-700 hover:bg-green-100"><MessageCircle className="h-4 w-4" /> WhatsApp</button>
-            <button onClick={() => openShare(`https://www.facebook.com/dialog/send?link=${encodedUrl}&app_id=0`)} className="flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2.5 text-xs font-bold text-sky-700 hover:bg-sky-100"><MessageCircle className="h-4 w-4" /> Messenger</button>
-            <button onClick={copyLink} className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-xs font-bold text-amber-800 hover:bg-amber-100">{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} {copied ? 'Copied' : 'Copy Link'}</button>
+            <button onClick={copyLink} className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-xs font-bold text-amber-800 hover:bg-amber-100">{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} {copied ? t('কপি হয়েছে', 'Copied', 'कॉपी हुआ') : t('লিংক কপি', 'Copy Link', 'लिंक कॉपी करें')}</button>
           </div>
         </div>
       )}
-      <button onClick={nativeShare} aria-label="Share this page" className="group flex items-center gap-2 rounded-full border border-white/80 bg-emerald-950 px-4 py-3 text-white shadow-xl ring-1 ring-emerald-900/10 transition-all hover:-translate-y-0.5 hover:bg-emerald-900 active:scale-95">
+      <button onClick={nativeShare} aria-label={t('এই পণ্য শেয়ার করুন', 'Share this product', 'यह उत्पाद साझा करें')} aria-expanded={open} className={inline ? "flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-emerald-800 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600" : "group flex min-h-11 items-center gap-2 rounded-full border border-white/80 bg-emerald-950 px-4 py-3 text-white shadow-xl transition hover:bg-emerald-900"}>
         <Share2 className="h-5 w-5 transition-transform group-hover:rotate-12" />
-        <span className="hidden sm:inline text-sm font-extrabold">{t('শেয়ার', 'Share', 'साझा करें')}</span>
+        {!inline && <span className="hidden sm:inline text-sm font-extrabold">{t('শেয়ার', 'Share', 'साझा करें')}</span>}
       </button>
     </div>
   );
