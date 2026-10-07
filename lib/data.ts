@@ -369,7 +369,14 @@ export async function getProductVariants(productId: string): Promise<ProductVari
 }
 
 export async function getBulkPricing(productId: string, variantId?: string): Promise<BulkPricing[]> {
-  let query = supabase.from('bulk_pricing').select('*').eq('product_id', productId).eq('is_active', true).order('min_quantity');
+  const country = getVisitorCountry();
+  let query = supabase
+    .from('bulk_pricing')
+    .select('*')
+    .eq('product_id', productId)
+    .eq('country_code', country)
+    .eq('is_active', true)
+    .order('min_quantity');
   if (variantId) query = query.eq('variant_id', variantId);
   else query = query.is('variant_id', null);
   const { data } = await query;
