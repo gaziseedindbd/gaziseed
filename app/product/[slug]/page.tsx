@@ -270,6 +270,13 @@ export default function ProductDetailPage() {
           noteEn={product.promotional_offer_note_en}
           noteHi={product.promotional_offer_note_hi}
           lang={lang}
+          available={inStock}
+          onUnavailableCta={() => {
+            setNotifyOpen(true);
+            window.requestAnimationFrame(() => {
+              document.getElementById('product-purchase')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+          }}
         />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-start w-full">
           <div className="w-full min-w-0">
