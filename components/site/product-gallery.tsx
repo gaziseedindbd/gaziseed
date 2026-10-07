@@ -85,7 +85,7 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
   return (
     <div className="product-gallery-premium">
       <div
-        className="group relative aspect-[4/3] overflow-hidden rounded-[1.5rem] border border-primary/10 bg-gradient-to-br from-primary/[0.035] via-white to-accent/[0.07] shadow-[0_18px_45px_-30px_rgba(15,23,42,.45)] sm:rounded-[1.75rem]"
+        className="group relative aspect-square overflow-hidden rounded-[1.5rem] border border-primary/10 bg-gradient-to-br from-primary/[0.035] via-white to-accent/[0.07] shadow-[0_18px_45px_-30px_rgba(15,23,42,.45)] sm:rounded-[1.75rem]"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => {
           if (resumeTimer.current) clearTimeout(resumeTimer.current);
