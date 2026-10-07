@@ -130,6 +130,13 @@ export default function Home({ initialBanners = [], initialHeroImage = null, ini
                 <h1>Premium Seeds for Better Farming</h1>
                 <p>India-focused seed shopping with fast pan-India delivery, secure payments and trusted customer support.</p>
                 <div className="home-india-hero-pills"><span>UPI</span><span>PhonePe</span><span>Paytm</span><span className="secondary">Cards &amp; COD</span></div>
+                <Link
+                  href="/all-products"
+                  className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-base font-bold text-emerald-900 shadow-lg transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-emerald-800"
+                >
+                  {t('বীজ কিনুন', 'Shop Seeds', 'बीज खरीदें')}
+                  <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                </Link>
               </div>
             </div>
           </div>
