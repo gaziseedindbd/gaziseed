@@ -68,6 +68,7 @@ export type Product = {
   max_order_qty: number | null;
   suitable_months: string[];
   growing_type: string;
+  growing_types: string[] | null;
   season_tags: string[];
   cost_price: number | null;
   show_low_stock: boolean;
