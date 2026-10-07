@@ -543,3 +543,33 @@
     text-align:center!important;
   }
 }
+
+
+/* VISUAL AUDIT FIX 1B — beat legacy hero child selectors */
+.home-premium-scope .home-hero-section .home-hero-fallback .hero-inner>div.hero-fallback-shell{
+  position:absolute!important;
+  inset:0!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1.45fr) minmax(300px,.55fr)!important;
+  align-items:stretch!important;
+  width:100%!important;
+  max-width:none!important;
+  height:100%!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  transform:none!important;
+  animation:none!important;
+  overflow:visible!important;
+}
+@media(max-width:900px){
+  .home-premium-scope .home-hero-section .home-hero-fallback .hero-inner>div.hero-fallback-shell{
+    grid-template-columns:minmax(0,1.35fr) minmax(220px,.65fr)!important;
+  }
+}
+@media(max-width:767px){
+  .home-premium-scope .home-hero-section .home-hero-fallback .hero-inner>div.hero-fallback-shell{
+    grid-template-columns:1fr!important;
+    grid-template-rows:1fr auto!important;
+  }
+}
