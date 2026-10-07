@@ -672,7 +672,7 @@ export default function CheckoutPage() {
               <section className="rounded-[2rem] border border-border/70 bg-card p-5 shadow-sm sm:p-7">
                 <div className="mb-6 flex items-start justify-between gap-4 border-b border-border/60 pb-5">
                   <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-sm font-black text-primary">১</div>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-sm font-black text-primary">{t('১', '1', '1')}</div>
                     <div>
                       <h2 className="text-lg font-black">{t('ডেলিভারি তথ্য', 'Delivery information')}</h2>
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('যে ঠিকানায় আপনার অর্ডার পৌঁছাবে', 'Where your order will be delivered')}</p>

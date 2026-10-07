@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useLang } from './language-provider';
 import { bangladeshLocations, getDistricts, getThanas } from '@/lib/bangladesh-locations';
 
 export type AddressValue = {
@@ -14,32 +14,29 @@ export type AddressValue = {
 export type AddressSelectorProps = {
   value: AddressValue;
   onChange: (v: AddressValue) => void;
-  lang?: 'bn' | 'en';
+  lang?: 'bn' | 'en' | 'hi';
   countryCode?: 'BD' | 'IN';
 };
 
-export function AddressSelector({ value, onChange, lang = 'bn', countryCode = 'BD' }: AddressSelectorProps) {
-  const [division, setDivision] = useState(value.division || '');
-  const [district, setDistrict] = useState(value.district || '');
-  const [thana, setThana] = useState(value.thana || '');
-  const [detail, setDetail] = useState(value.detail || '');
-  const [postalCode, setPostalCode] = useState(value.postalCode || '');
-
-  useEffect(() => {
-    onChange({ division, district, thana, detail, postalCode });
-  }, [division, district, thana, detail, postalCode, onChange]);
+export function AddressSelector({ value, onChange, lang: preferredLang, countryCode = 'BD' }: AddressSelectorProps) {
+  const { lang: selectedLang } = useLang();
+  const lang = preferredLang || selectedLang;
+  const tr = (bn: string, en: string, hi: string) => lang === 'bn' ? bn : lang === 'hi' ? hi : en;
+  const { division, district, thana, detail, postalCode = '' } = value;
+  const update = (patch: Partial<AddressValue>) => onChange({ ...value, ...patch });
+  const setDivision = (division: string) => update({ division, district: '', thana: '' });
+  const setDistrict = (district: string) => update({ district, thana: '' });
+  const setThana = (thana: string) => update({ thana });
+  const setDetail = (detail: string) => update({ detail });
+  const setPostalCode = (postalCode: string) => update({ postalCode });
 
   const isIndia = countryCode === 'IN';
   const districts = getDistricts(division);
   const thanas = getThanas(division, district);
 
-  const label = lang === 'en'
-    ? (isIndia
-      ? { division: 'State', district: 'City / District', thana: 'Area / Locality', detail: 'Detailed Address', postal: 'PIN Code *' }
-      : { division: 'Division', district: 'District', thana: 'Police Station', detail: 'Detailed Address', postal: 'Postal Code (optional)' })
-    : (isIndia
-      ? { division: 'রাজ্য', district: 'শহর / জেলা', thana: 'এলাকা / লোকালিটি', detail: 'বিস্তারিত ঠিকানা', postal: 'PIN কোড *' }
-      : { division: 'বিভাগ', district: 'জেলা', thana: 'থানা', detail: 'বিস্তারিত ঠিকানা', postal: 'পোস্ট কোড (ঐচ্ছিক)' });
+  const label = isIndia
+    ? { division: tr('রাজ্য', 'State', 'राज्य'), district: tr('শহর / জেলা', 'City / District', 'शहर / जिला'), thana: tr('এলাকা / লোকালিটি', 'Area / Locality', 'क्षेत्र / इलाका'), detail: tr('বিস্তারিত ঠিকানা', 'Detailed Address', 'पूरा पता'), postal: tr('PIN কোড *', 'PIN Code *', 'पिन कोड *') }
+    : { division: tr('বিভাগ', 'Division', 'संभाग'), district: tr('জেলা', 'District', 'जिला'), thana: tr('থানা', 'Police Station', 'थाना'), detail: tr('বিস্তারিত ঠিকানা', 'Detailed Address', 'पूरा पता'), postal: tr('পোস্ট কোড (ঐচ্ছিক)', 'Postal Code (optional)', 'पोस्टल कोड (वैकल्पिक)') };
 
   if (isIndia) {
     return (
@@ -47,24 +44,24 @@ export function AddressSelector({ value, onChange, lang = 'bn', countryCode = 'B
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div>
             <label className="mb-1 block text-sm font-medium">{label.division} *</label>
-            <input value={division} onChange={(e) => setDivision(e.target.value)} className="input-bangla" placeholder={lang === 'en' ? 'e.g. West Bengal' : 'যেমন: West Bengal'} required />
+            <input aria-label={label.division} value={division} onChange={(e) => setDivision(e.target.value)} className="input-bangla" placeholder={tr('যেমন: West Bengal', 'e.g. West Bengal', 'जैसे: West Bengal')} required />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">{label.district} *</label>
-            <input value={district} onChange={(e) => setDistrict(e.target.value)} className="input-bangla" placeholder={lang === 'en' ? 'e.g. Kolkata' : 'যেমন: Kolkata'} required />
+            <input aria-label={label.district} value={district} onChange={(e) => setDistrict(e.target.value)} className="input-bangla" placeholder={tr('যেমন: Kolkata', 'e.g. Kolkata', 'जैसे: Kolkata')} required />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">{label.thana} *</label>
-            <input value={thana} onChange={(e) => setThana(e.target.value)} className="input-bangla" placeholder={lang === 'en' ? 'Area / locality' : 'এলাকা / লোকালিটি'} required />
+            <input aria-label={label.thana} value={thana} onChange={(e) => setThana(e.target.value)} className="input-bangla" placeholder={label.thana} required />
           </div>
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">{label.detail} *</label>
-          <textarea value={detail} onChange={(e) => setDetail(e.target.value)} className="input-bangla min-h-[70px]" placeholder={lang === 'en' ? 'House, street, landmark...' : 'বাড়ি, রাস্তা, ল্যান্ডমার্ক...'} required />
+          <textarea aria-label={label.detail} value={detail} onChange={(e) => setDetail(e.target.value)} className="input-bangla min-h-[70px]" placeholder={tr('বাড়ি, রাস্তা, ল্যান্ডমার্ক...', 'House, street, landmark...', 'मकान, सड़क, पहचान...')} required />
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">{label.postal}</label>
-          <input type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={postalCode} onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, '').slice(0, 6))} className="input-bangla" placeholder="700001" required />
+          <input type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} aria-label={label.postal} value={postalCode} onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, '').slice(0, 6))} className="input-bangla" placeholder="700001" required />
         </div>
       </div>
     );
@@ -75,33 +72,33 @@ export function AddressSelector({ value, onChange, lang = 'bn', countryCode = 'B
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
           <label className="mb-1 block text-sm font-medium">{label.division} *</label>
-          <select value={division} onChange={(e) => { setDivision(e.target.value); setDistrict(''); setThana(''); }} className="input-bangla" required>
-            <option value="">{lang === 'en' ? 'Select division' : 'বিভাগ নির্বাচন করুন'}</option>
-            {bangladeshLocations.map((d) => <option key={d.name} value={d.name}>{lang === 'en' ? d.name : d.bn}</option>)}
+          <select aria-label={label.division} value={division} onChange={(e) => { setDivision(e.target.value); }} className="input-bangla" required>
+            <option value="">{tr('বিভাগ নির্বাচন করুন', 'Select division', 'संभाग चुनें')}</option>
+            {bangladeshLocations.map((d) => <option key={d.name} value={d.name}>{lang === 'bn' ? d.bn : d.name}</option>)}
           </select>
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">{label.district} *</label>
-          <select value={district} onChange={(e) => { setDistrict(e.target.value); setThana(''); }} className="input-bangla" required disabled={!division}>
-            <option value="">{lang === 'en' ? 'Select district' : 'জেলা নির্বাচন করুন'}</option>
-            {districts.map((d) => <option key={d.name} value={d.name}>{lang === 'en' ? d.name : d.bn}</option>)}
+          <select aria-label={label.district} value={district} onChange={(e) => { setDistrict(e.target.value); }} className="input-bangla" required disabled={!division}>
+            <option value="">{tr('জেলা নির্বাচন করুন', 'Select district', 'जिला चुनें')}</option>
+            {districts.map((d) => <option key={d.name} value={d.name}>{lang === 'bn' ? d.bn : d.name}</option>)}
           </select>
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">{label.thana} *</label>
-          <select value={thana} onChange={(e) => setThana(e.target.value)} className="input-bangla" required disabled={!district}>
-            <option value="">{lang === 'en' ? 'Select thana' : 'থানা নির্বাচন করুন'}</option>
+          <select aria-label={label.thana} value={thana} onChange={(e) => setThana(e.target.value)} className="input-bangla" required disabled={!district}>
+            <option value="">{tr('থানা নির্বাচন করুন', 'Select thana', 'थाना चुनें')}</option>
             {thanas.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium">{label.detail} *</label>
-        <textarea value={detail} onChange={(e) => setDetail(e.target.value)} className="input-bangla min-h-[70px]" placeholder={lang === 'en' ? 'House, road, area...' : 'বাড়ি নম্বর, রোড, এলাকা...'} required />
+        <textarea aria-label={label.detail} value={detail} onChange={(e) => setDetail(e.target.value)} className="input-bangla min-h-[70px]" placeholder={tr('বাড়ি নম্বর, রোড, এলাকা...', 'House, road, area...', 'मकान, सड़क, इलाका...')} required />
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium">{label.postal}</label>
-        <input type="text" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className="input-bangla" />
+        <input type="text" aria-label={label.postal} value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className="input-bangla" />
       </div>
     </div>
   );
