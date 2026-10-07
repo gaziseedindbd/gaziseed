@@ -129,14 +129,17 @@ export default function Home({ initialBanners = [], initialHeroImage = null, ini
                 <div className="home-india-hero-badge">🇮🇳 GAZI SEED INDIA</div>
                 <h1>{t('ভালো চাষের জন্য উন্নত বীজ', 'Premium Seeds for Better Farming', 'बेहतर खेती के लिए गुणवत्तापूर्ण बीज')}</h1>
                 <p>{t('সারা ভারতে ডেলিভারি, নিরাপদ পেমেন্ট ও নির্ভরযোগ্য সহায়তায় বীজ কিনুন।', 'India-focused seed shopping with fast pan-India delivery, secure payments and trusted customer support.', 'पूरे भारत में डिलीवरी, सुरक्षित भुगतान और विश्वसनीय सहायता के साथ बीज खरीदें।')}</p>
-                <div className="home-india-hero-pills"><span>UPI</span><span>PhonePe</span><span>Paytm</span><span className="secondary">Cards &amp; COD</span></div>
+                <div className="home-india-hero-pills"><span>UPI</span><span>PhonePe</span><span>Paytm</span><span className="secondary">{t('কার্ড ও COD', 'Cards & COD', 'कार्ड और COD')}</span></div>
                 <Link
                   href="/all-products"
-                  className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-base font-bold text-emerald-900 shadow-lg transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-emerald-800"
+                  className="mt-4 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-base font-bold text-emerald-900 shadow-lg transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-emerald-800"
                 >
                   {t('বীজ কিনুন', 'Shop Seeds', 'बीज खरीदें')}
                   <ChevronRight className="h-5 w-5" aria-hidden="true" />
                 </Link>
+              </div>
+              <div className="home-india-hero-visual">
+                <Image src="https://ufxsthshyebahkwbmioe.supabase.co/storage/v1/object/public/product-images/1791389448437-ipo6t8f.webp" alt={t('London-2 মিষ্টি কুমড়ার আসল বীজ প্যাকেট', 'Original London-2 sweet pumpkin seed packet', 'London-2 मीठे कद्दू का असली बीज पैकेट')} fill sizes="(max-width: 767px) 100px, 360px" priority className="object-contain" />
               </div>
             </div>
           </div>
