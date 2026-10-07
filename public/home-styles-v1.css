@@ -936,7 +936,7 @@
 /* HOMEPAGE CATEGORY OVERLAY CLEANUP — mobile-safe final pass */
 @media(max-width:767px){
   .home-premium-scope .home-category-section{
-    padding-bottom:112px!important;
+    padding-bottom:36px!important;
   }
   .home-premium-scope .home-category-section .cat-card-content{
     min-height:112px!important;
@@ -956,7 +956,7 @@
 }
 @media(max-width:420px){
   .home-premium-scope .home-category-section{
-    padding-bottom:108px!important;
+    padding-bottom:32px!important;
   }
   .home-premium-scope .home-category-section .cat-card-content{
     min-height:108px!important;
