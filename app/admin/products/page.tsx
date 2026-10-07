@@ -362,8 +362,8 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
     min_order_qty: product?.min_order_qty || '',
     max_order_qty: product?.max_order_qty || '',
     suitable_months: product?.suitable_months || [],
-    growing_type: Array.isArray(product?.growing_type)
-      ? product.growing_type
+    growing_types: Array.isArray(product?.growing_types)
+      ? product.growing_types
       : product?.growing_type
         ? [product.growing_type]
         : [],
@@ -472,6 +472,7 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
       seo_title: form.seo_title,
       meta_description: form.meta_description,
     });
+    const selectedGrowingTypes = Array.isArray(form.growing_types) ? form.growing_types : [];
     const payload = {
       ...form,
       ...autoSeo,
@@ -487,11 +488,8 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
       max_order_qty: form.max_order_qty ? Number(form.max_order_qty) : null,
       cost_price: form.cost_price ? Number(form.cost_price) : null,
       suitable_months: form.suitable_months,
-      growing_type: Array.isArray(form.growing_type)
-        ? form.growing_type
-        : form.growing_type
-          ? [form.growing_type]
-          : [],
+      growing_types: selectedGrowingTypes,
+      growing_type: selectedGrowingTypes[0] || null,
       season_tags: form.season_tags,
       show_low_stock: form.show_low_stock,
       promotional_offer_enabled: form.promotional_offer_enabled,
@@ -1033,7 +1031,7 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {allGrowingTypes.map((t) => {
-                      const selectedGrowingTypes = Array.isArray(form.growing_type) ? form.growing_type : [];
+                      const selectedGrowingTypes = Array.isArray(form.growing_types) ? form.growing_types : [];
                       const selected = selectedGrowingTypes.includes(t);
                       return (
                         <button
@@ -1041,7 +1039,7 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
                           type="button"
                           onClick={() => setForm({
                             ...form,
-                            growing_type: selected
+                            growing_types: selected
                               ? selectedGrowingTypes.filter((x: string) => x !== t)
                               : [...selectedGrowingTypes, t],
                           })}
