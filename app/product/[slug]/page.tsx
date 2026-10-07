@@ -288,12 +288,11 @@ export default function ProductDetailPage() {
                   <Heart className={`h-4 w-4 ${inWishlist ? 'fill-current' : ''}`} />
                 </button></div>
               </div>
-              {lang !== 'en' && product.name_en && <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{product.name_en}</p>}
               <h1 className="mt-1 text-xl sm:text-3xl font-black text-gray-900 leading-tight break-words">{productName}</h1>
-              <div className="mt-2.5 flex items-center gap-2 flex-wrap">
-                <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full text-xs font-bold text-amber-700"><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /><span>{avgRating ? `${avgRating} / ৫.০` : t('নতুন পণ্য', 'New Product')}</span></div>
-                <span className="text-xs text-gray-400">•</span><span className="text-xs font-medium text-gray-500">{reviews.length} {t('টি ভেরিফায়েড রিভিউ', 'Verified Reviews')}</span>
-              </div>
+              {reviews.length > 0 ? <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full text-xs font-bold text-amber-700"><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /><span>{avgRating} / 5.0</span></div>
+                <span className="text-xs font-medium text-gray-500">{reviews.length} {t('টি রিভিউ', 'Reviews', 'समीक्षाएँ')}</span>
+              </div> : <p className="mt-3 text-xs text-gray-500">{t('এই পণ্যটি নতুন—কিনে আপনার অভিজ্ঞতা জানান।', 'New to our store. Share your experience after purchase.', 'हमारे स्टोर में नया। खरीदने के बाद अपना अनुभव बताएँ।')}</p>}
             </div>
             <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-white border border-emerald-200/80 flex items-center justify-between gap-4">
               <div className="min-w-0 flex-1"><span className="text-xs font-medium text-gray-500 block">{t('বর্তমান মূল্য', 'Current Price')}</span><div className="flex items-baseline gap-2.5 flex-wrap"><span className="text-2xl sm:text-3xl font-black text-emerald-800">{formatPrice(finalUnitPrice)}</span>{discount > 0 && !selectedVariant && <span className="text-sm sm:text-base text-gray-400 line-through font-semibold">{formatPrice(product.regular_price)}</span>}{selectedVariant && selectedVariant.sale_price && selectedVariant.sale_price > 0 && selectedVariant.sale_price < selectedVariant.regular_price && <span className="text-sm sm:text-base text-gray-400 line-through font-semibold">{formatPrice(selectedVariant.regular_price)}</span>}</div></div>
