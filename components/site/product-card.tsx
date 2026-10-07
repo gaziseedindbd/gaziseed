@@ -148,8 +148,8 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
           )}
 
           {!inStock && (
-            <div className="absolute inset-0 z-[5] flex items-center justify-center bg-white/72 backdrop-blur-sm">
-              <span className="rounded-full bg-slate-950 px-4 py-2 text-[11px] font-bold text-white shadow-xl sm:text-xs">
+            <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center bg-slate-950/10">
+              <span className="rounded-full border border-white/70 bg-slate-950/90 px-4 py-2 text-[11px] font-bold text-white shadow-xl shadow-slate-950/20 sm:text-xs">
                 {t('স্টকে নেই', 'Out of stock', 'स्टॉक में नहीं')}
               </span>
             </div>
