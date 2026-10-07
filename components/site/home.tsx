@@ -19,6 +19,12 @@ type HeroImageProps = {
   mobile: ComponentProps<'img'>;
 };
 
+function prioritizeAvailableProducts(items: Product[], limit = items.length) {
+  const available = items.filter((product) => product.stock > 0);
+  const unavailable = items.filter((product) => product.stock <= 0);
+  return [...available, ...unavailable].slice(0, limit);
+}
+
 export default function Home({ initialBanners = [], initialHeroImage = null, initialVisitorCountry }: { initialBanners?: Banner[]; initialHeroImage?: HeroImageProps | null; initialVisitorCountry?: 'BD' | 'IN' }) {
   const { t, tDb, tCategoryName } = useLang();
   const visitorCountry = initialVisitorCountry || getVisitorCountry();
@@ -50,20 +56,25 @@ export default function Home({ initialBanners = [], initialHeroImage = null, ini
 
     const applyCore = (bannersForCache: Banner[], c: Category[], fp: Product[]) => {
       if (cancelled) return;
-      setCategories(c); setCategoriesLoaded(true); setFeaturedProducts(fp);
-      memoryCache = { ...memoryCache, country, banners: bannersForCache, categories: c, featuredProducts: fp, timestamp: Date.now() };
+      const rankedFeatured = prioritizeAvailableProducts(fp, 8);
+      setCategories(c); setCategoriesLoaded(true); setFeaturedProducts(rankedFeatured);
+      memoryCache = { ...memoryCache, country, banners: bannersForCache, categories: c, featuredProducts: rankedFeatured, timestamp: Date.now() };
     };
     const applySecondary = (bs: Product[], na: Product[], ss: Product[], tms: Product[]) => {
       if (cancelled) return;
-      setBestSellers(bs); setNewArrivals(na); setSeasonal(ss); setThisMonthSeeds(tms);
-      memoryCache = { ...memoryCache, bestSellers: bs, newArrivals: na, seasonal: ss, thisMonthSeeds: tms, timestamp: Date.now() };
+      const rankedBestSellers = prioritizeAvailableProducts(bs, 8);
+      const rankedNewArrivals = prioritizeAvailableProducts(na, 8);
+      const rankedSeasonal = prioritizeAvailableProducts(ss, 8);
+      const rankedThisMonth = prioritizeAvailableProducts(tms);
+      setBestSellers(rankedBestSellers); setNewArrivals(rankedNewArrivals); setSeasonal(rankedSeasonal); setThisMonthSeeds(rankedThisMonth);
+      memoryCache = { ...memoryCache, bestSellers: rankedBestSellers, newArrivals: rankedNewArrivals, seasonal: rankedSeasonal, thisMonthSeeds: rankedThisMonth, timestamp: Date.now() };
     };
     const loadHomepageData = async () => {
       try {
         const bannerRes = initialBanners.length === 0 && !memoryCache.banners?.length ? await getBanners().catch(() => []) : initialBanners;
         if (bannerRes.length > 0 && !banners.length) setBanners(bannerRes);
         const [cRes, fpRes] = await Promise.allSettled([
-          getCategories(), getProducts({ is_featured: true, limit: 8 }),
+          getCategories(), getProducts({ is_featured: true }),
         ]);
         const c = cRes.status === 'fulfilled' ? cRes.value : [];
         const fp = fpRes.status === 'fulfilled' ? fpRes.value : [];
@@ -74,9 +85,9 @@ export default function Home({ initialBanners = [], initialHeroImage = null, ini
           : null;
         const loadSecondary = async () => {
           const [bsRes, naRes, ssRes, tmsRes] = await Promise.allSettled([
-            getProducts({ is_best_seller: true, limit: 8 }),
-            getProducts({ is_new_arrival: true, limit: 8 }),
-            getProducts({ is_seasonal: true, limit: 8 }),
+            getProducts({ is_best_seller: true }),
+            getProducts({ is_new_arrival: true }),
+            getProducts({ is_seasonal: true }),
             getThisMonthSeeds(),
           ]);
           applySecondary(

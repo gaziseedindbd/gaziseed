@@ -80,13 +80,18 @@ export function AllProductsPage() {
     if (selectedCategory) result = result.filter((p) => p.category_id === selectedCategory);
     result = result.filter((p) => { const price = p.sale_price && p.sale_price > 0 && p.sale_price < p.regular_price ? p.sale_price : p.regular_price; return price >= priceRange[0] && price <= priceRange[1]; });
     if (inStockOnly) result = result.filter((p) => p.stock > 0);
+
+    const stockPriority = (a: Product, b: Product) => Number(b.stock > 0) - Number(a.stock > 0);
+    const prioritized = (secondary: (a: Product, b: Product) => number) => (a: Product, b: Product) => stockPriority(a, b) || secondary(a, b);
+
     switch (sortBy) {
-      case 'price_low': result.sort((a, b) => (a.sale_price || a.regular_price) - (b.sale_price || b.regular_price)); break;
-      case 'price_high': result.sort((a, b) => (b.sale_price || b.regular_price) - (a.sale_price || a.regular_price)); break;
-      case 'newest': result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); break;
-      case 'featured': result.sort((a, b) => Number(b.is_featured) - Number(a.is_featured)); break;
-      case 'best_selling': result.sort((a, b) => Number(b.is_best_seller) - Number(a.is_best_seller)); break;
-      case 'discount': result.sort((a, b) => (b.regular_price - (b.sale_price || b.regular_price)) - (a.regular_price - (a.sale_price || a.regular_price))); break;
+      case 'price_low': result.sort(prioritized((a, b) => (a.sale_price || a.regular_price) - (b.sale_price || b.regular_price))); break;
+      case 'price_high': result.sort(prioritized((a, b) => (b.sale_price || b.regular_price) - (a.sale_price || a.regular_price))); break;
+      case 'newest': result.sort(prioritized((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())); break;
+      case 'featured': result.sort(prioritized((a, b) => Number(b.is_featured) - Number(a.is_featured))); break;
+      case 'best_selling': result.sort(prioritized((a, b) => Number(b.is_best_seller) - Number(a.is_best_seller))); break;
+      case 'discount': result.sort(prioritized((a, b) => (b.regular_price - (b.sale_price || b.regular_price)) - (a.regular_price - (a.sale_price || a.regular_price)))); break;
+      default: result.sort(stockPriority);
     }
     return result;
   }, [products, searchQuery, selectedCategory, priceRange, inStockOnly, sortBy]);
