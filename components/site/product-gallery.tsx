@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight, Images, ZoomIn } from 'lucide-react';
+import { useLang } from './language-provider';
+import { ChevronLeft, ChevronRight, Images } from 'lucide-react';
 
 interface ProductGalleryProps {
   images: string[];
@@ -10,13 +11,9 @@ interface ProductGalleryProps {
   discount?: number;
 }
 
-const AUTO_SLIDE_INTERVAL = 4000;
-const RESUME_DELAY = 3000;
-
 export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProps) {
   const [activeIdx, setActiveIdx] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { t } = useLang();
   const touchStartX = useRef<number | null>(null);
 
   const hasMultiple = images.length > 1;
@@ -36,22 +33,6 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
     setActiveIdx((prev) => (prev - 1 + images.length) % images.length);
   }, [images.length]);
 
-  const pauseAndResume = useCallback(() => {
-    setIsPaused(true);
-    if (resumeTimer.current) clearTimeout(resumeTimer.current);
-    resumeTimer.current = setTimeout(() => setIsPaused(false), RESUME_DELAY);
-  }, []);
-
-  useEffect(() => {
-    if (!hasMultiple || isPaused) return;
-    const interval = setInterval(next, AUTO_SLIDE_INTERVAL);
-    return () => clearInterval(interval);
-  }, [hasMultiple, isPaused, next]);
-
-  useEffect(() => () => {
-    if (resumeTimer.current) clearTimeout(resumeTimer.current);
-  }, []);
-
   useEffect(() => {
     setActiveIdx(0);
   }, [images]);
@@ -66,7 +47,6 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
     if (Math.abs(delta) > 50) {
       if (delta < 0) next();
       else prev();
-      pauseAndResume();
     }
     touchStartX.current = null;
   };
@@ -86,11 +66,6 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
     <div className="product-gallery-premium">
       <div
         className="group relative aspect-square overflow-hidden rounded-[1.5rem] border border-primary/10 bg-gradient-to-br from-primary/[0.035] via-white to-accent/[0.07] shadow-[0_18px_45px_-30px_rgba(15,23,42,.45)] sm:rounded-[1.75rem]"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => {
-          if (resumeTimer.current) clearTimeout(resumeTimer.current);
-          resumeTimer.current = setTimeout(() => setIsPaused(false), RESUME_DELAY);
-        }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -124,46 +99,50 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
         {hasMultiple && (
           <>
             <button
-              onClick={() => { prev(); pauseAndResume(); }}
-              className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/90 text-slate-700 shadow-lg backdrop-blur-md transition-all hover:scale-105 hover:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 md:opacity-0 md:group-hover:opacity-100"
-              aria-label="Previous image"
+              onClick={prev}
+              className="absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/90 text-slate-700 shadow-lg backdrop-blur-md transition-all hover:scale-105 hover:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
+              aria-label={t('আগের ছবি', 'Previous image', 'पिछली तस्वीर')}
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
             <button
-              onClick={() => { next(); pauseAndResume(); }}
-              className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/90 text-slate-700 shadow-lg backdrop-blur-md transition-all hover:scale-105 hover:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 md:opacity-0 md:group-hover:opacity-100"
-              aria-label="Next image"
+              onClick={next}
+              className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/90 text-slate-700 shadow-lg backdrop-blur-md transition-all hover:scale-105 hover:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
+              aria-label={t('পরের ছবি', 'Next image', 'अगली तस्वीर')}
             >
               <ChevronRight className="h-5 w-5" />
             </button>
           </>
         )}
 
-        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5 rounded-full border border-white/70 bg-white/75 px-2 py-1.5 shadow-md backdrop-blur-md">
+      </div>
+
+      {hasMultiple && (
+        <div className="mt-2 flex flex-wrap items-center justify-center" aria-label={t('ছবি নির্বাচন', 'Choose image', 'तस्वीर चुनें')}>
           {images.map((_, idx) => (
             <button
+              type="button"
               key={idx}
-              onClick={() => { goTo(idx); pauseAndResume(); }}
-              className={`h-1.5 rounded-full transition-all ${idx === activeIdx ? 'w-6 bg-primary' : 'w-1.5 bg-slate-300 hover:bg-slate-400'}`}
-              aria-label={`Go to image ${idx + 1}`}
-            />
+              onClick={() => goTo(idx)}
+              className="flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              aria-label={t(`${idx + 1} নম্বর ছবি দেখুন`, `Go to image ${idx + 1}`, `तस्वीर ${idx + 1} देखें`)}
+              aria-pressed={idx === activeIdx}
+            >
+              <span aria-hidden="true" className={`h-1.5 rounded-full transition-all ${idx === activeIdx ? 'w-6 bg-primary' : 'w-1.5 bg-slate-300'}`} />
+            </button>
           ))}
         </div>
-
-        <span className="pointer-events-none absolute bottom-3 left-3 hidden items-center gap-1.5 rounded-xl border border-white/70 bg-white/75 px-2.5 py-1.5 text-[10px] font-semibold text-slate-600 shadow-md backdrop-blur-md sm:flex">
-          <ZoomIn className="h-3.5 w-3.5 text-primary" /> {alt}
-        </span>
-      </div>
+      )}
 
       {hasMultiple && (
         <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar px-0.5 pb-1 sm:mt-4 sm:gap-2.5">
           {images.map((img, idx) => (
             <button
               key={idx}
-              onClick={() => { goTo(idx); pauseAndResume(); }}
+              onClick={() => goTo(idx)}
               className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 bg-white shadow-sm transition-all sm:h-[4.5rem] sm:w-[4.5rem] sm:rounded-2xl ${idx === activeIdx ? 'border-primary ring-4 ring-primary/10 -translate-y-0.5' : 'border-slate-200 hover:border-primary/40 hover:-translate-y-0.5'}`}
-              aria-label={`Select image ${idx + 1}`}
+              aria-label={t(`${idx + 1} নম্বর ছবি নির্বাচন`, `Select image ${idx + 1}`, `तस्वीर ${idx + 1} चुनें`)}
+              aria-pressed={idx === activeIdx}
             >
               <Image src={img} alt="" fill sizes="72px" quality={70} className="object-cover" draggable={false} />
               {idx === activeIdx && <span className="absolute inset-x-1 bottom-1 h-0.5 rounded-full bg-primary" />}
