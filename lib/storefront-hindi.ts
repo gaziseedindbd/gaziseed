@@ -1,5 +1,14 @@
 // Shared translations for existing bilingual storefront labels.
 export const STOREFRONT_HINDI: Record<string, string> = {
+  'Vegetable Seed': 'सब्ज़ियों के बीज',
+  'Hot Chili Pepper Seeds': 'तीखी मिर्च के बीज',
+  'Chili Pepper Seeds': 'मिर्च के बीज',
+  'Long Chili / Line Pepper': 'लंबी मिर्च',
+  'Premium Red Rose Flower Seeds': 'लाल गुलाब के बीज',
+  'Not specified': 'निर्दिष्ट नहीं',
+  '1 gram': '1 ग्राम',
+  '10g*': '10 ग्राम*',
+
   'Home': 'होम', 'Categories': 'श्रेणियाँ', 'Products': 'उत्पाद', 'Combo': 'कॉम्बो',
   'Offers': 'ऑफ़र', 'Guides': 'खेती गाइड', 'Videos': 'वीडियो', 'Delivery Charge': 'डिलीवरी शुल्क',
   'About': 'हमारे बारे में', 'Contact': 'संपर्क', 'Search': 'खोजें', 'Wishlist': 'पसंदीदा',

@@ -10,8 +10,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-hind)'],
-        serif: ['var(--font-hind)'],
+        sans: ['var(--font-hind, Arial)', 'Arial', 'sans-serif'],
+        serif: ['var(--font-hind, Arial)', 'Arial', 'sans-serif'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

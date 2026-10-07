@@ -10,13 +10,13 @@ import type { SiteSettings, Navigation } from '@/lib/supabase/types';
 import { useLang } from './language-provider';
 import { getVisitorCountry } from '@/lib/supabase/client';
 
-export function SiteFooter() {
+export function SiteFooter({ initialCountry = 'BD' }: { initialCountry?: 'BD' | 'IN' }) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/allahmohammad/admin/');
 
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [nav, setNav] = useState<Navigation[]>([]);
-  const [country, setCountry] = useState<'BD' | 'IN'>('BD');
+  const [country, setCountry] = useState<'BD' | 'IN'>(initialCountry);
   const { t, tDb } = useLang();
 
   useEffect(() => {

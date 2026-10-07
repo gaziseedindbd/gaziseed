@@ -125,7 +125,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   };
 
   return (
-    <html lang="bn" suppressHydrationWarning>
+    <html lang="en" className={hind.variable} suppressHydrationWarning>
       <head>
         {/* Homepage styles are inlined in app/page.tsx to keep them off the initial render-blocking request path. */}
         {ga4MeasurementId ? (
@@ -150,9 +150,9 @@ gtag('config', ${JSON.stringify(ga4MeasurementId)});
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p=window.location.pathname;var css=[];if(p==='/checkout')css.push('/checkout-premium-v1.css?v=2');if(p.indexOf('/combo/')===0)css.push('/combo-quick-checkout-v2.css?v=1');for(var i=0;i<css.length;i++){var l=document.createElement('link');l.rel='stylesheet';l.href=css[i];document.head.appendChild(l)}}catch(e){}})()` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){window.__GAZI_COUNTRY__='${visitorCountry}';})();` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{const theme=localStorage.getItem('admin_theme');if(theme==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')} }catch(e){}})()` }} />
-        <script dangerouslySetInnerHTML={{ __html: `(function(){if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})}})()` }} />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}})();` }} />
       </head>
-      <body className={hind.variable} suppressHydrationWarning>
+      <body className="font-sans" suppressHydrationWarning>
         <MarketingTracker initialSettings={marketingSettingsForClient} />
         <ReferralTracker />
         <BrandNormalizer />
@@ -160,13 +160,13 @@ gtag('config', ${JSON.stringify(ga4MeasurementId)});
           <ToastProvider>
             <CartProvider>
               <AnnouncementBar />
-              <SiteHeader />
+              <SiteHeader initialCountry={visitorCountry} />
               <FloatingCartDrawer />
               <AuthSessionBridge />
               <HomePromoSync />
               <IndiaHomeCountry />
               <main className="min-h-screen">{children}</main>
-              <SiteFooter />
+              <SiteFooter initialCountry={visitorCountry} />
               <WhatsAppButton />
               <BottomNav />
               <ThemeSwitcher />

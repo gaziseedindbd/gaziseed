@@ -36,7 +36,7 @@ import type { SiteSettings, Product } from '@/lib/supabase/types';
 import { useLang } from '@/components/site/language-provider';
 import CountrySelector from '@/components/site/country-selector';
 
-export function SiteHeader() {
+export function SiteHeader({ initialCountry = 'BD' }: { initialCountry?: 'BD' | 'IN' }) {
   const router = useRouter();
   const pathname = usePathname();
   const [cartCount, setCartCount] = useState(0);
@@ -46,7 +46,7 @@ export function SiteHeader() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [country, setCountry] = useState<'BD' | 'IN'>(() => getVisitorCountry());
+  const [country, setCountry] = useState<'BD' | 'IN'>(initialCountry);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const languageDesktopRef = useRef<HTMLDivElement>(null);
   const languageMobileRef = useRef<HTMLDivElement>(null);
@@ -269,7 +269,7 @@ export function SiteHeader() {
             <span className="truncate">{t('ভালো বীজ, সবুজ ভবিষ্যৎ | GAZI SEED', 'Better Seeds, Greener Future | GAZI SEED')}</span>
           </div>
           <div className="flex shrink-0 items-center gap-3 text-[10px] font-semibold sm:gap-5 sm:text-[11px]">
-            {!isAdminRoute && <CountrySelector />}
+            {!isAdminRoute && <CountrySelector initialCountry={country} />}
             <div className="hidden items-center gap-4 lg:flex">
               <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><MapPin className="h-3.5 w-3.5" />{locationText}</span>
               {phoneText && <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Phone className="h-3.5 w-3.5" />{phoneText}</span>}
@@ -399,7 +399,7 @@ export function SiteHeader() {
         </>
       )}
       <nav className="hidden border-t border-slate-100/80 bg-white/95 py-2.5 shadow-[0_8px_24px_-20px_rgba(5,46,22,.4)] md:block lg:hidden"><div className="mx-auto flex max-w-[1220px] items-center justify-center px-4">{renderNav(false)}</div></nav>
-      {mobileMenuOpen && <div className="border-t border-slate-100 bg-white shadow-2xl md:hidden"><div className="p-3"><div className="mb-2 flex items-center gap-2 px-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-400">Menu<span className="h-px flex-1 bg-slate-100" /></div><button type="button" onClick={() => { setMobileMenuOpen(false); setSearchOpen(true); }} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-left text-sm font-bold text-emerald-900"><Search className="h-5 w-5 text-emerald-700" />{t('পণ্য ও বীজ খুঁজুন...', 'Search products & seeds...')}</button><Link href="/account" onClick={() => setMobileMenuOpen(false)} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-left text-sm font-black text-emerald-900"><User className="h-5 w-5 text-emerald-700" />{t('অ্যাকাউন্ট / লগইন', 'Account / Login')}</Link>{!isAdminRoute && <div className="mb-3"><CountrySelector mobile /></div>}<div className="grid grid-cols-2 gap-2">{navLinks.map((link) => { const Icon = link.icon; const active = isActive(link.href); return (<Link key={link.href} href={link.href} className={`flex items-center gap-2 rounded-2xl border p-3 text-sm font-bold transition ${active ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-100 bg-slate-50 text-slate-700 hover:border-emerald-100 hover:bg-emerald-50/50'}`}><Icon className="h-5 w-5 text-emerald-700" />{link.label}</Link>); })}</div></div></div>}
+      {mobileMenuOpen && <div className="border-t border-slate-100 bg-white shadow-2xl md:hidden"><div className="p-3"><div className="mb-2 flex items-center gap-2 px-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-400">Menu<span className="h-px flex-1 bg-slate-100" /></div><button type="button" onClick={() => { setMobileMenuOpen(false); setSearchOpen(true); }} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3 text-left text-sm font-bold text-emerald-900"><Search className="h-5 w-5 text-emerald-700" />{t('পণ্য ও বীজ খুঁজুন...', 'Search products & seeds...')}</button><Link href="/account" onClick={() => setMobileMenuOpen(false)} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-left text-sm font-black text-emerald-900"><User className="h-5 w-5 text-emerald-700" />{t('অ্যাকাউন্ট / লগইন', 'Account / Login')}</Link>{!isAdminRoute && <div className="mb-3"><CountrySelector mobile initialCountry={country} /></div>}<div className="grid grid-cols-2 gap-2">{navLinks.map((link) => { const Icon = link.icon; const active = isActive(link.href); return (<Link key={link.href} href={link.href} className={`flex items-center gap-2 rounded-2xl border p-3 text-sm font-bold transition ${active ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-100 bg-slate-50 text-slate-700 hover:border-emerald-100 hover:bg-emerald-50/50'}`}><Icon className="h-5 w-5 text-emerald-700" />{link.label}</Link>); })}</div></div></div>}
     </header>
   );
 }

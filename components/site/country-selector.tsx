@@ -7,10 +7,11 @@ import { useLang } from './language-provider';
 
 type CountryOption = 'AUTO' | 'BD' | 'IN';
 
-export function CountrySelector({ mobile = false }: { mobile?: boolean }) {
+export function CountrySelector({ mobile = false, initialCountry = 'BD' }: { mobile?: boolean; initialCountry?: 'BD' | 'IN' }) {
   const { t } = useLang();
+  const [detected, setDetected] = useState<'BD' | 'IN'>(initialCountry);
   const [value, setValue] = useState<CountryOption>('AUTO');
-  useEffect(() => { setValue(getManualCountryOverride() || 'AUTO'); }, []);
+  useEffect(() => { setValue(getManualCountryOverride() || 'AUTO'); setDetected(getVisitorCountry()); }, [initialCountry]);
 
   useLayoutEffect(() => {
     const header = document.querySelector('header');
@@ -66,7 +67,6 @@ export function CountrySelector({ mobile = false }: { mobile?: boolean }) {
     window.location.reload();
   };
 
-  const detected = getVisitorCountry();
   const currentLabel = detected === 'IN' ? `🇮🇳 ${t('ভারত', 'India', 'भारत')}` : `🇧🇩 ${t('বাংলাদেশ', 'Bangladesh', 'बांग्लादेश')}`;
 
   return (

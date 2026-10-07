@@ -19,7 +19,7 @@ export default async function AuditPreview({ searchParams }: { searchParams: Pro
     <nav className="mb-3 flex gap-4">{Object.keys(routes).map((key) => <a key={key} href={`?view=${key}`} className="font-bold underline">{key}</a>)}</nav>
     <div className="flex items-start gap-3">{[360, 390, 430].map((width) => <section key={width} className="shrink-0">
       <h1 className="mb-2 font-bold">{view} · {width}px</h1>
-      <iframe id={`mobile-${width}`} title={`${view} ${width}px`} src={route} width={width} height={780} className="border border-slate-300 bg-white" />
+      <iframe id={`mobile-${width}`} title={`${view} ${width}px`} src={route} width={width} height={780} className="box-content border border-slate-300 bg-white" />
     </section>)}</div>
   </div>;
 }
