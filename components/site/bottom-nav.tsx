@@ -1,15 +1,27 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { getVisitorCountry } from '@/lib/supabase/client';
+import { useMobilePurchase } from './mobile-purchase-provider';
 import { useLang } from './language-provider';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, ShoppingBag, Truck, LayoutGrid, PhoneCall, BadgeDollarSign } from 'lucide-react';
 
-export function BottomNav() {
+export function BottomNav({ initialCountry = 'BD' }: { initialCountry?: 'BD' | 'IN' }) {
   const pathname = usePathname();
   const { t } = useLang();
   const isProductPage = pathname.startsWith('/product/');
+  const [country, setCountry] = useState(initialCountry);
+  const { visible } = useMobilePurchase();
+  useEffect(() => {
+    const sync = () => setCountry(getVisitorCountry());
+    sync();
+    window.addEventListener('gazi-country-changed', sync);
+    window.addEventListener('storage', sync);
+    return () => { window.removeEventListener('gazi-country-changed', sync); window.removeEventListener('storage', sync); };
+  }, []);
+  if (country === 'IN' && pathname.startsWith('/checkout')) return null;
 
   const navItems = [
     { label: t('হোম', 'Home', 'होम'), href: '/', icon: Home },
@@ -24,7 +36,7 @@ export function BottomNav() {
     <nav
       aria-label="Mobile navigation"
       className={`fixed left-2 right-2 z-50 flex min-h-[64px] w-auto items-center justify-around rounded-[20px] border border-primary/10 bg-background/95 px-1.5 py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] shadow-[0_18px_44px_-20px_rgba(15,23,42,.6)] backdrop-blur-xl md:hidden ${
-        isProductPage ? 'bottom-[calc(5rem+env(safe-area-inset-bottom))]' : 'bottom-2'
+        isProductPage && (country !== 'IN' || visible) ? 'bottom-[calc(5rem+env(safe-area-inset-bottom))]' : 'bottom-2'
       }`}
     >
       {navItems.map((item) => {
@@ -44,7 +56,7 @@ export function BottomNav() {
           >
             {isActive && <span className="absolute top-1 h-1 w-5 rounded-full bg-primary" aria-hidden="true" />}
             <Icon className={`h-[19px] w-[19px] ${isActive ? 'stroke-[2.6px]' : 'stroke-[1.9px]'}`} aria-hidden="true" />
-            <span className="max-w-full truncate px-0.5 text-[9px] leading-none tracking-tight sm:text-[10px]">{item.label}</span>
+            <span className="max-w-full truncate px-0.5 text-[10px] leading-none tracking-tight sm:text-[11px]">{item.label}</span>
           </Link>
         );
       })}

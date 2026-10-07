@@ -31,6 +31,8 @@ type ProductOfferSpotlightProps = {
   lang?: string;
   onPreviewCta?: () => void;
   preview?: boolean;
+  available?: boolean;
+  onUnavailableCta?: () => void;
 };
 
 function isSafeOfferLink(link?: string | null) {
@@ -67,6 +69,8 @@ export default function ProductOfferSpotlight({
   lang = 'bn',
   onPreviewCta,
   preview = false,
+  available = true,
+  onUnavailableCta,
 }: ProductOfferSpotlightProps) {
   if (!enabled) return null;
 
@@ -136,6 +140,7 @@ export default function ProductOfferSpotlight({
 
   const handleCta = () => {
     if (preview) return;
+    if (!available) { onUnavailableCta?.(); return; }
     if (safeLink) {
       window.location.href = ctaLink as string;
       return;
@@ -165,16 +170,16 @@ export default function ProductOfferSpotlight({
 
       <section
         className="mb-8 overflow-hidden rounded-[2rem] border border-orange-200/90 bg-gradient-to-r from-amber-50 via-orange-50/80 to-white shadow-[0_18px_50px_-28px_rgba(234,88,12,.35)]"
-        aria-label={resolvedBadge}
+        aria-label={available ? resolvedBadge : isHindi ? 'स्टॉक में नहीं है' : isEnglish ? 'OUT OF STOCK' : 'স্টক শেষ'}
       >
         <div className="grid items-start lg:grid-cols-[minmax(0,1.35fr)_minmax(240px,.65fr)]">
           <div className="relative p-5 sm:p-7 lg:p-8">
             <div className="flex flex-wrap items-center gap-2">
               <span className="offer-text-animate inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wide text-white shadow-sm">
                 <Gift className="h-3.5 w-3.5" />
-                {resolvedBadge}
+                {available ? resolvedBadge : isHindi ? 'स्टॉक में नहीं है' : isEnglish ? 'OUT OF STOCK' : 'স্টক শেষ'}
               </span>
-              {endDate && (
+              {available && endDate && (
                 <span className="offer-text-animate inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-1.5 text-[11px] font-black text-amber-950">
                   <Clock3 className="h-3.5 w-3.5" />
                   {isHindi ? 'सीमित समय ऑफ़र' : isEnglish ? 'LIMITED TIME OFFER' : 'সীমিত সময়ের অফার'}
@@ -215,9 +220,9 @@ export default function ProductOfferSpotlight({
                 className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-600/20 transition hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-70"
               >
                 <ShoppingCart className="h-4 w-4" />
-                {resolvedCtaText}
+                {available ? resolvedCtaText : isHindi ? 'आने पर बताएँ' : isEnglish ? 'Notify me' : 'স্টকে এলে জানান'}
               </button>
-              {resolvedNote && (
+              {available && resolvedNote && (
                 <p className="max-w-xl text-[11px] font-semibold text-gray-500">
                   • {resolvedNote}
                 </p>
@@ -238,9 +243,9 @@ export default function ProductOfferSpotlight({
                 {isHindi ? 'विशेष ऑफ़र' : isEnglish ? 'Special offer' : 'বিশেষ অফার'}
               </div>
             )}
-            <div className="absolute bottom-4 right-4 rounded-full bg-red-600 px-4 py-2 text-xs font-black text-white shadow-lg shadow-red-600/30">
-              {isHindi ? 'सीমিত অফ़र' : isEnglish ? 'LIMITED' : 'সীমিত অফার'}
-            </div>
+            {available && <div className="absolute bottom-4 right-4 rounded-full bg-red-600 px-4 py-2 text-xs font-black text-white shadow-lg shadow-red-600/30">
+              {isHindi ? 'सीमित ऑफ़र' : isEnglish ? 'LIMITED' : 'সীমিত অফার'}
+            </div>}
           </div>
         </div>
       </section>

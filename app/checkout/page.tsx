@@ -330,7 +330,7 @@ export default function CheckoutPage() {
   const selectedWalletAmount = walletSummary?.unlocked ? Math.min(walletSummary.max_usable, grandTotal) : 0;
   const codAdvance = country === 'IN' ? (deliveryCharge > 0 ? deliveryCharge : 120) : 0;
   const codAvailable = country !== 'IN' || deliveryCharge > 0 || payableTotal >= 120;
-  const codDue = country === 'IN' && paymentMethod === 'cod' ? Math.max(0, payableTotal - codAdvance) : 0;
+  const codDue = country === 'IN' ? Math.max(0, payableTotal - codAdvance) : 0;
 
   const deliveryMessage = useMemo(() => {
     if (freeDeliveryProductIds.size > 0 || deliveryCharge === 0) {
@@ -694,7 +694,7 @@ export default function CheckoutPage() {
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
                       placeholder={t('যেমন: মো: আরিফুল ইসলাম', 'e.g. Md. Ariful Islam')}
-                      className="min-h-14 w-full rounded-[18px] border border-border/80 bg-slate-50/80 px-4 text-sm font-bold text-foreground shadow-sm transition-all placeholder:text-muted-foreground/70 hover:border-primary/30 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/15 focus:shadow-md focus:outline-none dark:bg-slate-900/40"
+                      className="min-h-[56px] w-full rounded-[18px] border border-border/80 bg-slate-50/80 px-4 text-sm font-bold text-foreground shadow-sm transition-all placeholder:text-muted-foreground/70 hover:border-primary/30 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/15 focus:shadow-md focus:outline-none dark:bg-slate-900/40"
                       required
                     />
                   </div>
@@ -713,7 +713,7 @@ export default function CheckoutPage() {
                       value={form.phone}
                       onChange={(e) => setForm({ ...form, phone: e.target.value })}
                       placeholder={country === 'IN' ? '10-digit mobile number' : '01XXXXXXXXX'}
-                      className="min-h-14 w-full rounded-[18px] border border-border/80 bg-slate-50/80 px-4 text-sm font-bold tracking-wide text-foreground shadow-sm transition-all placeholder:text-muted-foreground/70 hover:border-primary/30 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/15 focus:shadow-md focus:outline-none dark:bg-slate-900/40"
+                      className="min-h-[56px] w-full rounded-[18px] border border-border/80 bg-slate-50/80 px-4 text-sm font-bold tracking-wide text-foreground shadow-sm transition-all placeholder:text-muted-foreground/70 hover:border-primary/30 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/15 focus:shadow-md focus:outline-none dark:bg-slate-900/40"
                       required
                     />
                   </div>
@@ -933,9 +933,9 @@ export default function CheckoutPage() {
                   <div className="mt-3 flex items-end justify-between gap-4 border-t border-border pt-4">
                     <div>
                       <span className="block text-sm font-black">{t('সর্বমোট', 'Total')}</span>
-                      <span className="mt-0.5 block text-[10px] font-semibold text-muted-foreground">{t('চূড়ান্ত পরিশোধযোগ্য', 'Final payable amount')}</span>
+                      <span className="mt-0.5 block text-[10px] font-semibold text-muted-foreground">{country === 'IN' ? t('সম্পূর্ণ অর্ডারের মূল্য', 'Full order total', 'पूरा ऑर्डर मूल्य') : t('চূড়ান্ত পরিশোধযোগ্য', 'Final payable amount')}</span>
                     </div>
-                    <span className="text-2xl font-black tracking-tight text-primary">{formatPrice(country === 'IN' && paymentMethod === 'cod' ? codAdvance : payableTotal)}</span>
+                    <span className="text-2xl font-black tracking-tight text-primary">{formatPrice(payableTotal)}</span>
                   </div>
 
                   {error && (
@@ -948,7 +948,7 @@ export default function CheckoutPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[18px] bg-primary px-6 text-base font-black tracking-tight text-primary-foreground shadow-xl shadow-primary/30 transition-all hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-2xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-15"
+                    className="mt-3 inline-flex min-h-[56px] w-full items-center justify-center gap-2 rounded-[18px] bg-primary px-6 text-base font-black tracking-tight text-primary-foreground shadow-xl shadow-primary/30 transition-all hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-2xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[60px]"
                   >
                     {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম পরিশোধ করুন', 'Pay COD advance') : t('অনলাইনে পেমেন্ট করুন', 'Pay online')) : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
                   </button>
@@ -975,8 +975,8 @@ export default function CheckoutPage() {
         <div className="fixed inset-x-3 bottom-3 z-40 lg:hidden">
           <div className="flex items-center gap-3 rounded-[22px] border border-border/80 bg-background/95 p-3 shadow-2xl shadow-black/20 backdrop-blur-xl" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
             <div className="min-w-0 flex-1 pl-1">
-              <p className="text-[10px] font-bold text-muted-foreground">{t('পরিশোধযোগ্য', 'Payable')}</p>
-              <p className="truncate text-lg font-black text-primary">{formatPrice(paymentMethod === 'cod' ? codAdvance : payableTotal)}</p>
+              <p className="text-[10px] font-bold text-muted-foreground">{country === 'IN' ? t('এখন পরিশোধ করুন', 'Pay now', 'अभी भुगतान करें') : t('পরিশোধযোগ্য', 'Payable')}</p>
+              <p className="truncate text-lg font-black text-primary">{formatPrice(country === 'IN' && paymentMethod === 'cod' ? codAdvance : payableTotal)}</p>
             </div>
             <button
               type="submit"

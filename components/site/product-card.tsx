@@ -1,6 +1,8 @@
 'use client';
 
 import Image from 'next/image';
+import { getVisitorCountry } from '@/lib/supabase/client';
+import { isKnownPackDetail } from '@/lib/product-presentation';
 import Link from 'next/link';
 import { ShoppingCart, Zap, Heart, Star, ArrowUpRight, Leaf, Package } from 'lucide-react';
 import { formatPrice, getEffectivePrice, getDiscountPercent } from '@/lib/utils';
@@ -16,6 +18,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
   const price = getEffectivePrice(product);
   const discount = getDiscountPercent(product);
   const inStock = product.stock > 0;
+  const isIndia = getVisitorCountry() === 'IN';
   const translations = (product as any).translations || {};
   const translated = translations?.[lang] || {};
   const name =
@@ -96,7 +99,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
   };
 
   return (
-    <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-[1.2rem] border border-slate-200/70 bg-white shadow-[0_12px_34px_-24px_rgba(15,23,42,.48)] ring-1 ring-black/[0.02] transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-emerald-300/70 hover:shadow-[0_28px_70px_-34px_rgba(5,150,105,.34)] hover:ring-emerald-500/10 sm:rounded-[1.7rem] active:scale-[.995]">
+    <article data-storefront={isIndia ? 'IN' : 'BD'} className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-[1.2rem] border border-slate-200/70 bg-white shadow-[0_12px_34px_-24px_rgba(15,23,42,.48)] ring-1 ring-black/[0.02] transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-emerald-300/70 hover:shadow-[0_28px_70px_-34px_rgba(5,150,105,.34)] hover:ring-emerald-500/10 sm:rounded-[1.7rem] active:scale-[.995]">
       <Link href={`/product/${product.slug}`} className="group block min-w-0">
         <div className="relative mx-1.5 mt-1.5 aspect-square overflow-hidden rounded-[1rem] bg-gradient-to-br from-[#f7fbf8] via-[#eef7f1] to-[#f6f2e8] ring-1 ring-emerald-900/[0.04] sm:mx-2.5 sm:mt-2.5 sm:rounded-[1.3rem]">
           <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-emerald-200/25 blur-2xl transition-transform duration-500 group-hover:scale-125" />
@@ -105,7 +108,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
           {product.image ? (
             <Image
               src={product.image}
-              alt={translated.image_alt || product.image_alt || product.image_alt_bn || name}
+              alt={isIndia ? name : translated.image_alt || product.image_alt || product.image_alt_bn || name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
               quality={92}
@@ -119,7 +122,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
 
           <div className="absolute inset-x-2 top-2 z-[3] flex items-start justify-between sm:inset-x-3.5 sm:top-3.5">
             {badge ? (
-              <span className="max-w-[72%] truncate rounded-full border border-white/75 bg-emerald-700/95 px-2 py-1 text-[7px] font-black leading-none text-white shadow-md shadow-emerald-900/15 backdrop-blur sm:px-3.5 sm:py-1.5 sm:text-[10px]">
+              <span className="max-w-[72%] truncate rounded-full border border-white/75 bg-emerald-700/95 px-2 py-1 card-meta text-[7px] font-black leading-none text-white shadow-md shadow-emerald-900/15 backdrop-blur sm:px-3.5 sm:py-1.5 sm:text-[10px]">
                 {badge}
               </span>
             ) : (
@@ -135,13 +138,13 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
           </div>
 
           {discount > 0 && (
-            <span className="absolute bottom-2 left-2 z-[3] inline-flex items-center rounded-full border border-white/25 bg-red-500 px-2 py-1 text-[7px] font-black leading-none text-white shadow-md shadow-red-900/10 sm:bottom-2.5 sm:left-3.5 sm:px-3 sm:py-1.5 sm:text-[10px]">
+            <span className="absolute bottom-2 left-2 z-[3] inline-flex items-center rounded-full border border-white/25 bg-red-500 px-2 py-1 card-meta text-[7px] font-black leading-none text-white shadow-md shadow-red-900/10 sm:bottom-2.5 sm:left-3.5 sm:px-3 sm:py-1.5 sm:text-[10px]">
               {discount}% {t('ছাড়', 'OFF', 'छूट')}
             </span>
           )}
 
-          {product.packet_weight && (
-            <span className="absolute bottom-2 right-2 z-[3] inline-flex items-center gap-1 rounded-full border border-white/75 bg-white/92 px-2 py-1 text-[7px] font-extrabold leading-none text-slate-700 shadow-md shadow-slate-900/10 backdrop-blur-md sm:bottom-2.5 sm:right-3.5 sm:px-3 sm:py-1.5 sm:text-[10px]">
+          {product.packet_weight && (!isIndia || isKnownPackDetail(product.packet_weight)) && (
+            <span className="absolute bottom-2 right-2 z-[3] inline-flex items-center gap-1 rounded-full border card-pack border-white/75 bg-white/92 px-2 py-1 card-meta text-[7px] font-extrabold leading-none text-slate-700 shadow-md shadow-slate-900/10 backdrop-blur-md sm:bottom-2.5 sm:right-3.5 sm:px-3 sm:py-1.5 sm:text-[10px]">
               <Package className="h-2.5 w-2.5 text-emerald-700 sm:h-3 sm:w-3" />
               {tDb(translated.packet_weight || product.packet_weight)}
             </span>
@@ -166,12 +169,12 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
         <div className="flex flex-col gap-2 px-2.5 pb-3 pt-2.5 sm:gap-3.5 sm:px-4.5 sm:pb-4 sm:pt-4.5 lg:px-5 lg:pb-4.5 lg:pt-5">
           <div className="min-w-0">
             <div className="mb-1.5 flex min-w-0 flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-2">
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-1 text-[8px] font-extrabold text-amber-700 sm:text-[10px]">
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-1 card-meta text-[8px] font-extrabold text-amber-700 sm:text-[10px]">
                 <Star className="h-2.5 w-2.5 fill-current sm:h-3 sm:w-3" />
                 {t('মান যাচাই', 'Quality', 'गुणवत्ता')}
               </span>
               {product.seed_type && (
-                <span className="text-[8px] font-semibold leading-tight text-slate-400 sm:text-[10px]">{tDb(translated.seed_type || product.seed_type)}</span>
+                <span className="card-meta text-[8px] font-semibold leading-tight text-slate-400 sm:text-[10px]">{tDb(translated.seed_type || product.seed_type)}</span>
               )}
             </div>
 
@@ -180,7 +183,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
             </h3>
 
             {shortDescription && (
-              <p className="mt-1 line-clamp-2 text-[9px] leading-[1.55] text-slate-500 sm:mt-2 sm:text-[10px]">
+              <p className="mt-1 line-clamp-2 card-description text-[9px] leading-[1.55] text-slate-500 sm:mt-2 sm:text-[10px]">
                 {shortDescription}
               </p>
             )}
@@ -195,7 +198,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
               {formatPrice(price)}
             </span>
             {discount > 0 && (
-              <span className="text-[10px] font-semibold text-slate-400 line-through sm:text-xs">
+              <span className="card-old-price text-[10px] font-semibold text-slate-400 line-through sm:text-xs">
                 {formatPrice(product.regular_price)}
               </span>
             )}
@@ -203,7 +206,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
 
           <span
             className={
-              `shrink-0 rounded-full px-2.5 py-1 text-[8px] font-bold sm:text-[9px] ${
+              `shrink-0 rounded-full px-2.5 py-1 card-meta text-[8px] font-bold sm:text-[9px] ${
                 inStock ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
               }`
             }
@@ -218,7 +221,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
           <button
             onClick={handleAddToCart}
             disabled={!inStock}
-            className="flex min-w-0 items-center justify-center gap-1.5 min-h-11 rounded-xl border border-emerald-200/90 bg-emerald-50/70 px-2.5 py-2.5 text-[9px] font-black text-emerald-800 shadow-[inset_0_1px_0_rgba(255,255,255,.9)] transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500 hover:bg-emerald-600 hover:text-white hover:shadow-[0_10px_20px_-12px_rgba(5,150,105,.55)] active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50 sm:py-3 sm:text-[10px]"
+            className="flex min-w-0 items-center justify-center gap-1.5 min-h-11 rounded-xl border border-emerald-200/90 bg-emerald-50/70 px-2.5 py-2.5 card-action text-[9px] font-black text-emerald-800 shadow-[inset_0_1px_0_rgba(255,255,255,.9)] transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500 hover:bg-emerald-600 hover:text-white hover:shadow-[0_10px_20px_-12px_rgba(5,150,105,.55)] active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50 sm:py-3 sm:text-[10px]"
           >
             <ShoppingCart className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             <span>{t('কার্টে যোগ', 'Add to Cart', 'कार्ट में जोड़ें')}</span>
@@ -227,14 +230,14 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
           <button
             onClick={handleBuyNow}
             disabled={!inStock}
-            className="flex min-w-0 items-center justify-center gap-1.5 min-h-11 rounded-xl bg-gradient-to-r from-slate-950 to-slate-900 px-2.5 py-2.5 text-[9px] font-black text-white shadow-[0_10px_24px_-16px_rgba(15,23,42,.75)] transition-all duration-200 hover:-translate-y-0.5 hover:from-emerald-700 hover:to-emerald-600 hover:shadow-[0_14px_28px_-16px_rgba(5,150,105,.6)] active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50 sm:py-3 sm:text-[10px]"
+            className="flex min-w-0 items-center justify-center gap-1.5 min-h-11 rounded-xl bg-gradient-to-r from-slate-950 to-slate-900 px-2.5 py-2.5 card-action text-[9px] font-black text-white shadow-[0_10px_24px_-16px_rgba(15,23,42,.75)] transition-all duration-200 hover:-translate-y-0.5 hover:from-emerald-700 hover:to-emerald-600 hover:shadow-[0_14px_28px_-16px_rgba(5,150,105,.6)] active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50 sm:py-3 sm:text-[10px]"
           >
             <Zap className="h-3 w-3 fill-current text-lime-300 sm:h-3.5 sm:w-3.5" />
             <span>{t('এখনই কিনুন', 'Buy Now', 'अभी खरीदें')}</span>
           </button>
         </div>
 
-        <div className="mt-2 flex items-center justify-center gap-2.5 text-[7.5px] font-semibold text-slate-400 sm:text-[9px]">
+        <div className="mt-2 flex items-center justify-center gap-2.5 card-trust text-[7.5px] font-semibold text-slate-400 sm:text-[9px]">
           <span className="inline-flex items-center gap-1">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             {t('গুণমান যাচাই', 'Quality checked', 'गुणवत्ता जाँची गई')}

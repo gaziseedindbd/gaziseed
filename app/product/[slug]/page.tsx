@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Minus, Plus, ShoppingCart, Zap, Truck, ShieldCheck, Check, Star, MessageCircle, Gift, Package, ChevronDown, Heart, Sparkles, Sprout, Info, BookOpen, HelpCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { isKnownPackDetail } from '@/lib/product-presentation';
 import PageShare from '@/components/site/page-share';
 import { ProductGallery } from '@/components/site/product-gallery';
 import { getProductBySlug, getReviews, getProducts, getEffectivePrice, getDiscountPercent, formatPrice, getRelatedProducts, getProductFaqs, getBundleOffers, getActivePromotions, getProductVariants, getBulkPricing, addRecentlyViewed, toggleWishlist } from '@/lib/data';
@@ -11,6 +12,7 @@ import { toast } from '@/components/site/toast-provider';
 import { ProductCard } from '@/components/site/product-card';
 import { ReviewForm } from '@/components/site/review-form';
 import ProductReviewShowcase from '@/components/site/product-review-showcase';
+import { MobilePurchasePresence } from '@/components/site/mobile-purchase-provider';
 import ProductOfferSpotlight from '@/components/site/product-offer-spotlight';
 import { supabase, getVisitorCountry } from '@/lib/supabase/client';
 import { useLang } from '@/components/site/language-provider';
@@ -161,6 +163,8 @@ export default function ProductDetailPage() {
   const effectivePrice = selectedVariant ? (selectedVariant.sale_price && selectedVariant.sale_price > 0 && selectedVariant.sale_price < selectedVariant.regular_price ? selectedVariant.sale_price : selectedVariant.regular_price) : price;
   const effectiveStock = selectedVariant ? selectedVariant.stock : product.stock;
   const inStock = effectiveStock > 0;
+  const isIndia = getVisitorCountry() === 'IN';
+  const visibleRelated = isIndia ? related.filter((item) => item.id !== product.id) : related;
   const quantityLimit = Math.min(effectiveStock, product.max_order_qty || effectiveStock);
 
   const selectedBulkTiers = bulkTiers
@@ -233,7 +237,7 @@ export default function ProductDetailPage() {
     { label: t('পানির প্রয়োজন', 'Water Requirement'), value: tDb(translated.water_requirement || product.water_requirement || '') },
     { label: t('মাটির ধরন', 'Soil Type'), value: tDb(translated.soil_type || product.soil_type || '') },
     { label: t('চাষের স্থান', 'Growing Location'), value: tDb(translated.growing_location || product.growing_location || '') },
-    { label: t('প্যাকেটের ওজন', 'Packet Weight'), value: tDb(translated.packet_weight || product.packet_weight || '') },
+    { label: t('প্যাকেটের ওজন', 'Packet Weight'), value: isIndia && !isKnownPackDetail(product.packet_weight) ? '' : tDb(translated.packet_weight || product.packet_weight || '') },
     { label: t('বীজের পরিমাণ', 'Seed Quantity'), value: tDb(translated.seed_quantity || product.seed_quantity || '') },
     { label: t('প্রত্যাশিত ফলন', 'Expected Yield'), value: tDb(translated.expected_yield || product.expected_yield || '') },
   ].filter((f) => f.value);
@@ -243,7 +247,10 @@ export default function ProductDetailPage() {
   return (
     <div className="min-h-screen bg-[#fafbfc] py-6 sm:py-10 pb-36 lg:pb-12 text-gray-900 overflow-x-hidden">
       <div className="max-w-6xl w-full mx-auto px-4">
+        <MobilePurchasePresence active={isIndia && inStock} />
         <ProductOfferSpotlight
+          available={!isIndia || inStock}
+          onUnavailableCta={() => { setNotifyOpen(true); document.getElementById('product-purchase')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
           enabled={product.promotional_offer_enabled}
           badge={product.promotional_offer_badge}
           badgeEn={product.promotional_offer_badge_en}
@@ -398,7 +405,7 @@ export default function ProductDetailPage() {
             {activeTab === 'faqs' && <div className="space-y-3">{faqs.map((f, idx) => <div key={f.id} className="rounded-2xl border border-gray-200 bg-white"><button type="button" onClick={() => setOpenFaqIdx(openFaqIdx === idx ? null : idx)} aria-expanded={openFaqIdx === idx} className="flex min-h-12 w-full items-center justify-between p-4 text-left font-bold text-xs sm:text-sm text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"><span className="break-words pr-3">{lang === 'en' && f.question_en ? f.question_en : f.question_bn}</span><ChevronDown className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${openFaqIdx === idx ? 'rotate-180 text-emerald-700' : ''}`} /></button>{openFaqIdx === idx && <div className="border-t border-gray-100 p-4 text-xs sm:text-sm text-gray-600 bg-gray-50/50 break-words">{lang === 'en' && f.answer_en ? f.answer_en : f.answer_bn}</div>}</div>)}</div>}
           </div>
         </div>
-        {related.length > 0 && <div className="mt-16"><h2 className="mb-6 text-xl sm:text-2xl font-black text-gray-900">{t('এই বীজগুলোও আপনার ভালো লাগতে পারে', 'You may also like these seeds')}</h2><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{related.map((p) => <ProductCard key={p.id} product={p} />)}</div></div>}
+        {visibleRelated.length > 0 && <div className="mt-16"><h2 className="mb-6 text-xl sm:text-2xl font-black text-gray-900">{t('এই বীজগুলোও আপনার ভালো লাগতে পারে', 'You may also like these seeds')}</h2><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{visibleRelated.map((p) => <ProductCard key={p.id} product={p} />)}</div></div>}
       </div>
       {inStock && <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur-md px-3.5 pt-3.5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-2xl lg:hidden"><div className="max-w-md mx-auto flex items-center justify-between gap-3"><div className="min-w-0"><span className="text-[10px] text-gray-400 font-semibold block">{quantity} {t('টি পণ্যের মোট মূল্য', 'Total items price')}</span><p className="text-lg font-black text-emerald-800 truncate">{formatPrice(totalPrice)}</p></div><div className="flex gap-2 shrink-0"><button type="button" onClick={handleAddToCart} aria-label={t('কার্টে যোগ করুন', 'Add to cart')} className="min-h-12 min-w-12 p-3 rounded-xl border border-emerald-600/30 bg-emerald-50 text-emerald-900 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><ShoppingCart className="h-5 w-5 text-emerald-700" /></button><button type="button" onClick={handleBuyNow} className="min-h-12 flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-700 to-emerald-800 px-5 py-3 text-xs font-extrabold text-white shadow-md shadow-emerald-700/30 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><Zap className="h-4 w-4 fill-current text-amber-300" />{t('অর্ডার করুন', 'Order Now')}</button></div></div></div>}
     </div>

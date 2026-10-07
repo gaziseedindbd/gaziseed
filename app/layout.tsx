@@ -13,6 +13,7 @@ import { CartProvider } from '@/components/site/cart-provider';
 import FloatingCartDrawer from '@/components/site/floating-cart-drawer';
 import { ToastProvider } from '@/components/site/toast-provider';
 import { LanguageProvider } from '@/components/site/language-provider';
+import { MobilePurchaseProvider } from '@/components/site/mobile-purchase-provider';
 import { BottomNav } from '@/components/site/bottom-nav';
 import { ThemeSwitcher } from '@/components/site/theme-switcher';
 import { MarketingTracker, type MarketingSettings } from '@/components/site/marketing-tracker';
@@ -159,18 +160,20 @@ gtag('config', ${JSON.stringify(ga4MeasurementId)});
         <LanguageProvider>
           <ToastProvider>
             <CartProvider>
-              <AnnouncementBar />
-              <SiteHeader initialCountry={visitorCountry} />
-              <FloatingCartDrawer />
-              <AuthSessionBridge />
-              <HomePromoSync />
-              <IndiaHomeCountry />
-              <main className="min-h-screen">{children}</main>
-              <SiteFooter initialCountry={visitorCountry} />
-              <WhatsAppButton />
-              <BottomNav />
-              <ThemeSwitcher />
-              <DeferredHomeWidgets />
+              <MobilePurchaseProvider>
+                <AnnouncementBar />
+                <SiteHeader initialCountry={visitorCountry} />
+                <FloatingCartDrawer />
+                <AuthSessionBridge />
+                <HomePromoSync />
+                <IndiaHomeCountry />
+                <main className="min-h-screen">{children}</main>
+                <SiteFooter initialCountry={visitorCountry} />
+                <WhatsAppButton />
+                <BottomNav initialCountry={visitorCountry} />
+                <ThemeSwitcher />
+                <DeferredHomeWidgets />
+              </MobilePurchaseProvider>
             </CartProvider>
           </ToastProvider>
         </LanguageProvider>

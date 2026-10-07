@@ -58,3 +58,12 @@
 @media (max-width: 767px) {
   body { padding-bottom: 5.5rem !important; }
 }
+
+/* India card readability: keep pack labels opaque over product photography. */
+article[data-storefront="IN"] .card-meta { font-size: 11px; line-height: 1.25; }
+article[data-storefront="IN"] .card-pack { background: #fff; color: #334155; max-width: 75%; white-space: normal; }
+article[data-storefront="IN"] .card-description { font-size: 12px; line-height: 1.55; }
+article[data-storefront="IN"] .card-action { font-size: 12px; }
+article[data-storefront="IN"] .card-trust { font-size: 10px; color: #64748b; flex-wrap: wrap; }
+article[data-storefront="IN"] .card-old-price { color: #64748b; }
+article[data-storefront="IN"] .card-meta.text-slate-400 { color: #64748b; }

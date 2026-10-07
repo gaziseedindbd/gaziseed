@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Home,
@@ -200,7 +201,7 @@ export function SiteHeader({ initialCountry = 'BD' }: { initialCountry?: 'BD' | 
       className={`relative flex items-center rounded-[22px] border border-white/80 bg-white/80 p-1 shadow-[0_14px_35px_-22px_rgba(4,62,40,.45)] ring-1 ring-emerald-950/5 backdrop-blur-2xl ${compact ? 'gap-0.5 lg:gap-1 2xl:gap-1.5' : 'gap-1.5'}`}
     >
       <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/70 to-transparent" />
-      {navLinks.map((link) => {
+      {(country === 'IN' && compact ? navLinks.filter((link) => ['/', '/categories', '/all-products', '/offers', '/blog'].includes(link.href)) : navLinks).map((link) => {
         const Icon = link.icon;
         const active = isActive(link.href);
         return (
@@ -214,7 +215,7 @@ export function SiteHeader({ initialCountry = 'BD' }: { initialCountry?: 'BD' | 
               compact
                 ? country === 'BD'
                   ? 'gap-1.5 px-2 py-1.5 text-[9.5px] leading-none lg:px-2 lg:text-[10px] xl:gap-1.5 xl:px-2.5 xl:py-2 xl:text-[10.5px] 2xl:gap-2 2xl:px-3 2xl:py-2 2xl:text-[11px]'
-                  : 'gap-1.5 px-2 py-1.5 text-[9px] leading-none lg:px-2 lg:text-[9.5px] xl:gap-1.5 xl:px-2.5 xl:py-2 xl:text-[10px] 2xl:gap-2 2xl:px-3 2xl:py-2 2xl:text-[11px]'
+                  : 'gap-1.5 px-2 py-2 text-xs leading-none xl:px-3 xl:text-[13px]'
                 : country === 'BD'
                   ? 'gap-2 px-4 py-2.5 text-[13.5px] leading-none'
                   : 'gap-2 px-4 py-2.5 text-[13px] leading-none',
@@ -252,6 +253,12 @@ export function SiteHeader({ initialCountry = 'BD' }: { initialCountry?: 'BD' | 
           </Link>
         );
       })}
+      {country === 'IN' && compact && <DropdownMenu>
+        <DropdownMenuTrigger asChild><button type="button" className="inline-flex min-h-11 items-center gap-1 rounded-xl px-3 text-xs font-bold text-slate-700 hover:bg-emerald-50">{t('আরও', 'More', 'और देखें')}<ChevronDown className="h-3 w-3" /></button></DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="z-[80] min-w-[190px]">
+          {navLinks.filter((link) => !['/', '/categories', '/all-products', '/offers', '/blog'].includes(link.href)).map((link) => <DropdownMenuItem key={link.href} asChild><Link href={link.href} className="min-h-11 gap-2"><link.icon className="h-4 w-4" />{link.label}</Link></DropdownMenuItem>)}
+        </DropdownMenuContent>
+      </DropdownMenu>}
     </nav>
   );
 
