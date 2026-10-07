@@ -1,21 +1,23 @@
 'use client';
 
 import React from 'react';
+import { useLang } from './language-provider';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, ShoppingBag, Truck, LayoutGrid, PhoneCall, BadgeDollarSign } from 'lucide-react';
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { t } = useLang();
   const isProductPage = pathname.startsWith('/product/');
 
   const navItems = [
-    { label: 'হোম', href: '/', icon: Home },
-    { label: 'পণ্য', href: '/all-products', icon: ShoppingBag },
-    { label: 'ক্যাটাগরি', href: '/categories', icon: LayoutGrid },
-    { label: 'ট্র্যাক', href: '/track-order', icon: Truck },
-    { label: 'চার্জ', href: '/charges', icon: BadgeDollarSign },
-    { label: 'যোগাযোগ', href: '/contact', icon: PhoneCall },
+    { label: t('হোম', 'Home', 'होम'), href: '/', icon: Home },
+    { label: t('পণ্য', 'Products', 'उत्पाद'), href: '/all-products', icon: ShoppingBag },
+    { label: t('ক্যাটাগরি', 'Categories', 'श्रेणियाँ'), href: '/categories', icon: LayoutGrid },
+    { label: t('ট্র্যাক', 'Track', 'ट्रैक'), href: '/track-order', icon: Truck },
+    { label: t('চার্জ', 'Charges', 'शुल्क'), href: '/charges', icon: BadgeDollarSign },
+    { label: t('যোগাযোগ', 'Contact', 'संपर्क'), href: '/contact', icon: PhoneCall },
   ];
 
   return (

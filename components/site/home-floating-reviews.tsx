@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import { Star, X, Quote } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { useLang } from './language-provider';
 
 interface FloatingReview {
   id: string;
@@ -14,6 +15,7 @@ interface FloatingReview {
 }
 
 export default function HomeFloatingReviews() {
+  const { t } = useLang();
   const pathname = usePathname();
   const [reviews, setReviews] = useState<FloatingReview[]>([]);
   const [current, setCurrent] = useState(0);
@@ -83,7 +85,7 @@ export default function HomeFloatingReviews() {
               </div>
               <p className="line-clamp-3 text-[15px] font-medium leading-7 text-foreground/85">“{review.review}”</p>
               <div className="mt-4 flex items-end justify-between gap-4">
-                <div><p className="text-sm font-black text-foreground">— {review.customer_name}</p><p className="mt-0.5 text-[11px] font-medium text-muted-foreground">সন্তুষ্ট গ্রাহকের মতামত</p></div>
+                <div><p className="text-sm font-black text-foreground">— {review.customer_name}</p><p className="mt-0.5 text-[11px] font-medium text-muted-foreground">{t('সন্তুষ্ট গ্রাহকের মতামত', 'Customer feedback', 'ग्राहकों की राय')}</p></div>
                 {reviews.length > 1 && <div className="flex items-center gap-1.5">{reviews.slice(0, Math.min(reviews.length, 5)).map((item, index) => <span key={item.id} className={`h-1.5 rounded-full transition-all ${index === current % 5 ? 'w-5 bg-primary' : 'w-1.5 bg-primary/20'}`} />)}</div>}
               </div>
             </div>

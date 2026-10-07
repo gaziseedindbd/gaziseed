@@ -12,7 +12,7 @@ import { useLang } from './language-provider';
 
 export function ProductCard({ product, stackedActions = false }: { product: Product; stackedActions?: boolean }) {
   const router = useRouter();
-  const { lang, t } = useLang();
+  const { lang, t, tDb } = useLang();
   const price = getEffectivePrice(product);
   const discount = getDiscountPercent(product);
   const inStock = product.stock > 0;
@@ -25,8 +25,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
       : lang === 'hi'
         ? (product.name_en || product.name_bn)
         : (product.name_bn || product.name_en));
-  const secondaryName =
-    lang === 'hi' ? (product.name_en || product.name_bn) : lang === 'bn' ? product.name_en : product.name_bn;
+  const shortDescription = tDb(translated.short_description || product.short_description || '');
 
   const badge = product.is_best_seller
     ? t('বেস্ট সেলার', 'Best Seller', 'बेस्ट सेलर')
@@ -134,7 +133,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
           {product.packet_weight && (
             <span className="absolute bottom-2 right-2 z-[3] inline-flex items-center gap-1 rounded-full border border-white/75 bg-white/92 px-2 py-1 text-[7px] font-extrabold leading-none text-slate-700 shadow-md shadow-slate-900/10 backdrop-blur-md sm:bottom-2.5 sm:right-3.5 sm:px-3 sm:py-1.5 sm:text-[10px]">
               <Package className="h-2.5 w-2.5 text-emerald-700 sm:h-3 sm:w-3" />
-              {product.packet_weight}
+              {tDb(translated.packet_weight || product.packet_weight)}
             </span>
           )}
 
@@ -162,7 +161,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
                 {t('মান যাচাই', 'Quality', 'गुणवत्ता')}
               </span>
               {product.seed_type && (
-                <span className="text-[8px] font-semibold leading-tight text-slate-400 sm:text-[10px]">{product.seed_type}</span>
+                <span className="text-[8px] font-semibold leading-tight text-slate-400 sm:text-[10px]">{tDb(translated.seed_type || product.seed_type)}</span>
               )}
             </div>
 
@@ -170,13 +169,9 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
               {name}
             </h3>
 
-            {secondaryName && secondaryName !== name && (
-              <p className="mt-1 line-clamp-1 text-[9px] font-medium text-slate-400 sm:text-[11px]">{secondaryName}</p>
-            )}
-
-            {product.short_description && (
+            {shortDescription && (
               <p className="mt-1 line-clamp-2 text-[9px] leading-[1.55] text-slate-500 sm:mt-2 sm:text-[10px]">
-                {product.short_description}
+                {shortDescription}
               </p>
             )}
           </div>

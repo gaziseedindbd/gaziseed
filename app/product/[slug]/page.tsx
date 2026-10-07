@@ -170,8 +170,8 @@ export default function ProductDetailPage() {
 
   const translated = (product as any).translations?.[lang] || {};
   const productName = translated.name || (lang === 'en' && product.name_en ? product.name_en : lang === 'hi' && product.name_en ? product.name_en : product.name_bn);
-  const productDesc = translated.description || tDb(product.description || '');
-  const productShortDesc = translated.short_description || tDb(product.short_description || '');
+  const productDesc = tDb(translated.description || product.description || '');
+  const productShortDesc = tDb(translated.short_description || product.short_description || '');
 
   const handleAddToCart = () => {
     if (!inStock) { toast(t('পণ্যটি স্টকে নেই', 'Product is out of stock'), 'error'); return false; }
@@ -212,24 +212,24 @@ export default function ProductDetailPage() {
   };
 
   const seedInfoFields = [
-    { label: t('বীজের ধরন', 'Seed Type'), value: product.seed_type },
-    { label: t('জাত', 'Variety'), value: product.variety },
-    { label: t('ব্র্যান্ড', 'Brand'), value: product.brand },
-    { label: t('উৎপত্তি', 'Origin'), value: product.origin },
-    { label: t('মৌসুম', 'Season'), value: product.season },
-    { label: t('বপনের মৌসুম', 'Planting Season'), value: product.planting_season },
-    { label: t('অঙ্কুরোদগম সময়', 'Germination Time'), value: product.germination_time },
-    { label: t('অঙ্কুরোদগম হার', 'Germination Rate'), value: product.germination_rate },
-    { label: t('ফসল তোলার সময়', 'Harvest Time'), value: product.harvest_time },
-    { label: t('গাছের দূরত্ব', 'Plant Spacing'), value: product.plant_spacing },
-    { label: t('বপনের গভীরতা', 'Planting Depth'), value: product.planting_depth },
-    { label: t('সূর্যালোক', 'Sunlight'), value: product.sunlight },
-    { label: t('পানির প্রয়োজন', 'Water Requirement'), value: product.water_requirement },
-    { label: t('মাটির ধরন', 'Soil Type'), value: product.soil_type },
-    { label: t('চাষের স্থান', 'Growing Location'), value: product.growing_location },
-    { label: t('প্যাকেটের ওজন', 'Packet Weight'), value: product.packet_weight },
-    { label: t('বীজের পরিমাণ', 'Seed Quantity'), value: product.seed_quantity },
-    { label: t('প্রত্যাশিত ফলন', 'Expected Yield'), value: product.expected_yield },
+    { label: t('বীজের ধরন', 'Seed Type'), value: tDb(translated.seed_type || product.seed_type || '') },
+    { label: t('জাত', 'Variety'), value: tDb(translated.variety || product.variety || '') },
+    { label: t('ব্র্যান্ড', 'Brand'), value: tDb(translated.brand || product.brand || '') },
+    { label: t('উৎপত্তি', 'Origin'), value: tDb(translated.origin || product.origin || '') },
+    { label: t('মৌসুম', 'Season'), value: tDb(translated.season || product.season || '') },
+    { label: t('বপনের মৌসুম', 'Planting Season'), value: tDb(translated.planting_season || product.planting_season || '') },
+    { label: t('অঙ্কুরোদগম সময়', 'Germination Time'), value: tDb(translated.germination_time || product.germination_time || '') },
+    { label: t('অঙ্কুরোদগম হার', 'Germination Rate'), value: tDb(translated.germination_rate || product.germination_rate || '') },
+    { label: t('ফসল তোলার সময়', 'Harvest Time'), value: tDb(translated.harvest_time || product.harvest_time || '') },
+    { label: t('গাছের দূরত্ব', 'Plant Spacing'), value: tDb(translated.plant_spacing || product.plant_spacing || '') },
+    { label: t('বপনের গভীরতা', 'Planting Depth'), value: tDb(translated.planting_depth || product.planting_depth || '') },
+    { label: t('সূর্যালোক', 'Sunlight'), value: tDb(translated.sunlight || product.sunlight || '') },
+    { label: t('পানির প্রয়োজন', 'Water Requirement'), value: tDb(translated.water_requirement || product.water_requirement || '') },
+    { label: t('মাটির ধরন', 'Soil Type'), value: tDb(translated.soil_type || product.soil_type || '') },
+    { label: t('চাষের স্থান', 'Growing Location'), value: tDb(translated.growing_location || product.growing_location || '') },
+    { label: t('প্যাকেটের ওজন', 'Packet Weight'), value: tDb(translated.packet_weight || product.packet_weight || '') },
+    { label: t('বীজের পরিমাণ', 'Seed Quantity'), value: tDb(translated.seed_quantity || product.seed_quantity || '') },
+    { label: t('প্রত্যাশিত ফলন', 'Expected Yield'), value: tDb(translated.expected_yield || product.expected_yield || '') },
   ].filter((f) => f.value);
 
   const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
@@ -388,7 +388,7 @@ export default function ProductDetailPage() {
           <div className="mt-4 rounded-3xl border border-gray-200/80 bg-white p-5 shadow-2xs sm:p-8" role="tabpanel">
             {activeTab === 'desc' && <div className="space-y-6">{productDesc && <div><h3 className="mb-3 text-base font-black text-gray-900 sm:text-lg">{t('পণ্যের বিবরণ', 'Product Description')}</h3><p className="whitespace-pre-line break-words text-sm font-normal leading-relaxed text-gray-600 sm:text-base">{productDesc}</p></div>}</div>}
             {activeTab === 'specs' && <div><h3 className="mb-4 text-base font-black text-gray-900 sm:text-lg">{t('বীজ সম্পর্কিত তথ্যাবলী', 'Seed Specifications')}</h3><div className="overflow-x-auto rounded-2xl border border-gray-200"><table className="w-full text-xs sm:text-sm"><tbody className="divide-y divide-gray-200">{seedInfoFields.map((field, idx) => <tr key={idx} className={idx % 2 === 0 ? 'bg-gray-50/70' : 'bg-white'}><td className="w-1/3 px-4 py-3 font-bold text-gray-700">{field.label}</td><td className="px-4 py-3 text-gray-600 font-medium">{field.value}</td></tr>)}</tbody></table></div></div>}
-            {activeTab === 'guide' && <div className="space-y-6">{product.cultivation_instructions && <div className="rounded-2xl bg-emerald-50/60 border border-emerald-200/80 p-5"><h3 className="text-base font-black text-emerald-950 mb-2 flex items-center gap-2"><Sprout className="h-5 w-5 text-emerald-700" /> {t('চাষ ও রোপণ পদ্ধতি', 'Cultivation Method')}</h3><p className="whitespace-pre-line text-xs sm:text-sm text-emerald-900 leading-relaxed break-words">{tDb(product.cultivation_instructions)}</p></div>}{product.storage_instructions && <div className="rounded-2xl bg-gray-50 border border-gray-200 p-5"><h3 className="text-sm font-bold text-gray-900 mb-2">{t('সংরক্ষণ পদ্ধতি', 'Storage Method')}</h3><p className="text-xs sm:text-sm text-gray-600 leading-relaxed break-words">{tDb(product.storage_instructions)}</p></div>}</div>}
+            {activeTab === 'guide' && <div className="space-y-6">{product.cultivation_instructions && <div className="rounded-2xl bg-emerald-50/60 border border-emerald-200/80 p-5"><h3 className="text-base font-black text-emerald-950 mb-2 flex items-center gap-2"><Sprout className="h-5 w-5 text-emerald-700" /> {t('চাষ ও রোপণ পদ্ধতি', 'Cultivation Method')}</h3><p className="whitespace-pre-line text-xs sm:text-sm text-emerald-900 leading-relaxed break-words">{tDb(translated.cultivation_instructions || product.cultivation_instructions)}</p></div>}{product.storage_instructions && <div className="rounded-2xl bg-gray-50 border border-gray-200 p-5"><h3 className="text-sm font-bold text-gray-900 mb-2">{t('সংরক্ষণ পদ্ধতি', 'Storage Method')}</h3><p className="text-xs sm:text-sm text-gray-600 leading-relaxed break-words">{tDb(translated.storage_instructions || product.storage_instructions)}</p></div>}</div>}
             {activeTab === 'reviews' && <div className="space-y-6"><div className="flex flex-col sm:flex-row items-center gap-6 rounded-2xl bg-gray-50 border border-gray-200/80 p-5"><div className="text-center sm:border-r sm:border-gray-200 sm:pr-8"><p className="text-4xl font-black text-emerald-800">{avgRating || '০.০'}</p><div className="mt-1 flex justify-center gap-0.5 text-amber-400">{[1,2,3,4,5].map((s) => <Star key={s} className={`h-4 w-4 ${Number(avgRating) >= s ? 'fill-current' : 'text-gray-300'}`} />)}</div><p className="mt-1 text-xs text-gray-500 font-medium">{reviews.length} {t('টি রেটিং', 'Ratings')}</p></div><div className="flex-1 w-full"><ReviewForm productId={product.id} productName={productName} user={currentUser} isVerifiedPurchase={isVerifiedPurchase} onSubmitted={() => getReviews(product.id).then(setReviews)} /></div></div>{reviews.length > 0 ? <div className="space-y-3 pt-2">{reviews.map((r) => <div key={r.id} className="rounded-2xl border border-gray-200 p-4 space-y-2 bg-white"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800 shrink-0">{r.customer_name?.charAt(0).toUpperCase()}</div><div><span className="font-bold text-xs sm:text-sm text-gray-900 block">{r.customer_name}</span>{r.verified_purchase && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700"><Check className="h-3 w-3" /> {t('ভেরিফায়েড ক্রেতা', 'Verified Buyer')}</span>}</div></div><div className="flex gap-0.5 text-amber-400">{[1,2,3,4,5].map((s) => <Star key={s} className={`h-3.5 w-3.5 ${r.rating >= s ? 'fill-current' : 'text-gray-200'}`} />)}</div></div><p className="text-xs sm:text-sm text-gray-600 break-words">{r.review}</p>{r.photo && <img src={r.photo} alt="Customer review" className="mt-2 h-20 w-20 rounded-xl border border-gray-200 object-cover" />}{r.admin_reply && <div className="mt-2 rounded-xl border-l-4 border-emerald-600 bg-emerald-50/50 p-3 text-xs"><p className="font-bold text-emerald-900">GAZI SEED {t('অ্যাডমিন রিপ্লাই:', 'Admin Reply:')}</p><p className="mt-0.5 text-emerald-800 break-words">{r.admin_reply}</p></div>}</div>)}</div> : <p className="text-center text-xs sm:text-sm text-gray-400 py-6">{t('এখনো কোনো রিভিউ দেওয়া হয়নি। প্রথম রিভিউটি আপনিই দিন!', 'No reviews yet. Be the first to review!')}</p>}</div>}
             {activeTab === 'faqs' && <div className="space-y-3">{faqs.map((f, idx) => <div key={f.id} className="rounded-2xl border border-gray-200 bg-white"><button type="button" onClick={() => setOpenFaqIdx(openFaqIdx === idx ? null : idx)} aria-expanded={openFaqIdx === idx} className="flex min-h-12 w-full items-center justify-between p-4 text-left font-bold text-xs sm:text-sm text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"><span className="break-words pr-3">{lang === 'en' && f.question_en ? f.question_en : f.question_bn}</span><ChevronDown className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${openFaqIdx === idx ? 'rotate-180 text-emerald-700' : ''}`} /></button>{openFaqIdx === idx && <div className="border-t border-gray-100 p-4 text-xs sm:text-sm text-gray-600 bg-gray-50/50 break-words">{lang === 'en' && f.answer_en ? f.answer_en : f.answer_bn}</div>}</div>)}</div>}
           </div>

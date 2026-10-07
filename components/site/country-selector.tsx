@@ -3,10 +3,12 @@
 import { useLayoutEffect, useState } from 'react';
 import { ChevronDown, Globe2 } from 'lucide-react';
 import { getVisitorCountry, setManualCountry } from '@/lib/supabase/client';
+import { useLang } from './language-provider';
 
 type CountryOption = 'AUTO' | 'BD' | 'IN';
 
 export function CountrySelector({ mobile = false }: { mobile?: boolean }) {
+  const { t } = useLang();
   const [value, setValue] = useState<CountryOption>('AUTO');
 
   useLayoutEffect(() => {
@@ -64,7 +66,7 @@ export function CountrySelector({ mobile = false }: { mobile?: boolean }) {
   };
 
   const detected = getVisitorCountry();
-  const currentLabel = detected === 'IN' ? '🇮🇳 India' : '🇧🇩 Bangladesh';
+  const currentLabel = detected === 'IN' ? `🇮🇳 ${t('ভারত', 'India', 'भारत')}` : `🇧🇩 ${t('বাংলাদেশ', 'Bangladesh', 'बांग्लादेश')}`;
 
   return (
     <label
@@ -80,7 +82,7 @@ export function CountrySelector({ mobile = false }: { mobile?: boolean }) {
         </span>
         <span className="min-w-0 leading-tight">
           <span className="block text-[8px] font-black uppercase tracking-[0.1em] text-emerald-700 sm:text-[9px] sm:tracking-[0.12em]">
-            Country
+            {t('দেশ', 'Country', 'देश')}
           </span>
           <span className="block truncate text-[11px] font-black text-emerald-950 sm:text-[13px]">
             {currentLabel}
@@ -93,11 +95,11 @@ export function CountrySelector({ mobile = false }: { mobile?: boolean }) {
           value={value}
           onChange={(e) => handleChange(e.target.value as CountryOption)}
           className="h-7 w-8 cursor-pointer appearance-none rounded-lg border border-emerald-200 bg-white px-0 text-[0px] font-black text-transparent shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 sm:h-auto sm:w-auto sm:py-1.5 sm:pl-2.5 sm:pr-7 sm:text-[11px] sm:text-emerald-900"
-          aria-label="Select country"
+          aria-label={t('দেশ নির্বাচন', 'Select country', 'देश चुनें')}
         >
-          <option value="AUTO">🌐 Auto</option>
-          <option value="BD">🇧🇩 Bangladesh</option>
-          <option value="IN">🇮🇳 India</option>
+          <option value="AUTO">🌐 {t('অটো', 'Auto', 'स्वतः')}</option>
+          <option value="BD">🇧🇩 {t('বাংলাদেশ', 'Bangladesh', 'बांग्लादेश')}</option>
+          <option value="IN">🇮🇳 {t('ভারত', 'India', 'भारत')}</option>
         </select>
         <ChevronDown className="pointer-events-none absolute right-1/2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 translate-x-1/2 text-emerald-700 sm:right-2 sm:translate-x-0" />
       </span>

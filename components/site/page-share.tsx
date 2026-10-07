@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Check, Copy, Facebook, MessageCircle, Share2, X } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 import { usePathname } from 'next/navigation';
+import { useLang } from './language-provider';
 
 const TARGETS = ['/product/', '/combo/', '/offer/', '/animated-landing/'];
 
 export default function PageShare() {
+  const { t } = useLang();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -22,7 +24,7 @@ export default function PageShare() {
   if (!enabled) return null;
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
-  const title = typeof document !== 'undefined' ? document.title : 'SUPER KING SEED';
+  const title = typeof document !== 'undefined' ? document.title : 'GAZI SEED';
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedText = encodeURIComponent(`${title}\n${shareUrl}`);
 
@@ -30,10 +32,10 @@ export default function PageShare() {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      toast('লিংক কপি হয়েছে');
+      toast(t('লিংক কপি হয়েছে', 'Link copied', 'लिंक कॉपी हुआ'));
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
-      toast('লিংক কপি করা যায়নি', 'error');
+      toast(t('লিংক কপি করা যায়নি', 'Unable to copy link', 'लिंक कॉपी नहीं हुआ'), 'error');
     }
   };
 
@@ -62,8 +64,8 @@ export default function PageShare() {
         <div className="mb-3 w-[250px] overflow-hidden rounded-2xl border border-emerald-100 bg-white/95 p-3 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-2 fade-in duration-200">
           <div className="flex items-center justify-between px-1 pb-2">
             <div>
-              <p className="text-sm font-extrabold text-emerald-950">শেয়ার করুন</p>
-              <p className="text-[11px] text-slate-500">বন্ধু ও পরিচিত কৃষকদের জানান</p>
+              <p className="text-sm font-extrabold text-emerald-950">{t('শেয়ার করুন', 'Share this product', 'यह उत्पाद साझा करें')}</p>
+              <p className="text-[11px] text-slate-500">{t('বন্ধু ও পরিচিত কৃষকদের জানান', 'Share with friends and fellow growers', 'दोस्तों और किसानों के साथ साझा करें')}</p>
             </div>
             <button onClick={() => setOpen(false)} className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100" aria-label="Close share menu"><X className="h-4 w-4" /></button>
           </div>
@@ -77,7 +79,7 @@ export default function PageShare() {
       )}
       <button onClick={nativeShare} aria-label="Share this page" className="group flex items-center gap-2 rounded-full border border-white/80 bg-emerald-950 px-4 py-3 text-white shadow-xl ring-1 ring-emerald-900/10 transition-all hover:-translate-y-0.5 hover:bg-emerald-900 active:scale-95">
         <Share2 className="h-5 w-5 transition-transform group-hover:rotate-12" />
-        <span className="hidden sm:inline text-sm font-extrabold">শেয়ার</span>
+        <span className="hidden sm:inline text-sm font-extrabold">{t('শেয়ার', 'Share', 'साझा करें')}</span>
       </button>
     </div>
   );

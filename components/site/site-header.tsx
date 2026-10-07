@@ -46,12 +46,12 @@ export function SiteHeader() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [country, setCountry] = useState<'BD' | 'IN'>('BD');
+  const [country, setCountry] = useState<'BD' | 'IN'>(() => getVisitorCountry());
   const searchInputRef = useRef<HTMLInputElement>(null);
   const languageDesktopRef = useRef<HTMLDivElement>(null);
   const languageMobileRef = useRef<HTMLDivElement>(null);
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
-  const { lang, setLang, t } = useLang();
+  const { lang, setLang, t, tDb } = useLang();
 
   useEffect(() => {
     getSiteSettings().then(setSettings);
@@ -256,7 +256,7 @@ export function SiteHeader() {
   );
 
   const logoSrc = settings?.logo || '/favicon.svg?v=2';
-  const locationText = settings?.address || (country === 'IN' ? 'ভারত' : 'ঢাকা, বাংলাদেশ');
+  const locationText = tDb(settings?.address || (country === 'IN' ? t('ভারত', 'India', 'भारत') : t('ঢাকা, বাংলাদেশ', 'Dhaka, Bangladesh', 'ढाका, बांग्लादेश')));
   const phoneText = settings?.phone || settings?.whatsapp;
   const hasSocials = Boolean(settings?.facebook || settings?.youtube || settings?.instagram);
 

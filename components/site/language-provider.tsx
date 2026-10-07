@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { STOREFRONT_HINDI } from '@/lib/storefront-hindi';
 
 export type Lang = 'bn' | 'en' | 'hi';
 
@@ -20,6 +21,13 @@ const CATEGORY_HI_TRANSLATIONS: Record<string, string> = {
 };
 
 const DB_TRANSLATIONS: Record<string, string> = {
+  'ভারত': 'India',
+  'বাংলাদেশ': 'Bangladesh',
+  'ঢাকা, বাংলাদেশ': 'Dhaka, Bangladesh',
+  '১০ গ্রাম': '10 g',
+  'প্রায় 100 টি বীজ': 'Approximately 100 seeds',
+  'প্রযোজ্য নয় / প্যাকেটভেদে পরিবর্তিত': 'Varies by packet',
+  'Packet label অনুযায়ী দিন': 'See packet label',
   'হোম': 'Home',
   'সকল প্রোডাক্ট': 'All Products',
   'ক্যাটাগরি': 'Categories',
@@ -59,7 +67,7 @@ type LangContextType = {
 const LangContext = createContext<LangContextType>({
   lang: 'en',
   setLang: () => {},
-  t: (_bn, en, hi) => hi || en,
+  t: (_bn, en) => en,
   tDb: (text) => text,
   tCategoryName: (bn, en) => en || bn,
   content: (_translations, fallback) => fallback,
@@ -71,20 +79,24 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>('en');
 
   useEffect(() => {
-    const saved = localStorage.getItem(LANG_KEY) as Lang | null;
-    if (saved === 'bn' || saved === 'en' || saved === 'hi') setLangState(saved);
+    try {
+      const saved = localStorage.getItem(LANG_KEY) as Lang | null;
+      if (saved === 'bn' || saved === 'en' || saved === 'hi') setLangState(saved);
+    } catch { /* Keep English when browser storage is unavailable. */ }
   }, []);
 
-  const setLang = (l: Lang) => {
-    setLangState(l);
-    localStorage.setItem(LANG_KEY, l);
-  };
+  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
-  const t = (bn: string, en: string, hi?: string) => {
+  const setLang = useCallback((l: Lang) => {
+    setLangState(l);
+    try { localStorage.setItem(LANG_KEY, l); } catch { /* Language still changes for this visit. */ }
+  }, []);
+
+  const t = useCallback((bn: string, en: string, hi?: string) => {
     if (lang === 'en') return en;
-    if (lang === 'hi') return hi || en;
+    if (lang === 'hi') return hi || STOREFRONT_HINDI[en] || en;
     return bn;
-  };
+  }, [lang]);
   const content = (translations: any, fallback: any) => {
     const current = translations?.[lang];
     if (!current || typeof current !== 'object') return fallback;
@@ -116,7 +128,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         // not valid JSON, fall through to dictionary lookup
       }
     }
-    return lang === 'en' ? (DB_TRANSLATIONS[text] || text) : text;
+    const english = DB_TRANSLATIONS[text] || text;
+    return lang === 'en' ? english : lang === 'hi' ? (STOREFRONT_HINDI[english] || english) : text;
   };
 
   return (

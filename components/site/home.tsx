@@ -127,8 +127,8 @@ export default function Home({ initialBanners = [], initialHeroImage = null, ini
               <div className="home-india-hero-orb home-india-hero-orb-bottom" aria-hidden="true" />
               <div className="home-india-hero-content">
                 <div className="home-india-hero-badge">🇮🇳 GAZI SEED INDIA</div>
-                <h1>Premium Seeds for Better Farming</h1>
-                <p>India-focused seed shopping with fast pan-India delivery, secure payments and trusted customer support.</p>
+                <h1>{t('ভালো চাষের জন্য উন্নত বীজ', 'Premium Seeds for Better Farming', 'बेहतर खेती के लिए गुणवत्तापूर्ण बीज')}</h1>
+                <p>{t('সারা ভারতে ডেলিভারি, নিরাপদ পেমেন্ট ও নির্ভরযোগ্য সহায়তায় বীজ কিনুন।', 'India-focused seed shopping with fast pan-India delivery, secure payments and trusted customer support.', 'पूरे भारत में डिलीवरी, सुरक्षित भुगतान और विश्वसनीय सहायता के साथ बीज खरीदें।')}</p>
                 <div className="home-india-hero-pills"><span>UPI</span><span>PhonePe</span><span>Paytm</span><span className="secondary">Cards &amp; COD</span></div>
                 <Link
                   href="/all-products"
