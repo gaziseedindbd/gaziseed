@@ -9,6 +9,7 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      minHeight: { '11': '2.75rem', '12': '3rem' },
       fontFamily: {
         sans: ['var(--font-hind, Arial)', 'Arial', 'sans-serif'],
         serif: ['var(--font-hind, Arial)', 'Arial', 'sans-serif'],

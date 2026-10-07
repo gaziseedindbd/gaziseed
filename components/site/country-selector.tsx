@@ -73,7 +73,7 @@ export function CountrySelector({ mobile = false, initialCountry = 'BD' }: { mob
     <label className={`relative flex min-w-0 items-center ${mobile ? 'w-full' : 'max-w-[180px]'}`}>
       <span className="sr-only">{t('দেশ নির্বাচন', 'Select country', 'देश चुनें')}</span>
       <select value={value} onChange={(e) => handleChange(e.target.value as CountryOption)}
-        className="min-h-11 w-full cursor-pointer appearance-none rounded-lg border border-white/25 bg-emerald-900/35 py-2 pl-3 pr-8 text-xs font-semibold text-white outline-none transition hover:bg-emerald-900/50 focus-visible:ring-2 focus-visible:ring-white"
+        className="h-11 w-full cursor-pointer appearance-none rounded-lg border border-white/25 bg-emerald-900/40 py-2 pl-3 pr-8 text-xs font-semibold text-white outline-none transition hover:bg-emerald-900/50 focus-visible:ring-2 focus-visible:ring-white"
         aria-label={t('দেশ নির্বাচন', 'Select country', 'देश चुनें')}>
         <option className="bg-white text-emerald-950" value="AUTO">{currentLabel} · {t('অটো', 'Auto', 'स्वतः')}</option>
         <option className="bg-white text-emerald-950" value="BD">🇧🇩 {t('বাংলাদেশ', 'Bangladesh', 'बांग्लादेश')}</option>
