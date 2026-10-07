@@ -17,7 +17,8 @@ const PRESETS: Record<ImageUploadPreset, {
   quality: number;
   watermark: boolean;
 }> = {
-  product: { maxWidth: 1200, maxHeight: 1200, maxSizeMB: 0.4, quality: 0.82, watermark: true },
+  // Product images keep higher resolution and avoid unnecessary second-pass compression.
+  product: { maxWidth: 1800, maxHeight: 1800, maxSizeMB: 1.5, quality: 0.93, watermark: true },
   category: { maxWidth: 800, maxHeight: 800, maxSizeMB: 0.22, quality: 0.8, watermark: true },
   'category-banner': { maxWidth: 1200, maxHeight: 400, maxSizeMB: 0.28, quality: 0.8, watermark: true },
   logo: { maxWidth: 360, maxHeight: 240, maxSizeMB: 0.12, quality: 0.78, watermark: false },
@@ -46,6 +47,12 @@ export async function optimizeImageForUpload(
   });
 
   try {
+    // Avoid re-encoding product images that are already within the target size.
+    // A second lossy WebP pass can soften fine text and seed-packet details.
+    if (preset === 'product' && processed.size <= target.maxSizeMB * 1024 * 1024) {
+      return processed;
+    }
+
     const compressed = await imageCompression(processed, {
       maxSizeMB: target.maxSizeMB,
       maxWidthOrHeight: Math.max(target.maxWidth, target.maxHeight),

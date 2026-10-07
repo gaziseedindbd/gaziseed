@@ -103,7 +103,7 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
             fill
             priority={activeIdx === 0}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 600px"
-            quality={82}
+            quality={92}
             className="relative object-contain p-0 animate-[fadeIn_0.4s_ease-out] transition-transform duration-700 ease-out group-hover:scale-[1.015]"
             draggable={false}
           />

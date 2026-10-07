@@ -552,7 +552,7 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
 
           <div><label className="mb-1 block text-sm font-medium">সংক্ষিপ্ত বিবরণ</label><textarea value={form.short_description} onChange={(e) => setForm({ ...form, short_description: e.target.value })} className="input-bangla min-h-[60px]" /></div>
 
-          <MediaUploader images={form.images} setImages={(v) => setForm({ ...form, images: v, image: v[0] || '' })} productId={product?.id} bucket="product-images" label="পণ্যের ছবি (একাধিক)" recommendation="800 × 800 px" />
+          <MediaUploader images={form.images} setImages={(v) => setForm({ ...form, images: v, image: v[0] || '' })} productId={product?.id} bucket="product-images" label="পণ্যের ছবি (একাধিক)" recommendation="1600 × 1600 px" />
 
           {/* বিস্তারিত বিবরণ (গোছানো টেক্সট লেখার জন্য সাইজ ও গাইডলাইন আপডেট করা হয়েছে) */}
           <div>
