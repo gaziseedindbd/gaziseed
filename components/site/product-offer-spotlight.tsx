@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Clock3, Gift, ShoppingCart } from 'lucide-react';
+import { Bell, Check, Clock3, Gift, ShoppingCart } from 'lucide-react';
 
 type ProductOfferSpotlightProps = {
   enabled: boolean;
@@ -29,6 +29,8 @@ type ProductOfferSpotlightProps = {
   noteEn?: string | null;
   noteHi?: string | null;
   lang?: string;
+  available?: boolean;
+  onUnavailableCta?: () => void;
   onPreviewCta?: () => void;
   preview?: boolean;
 };
@@ -65,6 +67,8 @@ export default function ProductOfferSpotlight({
   noteEn,
   noteHi,
   lang = 'bn',
+  available,
+  onUnavailableCta,
   onPreviewCta,
   preview = false,
 }: ProductOfferSpotlightProps) {
@@ -132,10 +136,35 @@ export default function ProductOfferSpotlight({
     fallbackImage ||
     null;
 
-  const safeLink = isSafeOfferLink(ctaLink);
+  const unavailable = available === false;
+  const availabilityBadge = isHindi ? 'स्टॉक में नहीं' : isEnglish ? 'OUT OF STOCK' : 'স্টক শেষ';
+  const availabilityTitle = isHindi ? 'यह उत्पाद अभी स्टॉक में नहीं है' : isEnglish ? 'Currently out of stock' : 'পণ্যটি বর্তমানে স্টকে নেই';
+  const availabilityDescription = isHindi
+    ? 'स्टॉक वापस आने पर सूचना पाने के लिए नीचे नोटिफिकेशन चालू करें।'
+    : isEnglish
+      ? 'Get notified as soon as this product is available again.'
+      : 'পণ্যটি আবার স্টকে এলে সঙ্গে সঙ্গে নোটিফিকেশন পেতে পারেন।';
+  const availabilityCta = isHindi ? 'स्टॉक आने पर बताएं' : isEnglish ? 'Notify me when available' : 'স্টকে এলে জানান';
+
+  const displayBadge = unavailable ? availabilityBadge : resolvedBadge;
+  const displayTitle = unavailable ? availabilityTitle : resolvedTitle;
+  const displayDescription = unavailable ? availabilityDescription : resolvedDescription;
+  const displayBenefits = unavailable ? [] : resolvedBenefits;
+  const displayCtaText = unavailable ? availabilityCta : resolvedCtaText;
+  const displayNote = unavailable ? null : resolvedNote;
+  const safeLink = !unavailable && isSafeOfferLink(ctaLink);
 
   const handleCta = () => {
     if (preview) return;
+    if (unavailable) {
+      if (onUnavailableCta) {
+        onUnavailableCta();
+        return;
+      }
+      const target = document.getElementById('product-purchase');
+      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     if (safeLink) {
       window.location.href = ctaLink as string;
       return;
@@ -165,16 +194,16 @@ export default function ProductOfferSpotlight({
 
       <section
         className="mb-8 overflow-hidden rounded-[2rem] border border-orange-200/90 bg-gradient-to-r from-amber-50 via-orange-50/80 to-white shadow-[0_18px_50px_-28px_rgba(234,88,12,.35)]"
-        aria-label={resolvedBadge}
+        aria-label={displayBadge}
       >
         <div className="grid items-start lg:grid-cols-[minmax(0,1.35fr)_minmax(240px,.65fr)]">
           <div className="relative p-5 sm:p-7 lg:p-8">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="offer-text-animate inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wide text-white shadow-sm">
-                <Gift className="h-3.5 w-3.5" />
-                {resolvedBadge}
+              <span className={`offer-text-animate inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wide text-white shadow-sm ${unavailable ? 'bg-amber-600' : 'bg-red-600'}`}>
+                {unavailable ? <Bell className="h-3.5 w-3.5" /> : <Gift className="h-3.5 w-3.5" />}
+                {displayBadge}
               </span>
-              {endDate && (
+              {endDate && !unavailable && (
                 <span className="offer-text-animate inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-1.5 text-[11px] font-black text-amber-950">
                   <Clock3 className="h-3.5 w-3.5" />
                   {isHindi ? 'सीमित समय ऑफ़र' : isEnglish ? 'LIMITED TIME OFFER' : 'সীমিত সময়ের অফার'}
@@ -182,21 +211,21 @@ export default function ProductOfferSpotlight({
               )}
             </div>
 
-            {resolvedTitle && (
+            {displayTitle && (
               <h2 className="offer-text-animate mt-4 max-w-3xl text-2xl font-black leading-tight text-gray-950 sm:text-3xl lg:text-[2.15rem]">
-                {resolvedTitle}
+                {displayTitle}
               </h2>
             )}
 
-            {resolvedDescription && (
+            {displayDescription && (
               <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-gray-700 sm:text-base">
-                {resolvedDescription}
+                {displayDescription}
               </p>
             )}
 
-            {resolvedBenefits.length > 0 && (
+            {displayBenefits.length > 0 && (
               <div className="mt-5 grid gap-2 sm:grid-cols-2">
-                {resolvedBenefits.slice(0, 6).map((benefit, index) => (
+                {displayBenefits.slice(0, 6).map((benefit, index) => (
                   <div key={index} className="flex items-start gap-2 text-sm font-semibold text-gray-800">
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                       <Check className="h-3 w-3" />
@@ -212,14 +241,14 @@ export default function ProductOfferSpotlight({
                 type="button"
                 onClick={handleCta}
                 disabled={preview}
-                className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-600/20 transition hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-70"
+                className={`inline-flex min-h-12 items-center gap-2 rounded-2xl px-5 py-3 text-sm font-black text-white shadow-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-70 ${unavailable ? 'bg-amber-600 shadow-amber-600/20 hover:bg-amber-700 focus-visible:ring-amber-500' : 'bg-red-600 shadow-red-600/20 hover:bg-red-700 focus-visible:ring-red-500'}`}
               >
-                <ShoppingCart className="h-4 w-4" />
-                {resolvedCtaText}
+                {unavailable ? <Bell className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
+                {displayCtaText}
               </button>
-              {resolvedNote && (
+              {displayNote && (
                 <p className="max-w-xl text-[11px] font-semibold text-gray-500">
-                  • {resolvedNote}
+                  • {displayNote}
                 </p>
               )}
             </div>
@@ -238,8 +267,8 @@ export default function ProductOfferSpotlight({
                 {isHindi ? 'विशेष ऑफ़र' : isEnglish ? 'Special offer' : 'বিশেষ অফার'}
               </div>
             )}
-            <div className="absolute bottom-4 right-4 rounded-full bg-red-600 px-4 py-2 text-xs font-black text-white shadow-lg shadow-red-600/30">
-              {isHindi ? 'सीমিত অফ़र' : isEnglish ? 'LIMITED' : 'সীমিত অফার'}
+            <div className={`absolute bottom-4 right-4 rounded-full px-4 py-2 text-xs font-black text-white shadow-lg ${unavailable ? 'bg-amber-600 shadow-amber-600/30' : 'bg-red-600 shadow-red-600/30'}`}>
+              {unavailable ? availabilityBadge : (isHindi ? 'सीमित ऑफ़र' : isEnglish ? 'LIMITED' : 'সীমিত অফার')}
             </div>
           </div>
         </div>
