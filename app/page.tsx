@@ -13,7 +13,7 @@ export default async function Page() {
   const cookieStore = await cookies();
   const cookieOverride = cookieStore.get('gazi_country_override')?.value?.toUpperCase();
   const detectedCountry = (requestHeaders.get('x-vercel-ip-country') || requestHeaders.get('cf-ipcountry') || 'BD').toUpperCase();
-  const visitorCountry: 'BD' | 'IN' = cookieOverride === 'IN' || detectedCountry === 'IN' ? 'IN' : 'BD';
+  const visitorCountry: 'BD' | 'IN' = cookieOverride === 'IN' || cookieOverride === 'BD' ? cookieOverride : detectedCountry === 'IN' ? 'IN' : 'BD';
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const now = new Date().toISOString();

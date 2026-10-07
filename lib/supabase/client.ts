@@ -6,7 +6,7 @@ const FALLBACK_KEY = 'sb_publishable_vCaz5OGrHocUTgpOXmE9xg_QVsuUJc0';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || FALLBACK_KEY;
 
-const getManualCountryOverride = (): 'BD' | 'IN' | null => {
+export const getManualCountryOverride = (): 'BD' | 'IN' | null => {
   if (typeof window === 'undefined') return null;
   try {
     const value = localStorage.getItem('gazi_country_override')?.toUpperCase();
