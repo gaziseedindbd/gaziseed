@@ -143,7 +143,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
             </span>
           )}
 
-          {product.packet_weight && (!isIndia || isKnownPackDetail(product.packet_weight)) && (
+          {product.packet_weight && (!isIndia || isKnownPackDetail(translated.packet_weight || product.packet_weight)) && (
             <span className="absolute bottom-2 right-2 z-[3] inline-flex items-center gap-1 rounded-full border card-pack border-white/75 bg-white/92 px-2 py-1 card-meta text-[7px] font-extrabold leading-none text-slate-700 shadow-md shadow-slate-900/10 backdrop-blur-md sm:bottom-2.5 sm:right-3.5 sm:px-3 sm:py-1.5 sm:text-[10px]">
               <Package className="h-2.5 w-2.5 text-emerald-700 sm:h-3 sm:w-3" />
               {tDb(translated.packet_weight || product.packet_weight)}

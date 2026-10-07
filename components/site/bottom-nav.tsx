@@ -13,7 +13,7 @@ export function BottomNav({ initialCountry = 'BD' }: { initialCountry?: 'BD' | '
   const { t } = useLang();
   const isProductPage = pathname.startsWith('/product/');
   const [country, setCountry] = useState(initialCountry);
-  const { visible } = useMobilePurchase();
+  const { height } = useMobilePurchase();
   useEffect(() => {
     const sync = () => setCountry(getVisitorCountry());
     sync();
@@ -35,8 +35,9 @@ export function BottomNav({ initialCountry = 'BD' }: { initialCountry?: 'BD' | '
   return (
     <nav
       aria-label="Mobile navigation"
+      style={country === 'IN' && isProductPage && height > 0 ? { bottom: height + 8 } : undefined}
       className={`fixed left-2 right-2 z-50 flex min-h-[64px] w-auto items-center justify-around rounded-[20px] border border-primary/10 bg-background/95 px-1.5 py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] shadow-[0_18px_44px_-20px_rgba(15,23,42,.6)] backdrop-blur-xl md:hidden ${
-        isProductPage && (country !== 'IN' || visible) ? 'bottom-[calc(5rem+env(safe-area-inset-bottom))]' : 'bottom-2'
+        isProductPage && country !== 'IN' ? 'bottom-[calc(5rem+env(safe-area-inset-bottom))]' : 'bottom-2'
       }`}
     >
       {navItems.map((item) => {

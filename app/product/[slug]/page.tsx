@@ -164,7 +164,7 @@ export default function ProductDetailPage() {
   const effectiveStock = selectedVariant ? selectedVariant.stock : product.stock;
   const inStock = effectiveStock > 0;
   const isIndia = getVisitorCountry() === 'IN';
-  const visibleRelated = isIndia ? related.filter((item) => item.id !== product.id) : related;
+  const visibleRelated = isIndia ? related.filter((item) => item.id !== product.id).sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0)).slice(0, 4) : related;
   const quantityLimit = Math.min(effectiveStock, product.max_order_qty || effectiveStock);
 
   const selectedBulkTiers = bulkTiers
@@ -237,7 +237,7 @@ export default function ProductDetailPage() {
     { label: t('পানির প্রয়োজন', 'Water Requirement'), value: tDb(translated.water_requirement || product.water_requirement || '') },
     { label: t('মাটির ধরন', 'Soil Type'), value: tDb(translated.soil_type || product.soil_type || '') },
     { label: t('চাষের স্থান', 'Growing Location'), value: tDb(translated.growing_location || product.growing_location || '') },
-    { label: t('প্যাকেটের ওজন', 'Packet Weight'), value: isIndia && !isKnownPackDetail(product.packet_weight) ? '' : tDb(translated.packet_weight || product.packet_weight || '') },
+    { label: t('প্যাকেটের ওজন', 'Packet Weight'), value: isIndia && !isKnownPackDetail(translated.packet_weight || product.packet_weight) ? '' : tDb(translated.packet_weight || product.packet_weight || '') },
     { label: t('বীজের পরিমাণ', 'Seed Quantity'), value: tDb(translated.seed_quantity || product.seed_quantity || '') },
     { label: t('প্রত্যাশিত ফলন', 'Expected Yield'), value: tDb(translated.expected_yield || product.expected_yield || '') },
   ].filter((f) => f.value);
@@ -407,7 +407,7 @@ export default function ProductDetailPage() {
         </div>
         {visibleRelated.length > 0 && <div className="mt-16"><h2 className="mb-6 text-xl sm:text-2xl font-black text-gray-900">{t('এই বীজগুলোও আপনার ভালো লাগতে পারে', 'You may also like these seeds')}</h2><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{visibleRelated.map((p) => <ProductCard key={p.id} product={p} />)}</div></div>}
       </div>
-      {inStock && <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur-md px-3.5 pt-3.5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-2xl lg:hidden"><div className="max-w-md mx-auto flex items-center justify-between gap-3"><div className="min-w-0"><span className="text-[10px] text-gray-400 font-semibold block">{quantity} {t('টি পণ্যের মোট মূল্য', 'Total items price')}</span><p className="text-lg font-black text-emerald-800 truncate">{formatPrice(totalPrice)}</p></div><div className="flex gap-2 shrink-0"><button type="button" onClick={handleAddToCart} aria-label={t('কার্টে যোগ করুন', 'Add to cart')} className="min-h-12 min-w-12 p-3 rounded-xl border border-emerald-600/30 bg-emerald-50 text-emerald-900 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><ShoppingCart className="h-5 w-5 text-emerald-700" /></button><button type="button" onClick={handleBuyNow} className="min-h-12 flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-700 to-emerald-800 px-5 py-3 text-xs font-extrabold text-white shadow-md shadow-emerald-700/30 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><Zap className="h-4 w-4 fill-current text-amber-300" />{t('অর্ডার করুন', 'Order Now')}</button></div></div></div>}
+      {inStock && <div id="mobile-product-purchase" className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur-md px-3.5 pt-3.5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-2xl lg:hidden"><div className="max-w-md mx-auto flex items-center justify-between gap-3"><div className="min-w-0"><span className="text-[10px] text-gray-400 font-semibold block">{quantity} {t('টি পণ্যের মোট মূল্য', 'Total items price')}</span><p className="text-lg font-black text-emerald-800 truncate">{formatPrice(totalPrice)}</p></div><div className="flex gap-2 shrink-0"><button type="button" onClick={handleAddToCart} aria-label={t('কার্টে যোগ করুন', 'Add to cart')} className="min-h-12 min-w-12 p-3 rounded-xl border border-emerald-600/30 bg-emerald-50 text-emerald-900 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><ShoppingCart className="h-5 w-5 text-emerald-700" /></button><button type="button" onClick={handleBuyNow} className="min-h-12 flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-700 to-emerald-800 px-5 py-3 text-xs font-extrabold text-white shadow-md shadow-emerald-700/30 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><Zap className="h-4 w-4 fill-current text-amber-300" />{t('অর্ডার করুন', 'Order Now')}</button></div></div></div>}
     </div>
   );
 }

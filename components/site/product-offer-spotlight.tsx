@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Clock3, Gift, ShoppingCart } from 'lucide-react';
+import { Bell, Check, Clock3, Gift, ShoppingCart } from 'lucide-react';
 
 type ProductOfferSpotlightProps = {
   enabled: boolean;
@@ -219,7 +219,7 @@ export default function ProductOfferSpotlight({
                 disabled={preview}
                 className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-600/20 transition hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-70"
               >
-                <ShoppingCart className="h-4 w-4" />
+                {available ? <ShoppingCart className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
                 {available ? resolvedCtaText : isHindi ? 'आने पर बताएँ' : isEnglish ? 'Notify me' : 'স্টকে এলে জানান'}
               </button>
               {available && resolvedNote && (

@@ -2,11 +2,11 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
-const MobilePurchaseContext = createContext({ visible: false, setVisible: (_visible: boolean) => {} });
+const MobilePurchaseContext = createContext({ height: 0, setHeight: (_height: number) => {} });
 
 export function MobilePurchaseProvider({ children }: { children: ReactNode }) {
-  const [visible, setVisible] = useState(false);
-  return <MobilePurchaseContext.Provider value={{ visible, setVisible }}>{children}</MobilePurchaseContext.Provider>;
+  const [height, setHeight] = useState(0);
+  return <MobilePurchaseContext.Provider value={{ height, setHeight }}>{children}</MobilePurchaseContext.Provider>;
 }
 
 export function useMobilePurchase() {
@@ -14,10 +14,15 @@ export function useMobilePurchase() {
 }
 
 export function MobilePurchasePresence({ active }: { active: boolean }) {
-  const { setVisible } = useMobilePurchase();
+  const { setHeight } = useMobilePurchase();
   useEffect(() => {
-    setVisible(active);
-    return () => setVisible(false);
-  }, [active, setVisible]);
+    const bar = active ? document.getElementById('mobile-product-purchase') : null;
+    if (!bar) { setHeight(0); return; }
+    const measure = () => setHeight(Math.ceil(bar.getBoundingClientRect().height));
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(bar);
+    return () => { observer.disconnect(); setHeight(0); };
+  }, [active, setHeight]);
   return null;
 }
