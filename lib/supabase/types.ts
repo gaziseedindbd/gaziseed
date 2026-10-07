@@ -626,7 +626,7 @@ export type BulkPricing = {
   variant_id: string | null;
   min_quantity: number;
   unit_price: number;
-  free_item_text: string | null;
+  free_item_text?: string | null;
   is_active: boolean;
   created_at: string;
 };
