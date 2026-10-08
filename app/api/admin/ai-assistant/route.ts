@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
     const { data: adminRow, error: adminError } = await sb
       .from('admin_users')
-      .select('user_id')
+      .select('user_id,role,country_code')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .maybeSingle();
@@ -41,10 +41,25 @@ export async function GET(request: Request) {
     }
     if (!sb) return NextResponse.json({ success: false, message: 'Server configuration incomplete' }, { status: 500 });
 
+    let adminCountry: 'BD' | 'IN' =
+      String(adminRow.country_code || '').toUpperCase() === 'IN' ? 'IN' : 'BD';
+
+    if (adminRow.role === 'master_admin') {
+      const { data: branchContext, error: branchContextError } = await sb
+        .from('admin_branch_context')
+        .select('country_code')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (branchContextError) throw branchContextError;
+      adminCountry =
+        String(branchContext?.country_code || '').toUpperCase() === 'IN' ? 'IN' : 'BD';
+    }
+
     const monitoringSince = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     const [settingsRes, conversationsRes, handoffsRes, messagesRes, monitoringMessagesRes, productOrdersRes, comboOrdersRes, offerOrdersRes] = await Promise.all([
-      sb.from('ai_settings').select('id,is_enabled,provider,model,base_url,temperature,max_tokens,feature_flags,updated_at').eq('id', 1).maybeSingle(),
+      sb.from('ai_settings').select('id,is_enabled,provider,model,base_url,temperature,max_tokens,feature_flags,updated_at,country_code').eq('id', 1).eq('country_code', adminCountry).maybeSingle(),
       sb.from('ai_conversations').select('id,channel,external_user_id,page_id,status,metadata,last_message_at,created_at,updated_at').order('updated_at', { ascending: false }).limit(12),
       sb.from('ai_handoffs').select('id,conversation_id,reason,status,assigned_to,notes,created_at,resolved_at').order('created_at', { ascending: false }).limit(12),
       sb.from('ai_messages').select('id,conversation_id,role,provider,model,tool_name,action_status,requires_confirmation,created_at').order('created_at', { ascending: false }).limit(20),
