@@ -301,6 +301,7 @@ test('exposes growing instructions only for trusted catalog matches', () => {
 
 test('selects the FAQ answer in the customer language when available', () => {
   const faq = {
+    id: 'faq-1',
     question_bn: 'কখন বপন করব?',
     answer_bn: 'বাংলা উত্তর',
     question_en: 'When should I sow?',
