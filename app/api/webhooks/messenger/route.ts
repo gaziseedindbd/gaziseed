@@ -7,6 +7,7 @@ import {
 } from '@/lib/ai/messenger-provider-router';
 import {
   enrichMessengerProductsWithKnowledge,
+  getMessengerProductSelectionQuickReplies,
   isTrustedMessengerProductMatch,
   searchMessengerProducts,
   listMessengerProducts,
@@ -59,7 +60,10 @@ import {
   isProductCatalogRequest,
   isProductListRequest,
 } from '@/lib/ai/messenger-intents';
-import { getMessengerWebsiteKnowledgeAnswer } from '@/lib/ai/messenger-knowledge-tool';
+import {
+  getMessengerWebsiteKnowledgeAnswer,
+  isMessengerProductSpecificKnowledgeQuery,
+} from '@/lib/ai/messenger-knowledge-tool';
 import { getMessengerCustomerRecommendations } from '@/lib/ai/messenger-recommendation-tool';
 import { extractMessengerPhone } from '@/lib/ai/messenger-phone';
 import { subscribeMessengerRestockNotification } from '@/lib/ai/messenger-restock-tool';
@@ -1844,7 +1848,11 @@ async function processMessengerEvent(event: MessengerEvent) {
       countryCode: activeCountry,
       sourceContext: { deterministic_product_comparison: true },
     });
-    await sendMessengerText(senderId, reply);
+    await sendMessengerText(
+      senderId,
+      reply,
+      getMessengerProductSelectionQuickReplies([left, right]),
+    );
     return;
   }
 
@@ -2622,7 +2630,17 @@ async function processMessengerEvent(event: MessengerEvent) {
         last_knowledge_product_id: knowledgeResult.productId || null,
       }, activeCountry);
 
-      await sendMessengerText(senderId, knowledgeResult.reply);
+      const productSelectionOptions = knowledgeResult.productId
+        ? [{
+            title: '🛒 এই পণ্য নিন',
+            payload: `PRODUCT_SELECT:${knowledgeResult.productId}`,
+          }]
+        : undefined;
+      await sendMessengerText(
+        senderId,
+        knowledgeResult.reply,
+        productSelectionOptions,
+      );
       return;
     }
   } catch (error) {
@@ -2701,14 +2719,9 @@ async function processMessengerEvent(event: MessengerEvent) {
       }, activeCountry);
     }
 
-    const productQuickReplies = isProductListRequest(normalizedActionText)
-      ? trustedProducts
-          .slice(0, 13)
-          .map((product) => ({
-            title: messengerProductReplyTitle(product),
-            payload: `PRODUCT_SELECT:${String(product.id)}`,
-          }))
-      : undefined;
+    const selectionOptions =
+      getMessengerProductSelectionQuickReplies(trustedProducts);
+    const productQuickReplies = selectionOptions.length ? selectionOptions : undefined;
 
     await saveMessage(sb, conversation.id, {
       role: 'assistant',
@@ -2926,7 +2939,24 @@ async function processMessengerEvent(event: MessengerEvent) {
     });
 
     try {
-      await sendMessengerText(senderId, finalReply);
+      const aiProductCandidates =
+        finalReply === result.content
+          ? (products as Array<Record<string, unknown>>).filter((product) => {
+              if (!isTrustedMessengerProductMatch(product)) return false;
+              return isMessengerProductSpecificKnowledgeQuery(normalizedActionText, {
+                name_bn: typeof product.name_bn === 'string' ? product.name_bn : null,
+                name_en: typeof product.name_en === 'string' ? product.name_en : null,
+                slug: typeof product.slug === 'string' ? product.slug : null,
+              });
+            })
+          : [];
+      const aiProductSelectionOptions =
+        getMessengerProductSelectionQuickReplies(aiProductCandidates);
+      await sendMessengerText(
+        senderId,
+        finalReply,
+        aiProductSelectionOptions.length ? aiProductSelectionOptions : undefined,
+      );
     } catch (sendError) {
       if (shouldTrackMessengerAIDeliveryStatus(finalReplyActionStatus)) {
         try {

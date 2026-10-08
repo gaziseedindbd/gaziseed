@@ -403,6 +403,34 @@ export async function enrichMessengerProductsWithKnowledge(
   }
 }
 
+export function getMessengerProductSelectionQuickReplies(
+  products: readonly unknown[],
+): Array<{ title: string; payload: string }> {
+  const quickReplies: Array<{ title: string; payload: string }> = [];
+
+  for (const candidate of products) {
+    if (!isTrustedMessengerProductMatch(candidate)) continue;
+
+    const product = candidate as Record<string, unknown>;
+    if (typeof product.id !== 'string') continue;
+
+    const name =
+      (typeof product.name_bn === 'string' && product.name_bn.trim()) ||
+      (typeof product.name_en === 'string' && product.name_en.trim()) ||
+      (typeof product.slug === 'string' && product.slug.trim()) ||
+      '';
+    if (!name) continue;
+
+    quickReplies.push({
+      title: name.length > 20 ? name.slice(0, 19) + '…' : name,
+      payload: `PRODUCT_SELECT:${product.id}`,
+    });
+    if (quickReplies.length >= 13) break;
+  }
+
+  return quickReplies;
+}
+
 export function serializeMessengerProducts(products: MessengerProduct[]) {
   return products.map((product) => {
     const transactionalDataVerified = isTrustedMessengerProductMatch(product);
