@@ -171,9 +171,20 @@ export default function AdminSettingsPage() {
         setTestingAI(false);
         return;
       }
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token || '';
+      if (!accessToken) {
+        setAiTestResult('Failed: admin authentication is required');
+        setTestingAI(false);
+        return;
+      }
+
       const res = await fetch('/api/ai-test-connection', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: JSON.stringify({
           provider: aiForm.provider,
           api_key: apiKey,
