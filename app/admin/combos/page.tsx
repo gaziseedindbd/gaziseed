@@ -12,12 +12,26 @@ export default function AdminComboPacksPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+  const [adminBranch, setAdminBranch] = useState<'BD' | 'IN'>('BD');
 
-  useEffect(() => { loadCombos(); }, []);
+  useEffect(() => {
+    const init = async () => {
+      const { data, error } = await supabase.rpc('current_admin_country');
+      const branch = String(data || '').toUpperCase();
+      if (error || !['BD', 'IN'].includes(branch)) { toast('ব্রাঞ্চ তথ্য যাচাই করা যায়নি', 'error'); setLoading(false); return; }
+      setAdminBranch(branch as 'BD' | 'IN');
+      await loadCombos(branch as 'BD' | 'IN');
+    };
+    init();
+    const handleBranchChange = () => init();
+    window.addEventListener('gazi-branch-change', handleBranchChange);
+    return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
+  }, []);
 
-  const loadCombos = async () => {
-    const { data } = await supabase.from('combo_packs').select('*');
-    setCombos(data || []);
+  const loadCombos = async (branch: 'BD' | 'IN' = adminBranch) => {
+    const { data, error } = await supabase.from('combo_packs').select('*').eq('country_code', branch);
+    if (error) { toast('কম্বো লোড ব্যর্থ: ' + error.message, 'error'); setCombos([]); }
+    else setCombos(data || []);
     setLoading(false);
   };
 
@@ -34,14 +48,15 @@ export default function AdminComboPacksPage() {
       manual_items_list: rawPayload.manual_items_list || [],
       is_active: rawPayload.is_active,
       images: rawPayload.images || [],
+      country_code: adminBranch,
     };
 
     let comboId = editing?.id;
 
     if (editing) {
-      const { error } = await supabase.from('combo_packs').update(payload).eq('id', editing.id);
+      const { error } = await supabase.from('combo_packs').update(payload).eq('id', editing.id).eq('country_code', adminBranch);
       if (error) { toast('আপডেট ব্যর্থ: ' + error.message, 'error'); return; }
-      await supabase.from('combo_items').delete().eq('combo_id', editing.id);
+      await supabase.from('combo_items').delete().eq('combo_id', editing.id).eq('country_code', adminBranch);
     } else {
       const { data, error } = await supabase.from('combo_packs').insert([payload]).select('id').single();
       if (error) { toast('যোগ করা ব্যর্থ: ' + error.message, 'error'); return; }
@@ -55,6 +70,7 @@ export default function AdminComboPacksPage() {
           product_id: it.product_id,
           quantity: Number(it.quantity) || 1,
           unit_type: it.unit_type || 'piece',
+          country_code: adminBranch,
         }))
       );
       if (itemsError) { toast('কম্বো আইটেম সেভ ব্যর্থ: ' + itemsError.message, 'error'); return; }
@@ -68,7 +84,8 @@ export default function AdminComboPacksPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('মুছতে চান?')) return;
-    await supabase.from('combo_packs').delete().eq('id', id);
+    const { error } = await supabase.from('combo_packs').delete().eq('id', id).eq('country_code', adminBranch);
+    if (error) { toast('কম্বো মুছতে ব্যর্থ: ' + error.message, 'error'); return; }
     toast('কম্বো মুছে ফেলা হয়েছে');
     loadCombos();
   };
@@ -118,13 +135,14 @@ export default function AdminComboPacksPage() {
         {combos.length === 0 && <p className="col-span-full p-8 text-center text-muted-foreground">কোন কম্বো প্যাক নেই</p>}
       </div>
 
-      {showForm && <ComboForm combo={editing} onSave={handleSave} onClose={() => { setShowForm(false); setEditing(null); }} />}
+      {showForm && <ComboForm combo={editing} countryCode={adminBranch} onSave={handleSave} onClose={() => { setShowForm(false); setEditing(null); }} />}
     </div>
   );
 }
 
-function ComboForm({ combo, onSave, onClose }: { combo: any; onSave: (data: any) => void; onClose: () => void }) {
+function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countryCode: 'BD' | 'IN'; onSave: (data: any) => void; onClose: () => void }) {
   const [form, setForm] = useState({
+    country_code: combo?.country_code || countryCode,
     title_bn: combo?.title_bn || '',
     slug: combo?.slug || '',
     description_bn: combo?.description_bn || '',
@@ -163,7 +181,7 @@ function ComboForm({ combo, onSave, onClose }: { combo: any; onSave: (data: any)
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data, error } = await supabase.from('products').select('*');
+      const { data, error } = await supabase.from('products').select('*').eq('country_code', countryCode);
       if (!error && data) setAllProducts(data);
     };
     fetchProducts();

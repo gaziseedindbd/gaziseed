@@ -35,28 +35,42 @@ export default function AdminAnimatedLandingPage() {
   const [loading, setLoading] = useState(true);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
+  const [adminBranch, setAdminBranch] = useState<'BD' | 'IN'>('BD');
 
-  const load = async () => {
-    const [{ data: rows }, { data: prods }] = await Promise.all([
-      supabase.from('animated_landing_pages').select('*, products(name_bn,name_en,image,stock)').order('created_at', { ascending: false }),
-      supabase.from('products').select('id,name_bn,name_en,slug,image,stock,regular_price,sale_price').eq('is_active', true).order('name_bn'),
+  const load = async (branch: 'BD' | 'IN' = adminBranch) => {
+    const [{ data: rows, error: rowsError }, { data: prods, error: productsError }] = await Promise.all([
+      supabase.from('animated_landing_pages').select('*, products(name_bn,name_en,image,stock)').eq('country_code', branch).order('created_at', { ascending: false }),
+      supabase.from('products').select('id,name_bn,name_en,slug,image,stock,regular_price,sale_price').eq('country_code', branch).eq('is_active', true).order('name_bn'),
     ]);
+    if (rowsError || productsError) toast('Animated Landing Page data লোড ব্যর্থ', 'error');
     setPages(rows || []);
     setProducts(prods || []);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const init = async () => {
+      const { data, error } = await supabase.rpc('current_admin_country');
+      const branch = String(data || '').toUpperCase();
+      if (error || !['BD', 'IN'].includes(branch)) { toast('ব্রাঞ্চ তথ্য যাচাই করা যায়নি', 'error'); setLoading(false); return; }
+      setAdminBranch(branch as 'BD' | 'IN');
+      await load(branch as 'BD' | 'IN');
+    };
+    init();
+    const handleBranchChange = () => init();
+    window.addEventListener('gazi-branch-change', handleBranchChange);
+    return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
+  }, []);
 
   const toggle = async (page: any) => {
     const next = page.status === 'active' ? 'paused' : 'active';
-    const { error } = await supabase.from('animated_landing_pages').update({ status: next, updated_at: new Date().toISOString() }).eq('id', page.id);
+    const { error } = await supabase.from('animated_landing_pages').update({ status: next, updated_at: new Date().toISOString() }).eq('id', page.id).eq('country_code', adminBranch);
     if (error) toast(error.message, 'error'); else { toast(next === 'active' ? 'Landing Page চালু হয়েছে' : 'Landing Page বন্ধ হয়েছে'); load(); }
   };
 
   const remove = async (page: any) => {
     if (!confirm(`“${page.landing_name || page.slug}” মুছতে চান?`)) return;
-    const { error } = await supabase.from('animated_landing_pages').delete().eq('id', page.id);
+    const { error } = await supabase.from('animated_landing_pages').delete().eq('id', page.id).eq('country_code', adminBranch);
     if (error) toast(error.message, 'error'); else { toast('Animated Landing Page মুছে ফেলা হয়েছে'); load(); }
   };
 
@@ -78,12 +92,12 @@ export default function AdminAnimatedLandingPage() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{pages.map((page) => <div key={page.id} className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm"><div className="relative aspect-[16/9] bg-[#07180f]"><img src={page.hero_image || page.products?.image || ''} alt="" className="h-full w-full object-contain p-4" /> <span className={`absolute right-3 top-3 rounded-full px-3 py-1 text-xs font-bold ${page.status === 'active' ? 'bg-lime-300 text-[#07180f]' : 'bg-white/10 text-white'}`}>{page.status}</span></div><div className="p-5"><h3 className="font-black">{page.landing_name || page.hero_title || page.slug}</h3><p className="mt-1 text-xs text-muted-foreground">Product: {page.products?.name_bn || page.products?.name_en || '—'}</p><div className="mt-3 flex flex-wrap gap-2 text-xs"><span className="rounded-full bg-secondary px-2.5 py-1">Views: {page.views || 0}</span><span className="rounded-full bg-secondary px-2.5 py-1">Orders: {page.conversions || 0}</span></div><div className="mt-4 grid grid-cols-5 gap-2"><Link href={`/animated-landing/${page.slug}`} target="_blank" className="flex items-center justify-center rounded-xl border border-border p-2 hover:bg-secondary" title="Preview"><Eye className="h-4 w-4" /></Link><button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/animated-landing/${page.slug}`); toast('Landing URL কপি হয়েছে'); }} className="flex items-center justify-center rounded-xl border border-border p-2 hover:bg-secondary" title="Copy URL"><Copy className="h-4 w-4" /></button><button onClick={() => openEdit(page)} className="flex items-center justify-center rounded-xl border border-border p-2 hover:bg-secondary" title="Edit"><Pencil className="h-4 w-4" /></button><button onClick={() => toggle(page)} className="flex items-center justify-center rounded-xl border border-border p-2 hover:bg-secondary" title="On/Off"><Power className="h-4 w-4" /></button><button onClick={() => remove(page)} className="flex items-center justify-center rounded-xl border border-border p-2 text-destructive hover:bg-destructive/10" title="Delete"><Trash2 className="h-4 w-4" /></button></div></div></div>)}</div>
       )}
 
-      {builderOpen && <AnimatedBuilder page={editing} products={products} onClose={() => setBuilderOpen(false)} onSaved={() => { setBuilderOpen(false); load(); }} />}
+      {builderOpen && <AnimatedBuilder page={editing} products={products} countryCode={adminBranch} onClose={() => setBuilderOpen(false)} onSaved={() => { setBuilderOpen(false); load(); }} />}
     </div>
   );
 }
 
-function AnimatedBuilder({ page, products, onClose, onSaved }: { page: any | null; products: any[]; onClose: () => void; onSaved: () => void }) {
+function AnimatedBuilder({ page, products, countryCode, onClose, onSaved }: { page: any | null; products: any[]; countryCode: 'BD' | 'IN'; onClose: () => void; onSaved: () => void }) {
   const isEdit = !!page;
   const [productMode, setProductMode] = useState<'existing' | 'new'>('existing');
   const [productId, setProductId] = useState(page?.product_id || '');
@@ -110,7 +124,7 @@ function AnimatedBuilder({ page, products, onClose, onSaved }: { page: any | nul
   useEffect(() => {
     (async () => {
       if (!page) { setPackages([blankPackage(0), blankPackage(1), blankPackage(2)]); return; }
-      const { data } = await supabase.from('animated_landing_packages').select('*').eq('landing_page_id', page.id).order('display_order');
+      const { data } = await supabase.from('animated_landing_packages').select('*').eq('landing_page_id', page.id).eq('country_code', countryCode).order('display_order');
       setPackages((data || []).map((p) => ({ ...p, custom_delivery_charge: p.custom_delivery_charge ?? '' })));
     })();
   }, [page]);
@@ -137,6 +151,7 @@ function AnimatedBuilder({ page, products, onClose, onSaved }: { page: any | nul
           slug,
           is_active: true,
           is_ads_only: false,
+          country_code: countryCode,
         }).select().single();
         if (error) throw error;
         createdProduct = data;
@@ -146,6 +161,7 @@ function AnimatedBuilder({ page, products, onClose, onSaved }: { page: any | nul
 
       const payload = {
         product_id: finalProductId,
+        country_code: countryCode,
         landing_name: form.landing_name.trim(),
         slug: form.slug.trim() || makeSlug(form.landing_name),
         hero_badge: form.hero_badge,
@@ -184,9 +200,9 @@ function AnimatedBuilder({ page, products, onClose, onSaved }: { page: any | nul
 
       let landingId = page?.id;
       if (isEdit) {
-        const { error } = await supabase.from('animated_landing_pages').update(payload).eq('id', page.id);
+        const { error } = await supabase.from('animated_landing_pages').update(payload).eq('id', page.id).eq('country_code', countryCode);
         if (error) throw error;
-        await supabase.from('animated_landing_packages').delete().eq('landing_page_id', page.id);
+        await supabase.from('animated_landing_packages').delete().eq('landing_page_id', page.id).eq('country_code', countryCode);
       } else {
         const { data, error } = await supabase.from('animated_landing_pages').insert(payload).select().single();
         if (error) throw error;
@@ -195,6 +211,7 @@ function AnimatedBuilder({ page, products, onClose, onSaved }: { page: any | nul
 
       const cleaned = packages.filter((p) => Number(p.offer_price) > 0).map((p, index) => ({
         landing_page_id: landingId,
+        country_code: countryCode,
         product_id: finalProductId,
         package_name: p.package_name || `${Number(p.quantity) || index + 1} প্যাকেট`,
         quantity: Math.max(1, Number(p.quantity) || index + 1),

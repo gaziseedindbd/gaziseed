@@ -46,6 +46,9 @@ export default function AdminSupportPage() {
 
   useEffect(() => {
     loadData();
+    const handleBranchChange = () => loadData();
+    window.addEventListener('gazi-branch-change', handleBranchChange);
+    return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
   }, []);
 
   const markAsRead = async (message: ContactMessage) => {

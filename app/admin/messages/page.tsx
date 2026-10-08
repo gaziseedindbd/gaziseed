@@ -10,7 +10,12 @@ export default function AdminMessagesPage() {
   const [loading, setLoading] = useState(true);
   const [replyText, setReplyText] = useState<Record<string, string>>({});
 
-  useEffect(() => { loadMessages(); }, []);
+  useEffect(() => {
+    loadMessages();
+    const handleBranchChange = () => loadMessages();
+    window.addEventListener('gazi-branch-change', handleBranchChange);
+    return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
+  }, []);
 
   const loadMessages = async () => {
     const { data } = await supabase.from('contact_messages').select('*').order('created_at', { ascending: false });

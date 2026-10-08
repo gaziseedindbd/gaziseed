@@ -53,13 +53,21 @@ export default function AdminDashboard() {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString();
     const fallback = { data: [], count: 0 };
+    const { data: branchData, error: branchError } = await supabase.rpc('current_admin_country');
+    const countryCode = String(branchData || '').toUpperCase();
+    if (branchError || !['BD', 'IN'].includes(countryCode)) {
+      setStats({ todayOrders: 0, todayRevenue: 0, pendingOrders: 0, confirmedOrders: 0, totalProducts: 0, totalCustomers: 0, lowStock: 0 });
+      setRecentOrders([]);
+      setLoading(false);
+      return;
+    }
 
     const [todayOrdersRes, pendingRes, confirmedRes, productsRes, lowStockRes, recentRes] = await Promise.all([
       withTimeout(supabase.from('orders').select('grand_total, status').gte('created_at', todayStr), fallback),
       withTimeout(supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'pending'), fallback),
       withTimeout(supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'confirmed'), fallback),
-      withTimeout(supabase.from('products').select('id', { count: 'exact', head: true }), fallback),
-      withTimeout(supabase.from('products').select('name_bn, stock, low_stock_threshold').lt('stock', 10), fallback),
+      withTimeout(supabase.from('products').select('id', { count: 'exact', head: true }).eq('country_code', countryCode), fallback),
+      withTimeout(supabase.from('products').select('name_bn, stock, low_stock_threshold').eq('country_code', countryCode).lt('stock', 10), fallback),
       withTimeout(supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(10), fallback),
     ]) as [QueryResult<any[]>, QueryResult<any[]>, QueryResult<any[]>, QueryResult<any[]>, QueryResult<any[]>, QueryResult<any[]>];
 

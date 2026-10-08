@@ -10,7 +10,12 @@ export default function AdminStockNotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'waiting' | 'notified' | 'cancelled'>('waiting');
 
-  useEffect(() => { loadNotifications(); }, []);
+  useEffect(() => {
+    loadNotifications();
+    const handleBranchChange = () => loadNotifications();
+    window.addEventListener('gazi-branch-change', handleBranchChange);
+    return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
+  }, []);
 
   const loadNotifications = async () => {
     const { data } = await supabase.from('stock_notifications').select('*, products(name_bn, name_en, stock)').order('created_at', { ascending: false });

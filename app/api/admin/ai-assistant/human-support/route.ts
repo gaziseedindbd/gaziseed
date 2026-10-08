@@ -42,7 +42,22 @@ async function requireAdmin(request: Request) {
     return { ok: false as const, status: 403, message: 'Admin access required', user: null };
   }
 
-  return { ok: true as const, status: 200, message: '', user };
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+  if (!anonKey) {
+    return { ok: false as const, status: 500, message: 'Server configuration incomplete', user: null };
+  }
+  const scoped = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    anonKey,
+    { global: { headers: { Authorization: `Bearer ${accessToken}` } }, auth: { persistSession: false, autoRefreshToken: false } },
+  );
+  const { data: countryCode, error: branchError } = await scoped.rpc('current_admin_country');
+  const normalizedCountry = String(countryCode || '').toUpperCase();
+  if (branchError || !['BD', 'IN'].includes(normalizedCountry)) {
+    return { ok: false as const, status: 403, message: 'Unable to verify admin branch', user: null };
+  }
+
+  return { ok: true as const, status: 200, message: '', user, countryCode: normalizedCountry };
 }
 
 export async function GET(request: Request) {
@@ -65,7 +80,7 @@ export async function GET(request: Request) {
       .select(
         'id,conversation_id,reason,status,assigned_to,notes,created_at,resolved_at,country_code',
       )
-      .eq('country_code', 'BD')
+      .eq('country_code', auth.countryCode)
       .eq('reason', 'customer_requested_human_support')
       .order('created_at', { ascending: false })
       .limit(50);
@@ -86,6 +101,7 @@ export async function GET(request: Request) {
                 'id,external_user_id,page_id,status,country_code,metadata,last_message_at,updated_at',
               )
               .in('id', conversationIds)
+              .eq('country_code', auth.countryCode)
           ).data || []
         : [];
 
@@ -166,7 +182,7 @@ export async function GET(request: Request) {
         message:
           error instanceof Error
             ? error.message
-            : 'Bangladesh human-support queue request failed',
+            : 'Selected-branch human-support queue request failed',
       },
       { status: 500 },
     );
@@ -204,16 +220,17 @@ export async function POST(request: Request) {
       .from('ai_handoffs')
       .select('id,conversation_id,reason,status,assigned_to,notes,country_code')
       .eq('id', body.handoff_id)
+      .eq('country_code', auth.countryCode)
       .maybeSingle();
 
     if (handoffError) throw handoffError;
     if (
       !handoff ||
-      handoff.country_code !== 'BD' ||
+      handoff.country_code !== auth.countryCode ||
       handoff.reason !== 'customer_requested_human_support'
     ) {
       return NextResponse.json(
-        { success: false, message: 'Bangladesh human-support handoff not found' },
+        { success: false, message: 'Human-support handoff not found in the selected branch' },
         { status: 404 },
       );
     }
@@ -234,9 +251,10 @@ export async function POST(request: Request) {
         .update({
           status: 'assigned',
           assigned_to: auth.user.id,
-          notes: 'Human support agent claimed this Bangladesh Messenger conversation.',
+          notes: 'Human support agent claimed this Messenger conversation.',
         })
-        .eq('id', handoff.id);
+        .eq('id', handoff.id)
+        .eq('country_code', auth.countryCode);
 
       if (error) throw error;
 
@@ -255,7 +273,8 @@ export async function POST(request: Request) {
           metadata,
           updated_at: now,
         })
-        .eq('id', handoff.conversation_id);
+        .eq('id', handoff.conversation_id)
+        .eq('country_code', auth.countryCode);
 
       if (conversationError) throw conversationError;
 

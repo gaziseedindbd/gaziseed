@@ -28,25 +28,33 @@ export default function AdsLandingEditorPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+    const handleBranchChange = () => loadData();
+    window.addEventListener('gazi-branch-change', handleBranchChange);
+    return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
+  }, [loadData]);
 
   const loadData = useCallback(async () => {
-    const { data: lp } = await supabase.from('landing_pages').select('*').eq('id', id).maybeSingle();
+    const { data: branchData, error: branchError } = await supabase.rpc('current_admin_country');
+    const countryCode = String(branchData || '').toUpperCase();
+    if (branchError || !['BD', 'IN'].includes(countryCode)) { toast('ব্রাঞ্চ যাচাই ব্যর্থ', 'error'); setLoading(false); return; }
+    const { data: lp } = await supabase.from('landing_pages').select('*').eq('id', id).eq('country_code', countryCode).maybeSingle();
     if (!lp) { window.location.href = '/admin/ads-landing'; return; }
     setLanding(lp);
-    const { data: prod } = await supabase.from('products').select('*').eq('id', lp.product_id).maybeSingle();
+    const { data: prod } = await supabase.from('products').select('*').eq('id', lp.product_id).eq('country_code', countryCode).maybeSingle();
     setProduct(prod);
-    const { data: b } = await supabase.from('bundle_offers').select('*').eq('product_id', lp.product_id).order('display_order');
+    const { data: b } = await supabase.from('bundle_offers').select('*').eq('product_id', lp.product_id).eq('country_code', countryCode).order('display_order');
     setBundles(b || []);
-    const { data: qo } = await supabase.from('quantity_offers').select('*').eq('landing_page_id', id).order('display_order');
+    const { data: qo } = await supabase.from('quantity_offers').select('*').eq('landing_page_id', id).eq('country_code', countryCode).order('display_order');
     setQuantityOffers(qo || []);
-    const { data: r } = await supabase.from('landing_reviews').select('*').eq('landing_page_id', id).order('display_order');
+    const { data: r } = await supabase.from('landing_reviews').select('*').eq('landing_page_id', id).eq('country_code', countryCode).order('display_order');
     setReviews(r || []);
-    const { data: f } = await supabase.from('landing_faqs').select('*').eq('landing_page_id', id).order('display_order');
+    const { data: f } = await supabase.from('landing_faqs').select('*').eq('landing_page_id', id).eq('country_code', countryCode).order('display_order');
     setFaqs(f || []);
 
     const { count: views } = await supabase.from('landing_page_views').select('id', { count: 'exact', head: true }).eq('landing_page_id', id);
-    const { data: orders } = await supabase.from('orders').select('grand_total, status').eq('utm_campaign', lp.landing_slug).neq('status', 'cancelled');
+    const { data: orders } = await supabase.from('orders').select('grand_total, status').eq('utm_campaign', lp.landing_slug).eq('country_code', countryCode).neq('status', 'cancelled');
     setAnalytics({
       views: views || 0,
       orders: orders?.length || 0,
@@ -59,6 +67,7 @@ export default function AdsLandingEditorPage() {
   const saveLanding = async () => {
     setSaving(true);
     const { error } = await supabase.from('landing_pages').update({
+      country_code: landing.country_code,
       landing_name: landing.landing_name, landing_slug: landing.landing_slug, title: landing.title,
       subtitle: landing.subtitle, status: landing.status, is_enabled: landing.status === 'active',
       compare_price: landing.compare_price ? Number(landing.compare_price) : null,
@@ -73,7 +82,7 @@ export default function AdsLandingEditorPage() {
       landing_type: landing.landing_type || 'standard',
       combo_product_ids: landing.combo_product_ids || [],
       combo_quantities: landing.combo_quantities || [],
-    }).eq('id', landing.id);
+    }).eq('id', landing.id).eq('country_code', landing.country_code);
     setSaving(false);
     if (error) { toast('সেভ ব্যর্থ: ' + error.message, 'error'); return; }
     toast('Landing Page সেভ হয়েছে');
@@ -86,7 +95,7 @@ export default function AdsLandingEditorPage() {
       short_description: product.short_description, description: product.description,
       seed_type: product.seed_type, variety: product.variety, origin: product.origin,
       season: product.season, packet_weight: product.packet_weight, is_active: product.is_active,
-    }).eq('id', product.id);
+    }).eq('id', product.id).eq('country_code', landing.country_code);
     toast('প্রোডাক্ট সেভ হয়েছে');
   };
 
@@ -98,16 +107,17 @@ export default function AdsLandingEditorPage() {
     for (const b of bundles) {
       const payload = { ...b, bundle_price: Number(b.bundle_price), compare_price: b.compare_price ? Number(b.compare_price) : null, quantity: Number(b.quantity), display_order: Number(b.display_order) };
       if (b.id && !b._new) {
-        await supabase.from('bundle_offers').update(payload).eq('id', b.id);
+        await supabase.from('bundle_offers').update(payload).eq('id', b.id).eq('country_code', landing.country_code);
       } else {
         const { id, _new, ...rest } = payload;
-        await supabase.from('bundle_offers').insert({ ...rest, product_id: product.id });
+        await supabase.from('bundle_offers').insert({ ...rest, product_id: product.id, country_code: landing.country_code });
       }
     }
     // Save quantity offers
     for (const qo of quantityOffers) {
       const payload = {
         ...qo,
+        country_code: landing.country_code,
         quantity: Number(qo.quantity),
         offer_price: Number(qo.offer_price),
         compare_price: qo.compare_price ? Number(qo.compare_price) : null,
@@ -115,27 +125,27 @@ export default function AdsLandingEditorPage() {
         display_order: Number(qo.display_order),
       };
       if (qo.id && !qo._new) {
-        await supabase.from('quantity_offers').update(payload).eq('id', qo.id);
+        await supabase.from('quantity_offers').update(payload).eq('id', qo.id).eq('country_code', landing.country_code);
       } else {
         const { id, _new, ...rest } = payload;
-        await supabase.from('quantity_offers').insert({ ...rest, landing_page_id: landing.id, product_id: product.id });
+        await supabase.from('quantity_offers').insert({ ...rest, landing_page_id: landing.id, product_id: product.id, country_code: landing.country_code });
       }
     }
     // Save reviews
     for (const r of reviews) {
-      const payload = { ...r, rating: Number(r.rating), display_order: Number(r.display_order) };
+      const payload = { ...r, country_code: landing.country_code, rating: Number(r.rating), display_order: Number(r.display_order) };
       if (r.id && !r._new) {
-        await supabase.from('landing_reviews').update(payload).eq('id', r.id);
+        await supabase.from('landing_reviews').update(payload).eq('id', r.id).eq('country_code', landing.country_code);
       } else {
         const { id, _new, ...rest } = payload;
-        await supabase.from('landing_reviews').insert({ ...rest, landing_page_id: landing.id });
+        await supabase.from('landing_reviews').insert({ ...rest, landing_page_id: landing.id, country_code: landing.country_code });
       }
     }
     // Save FAQs
     for (const f of faqs) {
-      const payload = { ...f, display_order: Number(f.display_order) };
+      const payload = { ...f, country_code: landing.country_code, display_order: Number(f.display_order) };
       if (f.id && !f._new) {
-        await supabase.from('landing_faqs').update(payload).eq('id', f.id);
+        await supabase.from('landing_faqs').update(payload).eq('id', f.id).eq('country_code', landing.country_code);
       } else {
         const { id, _new, ...rest } = payload;
         await supabase.from('landing_faqs').insert({ ...rest, landing_page_id: landing.id });
@@ -264,7 +274,7 @@ export default function AdsLandingEditorPage() {
             <button onClick={() => setBundles([...bundles, { _new: true, id: `new-${Date.now()}`, bundle_name: '', quantity: 1, bundle_price: 0, compare_price: '', savings: '', badge: '', free_delivery: false, is_default_selected: false, display_order: bundles.length, is_active: true }])} className="flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"><Plus className="h-4 w-4" /> নতুন Bundle</button>
           </div>
           {bundles.map((b, idx) => (
-            <BundleCard key={b.id || idx} bundle={b} onChange={(updated) => setBundles(bundles.map((item, i) => i === idx ? updated : item))} onDelete={() => { if (b.id && !b._new) supabase.from('bundle_offers').delete().eq('id', b.id); setBundles(bundles.filter((_, i) => i !== idx)); }} onDuplicate={() => setBundles([...bundles.slice(0, idx + 1), { ...b, _new: true, id: `new-${Date.now()}`, bundle_name: b.bundle_name + ' (Copy)' }, ...bundles.slice(idx + 1)])} />
+            <BundleCard key={b.id || idx} bundle={b} onChange={(updated) => setBundles(bundles.map((item, i) => i === idx ? updated : item))} onDelete={() => { if (b.id && !b._new) supabase.from('bundle_offers').delete().eq('id', b.id).eq('country_code', landing.country_code); setBundles(bundles.filter((_, i) => i !== idx)); }} onDuplicate={() => setBundles([...bundles.slice(0, idx + 1), { ...b, _new: true, id: `new-${Date.now()}`, bundle_name: b.bundle_name + ' (Copy)' }, ...bundles.slice(idx + 1)])} />
           ))}
           {bundles.length === 0 && <p className="text-sm text-muted-foreground">কোন বান্ডল নেই। &quot;+ নতুন Bundle&quot; বাটনে ক্লিক করে যোগ করুন।</p>}
           <button onClick={saveAll} disabled={saving} className="rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">সেভ করুন</button>
@@ -300,7 +310,7 @@ export default function AdsLandingEditorPage() {
                         <td className="p-2 text-green-600">{savings > 0 ? formatPrice(savings) : '—'}</td>
                         <td className="p-2">{qo.badge || '—'}</td>
                         <td className="p-2">{qo.free_delivery ? 'হ্যাঁ' : 'না'}</td>
-                        <td className="p-2"><div className="flex gap-1"><button onClick={() => { if (qo.id && !qo._new) supabase.from('quantity_offers').delete().eq('id', qo.id); setQuantityOffers(quantityOffers.filter((_, i) => i !== idx)); }} className="rounded p-1 text-destructive hover:bg-destructive/10"><Trash2 className="h-3.5 w-3.5" /></button></div></td>
+                        <td className="p-2"><div className="flex gap-1"><button onClick={() => { if (qo.id && !qo._new) supabase.from('quantity_offers').delete().eq('id', qo.id).eq('country_code', landing.country_code); setQuantityOffers(quantityOffers.filter((_, i) => i !== idx)); }} className="rounded p-1 text-destructive hover:bg-destructive/10"><Trash2 className="h-3.5 w-3.5" /></button></div></td>
                       </tr>
                     );
                   })}
@@ -504,7 +514,7 @@ function ComboProductEditor({ landing, setLanding }: { landing: any; setLanding:
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    supabase.from('products').select('id, name_bn, name_en, slug, image, stock, regular_price').eq('is_active', true).eq('is_ads_only', false).order('name_bn').then(({ data }) => setAllProducts(data || []));
+    supabase.from('products').select('id, name_bn, name_en, slug, image, stock, regular_price').eq('country_code', landing.country_code).eq('is_active', true).eq('is_ads_only', false).order('name_bn').then(({ data }) => setAllProducts(data || []));
   }, []);
 
   const comboIds: string[] = landing.combo_product_ids || [];
