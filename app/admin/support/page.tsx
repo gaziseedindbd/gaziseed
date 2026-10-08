@@ -46,7 +46,7 @@ export default function AdminSupportPage() {
 
   useEffect(() => {
     loadData();
-    const handleBranchChange = () => loadData();
+    const handleBranchChange = () => { setSelectedMessage(null); loadData(); };
     window.addEventListener('gazi-branch-change', handleBranchChange);
     return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
   }, []);

@@ -57,7 +57,7 @@ export default function AdminAnimatedLandingPage() {
       await load(branch as 'BD' | 'IN');
     };
     init();
-    const handleBranchChange = () => init();
+    const handleBranchChange = () => { setBuilderOpen(false); setEditing(null); init(); };
     window.addEventListener('gazi-branch-change', handleBranchChange);
     return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
   }, []);
@@ -127,7 +127,7 @@ function AnimatedBuilder({ page, products, countryCode, onClose, onSaved }: { pa
       const { data } = await supabase.from('animated_landing_packages').select('*').eq('landing_page_id', page.id).eq('country_code', countryCode).order('display_order');
       setPackages((data || []).map((p) => ({ ...p, custom_delivery_charge: p.custom_delivery_charge ?? '' })));
     })();
-  }, [page]);
+  }, [page, countryCode]);
 
   const chosenProduct = products.find((p) => p.id === productId);
 

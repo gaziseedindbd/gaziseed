@@ -12,7 +12,7 @@ export default function AdminMessagesPage() {
 
   useEffect(() => {
     loadMessages();
-    const handleBranchChange = () => loadMessages();
+    const handleBranchChange = () => { setMessages([]); loadMessages(); };
     window.addEventListener('gazi-branch-change', handleBranchChange);
     return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
   }, []);

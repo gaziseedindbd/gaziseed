@@ -23,7 +23,7 @@ export default function AdminComboPacksPage() {
       await loadCombos(branch as 'BD' | 'IN');
     };
     init();
-    const handleBranchChange = () => init();
+    const handleBranchChange = () => { setShowForm(false); setEditing(null); init(); };
     window.addEventListener('gazi-branch-change', handleBranchChange);
     return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
   }, []);
@@ -197,7 +197,7 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
         })));
       });
     }
-  }, [combo]);
+  }, [combo, countryCode]);
 
   useEffect(() => {
     const total = items.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);

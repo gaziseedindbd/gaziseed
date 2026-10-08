@@ -257,7 +257,7 @@ Deno.serve(async (req: Request) => {
       }
 
       case "update_admin": {
-        const { admin_id, is_active, country_code } = body;
+        const { admin_id, is_active, country_code, name, phone } = body;
         const countryCode = country_code === undefined ? undefined : String(country_code).toUpperCase();
         if (countryCode !== undefined && !["BD", "IN"].includes(countryCode)) {
           return new Response(JSON.stringify({ error: "A valid admin branch (BD or IN) is required" }), {
@@ -267,7 +267,7 @@ Deno.serve(async (req: Request) => {
 
         const { data: targetAdmin } = await adminClient
           .from("admin_users")
-          .select("role, email")
+          .select("role, email, user_id")
           .eq("id", admin_id)
           .maybeSingle();
 
@@ -286,7 +286,7 @@ Deno.serve(async (req: Request) => {
         const updateData: any = {};
         if (typeof is_active === "boolean") updateData.is_active = is_active;
         if (countryCode !== undefined) updateData.country_code = countryCode;
-        if (Object.keys(updateData).length === 0) {
+        if (Object.keys(updateData).length === 0 && !name && phone === undefined) {
           return new Response(JSON.stringify({ error: "No valid admin fields provided" }), {
             status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
@@ -303,12 +303,33 @@ Deno.serve(async (req: Request) => {
           });
         }
 
+        if (name || phone !== undefined) {
+          const { data: targetUser, error: targetUserError } = await adminClient.auth.admin.getUserById(targetAdmin.user_id);
+          if (targetUserError || !targetUser?.user) {
+            return new Response(JSON.stringify({ error: "Failed to read admin profile" }), {
+              status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          const userMetadata = { ...(targetUser.user.user_metadata || {}) };
+          if (name) userMetadata.name = name;
+          if (phone !== undefined) userMetadata.phone = phone;
+          const { error: profileError } = await adminClient.auth.admin.updateUserById(targetAdmin.user_id, {
+            user_metadata: userMetadata,
+          });
+          if (profileError) {
+            return new Response(JSON.stringify({ error: "Failed to update admin profile" }), {
+              status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        }
+
         await adminClient.from("admin_audit_log").insert({
           admin_user_id: adminUserId,
           admin_email: adminEmail,
+          target_user_id: targetAdmin.user_id,
           target_email: targetAdmin.email,
-          action: is_active === false ? "admin_disabled" : "admin_enabled",
-          details: { ...updateData, country_code: countryCode ?? undefined },
+          action: is_active === false ? "admin_disabled" : is_active === true ? "admin_enabled" : "admin_updated",
+          details: { ...updateData, country_code: countryCode ?? undefined, name, phone },
         });
 
         responseData = { updated: true };

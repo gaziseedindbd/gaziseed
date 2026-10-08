@@ -25,7 +25,7 @@ export default function AdminAdsLandingPage() {
       await loadLandings(branch as 'BD' | 'IN');
     };
     init();
-    const handleBranchChange = () => init();
+    const handleBranchChange = () => { setShowCreate(false); init(); };
     window.addEventListener('gazi-branch-change', handleBranchChange);
     return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
   }, []);
@@ -194,7 +194,7 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
     if (mode === 'existing') {
       supabase.from('products').select('*').eq('country_code', countryCode).eq('is_active', true).eq('is_ads_only', false).order('name_bn').then(({ data }) => setProducts(data || []));
     }
-  }, [mode]);
+  }, [mode, countryCode]);
 
   const handleCreate = async () => {
     setLoading(true);

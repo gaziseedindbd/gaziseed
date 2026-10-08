@@ -28,7 +28,7 @@ export default function AdminCategoriesPage() {
       await loadCategories(branch);
     };
     init();
-    const handleBranchChange = () => init();
+    const handleBranchChange = () => { setShowForm(false); setEditing(null); init(); };
     window.addEventListener('gazi-branch-change', handleBranchChange);
     return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
   }, []);

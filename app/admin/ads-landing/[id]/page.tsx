@@ -148,7 +148,7 @@ export default function AdsLandingEditorPage() {
         await supabase.from('landing_faqs').update(payload).eq('id', f.id).eq('country_code', landing.country_code);
       } else {
         const { id, _new, ...rest } = payload;
-        await supabase.from('landing_faqs').insert({ ...rest, landing_page_id: landing.id });
+        await supabase.from('landing_faqs').insert({ ...rest, landing_page_id: landing.id, country_code: landing.country_code });
       }
     }
     setSaving(false);
