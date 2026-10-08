@@ -69,8 +69,17 @@ import {
 } from '../lib/ai/messenger-phone';
 import { shouldIncludeMessengerAIHistoryMessage } from '../lib/ai/messenger-history';
 import { detectExplicitMessengerCountry } from '../lib/ai/messenger-country';
+import {
+  getMessengerProviderFailureHandoffReply,
+} from '../lib/ai/messenger-language';
 
 
+
+test('localizes all-provider-failure handoff replies without touching normal AI routing', () => {
+  assert.match(getMessengerProviderFailureHandoffReply('English'), /automated assistance/i);
+  assert.match(getMessengerProviderFailureHandoffReply('Hindi'), /स्वचालित सहायता/);
+  assert.match(getMessengerProviderFailureHandoffReply('Bengali'), /স্বয়ংক্রিয় সহায়তা/);
+});
 
 test('detects Messenger country only from explicit country intent', () => {
   assert.equal(detectExplicitMessengerCountry('India'), 'IN');

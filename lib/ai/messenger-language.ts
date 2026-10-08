@@ -43,3 +43,17 @@ export function detectMessengerReplyLanguage(text: string): MessengerReplyLangua
 
   return 'English';
 }
+
+export function getMessengerProviderFailureHandoffReply(
+  language: MessengerReplyLanguage,
+): string {
+  if (language === 'English') {
+    return 'Sorry, automated assistance is temporarily unavailable. Your conversation has been sent to a human representative.';
+  }
+
+  if (language === 'Hindi') {
+    return 'माफ़ कीजिए, इस समय स्वचालित सहायता उपलब्ध नहीं है। आपकी बातचीत एक मानव प्रतिनिधि को भेज दी गई है।';
+  }
+
+  return 'দুঃখিত, এই মুহূর্তে স্বয়ংক্রিয় সহায়তা পাওয়া যাচ্ছে না। আপনার কথোপকথন একজন মানব প্রতিনিধি’র কাছে পাঠানো হয়েছে।';
+}
