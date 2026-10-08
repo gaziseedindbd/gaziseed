@@ -219,8 +219,6 @@ export async function processMessengerOrderConfirmationNotifications(
       continue;
     }
 
-    const phone = String(order.customer_phone || notification.phone || '').trim();
-
     let recipient = notification.external_user_id && notification.page_id
       ? { page_id: notification.page_id, external_user_id: notification.external_user_id }
       : null;
