@@ -1,15 +1,30 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLang } from './language-provider';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, ShoppingBag, Truck, LayoutGrid, PhoneCall, BadgeDollarSign } from 'lucide-react';
+import { getVisitorCountry } from '@/lib/supabase/client';
 
-export function BottomNav() {
+export function BottomNav({ initialCountry = 'BD' }: { initialCountry?: 'BD' | 'IN' }) {
   const pathname = usePathname();
   const { t } = useLang();
+  const [country, setCountry] = useState<'BD' | 'IN'>(initialCountry);
   const isProductPage = pathname.startsWith('/product/');
+
+  useEffect(() => {
+    const syncCountry = () => setCountry(getVisitorCountry());
+    syncCountry();
+    window.addEventListener('gazi-country-changed', syncCountry);
+    window.addEventListener('storage', syncCountry);
+    return () => {
+      window.removeEventListener('gazi-country-changed', syncCountry);
+      window.removeEventListener('storage', syncCountry);
+    };
+  }, []);
+
+  if (isProductPage && country === 'IN') return null;
 
   const navItems = [
     { label: t('হোম', 'Home', 'होम'), href: '/', icon: Home },
