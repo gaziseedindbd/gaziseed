@@ -14,6 +14,8 @@ import {
 } from '../lib/ai/messenger-delivery-state';
 import { verifyMessengerWebhookSignature } from '../lib/ai/messenger-webhook-security';
 import {
+  classifyMessengerProductMatch,
+  normalizeMessengerProductQuery,
   serializeMessengerProducts,
   type MessengerProduct,
 } from '../lib/ai/messenger-product-tool';
@@ -342,5 +344,26 @@ test('routes Hindi product-growing questions into the database knowledge path', 
       slug: 'test-seed',
     }),
     true,
+  );
+});
+test('normalizes Bengali price and stock questions into precise product matches', () => {
+  const query = normalizeMessengerProductQuery('গোলাপ ফুলের বীজের দাম ও স্টক কত?');
+
+  assert.equal(query, 'গোলাপ ফুলের বীজ');
+  assert.equal(
+    classifyMessengerProductMatch(query, {
+      name_bn: 'লাল গোলাপ ফুলের বীজ',
+      name_en: 'Red Rose Flower Seeds',
+      slug: 'lal-golap-fuler-bij',
+    }),
+    'strong',
+  );
+  assert.equal(
+    classifyMessengerProductMatch(query, {
+      name_bn: 'মিক্স ডালিয়া ফুলের বীজ',
+      name_en: 'Mixed Dahlia Flower Seeds',
+      slug: 'mix-dalia-fuler-bij',
+    }),
+    'similar',
   );
 });
