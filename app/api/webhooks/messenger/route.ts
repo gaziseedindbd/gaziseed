@@ -60,7 +60,10 @@ import {
   isProductCatalogRequest,
   isProductListRequest,
 } from '@/lib/ai/messenger-intents';
-import { getMessengerWebsiteKnowledgeAnswer } from '@/lib/ai/messenger-knowledge-tool';
+import {
+  getMessengerWebsiteKnowledgeAnswer,
+  isMessengerProductSpecificKnowledgeQuery,
+} from '@/lib/ai/messenger-knowledge-tool';
 import { getMessengerCustomerRecommendations } from '@/lib/ai/messenger-recommendation-tool';
 import { extractMessengerPhone } from '@/lib/ai/messenger-phone';
 import { subscribeMessengerRestockNotification } from '@/lib/ai/messenger-restock-tool';
@@ -2936,7 +2939,24 @@ async function processMessengerEvent(event: MessengerEvent) {
     });
 
     try {
-      await sendMessengerText(senderId, finalReply);
+      const aiProductCandidates =
+        finalReply === result.content
+          ? (products as Array<Record<string, unknown>>).filter((product) => {
+              if (!isTrustedMessengerProductMatch(product)) return false;
+              return isMessengerProductSpecificKnowledgeQuery(normalizedActionText, {
+                name_bn: typeof product.name_bn === 'string' ? product.name_bn : null,
+                name_en: typeof product.name_en === 'string' ? product.name_en : null,
+                slug: typeof product.slug === 'string' ? product.slug : null,
+              });
+            })
+          : [];
+      const aiProductSelectionOptions =
+        getMessengerProductSelectionQuickReplies(aiProductCandidates);
+      await sendMessengerText(
+        senderId,
+        finalReply,
+        aiProductSelectionOptions.length ? aiProductSelectionOptions : undefined,
+      );
     } catch (sendError) {
       if (shouldTrackMessengerAIDeliveryStatus(finalReplyActionStatus)) {
         try {
