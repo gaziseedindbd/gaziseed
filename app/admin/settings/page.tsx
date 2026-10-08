@@ -377,7 +377,7 @@ export default function AdminSettingsPage() {
           <div>
             <label className="mb-1 block text-sm font-medium">API Key</label>
             <input type="password" value={aiForm.api_key || ''} onChange={(e) => { setAiForm({ ...aiForm, api_key: e.target.value }); setAiKeyEdited(true); }} placeholder="Enter API key" className="input-bangla" />
-            <p className="mt-1 text-xs text-muted-foreground">Stored securely server-side. Never exposed to frontend.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Generic AI module key only. Messenger AI provider keys are managed separately as server environment secrets.</p>
           </div>
 
           <div>
@@ -411,7 +411,7 @@ export default function AdminSettingsPage() {
           )}
 
           <div className="border-t border-border pt-4">
-            <h4 className="mb-3 text-sm font-semibold text-muted-foreground">Future AI Module Flags (all OFF by default)</h4>
+            <h4 className="mb-3 text-sm font-semibold text-muted-foreground">Generic AI Module Flags</h4>
             <div className="space-y-2">
               {AI_FEATURE_FLAG_LIST.map((f) => (
                 <label key={f.key} className="flex items-center justify-between rounded-lg bg-secondary/20 p-3">
@@ -420,7 +420,7 @@ export default function AdminSettingsPage() {
                 </label>
               ))}
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">These flags prepare the architecture for future AI features. No AI features are implemented yet.</p>
+            <p className="mt-3 text-xs text-muted-foreground">These flags control the generic AI module only. Facebook Messenger AI is a separate live runtime with its own server-side provider configuration.</p>
           </div>
         </div>
       )}
