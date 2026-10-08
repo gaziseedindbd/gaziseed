@@ -9,6 +9,9 @@ import { supabase } from '@/lib/supabase/client';
 import { Check, Truck, ShieldCheck, Star, ChevronDown, ChevronLeft, ChevronRight, Loader2, Zap, Package, Sparkles, Clock, ArrowDownCircle, CheckCircle2, Shield, HeartHandshake } from 'lucide-react';
 import { AddressSelector, formatAddressToString, type AddressValue } from '@/components/site/address-selector';
 import { PromotionalPopup } from '@/components/site/promotional-popup';
+import { useLang } from '@/components/site/language-provider';
+import { IndiaPaymentMethodSelector, type IndiaPaymentMethod } from '@/components/site/india-payment-method-selector';
+import { startIndiaCampaignPayment } from '@/lib/india-campaign-payment';
 
 interface FaqItem {
   question?: string;
@@ -18,6 +21,7 @@ interface FaqItem {
 }
 
 export default function OfferLandingPage() {
+  const { lang } = useLang();
   const params = useParams();
   const searchParams = useSearchParams();
   const slug = (params?.slug as string) || '';
@@ -39,6 +43,7 @@ export default function OfferLandingPage() {
   const [deliveryQuoteLoading, setDeliveryQuoteLoading] = useState(false);
   const [deliveryQuoteError, setDeliveryQuoteError] = useState('');
   const [activeImage, setActiveImage] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<IndiaPaymentMethod>('online');
   const [form, setForm] = useState({ name: '', phone: '', instructions: '' });
   const [addrValue, setAddrValue] = useState<AddressValue>({ division: '', district: '', thana: '', detail: '', postalCode: '' });
 
@@ -54,6 +59,10 @@ export default function OfferLandingPage() {
       : (selectedBundle?.bundle_price || landing?.offer_price || product?.sale_price || product?.regular_price || 0)
   );
   const isFreeDelivery = !!(selectedTier?.free_delivery || selectedTier?.is_free_delivery || selectedBundle?.free_delivery);
+  const indiaDelivery = isFreeDelivery ? 0 : Number(deliveryCharge || 0);
+  const indiaGrandTotal = offerPrice + indiaDelivery;
+  const indiaCodAdvance = indiaDelivery > 0 ? indiaDelivery : 120;
+  const indiaCodDue = Math.max(0, indiaGrandTotal - indiaCodAdvance);
 
   const utm = useMemo(() => ({
     source: searchParams.get('utm_source') || '',
@@ -238,6 +247,34 @@ export default function OfferLandingPage() {
     setSubmitting(true);
     try {
       const fullAddress = formatAddressToString(addrValue);
+      if (countryCode === 'IN') {
+        if (paymentMethod === 'cod' && indiaCodAdvance > indiaGrandTotal) {
+          setError('এই অর্ডারের মোটের চেয়ে COD অগ্রিম বেশি হচ্ছে। Online payment বেছে নিন।');
+          return;
+        }
+        await startIndiaCampaignPayment({
+          flow: 'ads',
+          context: {
+            landing_page_id: landing.id,
+            product_id: product.id,
+            quantity: selectedTier?.quantity || selectedBundle?.quantity || 1,
+            bundle_id: selectedBundle?.id || null,
+            utm_source: utm.source,
+            utm_medium: utm.medium,
+            utm_campaign: utm.campaign || slug,
+            utm_content: utm.content,
+            utm_term: utm.term,
+            fbclid: utm.fbclid,
+            gclid: utm.gclid,
+          },
+          method: paymentMethod,
+          customerName: form.name.trim(),
+          customerPhone: phone,
+          deliveryAddress: fullAddress,
+          instructions: form.instructions.trim(),
+        });
+        return;
+      }
       const itemsPayload = [{
         product_id: product.id,
         landing_id: landing.id,
@@ -593,6 +630,15 @@ export default function OfferLandingPage() {
                   />
                 </div>
 
+                {countryCode === 'IN' && <IndiaPaymentMethodSelector
+                  value={paymentMethod}
+                  onChange={setPaymentMethod}
+                  advanceAmount={indiaCodAdvance}
+                  dueAmount={indiaCodDue}
+                  codAvailable={!deliveryQuoteLoading && !deliveryQuoteError && (isFreeDelivery || deliveryCharge !== null) && indiaCodAdvance <= indiaGrandTotal}
+                  language={lang === 'hi' ? 'hi' : lang === 'en' ? 'en' : 'bn'}
+                />}
+
                 {/* বিলিং সামারি */}
                 <div className="rounded-2xl bg-gray-50 border border-gray-200/70 p-4 text-xs sm:text-sm space-y-2">
                   <div className="flex justify-between text-gray-600">
@@ -627,6 +673,7 @@ export default function OfferLandingPage() {
                     <span>সর্বমোট প্রদেয় বিল</span>
                     <span className="text-emerald-800 text-lg sm:text-xl font-extrabold">{grandTotalLabel}</span>
                   </div>
+                  {countryCode === 'IN' && paymentMethod === 'cod' && <div className="flex justify-between border-t border-gray-200 pt-2 font-bold text-emerald-800"><span>এখন অগ্রিম / ডেলিভারিতে বাকি</span><span>{formatPrice(indiaCodAdvance)} / {formatPrice(indiaCodDue)}</span></div>}
                 </div>
 
                 {error && (
@@ -643,7 +690,7 @@ export default function OfferLandingPage() {
                   {submitting ? (
                     <><Loader2 className="h-5 w-5 animate-spin" /> অর্ডার প্রসেস হচ্ছে...</>
                   ) : (
-                    <><Zap className="h-5 w-5 fill-current text-amber-300" /> {landing?.cta_text || 'অর্ডার কনফার্ম করুন'} — {grandTotalLabel}</>
+                    <><Zap className="h-5 w-5 fill-current text-amber-300" /> {countryCode === 'IN' ? (paymentMethod === 'cod' ? 'COD অগ্রিম পরিশোধ' : 'অনলাইনে পেমেন্ট করুন') : (landing?.cta_text || 'অর্ডার কনফার্ম করুন')} — {countryCode === 'IN' && paymentMethod === 'cod' ? formatPrice(indiaCodAdvance) : grandTotalLabel}</>
                   )}
                 </button>
 

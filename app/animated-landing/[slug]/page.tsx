@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLang } from '@/components/site/language-provider';
 import { useParams, useSearchParams } from 'next/navigation';
 import { AddressSelector, formatAddressToString, type AddressValue } from '@/components/site/address-selector';
-import { supabase } from '@/lib/supabase/client';
+import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/data';
+import { IndiaPaymentMethodSelector, type IndiaPaymentMethod } from '@/components/site/india-payment-method-selector';
+import { startIndiaCampaignPayment } from '@/lib/india-campaign-payment';
 import {
   ArrowDown,
   ArrowRight,
@@ -88,10 +90,21 @@ export default function AnimatedLandingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successNumber, setSuccessNumber] = useState('');
+  const [country, setCountry] = useState<'IN' | 'BD'>('BD');
+  const [paymentMethod, setPaymentMethod] = useState<IndiaPaymentMethod>('online');
+  const [indiaDeliveryQuote, setIndiaDeliveryQuote] = useState<number | null>(null);
+  const [indiaDeliveryQuoteLoading, setIndiaDeliveryQuoteLoading] = useState(false);
   const [activeSection, setActiveSection] = useState('story');
   const [form, setForm] = useState({ name: '', phone: '', instructions: '' });
   const [address, setAddress] = useState<AddressValue>({ division: '', district: '', thana: '', detail: '', postalCode: '' });
   const { lang, t } = useLang();
+
+  useEffect(() => {
+    const updateCountry = () => setCountry(getVisitorCountry());
+    updateCountry();
+    window.addEventListener('gazi-country-changed', updateCountry);
+    return () => window.removeEventListener('gazi-country-changed', updateCountry);
+  }, []);
 
   const utm = useMemo(() => ({
     source: searchParams.get('utm_source') || '',
@@ -111,6 +124,7 @@ export default function AnimatedLandingPage() {
         .select('*')
         .eq('slug', slug)
         .eq('status', 'active')
+        .eq('country_code', getVisitorCountry())
         .maybeSingle();
 
       if (!landing) {
@@ -119,11 +133,12 @@ export default function AnimatedLandingPage() {
       }
 
       const [{ data: prod }, { data: pkg }] = await Promise.all([
-        supabase.from('products').select('*').eq('id', landing.product_id).eq('is_active', true).maybeSingle(),
+        supabase.from('products').select('*').eq('id', landing.product_id).eq('is_active', true).eq('country_code', getVisitorCountry()).maybeSingle(),
         supabase.from('animated_landing_packages')
           .select('*')
           .eq('landing_page_id', landing.id)
           .eq('is_active', true)
+          .eq('country_code', getVisitorCountry())
           .order('display_order', { ascending: true }),
       ]);
 
@@ -170,12 +185,53 @@ export default function AnimatedLandingPage() {
   const offerPrice = Number(selectedPackage?.offer_price || 0);
   const comparePrice = Number(selectedPackage?.compare_price || 0);
   const savings = Math.max(0, comparePrice - offerPrice);
-  const deliveryCharge = selectedPackage?.free_delivery
+  const fallbackDeliveryCharge = selectedPackage?.free_delivery
     ? 0
     : selectedPackage?.custom_delivery_charge != null
       ? Number(selectedPackage.custom_delivery_charge)
       : offerPrice >= 600 ? 0 : offerPrice >= 400 ? 50 : offerPrice >= 200 ? 70 : 120;
+  const deliveryCharge = country === 'IN' && indiaDeliveryQuote !== null ? indiaDeliveryQuote : fallbackDeliveryCharge;
   const grandTotal = offerPrice + deliveryCharge;
+  const codAdvance = deliveryCharge > 0 ? deliveryCharge : 120;
+  const codDue = Math.max(0, grandTotal - codAdvance);
+
+  useEffect(() => {
+    let active = true;
+    const loadIndiaDeliveryQuote = async () => {
+      if (country !== 'IN' || !selectedPackage || offerPrice <= 0) {
+        setIndiaDeliveryQuote(null);
+        setIndiaDeliveryQuoteLoading(false);
+        return;
+      }
+      if (selectedPackage.free_delivery) {
+        setIndiaDeliveryQuote(0);
+        setIndiaDeliveryQuoteLoading(false);
+        return;
+      }
+      if (selectedPackage.custom_delivery_charge !== null && selectedPackage.custom_delivery_charge !== undefined) {
+        setIndiaDeliveryQuote(Math.max(0, Number(selectedPackage.custom_delivery_charge)));
+        setIndiaDeliveryQuoteLoading(false);
+        return;
+      }
+      setIndiaDeliveryQuoteLoading(true);
+      const { data, error: quoteError } = await supabase.rpc('calculate_delivery_charge', {
+        p_order_value: offerPrice,
+        p_free_delivery: false,
+      });
+      if (!active) return;
+      const charge = Number(data);
+      if (quoteError || data === null || !Number.isFinite(charge) || charge < 0) {
+        setIndiaDeliveryQuote(null);
+        setError('ডেলিভারি চার্জ যাচাই করা যায়নি। আবার চেষ্টা করুন।');
+      } else {
+        setIndiaDeliveryQuote(charge);
+        setError('');
+      }
+      setIndiaDeliveryQuoteLoading(false);
+    };
+    void loadIndiaDeliveryQuote();
+    return () => { active = false; };
+  }, [country, selectedPackage, offerPrice]);
 
   const story: StoryStep[] = Array.isArray(page?.story_steps) && page.story_steps.length ? page.story_steps : fallbackStory;
   const benefits: ContentCard[] = Array.isArray(page?.benefits) && page.benefits.length ? page.benefits : fallbackBenefits;
@@ -198,12 +254,42 @@ export default function AnimatedLandingPage() {
     if (!selectedPackage) { setError('একটি প্যাকেজ নির্বাচন করুন'); return; }
     if (!form.name.trim() || !form.phone.trim()) { setError('নাম ও মোবাইল নম্বর দিন'); return; }
     const phone = form.phone.replace(/[^0-9]/g, '');
-    if (!/^01[0-9]{9}$/.test(phone)) { setError('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন'); return; }
+    if (country === 'IN' ? !/^[6-9][0-9]{9}$/.test(phone) : !/^01[0-9]{9}$/.test(phone)) {
+      setError(country === 'IN' ? 'Enter a valid 10-digit Indian mobile number' : 'সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন');
+      return;
+    }
     if (!address.division || !address.district || !address.thana || !address.detail) { setError('সম্পূর্ণ ঠিকানা দিন'); return; }
+    if (country === 'IN' && (indiaDeliveryQuoteLoading || indiaDeliveryQuote === null)) { setError('ডেলিভারি চার্জ যাচাই করা হচ্ছে। একটু পরে চেষ্টা করুন।'); return; }
 
     setSubmitting(true);
     try {
       const fullAddress = formatAddressToString(address);
+      if (country === 'IN') {
+        if (paymentMethod === 'cod' && codAdvance > grandTotal) {
+          setError('COD অগ্রিম অর্ডারের মোটের চেয়ে বেশি। Online payment বেছে নিন।');
+          return;
+        }
+        await startIndiaCampaignPayment({
+          flow: 'animated',
+          context: {
+            landing_page_id: page.id,
+            package_id: selectedPackage.id,
+            utm_source: utm.source,
+            utm_medium: utm.medium,
+            utm_campaign: utm.campaign,
+            utm_content: utm.content,
+            utm_term: utm.term,
+            fbclid: utm.fbclid,
+            gclid: utm.gclid,
+          },
+          method: paymentMethod,
+          customerName: form.name.trim(),
+          customerPhone: phone,
+          deliveryAddress: fullAddress,
+          instructions: form.instructions.trim(),
+        });
+        return;
+      }
       const { data, error: rpcError } = await supabase.rpc('create_animated_landing_order', {
         p_landing_page_id: page.id,
         p_package_id: selectedPackage.id,
@@ -323,7 +409,7 @@ export default function AnimatedLandingPage() {
           <section id="packages" className="scroll-mt-24 bg-[#06170f] px-5 py-14 text-white sm:px-8 lg:px-12 lg:py-18"><div className="mx-auto max-w-6xl"><div className="sk-animate text-center"><span className="text-xs font-black uppercase tracking-[.3em] text-amber-300">Best value</span><h2 className="mt-2 text-3xl font-black sm:text-4xl">আপনার জন্য সেরা অফার</h2><p className="mt-3 text-sm text-white/60">একটি প্যাকেট নেবেন, নাকি বেশি সাশ্রয়ে বড় প্যাকেজ?</p></div><div className="mt-10 grid gap-7 xl:grid-cols-[1.1fr_.9fr]">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{packages.map((pkg, index) => { const active = pkg.id === selectedPackageId; const disabled = Number(product?.stock || 0) < pkg.quantity; return <button key={pkg.id} disabled={disabled} onClick={() => setSelectedPackageId(pkg.id)} className={`sk-animate relative overflow-hidden rounded-[28px] border p-5 text-left transition duration-500 ${active ? 'border-lime-300 bg-white text-[#0a2418] shadow-2xl shadow-lime-500/10' : 'border-white/10 bg-white/[.03] hover:-translate-y-1 hover:border-lime-300/40'} ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}>{pkg.badge && <span className={`absolute right-4 top-4 rounded-full px-2.5 py-1 text-[10px] font-black ${active ? 'bg-[#0b6a31] text-white' : 'bg-amber-300 text-[#1a2b1e]'}`}>{pkg.badge}</span>}<div className="flex items-center gap-3"><span className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${active ? 'border-[#0b6a31] bg-[#0b6a31]' : 'border-white/25'}`}>{active && <Check className="h-4 w-4 text-white" />}</span><span className="text-sm font-black">{pkg.package_name || `${pkg.quantity} প্যাকেট`}</span></div><div className="mt-5 flex h-32 items-center justify-center rounded-2xl bg-[#edf6e8]">{heroImage ? <img src={heroImage} alt="" className="h-28 w-full object-contain" /> : <Package className="h-12 w-12 text-[#0b6a31]/30" />}</div><p className={`mt-5 text-xs font-semibold ${active ? 'text-[#557060]' : 'text-white/50'}`}>{productName}</p><div className="mt-2 flex items-end gap-2"><span className={`text-3xl font-black ${active ? 'text-[#0b6a31]' : 'text-lime-200'}`}>{formatPrice(pkg.offer_price)}</span>{pkg.compare_price ? <span className={`mb-1 text-sm line-through ${active ? 'text-[#7d8b81]' : 'text-white/35'}`}>{formatPrice(pkg.compare_price)}</span> : null}</div><div className={`mt-3 flex items-center gap-2 text-xs font-bold ${active ? 'text-[#0b6a31]' : 'text-lime-200'}`}>{pkg.free_delivery ? <><Truck className="h-4 w-4" /> ফ্রি ডেলিভারি</> : <><MapPin className="h-4 w-4" /> ডেলিভারি প্রযোজ্য</>}</div>{disabled && <div className="mt-3 text-xs font-bold text-red-500">স্টক শেষ</div>}</button>})}</div>
 
-            <div className="sk-animate rounded-[32px] border border-white/10 bg-[#fbf8f0] p-5 text-[#0a2418] shadow-2xl sm:p-7"><div className="rounded-2xl bg-[#0b6a31] px-5 py-4 text-white"><p className="text-sm font-bold">অর্ডার করতে ফর্ম পূরণ করুন</p><p className="mt-1 text-xs text-white/70">{selectedPackage?.package_name || 'প্যাকেজ নির্বাচন করুন'} · {formatPrice(offerPrice)}</p></div><form onSubmit={handleSubmit} className="mt-6 space-y-4"><label className="block text-sm font-bold">নাম *<input value={form.name} onChange={(e) => setForm((v) => ({ ...v, name: e.target.value }))} className="mt-2 w-full rounded-2xl border border-[#173824]/10 bg-white px-4 py-3 outline-none transition focus:border-[#0b6a31] focus:ring-4 focus:ring-lime-100" placeholder="আপনার নাম লিখুন" /></label><label className="block text-sm font-bold">মোবাইল নম্বর *<input value={form.phone} onChange={(e) => setForm((v) => ({ ...v, phone: e.target.value }))} className="mt-2 w-full rounded-2xl border border-[#173824]/10 bg-white px-4 py-3 outline-none transition focus:border-[#0b6a31] focus:ring-4 focus:ring-lime-100" placeholder="01XXXXXXXXX" inputMode="numeric" /></label><div className="rounded-2xl border border-[#173824]/10 bg-white p-3"><p className="mb-3 text-sm font-bold">ডেলিভারি ঠিকানা *</p><AddressSelector value={address} onChange={setAddress} /></div><label className="block text-sm font-bold">বিশেষ নির্দেশনা<input value={form.instructions} onChange={(e) => setForm((v) => ({ ...v, instructions: e.target.value }))} className="mt-2 w-full rounded-2xl border border-[#173824]/10 bg-white px-4 py-3 outline-none transition focus:border-[#0b6a31] focus:ring-4 focus:ring-lime-100" placeholder="প্রয়োজনে লিখুন" /></label><div className="rounded-2xl border border-[#173824]/10 bg-[#f3f7ec] p-4"><div className="flex items-center justify-between text-sm"><span>প্যাকেজ</span><strong>{formatPrice(offerPrice)}</strong></div><div className="mt-2 flex items-center justify-between text-sm"><span>ডেলিভারি</span><strong className={deliveryCharge === 0 ? 'text-[#0b6a31]' : ''}>{deliveryCharge === 0 ? 'ফ্রি' : formatPrice(deliveryCharge)}</strong></div>{savings > 0 && <div className="mt-2 flex items-center justify-between text-sm"><span>সাশ্রয়</span><strong className="text-[#b54711]">{formatPrice(savings)}</strong></div>}<div className="mt-4 flex items-center justify-between border-t border-[#173824]/10 pt-4"><span className="font-black">মোট পরিশোধ</span><span className="text-3xl font-black text-[#0b6a31]">{formatPrice(grandTotal)}</span></div></div>{error && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</p>}<button disabled={submitting || !selectedPackage || Number(product?.stock || 0) < (selectedPackage?.quantity || 1)} className="w-full rounded-2xl bg-gradient-to-r from-lime-300 to-amber-300 px-5 py-4 text-base font-black text-[#06170f] shadow-xl transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60">{submitting ? <><Loader2 className="mr-2 inline h-5 w-5 animate-spin" />অর্ডার হচ্ছে...</> : <><LockKeyhole className="mr-2 inline h-5 w-5" />অর্ডার নিশ্চিত করুন</>}</button><p className="flex items-center justify-center gap-2 text-[11px] font-semibold text-[#587060]"><ShieldCheck className="h-4 w-4" /> ক্যাশ অন ডেলিভারি · নিরাপদ অর্ডার</p></form></div>
+            <div className="sk-animate rounded-[32px] border border-white/10 bg-[#fbf8f0] p-5 text-[#0a2418] shadow-2xl sm:p-7"><div className="rounded-2xl bg-[#0b6a31] px-5 py-4 text-white"><p className="text-sm font-bold">অর্ডার করতে ফর্ম পূরণ করুন</p><p className="mt-1 text-xs text-white/70">{selectedPackage?.package_name || 'প্যাকেজ নির্বাচন করুন'} · {formatPrice(offerPrice)}</p></div><form onSubmit={handleSubmit} className="mt-6 space-y-4"><label className="block text-sm font-bold">{country === 'IN' ? 'Full name *' : 'নাম *'}<input value={form.name} onChange={(e) => setForm((v) => ({ ...v, name: e.target.value }))} className="mt-2 w-full rounded-2xl border border-[#173824]/10 bg-white px-4 py-3 outline-none transition focus:border-[#0b6a31] focus:ring-4 focus:ring-lime-100" placeholder={country === 'IN' ? 'Your full name' : 'আপনার নাম লিখুন'} /></label><label className="block text-sm font-bold">{country === 'IN' ? 'Mobile number *' : 'মোবাইল নম্বর *'}<input value={form.phone} onChange={(e) => setForm((v) => ({ ...v, phone: e.target.value }))} className="mt-2 w-full rounded-2xl border border-[#173824]/10 bg-white px-4 py-3 outline-none transition focus:border-[#0b6a31] focus:ring-4 focus:ring-lime-100" placeholder={country === 'IN' ? '9876543210' : '01XXXXXXXXX'} inputMode="numeric" /></label><div className="rounded-2xl border border-[#173824]/10 bg-white p-3"><p className="mb-3 text-sm font-bold">{country === 'IN' ? 'Delivery address *' : 'ডেলিভারি ঠিকানা *'}</p><AddressSelector value={address} onChange={setAddress} countryCode={country} /></div>{country === 'IN' && <IndiaPaymentMethodSelector value={paymentMethod} onChange={setPaymentMethod} advanceAmount={codAdvance} dueAmount={codDue} codAvailable={!indiaDeliveryQuoteLoading && indiaDeliveryQuote !== null && codAdvance <= grandTotal} language={lang === 'hi' ? 'hi' : lang === 'en' ? 'en' : 'bn'} />}<label className="block text-sm font-bold">{country === 'IN' ? 'Special instructions' : 'বিশেষ নির্দেশনা'}<input value={form.instructions} onChange={(e) => setForm((v) => ({ ...v, instructions: e.target.value }))} className="mt-2 w-full rounded-2xl border border-[#173824]/10 bg-white px-4 py-3 outline-none transition focus:border-[#0b6a31] focus:ring-4 focus:ring-lime-100" placeholder="প্রয়োজনে লিখুন" /></label><div className="rounded-2xl border border-[#173824]/10 bg-[#f3f7ec] p-4"><div className="flex items-center justify-between text-sm"><span>প্যাকেজ</span><strong>{formatPrice(offerPrice)}</strong></div><div className="mt-2 flex items-center justify-between text-sm"><span>ডেলিভারি</span><strong className={deliveryCharge === 0 ? 'text-[#0b6a31]' : ''}>{country === 'IN' && indiaDeliveryQuoteLoading ? 'Calculating…' : deliveryCharge === 0 ? (country === 'IN' ? 'Free' : 'ফ্রি') : formatPrice(deliveryCharge)}</strong></div>{savings > 0 && <div className="mt-2 flex items-center justify-between text-sm"><span>সাশ্রয়</span><strong className="text-[#b54711]">{formatPrice(savings)}</strong></div>}<div className="mt-4 flex items-center justify-between border-t border-[#173824]/10 pt-4"><span className="font-black">মোট পরিশোধ</span><span className="text-3xl font-black text-[#0b6a31]">{formatPrice(grandTotal)}</span></div>{country === 'IN' && paymentMethod === 'cod' && <div className="mt-2 flex justify-between text-xs font-bold text-emerald-800"><span>Advance / due on delivery</span><span>{formatPrice(codAdvance)} / {formatPrice(codDue)}</span></div>}</div>{error && <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</p>}<button disabled={submitting || !selectedPackage || Number(product?.stock || 0) < (selectedPackage?.quantity || 1) || (country === 'IN' && indiaDeliveryQuoteLoading)} className="w-full rounded-2xl bg-gradient-to-r from-lime-300 to-amber-300 px-5 py-4 text-base font-black text-[#06170f] shadow-xl transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60">{submitting ? <><Loader2 className="mr-2 inline h-5 w-5 animate-spin" />{country === 'IN' ? 'Starting secure payment…' : 'অর্ডার হচ্ছে...'}</> : <><LockKeyhole className="mr-2 inline h-5 w-5" />{country === 'IN' ? (paymentMethod === 'cod' ? `Pay ${formatPrice(codAdvance)} COD advance` : 'Pay online') : 'অর্ডার নিশ্চিত করুন'}</>}</button><p className="flex items-center justify-center gap-2 text-[11px] font-semibold text-[#587060]"><ShieldCheck className="h-4 w-4" />{country === 'IN' ? 'Cashfree secure payment · COD available' : 'ক্যাশ অন ডেলিভারি · নিরাপদ অর্ডার'}</p></form></div>
           </div></div>
           </section>
 
