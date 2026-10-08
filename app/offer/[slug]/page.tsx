@@ -35,6 +35,9 @@ export default function OfferLandingPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [deliveryCharge, setDeliveryCharge] = useState<number | null>(null);
+  const [deliveryQuoteLoading, setDeliveryQuoteLoading] = useState(false);
+  const [deliveryQuoteError, setDeliveryQuoteError] = useState('');
   const [activeImage, setActiveImage] = useState(0);
   const [form, setForm] = useState({ name: '', phone: '', instructions: '' });
   const [addrValue, setAddrValue] = useState<AddressValue>({ division: '', district: '', thana: '', detail: '', postalCode: '' });
@@ -44,6 +47,13 @@ export default function OfferLandingPage() {
   // Ads landing pages belong to a specific branch; checkout must use that branch
   // instead of AddressSelector's Bangladesh default.
   const countryCode = String(landing?.country_code || product?.country_code || 'BD').toUpperCase() === 'IN' ? 'IN' : 'BD';
+
+  const offerPrice = Number(
+    selectedTier
+      ? (selectedTier.offer_price || selectedTier.price || 0)
+      : (selectedBundle?.bundle_price || landing?.offer_price || product?.sale_price || product?.regular_price || 0)
+  );
+  const isFreeDelivery = !!(selectedTier?.free_delivery || selectedTier?.is_free_delivery || selectedBundle?.free_delivery);
 
   const utm = useMemo(() => ({
     source: searchParams.get('utm_source') || '',
@@ -121,6 +131,56 @@ export default function OfferLandingPage() {
     })();
   }, [slug]);
 
+  useEffect(() => {
+    let active = true;
+
+    if (isFreeDelivery) {
+      setDeliveryCharge(0);
+      setDeliveryQuoteLoading(false);
+      setDeliveryQuoteError('');
+      return () => { active = false; };
+    }
+
+    if (!landing || (!selectedTier && !selectedBundle) || !Number.isFinite(offerPrice) || offerPrice <= 0) {
+      setDeliveryCharge(null);
+      setDeliveryQuoteLoading(false);
+      setDeliveryQuoteError('');
+      return () => { active = false; };
+    }
+
+    setDeliveryCharge(null);
+    setDeliveryQuoteError('');
+    setDeliveryQuoteLoading(true);
+
+    const loadQuote = async () => {
+      try {
+        const { data, error: quoteError } = await supabase.rpc('calculate_delivery_charge', {
+          p_order_value: offerPrice,
+          p_free_delivery: false,
+        });
+        if (!active) return;
+
+        const charge = Number(data);
+        if (quoteError || data === null || !Number.isFinite(charge) || charge < 0) {
+          setDeliveryQuoteError(quoteError?.message || 'ডেলিভারি চার্জ যাচাই করা যায়নি');
+          setDeliveryCharge(null);
+        } else {
+          setDeliveryCharge(charge);
+          setDeliveryQuoteError('');
+        }
+      } catch (quoteError: any) {
+        if (!active) return;
+        setDeliveryQuoteError(quoteError?.message || 'ডেলিভারি চার্জ যাচাই করা যায়নি');
+        setDeliveryCharge(null);
+      } finally {
+        if (active) setDeliveryQuoteLoading(false);
+      }
+    };
+
+    void loadQuote();
+    return () => { active = false; };
+  }, [landing?.id, selectedTier?.quantity, selectedBundle?.id, offerPrice, isFreeDelivery]);
+
   if (loading) return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-emerald-50/40">
       <Loader2 className="h-10 w-10 animate-spin text-emerald-700" />
@@ -141,11 +201,6 @@ export default function OfferLandingPage() {
   const tiersList: any[] = landing?.pricing_tiers || landing?.tiers || landing?.quantity_pricing || [];
   const images: string[] = landing?.images && landing.images.length > 0 ? landing.images : (product?.image ? [product.image] : []);
 
-  const offerPrice = Number(
-    selectedTier
-      ? (selectedTier.offer_price || selectedTier.price || 0)
-      : (selectedBundle?.bundle_price || landing?.offer_price || product?.sale_price || product?.regular_price || 0)
-  );
 
   const comparePrice = Number(
     selectedTier
@@ -153,9 +208,11 @@ export default function OfferLandingPage() {
       : (selectedBundle?.compare_price || landing?.compare_price || Number(product?.regular_price || 0) || 0)
   );
 
-  const isFreeDelivery = !!(selectedTier?.free_delivery || selectedTier?.is_free_delivery || selectedBundle?.free_delivery);
-  const deliveryCharge = isFreeDelivery ? 0 : (offerPrice >= 600 ? 0 : offerPrice >= 400 ? 50 : offerPrice >= 200 ? 70 : 120);
-  const grandTotal = offerPrice + deliveryCharge;
+  const grandTotal = offerPrice + (isFreeDelivery ? 0 : (deliveryCharge ?? 0));
+  const hasDeliveryQuote = isFreeDelivery || deliveryCharge !== null;
+  const grandTotalLabel = hasDeliveryQuote
+    ? formatPrice(grandTotal)
+    : deliveryQuoteLoading ? 'হিসাব হচ্ছে…' : '—';
   const savings = comparePrice > offerPrice ? comparePrice - offerPrice : 0;
   const discountPercent = comparePrice > 0 ? Math.round((savings / comparePrice) * 100) : 0;
 
@@ -168,6 +225,7 @@ export default function OfferLandingPage() {
     if (!form.name || !form.phone) { setError('সব প্রয়োজনীয় তথ্য পূরণ করুন'); return; }
     if (!addrValue.division || !addrValue.district || !addrValue.thana || !addrValue.detail) { setError('সম্পূর্ণ ঠিকানা নির্বাচন ও প্রদান করুন'); return; }
     if (!selectedTier && !selectedBundle) { setError('একটি অফার প্যাকেজ নির্বাচন করুন'); return; }
+    if (!isFreeDelivery && (deliveryQuoteLoading || deliveryCharge === null || deliveryQuoteError)) { setError('ডেলিভারি চার্জ যাচাই করা যায়নি। আবার চেষ্টা করুন।'); return; }
     const phone = form.phone.replace(/[^0-9]/g, '');
     const phoneValid = countryCode === 'IN' ? /^[6-9][0-9]{9}$/.test(phone) : /^01[0-9]{9}$/.test(phone);
     if (!phoneValid) {
@@ -550,6 +608,10 @@ export default function OfferLandingPage() {
                     <span>
                       {isFreeDelivery ? (
                         <span className="font-bold text-emerald-700">ফ্রি</span>
+                      ) : deliveryQuoteLoading ? (
+                        <span className="text-gray-500">হিসাব হচ্ছে…</span>
+                      ) : deliveryQuoteError || deliveryCharge === null ? (
+                        <span className="font-semibold text-red-600">যাচাই করা যাচ্ছে না</span>
                       ) : (
                         formatPrice(deliveryCharge)
                       )}
@@ -563,7 +625,7 @@ export default function OfferLandingPage() {
                   )}
                   <div className="flex justify-between text-sm sm:text-base font-black text-gray-900 border-t border-gray-200 pt-2">
                     <span>সর্বমোট প্রদেয় বিল</span>
-                    <span className="text-emerald-800 text-lg sm:text-xl font-extrabold">{formatPrice(grandTotal)}</span>
+                    <span className="text-emerald-800 text-lg sm:text-xl font-extrabold">{grandTotalLabel}</span>
                   </div>
                 </div>
 
@@ -575,13 +637,13 @@ export default function OfferLandingPage() {
 
                 <button 
                   type="submit" 
-                  disabled={submitting} 
+                  disabled={submitting || !hasDeliveryQuote || deliveryQuoteLoading || !!deliveryQuoteError} 
                   className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-800 py-4 text-base sm:text-lg font-extrabold text-white shadow-lg shadow-emerald-700/25 hover:from-emerald-800 hover:to-emerald-900 transition active:scale-98 disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? (
                     <><Loader2 className="h-5 w-5 animate-spin" /> অর্ডার প্রসেস হচ্ছে...</>
                   ) : (
-                    <><Zap className="h-5 w-5 fill-current text-amber-300" /> {landing?.cta_text || 'অর্ডার কনফার্ম করুন'} — {formatPrice(grandTotal)}</>
+                    <><Zap className="h-5 w-5 fill-current text-amber-300" /> {landing?.cta_text || 'অর্ডার কনফার্ম করুন'} — {grandTotalLabel}</>
                   )}
                 </button>
 
@@ -673,7 +735,7 @@ export default function OfferLandingPage() {
           <div className="max-w-md mx-auto flex items-center justify-between gap-3">
             <div>
               <p className="text-xs text-gray-500 font-semibold">{selectedTier ? `${selectedTier.quantity}টি প্যাকেট` : 'প্যাকেজ'}</p>
-              <p className="text-xl font-black text-emerald-800">{formatPrice(grandTotal)}</p>
+              <p className="text-xl font-black text-emerald-800">{grandTotalLabel}</p>
             </div>
             <a 
               href="#order-form" 
