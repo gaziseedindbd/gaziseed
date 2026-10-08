@@ -1,4 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { MessengerReplyLanguage } from './messenger-language';
+import { normalizeMessengerHindiSearchText } from './messenger-intents';
 
 export type MessengerCountry = 'IN' | 'BD';
 
@@ -83,7 +85,7 @@ const PRODUCT_FIELDS = [
 ].join(',');
 
 function normalizeSearchTerm(value: string): string {
-  return value
+  return normalizeMessengerHindiSearchText(value)
     .replace(/[%_]/g, ' ')
     .replace(/[\r\n]+/g, ' ')
     .replace(/\s+/g, ' ')
@@ -405,20 +407,24 @@ export async function enrichMessengerProductsWithKnowledge(
 
 export function getMessengerProductSelectionQuickReplies(
   products: readonly unknown[],
+  language: MessengerReplyLanguage = 'Bengali',
 ): Array<{ title: string; payload: string }> {
   const quickReplies: Array<{ title: string; payload: string }> = [];
 
   for (const candidate of products) {
-    if (!isTrustedMessengerProductMatch(candidate)) continue;
-
     const product = candidate as Record<string, unknown>;
     if (typeof product.id !== 'string') continue;
 
-    const name =
-      (typeof product.name_bn === 'string' && product.name_bn.trim()) ||
-      (typeof product.name_en === 'string' && product.name_en.trim()) ||
-      (typeof product.slug === 'string' && product.slug.trim()) ||
-      '';
+    const preferEnglish = language === 'English' || language === 'Hindi';
+    const name = preferEnglish
+      ? (typeof product.name_en === 'string' && product.name_en.trim()) ||
+        (typeof product.name_bn === 'string' && product.name_bn.trim()) ||
+        (typeof product.slug === 'string' && product.slug.trim()) ||
+        ''
+      : (typeof product.name_bn === 'string' && product.name_bn.trim()) ||
+        (typeof product.name_en === 'string' && product.name_en.trim()) ||
+        (typeof product.slug === 'string' && product.slug.trim()) ||
+        '';
     if (!name) continue;
 
     quickReplies.push({

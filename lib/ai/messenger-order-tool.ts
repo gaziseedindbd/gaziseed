@@ -4,7 +4,10 @@ import {
   searchMessengerProducts,
   type MessengerProduct,
 } from './messenger-product-tool';
-import { isMessengerChangeDetailsRequest } from './messenger-intents';
+import {
+  isMessengerChangeDetailsRequest,
+  normalizeMessengerIntentText,
+} from './messenger-intents';
 import { detectMessengerReplyLanguage } from './messenger-language';
 
 export type MessengerOrderCountry = 'IN' | 'BD';
@@ -204,9 +207,9 @@ export function normalizeMessengerPhone(text: string, country: MessengerOrderCou
 }
 
 export function isMessengerOrderIntent(text: string) {
-  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+  const normalized = normalizeMessengerIntentText(text);
 
-  return /(?:অর্ডার|order|কিনতে চাই|কিনবো|নিতে চাই|নেব|buy|purchase|place\s+order|কিনতে\s+(?:চাই|চায়|চাইলে)|নিতে\s+(?:চাই|চায়|চাইলে)|\bkinte\s+cha(?:i|ie|y)\b|\bnite\s+cha(?:i|ie|y)\b|\bnibo\b|\bnebo\b|\bkharidna\b|\bkharidne\b|\bkharidna\s+(?:hai|hain)\b|\bkharid\s+kar(?:na|ne|ni)\b|\blena\b|\blena\s+(?:hai|hain)\b|\bmujhe\s+(?:kharidna|lena)\b|\bchahiye\b|\blunga\b|\blungi\b|\blenge\b|\border\s+kor(?:te|bo|ben|b)\b)/i.test(
+  return /(?:অর্ডার|order|কিনতে চাই|কিনবো|নিতে চাই|নেব|buy|purchase|place\s+order|কিনতে\s+(?:চাই|চায়|চাইলে)|নিতে\s+(?:চাই|চায়|চাইলে)|আমাকে.{0,24}চাই|\bkinte\s+cha(?:i|ie|y)\b|\bnite\s+cha(?:i|ie|y)\b|\bnibo\b|\bnebo\b|\bkharidna\b|\bkharidne\b|\bkharidna\s+(?:hai|hain)\b|\bkharid\s+kar(?:na|ne|ni)\b|\blena\b|\blena\s+(?:hai|hain)\b|\bmujhe\s+(?:kharidna|lena)\b|\bchahiye\b|\blunga\b|\blungi\b|\blenge\b|\border\s+kor(?:te|bo|ben|b)\b|ऑर्डर|खरीद(?:ना|नी)\s*(?:है|चाहता|चाहती)?|मुझे\s*(?:चाहिए|लेना\s*है)|लेना\s*है)/i.test(
     normalized,
   );
 }

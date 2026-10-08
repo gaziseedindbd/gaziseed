@@ -33,8 +33,10 @@ import {
   isOtherProductRequest,
   isProductCatalogRequest,
   isProductListRequest,
+  normalizeMessengerIntentText,
 } from '../lib/ai/messenger-intents';
 import {
+  getMessengerProductSelectionQuickReplies,
   classifyMessengerProductMatch,
   isTrustedMessengerProductMatch,
   normalizeMessengerSearchSlug,
@@ -70,6 +72,7 @@ import {
 import { shouldIncludeMessengerAIHistoryMessage } from '../lib/ai/messenger-history';
 import { detectExplicitMessengerCountry } from '../lib/ai/messenger-country';
 import {
+  detectMessengerReplyLanguage,
   getMessengerProviderFailureHandoffReply,
 } from '../lib/ai/messenger-language';
 
@@ -170,6 +173,22 @@ test('recognizes common Messenger product spelling typos', () => {
   assert.equal(isProductListRequest('ki ki prodcuts ase?'), true);
 });
 
+test('routes Banglish and Hindi catalog, order, delivery, and seed questions', () => {
+  assert.equal(isProductCatalogRequest('ami rose seed er dam koto?'), true);
+  assert.equal(isMessengerOrderIntent('ami rose seed kinte chai'), true);
+  assert.equal(isMessengerDeliveryIntent('delivery charge koto?'), true);
+  assert.equal(isMessengerSeedKnowledgeQuestion('rose seed kivabe lagabo?'), true);
+  assert.equal(detectMessengerReplyLanguage('ami amar order er status jante chai'), 'Bengali');
+
+  assert.equal(isProductCatalogRequest('गुलाब के बीज की कीमत क्या है?'), true);
+  assert.equal(isProductListRequest('आपके पास कौन से बीज उपलब्ध हैं?'), true);
+  assert.equal(isMessengerDeliveryIntent('डिलीवरी में कितने दिन लगेंगे?'), true);
+  assert.equal(isMessengerOrderIntent('मुझे गुलाब के बीज चाहिए'), true);
+  assert.equal(isMessengerSeedKnowledgeQuestion('गुलाब के बीज की मिट्टी कैसी होनी चाहिए?'), true);
+  assert.equal(detectMessengerReplyLanguage('गुलाब के बीज की कीमत क्या है?'), 'Hindi');
+  assert.match(normalizeMessengerIntentText('गुलाब के बीज की कीमत'), /গোলাপ.*বীজ.*দাম/);
+});
+
 test('keeps similar Messenger matches out of transactional product data', () => {
   assert.equal(
     isTrustedMessengerProductMatch({ search_match_type: 'exact' }),
@@ -220,6 +239,23 @@ test('keeps similar Messenger matches out of transactional product data', () => 
   assert.equal(serialized.offer_price, null);
 });
 
+test('offers selectable options for similar product matches without disclosing their price', () => {
+  const options = getMessengerProductSelectionQuickReplies([
+    {
+      id: '00000000-0000-4000-8000-000000000001',
+      name_bn: 'লাল গোলাপ ফুলের বীজ',
+      name_en: 'Red Rose Flower Seeds',
+      slug: 'lal-golap-fuler-bij',
+      search_match_type: 'similar',
+    },
+  ], 'English');
+
+  assert.deepEqual(options, [{
+    title: 'Red Rose Flower See…',
+    payload: 'PRODUCT_SELECT:00000000-0000-4000-8000-000000000001',
+  }]);
+});
+
 test('normalizes and classifies Messenger product search matches', () => {
   assert.equal(normalizeMessengerSearchTerm('  গোলাপ   ফুল  '), 'গোলাপ ফুল');
   assert.equal(normalizeMessengerSearchSlug('  lal golap fuler bij  '), 'lal-golap-fuler-bij');
@@ -242,6 +278,8 @@ test('recognizes Bangladesh COD-only payment questions', () => {
   assert.equal(isBangladeshPaymentMethodQuestion('cash on delivery আছে?'), true);
   assert.equal(isBangladeshPaymentMethodQuestion('delivery charge koto'), false);
   assert.match(getBangladeshPaymentMethodReply(), /Cash on Delivery/);
+  assert.match(getBangladeshPaymentMethodReply('English'), /currently accepts Cash on Delivery/);
+  assert.match(getBangladeshPaymentMethodReply('Hindi'), /Bangladesh में अभी केवल/);
 });
 
 test('keeps generic agriculture process questions out of stale product context', () => {
