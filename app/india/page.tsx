@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { createServerSupabase } from '@/lib/supabase/server';
 
 const BASE_URL = 'https://www.gaziseed.com';
+const FALLBACK_SUPABASE_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
+const FALLBACK_SUPABASE_KEY = 'sb_publishable_vCaz5OGrHocUTgpOXmE9xg_QVsuUJc0';
 type IndiaCategory = {
   id: string;
   name_en: string;
@@ -47,30 +48,55 @@ export const metadata: Metadata = {
   },
 };
 
+async function fetchIndiaRows<T>(table: 'categories' | 'products', query: URLSearchParams): Promise<T[]> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || FALLBACK_SUPABASE_URL;
+  const configuredKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+  const url = new URL(`${supabaseUrl}/rest/v1/${table}`);
+  url.search = query.toString();
+
+  const request = (key: string) => fetch(url, {
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'x-gazi-country': 'IN',
+    },
+    cache: 'no-store',
+  });
+
+  let response = await request(configuredKey || FALLBACK_SUPABASE_KEY);
+
+  if (!response.ok && [401, 403].includes(response.status) && configuredKey !== FALLBACK_SUPABASE_KEY) {
+    response = await request(FALLBACK_SUPABASE_KEY);
+  }
+
+  if (!response.ok) return [];
+  return (await response.json()) as T[];
+}
+
 export default async function IndiaLandingPage() {
-  const supabase = await createServerSupabase('IN');
-
-  const [categoriesResult, productsResult] = await Promise.all([
-    supabase
-      .from('categories')
-      .select('id,name_en,name_bn,slug,description,image,display_order')
-      .eq('is_active', true)
-      .eq('country_code', 'IN')
-      .order('display_order', { ascending: true })
-      .limit(8),
-    supabase
-      .from('products')
-      .select('id,name_en,name_bn,slug,image,regular_price,sale_price,short_description')
-      .eq('is_active', true)
-      .eq('country_code', 'IN')
-      .eq('is_ads_only', false)
-      .order('is_featured', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(8),
+  const [categories, products] = await Promise.all([
+    fetchIndiaRows<IndiaCategory>(
+      'categories',
+      new URLSearchParams({
+        select: 'id,name_en,name_bn,slug,description,image,display_order',
+        is_active: 'eq.true',
+        country_code: 'eq.IN',
+        order: 'display_order.asc',
+        limit: '8',
+      }),
+    ),
+    fetchIndiaRows<IndiaProduct>(
+      'products',
+      new URLSearchParams({
+        select: 'id,name_en,name_bn,slug,image,regular_price,sale_price,short_description',
+        is_active: 'eq.true',
+        country_code: 'eq.IN',
+        is_ads_only: 'eq.false',
+        order: 'is_featured.desc,created_at.desc',
+        limit: '8',
+      }),
+    ),
   ]);
-
-  const categories = (categoriesResult.data || []) as IndiaCategory[];
-  const products = (productsResult.data || []) as IndiaProduct[];
 
   const organizationLd = {
     '@context': 'https://schema.org',
