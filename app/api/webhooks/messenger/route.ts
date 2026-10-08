@@ -7,6 +7,7 @@ import {
 } from '@/lib/ai/messenger-provider-router';
 import {
   enrichMessengerProductsWithKnowledge,
+  getMessengerProductSelectionQuickReplies,
   isTrustedMessengerProductMatch,
   searchMessengerProducts,
   listMessengerProducts,
@@ -1844,7 +1845,11 @@ async function processMessengerEvent(event: MessengerEvent) {
       countryCode: activeCountry,
       sourceContext: { deterministic_product_comparison: true },
     });
-    await sendMessengerText(senderId, reply);
+    await sendMessengerText(
+      senderId,
+      reply,
+      getMessengerProductSelectionQuickReplies([left, right]),
+    );
     return;
   }
 
@@ -2622,7 +2627,17 @@ async function processMessengerEvent(event: MessengerEvent) {
         last_knowledge_product_id: knowledgeResult.productId || null,
       }, activeCountry);
 
-      await sendMessengerText(senderId, knowledgeResult.reply);
+      const productSelectionOptions = knowledgeResult.productId
+        ? [{
+            title: '🛒 এই পণ্য নিন',
+            payload: `PRODUCT_SELECT:${knowledgeResult.productId}`,
+          }]
+        : undefined;
+      await sendMessengerText(
+        senderId,
+        knowledgeResult.reply,
+        productSelectionOptions,
+      );
       return;
     }
   } catch (error) {
@@ -2701,14 +2716,9 @@ async function processMessengerEvent(event: MessengerEvent) {
       }, activeCountry);
     }
 
-    const productQuickReplies = isProductListRequest(normalizedActionText)
-      ? trustedProducts
-          .slice(0, 13)
-          .map((product) => ({
-            title: messengerProductReplyTitle(product),
-            payload: `PRODUCT_SELECT:${String(product.id)}`,
-          }))
-      : undefined;
+    const selectionOptions =
+      getMessengerProductSelectionQuickReplies(trustedProducts);
+    const productQuickReplies = selectionOptions.length ? selectionOptions : undefined;
 
     await saveMessage(sb, conversation.id, {
       role: 'assistant',
