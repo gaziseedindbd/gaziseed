@@ -3,9 +3,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const BASE_URL = 'https://www.gaziseed.com';
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
+const FALLBACK_SUPABASE_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
+const FALLBACK_SUPABASE_KEY = 'sb_publishable_vCaz5OGrHocUTgpOXmE9xg_QVsuUJc0';
 type IndiaCategory = {
   id: string;
   name_en: string;
@@ -49,33 +48,29 @@ export const metadata: Metadata = {
   },
 };
 
-async function fetchIndiaRows<T>(table: string, query: string): Promise<T[]> {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
+async function fetchIndiaRows<T>(table: 'categories' | 'products', query: URLSearchParams): Promise<T[]> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || FALLBACK_SUPABASE_URL;
+  const configuredKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+  const url = new URL(`${supabaseUrl}/rest/v1/${table}`);
+  url.search = query.toString();
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 2500);
+  const request = (key: string) => fetch(url, {
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'x-gazi-country': 'IN',
+    },
+    cache: 'no-store',
+  });
 
-  try {
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/${table}?${query}`,
-      {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          'x-gazi-country': 'IN',
-        },
-        next: { revalidate: 3600 },
-        signal: controller.signal,
-      },
-    );
+  let response = await request(configuredKey || FALLBACK_SUPABASE_KEY);
 
-    if (!response.ok) return [];
-    return (await response.json()) as T[];
-  } catch {
-    return [];
-  } finally {
-    clearTimeout(timeoutId);
+  if (!response.ok && [401, 403].includes(response.status) && configuredKey !== FALLBACK_SUPABASE_KEY) {
+    response = await request(FALLBACK_SUPABASE_KEY);
   }
+
+  if (!response.ok) return [];
+  return (await response.json()) as T[];
 }
 
 export default async function IndiaLandingPage() {
@@ -88,7 +83,7 @@ export default async function IndiaLandingPage() {
         country_code: 'eq.IN',
         order: 'display_order.asc',
         limit: '8',
-      }).toString(),
+      }),
     ),
     fetchIndiaRows<IndiaProduct>(
       'products',
@@ -99,7 +94,7 @@ export default async function IndiaLandingPage() {
         is_ads_only: 'eq.false',
         order: 'is_featured.desc,created_at.desc',
         limit: '8',
-      }).toString(),
+      }),
     ),
   ]);
 
