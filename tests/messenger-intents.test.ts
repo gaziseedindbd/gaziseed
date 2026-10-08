@@ -307,6 +307,15 @@ test('recognizes interrupting intents', () => {
   assert.equal(isMessengerOrderInterruptRequest('delivery charge koto'), true);
   assert.equal(isMessengerOrderInterruptRequest('এই বীজ কীভাবে লাগাব'), true);
   assert.equal(isMessengerOrderInterruptRequest('human support chai'), true);
+  assert.equal(isMessengerOrderInterruptRequest('হ্যালো'), true);
+  assert.equal(isMessengerOrderInterruptRequest('hello'), true);
+  assert.equal(isMessengerOrderInterruptRequest('আমি অন্য বেপারে জানতে চাই'), true);
+  assert.equal(isMessengerOrderInterruptRequest('আমি অন্য বিষয়ে জানতে চাই'), true);
+  assert.equal(isMessengerOrderInterruptRequest('I want to ask about something else'), true);
+  assert.equal(isMessengerOrderInterruptRequest('ami onno bepare jante chai'), true);
+  assert.equal(isMessengerOrderInterruptRequest('नमस्ते'), true);
+  assert.equal(isMessengerOrderInterruptRequest('मुझे कुछ और पूछना है'), true);
+  assert.equal(isMessengerOrderInterruptRequest('আগের অর্ডারটা চালিয়ে যেতে চাই'), false);
 });
 
 test('prefills repeat-customer checkout from a verified Messenger profile', () => {

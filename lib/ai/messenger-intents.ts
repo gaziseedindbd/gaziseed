@@ -214,6 +214,18 @@ export function isMessengerOrderInterruptRequest(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
 
   if (isMessengerOrderResumeRequest(normalized)) return false;
+  // Greetings and explicit topic changes must leave a pending quantity/name
+  // step so the customer's new message can be handled by the normal router.
+  if (
+    /^(?:hi|hello|hey|হ্যালো|হাই|হেই|সালাম|আসসালামু আলাইকুম|নমস্কার|নমস্তে|हेलो|हाय|नमस्ते)[!.?, ]*$/i.test(
+      normalized,
+    ) ||
+    /(?:\b(?:something else|anything else|different question|another question|new question|change (?:the )?topic|other matter)\b|(?:অন্য|আরেক|নতুন).*(?:বিষয়|বিষয়|ব্যাপার|বেপার|কিছু|প্রশ্ন)|(?:অন্য|আরেক|নতুন).*(?:জানতে|জিজ্ঞাসা)|(?:কিছু|আরেকটা).*(?:জানতে|জিজ্ঞাসা)|कुछ\s+(?:और|अलग).*(?:पूछ|जान)|(?:\bonno\b|\barek\b|\bnotun\b).*(?:\b(?:bepar|bepare|byapar|bishoy|kichu|proshno)\b))/i.test(
+      normalized,
+    )
+  ) {
+    return true;
+  }
   if (isProductCatalogRequest(normalized)) return true;
   if (isMessengerDeliveryIntent(normalized)) return true;
   if (isMessengerHumanSupportIntent(normalized)) return true;
