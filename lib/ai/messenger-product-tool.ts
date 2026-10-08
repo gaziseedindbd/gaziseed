@@ -153,6 +153,34 @@ function searchTokens(value: string): string[] {
   ).slice(0, 6);
 }
 
+const TRANSACTIONAL_QUERY_STOP_WORDS = new Set([
+  'দাম', 'দামটা', 'মূল্য', 'স্টক', 'স্টকে', 'কত', 'কয়', 'কয়টি',
+  'আছে', 'ও', 'এবং', 'কি', 'কী', 'এর', 'র', 'প্রতি', 'প্যাকেট',
+  'বলুন', 'বলেন', 'জানান', 'দিবেন', 'দাও',
+  'price', 'cost', 'stock', 'available', 'availability', 'how', 'much',
+  'what', 'is', 'are', 'the', 'of', 'and', 'in', 'per', 'packet', 'pack',
+  'please', 'tell', 'me',
+  'दाम', 'कीमत', 'मूल्य', 'स्टॉक', 'कितना', 'कितनी', 'कितने', 'है', 'का', 'की', 'के', 'और', 'बताइए',
+]);
+
+/**
+ * Remove price/stock question wording before catalog lookup so the search RPC
+ * compares the actual product phrase instead of the full customer sentence.
+ */
+export function normalizeMessengerProductQuery(value: string): string {
+  const term = normalizeSearchTerm(value);
+  if (!/(दाम|कीमत|मूल्य|स्टॉक|दाम|price|cost|stock|available|দাম|মূল্য|স্টক)/i.test(term)) {
+    return term;
+  }
+
+  const tokens = term.match(/[A-Za-z0-9\\u0900-\\u09FF]+/g) || [];
+  const productTokens = tokens
+    .filter((token) => !TRANSACTIONAL_QUERY_STOP_WORDS.has(token.toLocaleLowerCase()))
+    .map((token) => token.toLocaleLowerCase() === 'বীজের' ? 'বীজ' : token);
+
+  return normalizeSearchTerm(productTokens.join(' ')) || term;
+}
+
 function effectivePrice(product: MessengerProduct): number | null {
   const prices = [
     product.offer_price,
@@ -227,19 +255,31 @@ export async function searchMessengerProducts(
   const term = normalizeSearchTerm(searchTerm);
   if (!term) return [];
 
+  const lookupTerm = normalizeMessengerProductQuery(term);
   const safeLimit = Math.max(1, Math.min(limit, 20));
 
   // Primary path: indexed PostgreSQL full-text + trigram/fuzzy search.
   try {
     const { data, error } = await supabase.rpc('search_messenger_products', {
       p_country: country,
-      p_query: term,
+      p_query: lookupTerm,
       p_limit: safeLimit,
     });
 
     if (!error && Array.isArray(data)) {
       const rankedRows = data as unknown as MessengerProduct[];
-      return sortMessengerProducts(rankedRows).slice(0, safeLimit);
+      const refinedRows = lookupTerm === term
+        ? rankedRows
+        : rankedRows.map((row) => ({
+            ...row,
+            // Full-text overlap can make unrelated products look strong.
+            // For transactional questions, require a lexical name match.
+            search_match_type: classifyMessengerProductMatch(lookupTerm, row),
+          }));
+      const trustedRows = refinedRows.filter(isTrustedMessengerProductMatch);
+      return sortMessengerProducts(
+        lookupTerm !== term && trustedRows.length ? trustedRows : refinedRows,
+      ).slice(0, safeLimit);
     }
   } catch {
     // Fall back to the legacy ilike path so product search remains available
@@ -247,8 +287,8 @@ export async function searchMessengerProducts(
   }
 
   const columns = ['name_bn', 'name_en', 'slug'] as const;
-  const queries = [term];
-  const tokens = searchTokens(term);
+  const queries = [lookupTerm];
+  const tokens = searchTokens(lookupTerm);
 
   for (const token of tokens) {
     if (
@@ -284,7 +324,7 @@ export async function searchMessengerProducts(
 
     const rows = result.data as unknown as MessengerProduct[] | null;
     for (const row of rows || []) {
-      const matchType = classifyMessengerProductMatch(term, row);
+      const matchType = classifyMessengerProductMatch(lookupTerm, row);
       merged.set(row.id, {
         ...row,
         search_match_type: matchType,
@@ -293,7 +333,13 @@ export async function searchMessengerProducts(
     }
   }
 
-  return sortMessengerProducts(Array.from(merged.values())).slice(0, safeLimit);
+  const fallbackRows = Array.from(merged.values());
+  const trustedFallbackRows = fallbackRows.filter(isTrustedMessengerProductMatch);
+  return sortMessengerProducts(
+    lookupTerm !== term && trustedFallbackRows.length
+      ? trustedFallbackRows
+      : fallbackRows,
+  ).slice(0, safeLimit);
 }
 
 const MESSENGER_KNOWLEDGE_FIELDS = [
