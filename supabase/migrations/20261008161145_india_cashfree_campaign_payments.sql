@@ -167,6 +167,7 @@ DECLARE
   v_product_name text;
   v_package_name text;
   v_quantity integer;
+  v_stock integer;
   v_offer_price numeric;
   v_compare_price numeric;
   v_delivery numeric;
