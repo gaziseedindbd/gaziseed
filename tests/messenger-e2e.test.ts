@@ -21,7 +21,11 @@ import {
   limitMessengerAIHistoryMessages,
   shouldIncludeMessengerAIHistoryMessage,
 } from '../lib/ai/messenger-history';
-import { selectMessengerFaqResponse } from '../lib/ai/messenger-knowledge-tool';
+import {
+  isMessengerProductSpecificKnowledgeQuery,
+  isMessengerWebsiteKnowledgeRequest,
+  selectMessengerFaqResponse,
+} from '../lib/ai/messenger-knowledge-tool';
 
 const TEST_ENV_KEYS = [
   'AI_MESSENGER_ENABLED',
@@ -301,6 +305,8 @@ test('selects the FAQ answer in the customer language when available', () => {
     answer_bn: 'বাংলা উত্তর',
     question_en: 'When should I sow?',
     answer_en: 'English answer',
+    question_hi: 'मुझे कब बुवाई करनी चाहिए?',
+    answer_hi: 'उपयुक्त मौसम में बुवाई करें।',
     display_order: 1,
   };
 
@@ -312,13 +318,28 @@ test('selects the FAQ answer in the customer language when available', () => {
     question: faq.question_en,
     answer: faq.answer_en,
   });
-  // FAQ rows currently have no Hindi columns, so Hindi uses English where available.
   assert.deepEqual(selectMessengerFaqResponse(faq, 'Hindi'), {
-    question: faq.question_en,
-    answer: faq.answer_en,
+    question: faq.question_hi,
+    answer: faq.answer_hi,
   });
+  assert.deepEqual(
+    selectMessengerFaqResponse({ ...faq, question_hi: null, answer_hi: null }, 'Hindi'),
+    { question: faq.question_en, answer: faq.answer_en },
+  );
   assert.deepEqual(
     selectMessengerFaqResponse({ ...faq, question_en: null, answer_en: null }, 'English'),
     { question: faq.question_bn, answer: faq.answer_bn },
+  );
+});
+
+test('routes Hindi product-growing questions into the database knowledge path', () => {
+  assert.equal(isMessengerWebsiteKnowledgeRequest('केरल बीन्स के बीज कितने दिनों में अंकुरित होते हैं?'), true);
+  assert.equal(
+    isMessengerProductSpecificKnowledgeQuery('इस बीज को कितनी धूप चाहिए?', {
+      name_bn: 'পরীক্ষার বীজ',
+      name_en: 'Test Seed',
+      slug: 'test-seed',
+    }),
+    true,
   );
 });
