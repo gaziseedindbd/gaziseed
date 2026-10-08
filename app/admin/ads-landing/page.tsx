@@ -185,9 +185,9 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
   
   // Quantity offers (Default ৩টি প্যাকেজ)
   const [quantityOffers, setQuantityOffers] = useState<any[]>([
-    { quantity: '1', offer_price: '300', compare_price: '500', badge: 'BEST', free_delivery: true, is_default_selected: true },
-    { quantity: '2', offer_price: '500', compare_price: '1000', badge: 'POPULAR', free_delivery: true, is_default_selected: false },
-    { quantity: '3', offer_price: '700', compare_price: '1500', badge: 'MEGA DEAL', free_delivery: true, is_default_selected: false },
+    { quantity: '1', offer_price: '300', compare_price: '500', badge: 'BEST', free_delivery: false, is_default_selected: true },
+    { quantity: '2', offer_price: '500', compare_price: '1000', badge: 'POPULAR', free_delivery: false, is_default_selected: false },
+    { quantity: '3', offer_price: '700', compare_price: '1500', badge: 'MEGA DEAL', free_delivery: false, is_default_selected: false },
   ]);
 
   useEffect(() => {
@@ -417,7 +417,7 @@ function LandingFields({ landing, setLanding }: { landing: any; setLanding: (v: 
 
 function QuantityOfferEditor({ offers, setOffers, basePrice }: { offers: any[]; setOffers: (o: any[]) => void; basePrice: number }) {
   const addOffer = () => {
-    setOffers([...offers, { quantity: offers.length + 1, offer_price: '', compare_price: '', badge: '', free_delivery: true, is_default_selected: false }]);
+    setOffers([...offers, { quantity: offers.length + 1, offer_price: '', compare_price: '', badge: '', free_delivery: false, is_default_selected: false }]);
   };
   const removeOffer = (idx: number) => setOffers(offers.filter((_, i) => i !== idx));
   const updateOffer = (idx: number, field: string, value: any) => {
@@ -462,7 +462,7 @@ function QuantityOfferEditor({ offers, setOffers, basePrice }: { offers: any[]; 
                 </div>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-3">
-                <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={qo.free_delivery} onChange={(e) => updateOffer(idx, 'free_delivery', e.target.checked)} className="accent-primary" /> Free Delivery</label>
+                <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={qo.free_delivery} onChange={(e) => updateOffer(idx, 'free_delivery', e.target.checked)} className="accent-primary" /> Free Delivery / বিনামূল্যে ডেলিভারি</label>
                 <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={qo.is_default_selected} onChange={(e) => {
                   const updated = offers.map((o, i) => ({ ...o, is_default_selected: i === idx }));
                   setOffers(updated);
