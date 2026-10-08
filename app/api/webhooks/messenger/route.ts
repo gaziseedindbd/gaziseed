@@ -81,6 +81,7 @@ import {
 } from '@/lib/ai/messenger-payment-status';
 import {
   detectMessengerReplyLanguage,
+  getMessengerProviderFailureHandoffReply,
   type MessengerReplyLanguage,
 } from '@/lib/ai/messenger-language';
 
@@ -2961,8 +2962,7 @@ async function processMessengerEvent(event: MessengerEvent) {
     await createHumanHandoff(sb, conversation.id, reason, activeCountry);
 
     const handoffMessage =
-      'দুঃখিত, এই মুহূর্তে স্বয়ংক্রিয় সহায়তা পাওয়া যাচ্ছে না। ' +
-      'আপনার কথোপকথন একজন মানব প্রতিনিধি’র কাছে পাঠানো হয়েছে।';
+      getMessengerProviderFailureHandoffReply(replyLanguage);
 
     try {
       await saveMessage(sb, conversation.id, {
