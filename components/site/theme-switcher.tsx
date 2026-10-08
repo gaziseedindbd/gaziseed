@@ -86,6 +86,7 @@ export function ThemeSwitcher({ defaultTheme }: { defaultTheme?: HomePageTheme }
   const pathname = usePathname();
   const isCategoryPage = pathname === '/categories' || pathname.startsWith('/category/');
   const isHomePage = pathname === '/';
+  const isIndiaLandingPage = pathname === '/india';
   const [siteTheme, setSiteTheme] = useState<SiteTheme>('emerald');
   const [open, setOpen] = useState(false);
 
@@ -115,7 +116,7 @@ export function ThemeSwitcher({ defaultTheme }: { defaultTheme?: HomePageTheme }
   return (
     <>
       {/* ফ্লোটিং থিম বাটন */}
-      <div className="fixed right-3.5 top-1/2 z-50 -translate-y-1/2 sm:right-5">
+      <div className={`${isIndiaLandingPage ? 'hidden sm:block' : '' } fixed right-3.5 top-1/2 z-50 -translate-y-1/2 sm:right-5`}>
         <button
           onClick={() => setOpen(!open)}
           className="group relative flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-card/90 shadow-xl ring-2 ring-primary/20 backdrop-blur-md transition-all hover:scale-105 hover:ring-primary hover:shadow-2xl active:scale-95 cursor-pointer"
@@ -133,8 +134,8 @@ export function ThemeSwitcher({ defaultTheme }: { defaultTheme?: HomePageTheme }
       {/* থিম প্যানেল */}
       {open && (
         <>
-          <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-2xs" onClick={() => setOpen(false)} />
-          <div className="fixed right-3.5 top-1/2 z-50 w-72 -translate-y-1/2 rounded-3xl border border-border bg-card p-4 shadow-2xl animate-in fade-in zoom-in-95 sm:right-5">
+          <div className={`${isIndiaLandingPage ? 'hidden sm:block' : '' } fixed inset-0 z-50 bg-black/30 backdrop-blur-2xs`} onClick={() => setOpen(false)} />
+          <div className={`${isIndiaLandingPage ? 'hidden sm:block' : '' } fixed right-3.5 top-1/2 z-50 w-72 -translate-y-1/2 rounded-3xl border border-border bg-card p-4 shadow-2xl animate-in fade-in zoom-in-95 sm:right-5`}>
             <div className="mb-3 flex items-center justify-between border-b border-border pb-2.5 px-1">
               <div className="flex items-center gap-2">
                 <Palette className="h-4 w-4 text-primary" />
