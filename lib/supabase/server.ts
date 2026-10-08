@@ -28,9 +28,15 @@ export async function createServerSupabase(country?: 'BD' | 'IN') {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) =>
-          cookieStore.set(name, value, options)
-        );
+        try {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        } catch {
+          // Server Components cannot write cookies. Middleware refreshes the
+          // session on page requests; keep public rendering alive if a write
+          // is attempted from a Server Component anyway.
+        }
       },
     },
     global: {
