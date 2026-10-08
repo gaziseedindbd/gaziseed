@@ -1,5 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { detectMessengerReplyLanguage } from './messenger-language';
+import {
+  detectMessengerReplyLanguage,
+  type MessengerReplyLanguage,
+} from './messenger-language';
 import {
   isTrustedMessengerProductMatch,
   searchMessengerProducts,
