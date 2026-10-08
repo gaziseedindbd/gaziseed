@@ -199,6 +199,14 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
   const handleCreate = async () => {
     setLoading(true);
     try {
+      // Resolve the branch again at submit time so a stale modal/session branch cannot
+      // create a row under the wrong country and fail the database RLS check.
+      const { data: branchData, error: branchError } = await supabase.rpc('current_admin_country');
+      const activeCountryCode = String(branchData || '').trim().toUpperCase();
+      if (branchError || !['BD', 'IN'].includes(activeCountryCode)) {
+        throw new Error('অ্যাডমিন ব্রাঞ্চ যাচাই করা যায়নি। পেজ রিফ্রেশ করে আবার চেষ্টা করুন।');
+      }
+
       let productId = selectedProductId;
 
       if (mode === 'new') {
@@ -207,13 +215,24 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
           name_bn: newProduct.name_bn, name_en: newProduct.name_en, sku: newProduct.sku,
           stock: Number(newProduct.stock) || 0, short_description: newProduct.short_description,
           description: newProduct.description, regular_price: Number(newProduct.regular_price) || 0,
-          slug, is_active: true, is_ads_only: true, image: images[0] || '', country_code: countryCode,
+          slug, is_active: true, is_ads_only: true, image: images[0] || '', country_code: activeCountryCode,
         }).select().single();
         if (prodError) throw prodError;
         productId = prod.id;
       }
 
       if (!productId) { toast('প্রোডাক্ট নির্বাচন করুন', 'error'); setLoading(false); return; }
+
+      const { data: scopedProduct, error: scopedProductError } = await supabase
+        .from('products')
+        .select('id')
+        .eq('id', productId)
+        .eq('country_code', activeCountryCode)
+        .maybeSingle();
+      if (scopedProductError) throw scopedProductError;
+      if (!scopedProduct) {
+        throw new Error('নির্বাচিত প্রোডাক্টটি বর্তমান ব্রাঞ্চের নয়। ফর্মটি বন্ধ করে আবার খুলুন।');
+      }
 
       const landingSlug = landing.landing_slug || (landing.landing_name || 'offer').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'offer';
       
@@ -234,7 +253,7 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
 
       const { data: lpData, error: lpError } = await supabase.from('landing_pages').insert({
         product_id: productId,
-        country_code: countryCode,
+        country_code: activeCountryCode,
         landing_name: landing.landing_name,
         landing_slug: landingSlug,
         slug: landingSlug,
@@ -265,7 +284,7 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
       if (formattedTiers.length > 0) {
         const inserts = formattedTiers.map((qo, idx) => ({
           landing_page_id: lpData.id,
-          country_code: countryCode,
+          country_code: activeCountryCode,
           product_id: productId,
           quantity: qo.quantity,
           offer_price: qo.offer_price,
