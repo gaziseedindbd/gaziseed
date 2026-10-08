@@ -175,7 +175,7 @@ export default function AIMessengerAdminPage() {
       <div className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Bot className="h-6 w-6" /></div>
-          <div><h1 className="text-2xl font-bold">AI Messenger</h1><p className="mt-1 text-sm text-muted-foreground">Facebook Messenger AI-এর আলাদা monitoring ও control center</p></div>
+          <div><h1 className="text-2xl font-bold">AI Messenger</h1><p className="mt-1 text-sm text-muted-foreground">Facebook Messenger AI-এর live monitoring center</p></div>
         </div>
         <button onClick={() => void load()} disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:bg-secondary disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh</button>
       </div>
@@ -188,12 +188,12 @@ export default function AIMessengerAdminPage() {
         <section className="rounded-2xl border border-border bg-card p-6">
           <div className="mb-5 flex items-start justify-between gap-4"><div><h2 className="text-lg font-bold">Live Status</h2><p className="mt-1 text-sm text-muted-foreground">Production connection status</p></div><ShieldCheck className="h-5 w-5 text-primary" /></div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-border p-4"><p className="text-xs text-muted-foreground">AI Messenger</p><p className={`mt-1 font-semibold ${data.messenger.enabled ? 'text-green-600' : 'text-amber-600'}`}>{data.messenger.enabled ? 'Enabled' : 'Disabled'}</p></div>
+            <div className="rounded-xl border border-border p-4"><p className="text-xs text-muted-foreground">Messenger Runtime</p><p className={`mt-1 font-semibold ${data.messenger.enabled ? 'text-green-600' : 'text-amber-600'}`}>{data.messenger.enabled ? 'Enabled' : 'Disabled'}</p></div>
             <div className="rounded-xl border border-border p-4"><p className="text-xs text-muted-foreground">Meta Credentials</p><p className={`mt-1 font-semibold ${data.messenger.meta_configured ? 'text-green-600' : 'text-amber-600'}`}>{data.messenger.meta_configured ? 'Configured' : 'Not configured'}</p></div>
             <div className="rounded-xl border border-border p-4"><p className="text-xs text-muted-foreground">Signature Verification</p><p className="mt-1 font-semibold text-green-600">{data.messenger.webhook_signature_required ? 'Required' : 'Not required'}</p></div>
-            <div className="rounded-xl border border-border p-4"><p className="text-xs text-muted-foreground">AI System</p><p className={`mt-1 font-semibold ${data.settings?.is_enabled ? 'text-green-600' : 'text-amber-600'}`}>{data.settings?.is_enabled ? 'Enabled' : 'Disabled'}</p></div>
+            <div className="rounded-xl border border-border p-4"><p className="text-xs text-muted-foreground">Generic AI Modules</p><p className={`mt-1 font-semibold ${data.settings?.is_enabled ? 'text-green-600' : 'text-amber-600'}`}>{data.settings?.is_enabled ? 'Enabled' : 'Disabled'}</p></div>
           </div>
-          <div className="mt-4 rounded-xl bg-secondary/40 p-4 text-xs leading-6 text-muted-foreground">API keys and Meta secrets are intentionally never shown in this dashboard. They remain server-side only.</div>
+          <div className="mt-4 rounded-xl bg-secondary/40 p-4 text-xs leading-6 text-muted-foreground">Messenger Runtime above reflects the separate server AI_MESSENGER_ENABLED control. Generic AI Modules is a branch-specific Admin tool setting and does not stop Messenger replies. API keys and Meta secrets are intentionally never shown here.</div>
         </section>
 
         <section className="rounded-2xl border border-border bg-card p-6">
