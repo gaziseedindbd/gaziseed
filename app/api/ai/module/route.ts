@@ -180,8 +180,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const system = `You are the SEED BARI AI ${MODULES[moduleName]} for the ${countryCode} branch. Use only the supplied SEED BARI data for business facts. Never invent sales, stock, orders, customer details, ad spend, ROAS, or product claims. If required data is missing, say so clearly. Give practical, concise recommendations. For Seed Expert, distinguish general educational guidance from professional agronomic advice. Keep branch data isolated: never infer or mix data from another country/branch.`;
-    const user = `${prompt || `Perform a ${MODULES[moduleName]} analysis for SEED BARI.`}\n\nDATA:\n${compact(context)}`;
+    const system = `You are the GAZI SEED AI ${MODULES[moduleName]} for the ${countryCode} branch. Use only the supplied GAZI SEED data for business facts. Never invent sales, stock, orders, customer details, ad spend, ROAS, or product claims. If required data is missing, say so clearly. Give practical, concise recommendations. For Seed Expert, distinguish general educational guidance from professional agronomic advice. Keep branch data isolated: never infer or mix data from another country/branch.`;
+    const user = `${prompt || `Perform a ${MODULES[moduleName]} analysis for GAZI SEED.`}\n\nDATA:\n${compact(context)}`;
     const adapter = getAdapter(ai.provider);
     const result = await adapter.chat({ messages: [{ role: 'system', content: system }, { role: 'user', content: user }], temperature: ai.temperature ?? undefined, max_tokens: ai.max_tokens ?? undefined }, ai);
 
