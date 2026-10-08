@@ -14,17 +14,6 @@ const STATUS_LABELS: Record<string, string> = {
 
 const SOURCE_FILTERS = ['all', 'website', 'ads', 'facebook', 'instagram', 'google', 'tiktok'];
 
-const STATUS_TRANSITIONS: Record<string, string[]> = {
-  pending: ['pending', 'confirmed', 'cancelled'],
-  confirmed: ['confirmed', 'processing', 'cancelled'],
-  processing: ['processing', 'packed', 'cancelled'],
-  packed: ['packed', 'shipped', 'cancelled'],
-  shipped: ['shipped', 'delivered', 'returned', 'cancelled'],
-  delivered: ['delivered', 'returned'],
-  cancelled: ['cancelled'],
-  returned: ['returned'],
-};
-
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,8 +113,7 @@ export default function AdminOrdersPage() {
     if (!selectedOrder || updatingStatus) return;
 
     const currentStatus = selectedOrder.status;
-    const allowedStatuses = STATUS_TRANSITIONS[currentStatus] || [currentStatus];
-    if (!allowedStatuses.includes(newStatus)) {
+    if (newStatus !== currentStatus && !STATUS_OPTIONS.includes(newStatus)) {
       toast('এই স্ট্যাটাস পরিবর্তনটি অনুমোদিত নয়', 'error');
       setNewStatus(currentStatus);
       return;
@@ -507,7 +495,7 @@ export default function AdminOrdersPage() {
                   className="input-bangla w-full"
                   disabled={updatingStatus}
                 >
-                  {(STATUS_TRANSITIONS[selectedOrder.status] || [selectedOrder.status]).map((s) => (
+                  {STATUS_OPTIONS.map((s) => (
                     <option key={s} value={s}>{STATUS_LABELS[s] || s}</option>
                   ))}
                 </select>
