@@ -26,6 +26,18 @@ type IndiaProduct = {
   short_description: string | null;
 };
 
+function getEnglishText(value: string | null): string {
+  if (!value) return '';
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('{')) return value;
+  try {
+    const parsed = JSON.parse(trimmed) as { en?: string; bn?: string; hi?: string };
+    return parsed.en || parsed.bn || parsed.hi || value;
+  } catch {
+    return value;
+  }
+}
+
 export const metadata: Metadata = {
   title: 'Premium Seeds Online in India | GAZI SEED India',
   description:
@@ -207,7 +219,7 @@ export default async function IndiaLandingPage() {
                     </h3>
                     {category.description ? (
                       <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
-                        {category.description}
+                        {getEnglishText(category.description)}
                       </p>
                     ) : null}
                   </div>
