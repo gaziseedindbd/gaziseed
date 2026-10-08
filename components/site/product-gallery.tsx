@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { useLang } from './language-provider';
 import { ChevronLeft, ChevronRight, Images } from 'lucide-react';
+import { getVisitorCountry } from '@/lib/supabase/client';
 
 interface ProductGalleryProps {
   images: string[];
@@ -13,6 +14,7 @@ interface ProductGalleryProps {
 
 export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProps) {
   const [activeIdx, setActiveIdx] = useState(0);
+  const [country, setCountry] = useState<'BD' | 'IN'>('BD');
   const { t } = useLang();
   const touchStartX = useRef<number | null>(null);
 
@@ -37,6 +39,17 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
     setActiveIdx(0);
   }, [images]);
 
+  useEffect(() => {
+    const syncCountry = () => setCountry(getVisitorCountry());
+    syncCountry();
+    window.addEventListener('gazi-country-changed', syncCountry);
+    window.addEventListener('storage', syncCountry);
+    return () => {
+      window.removeEventListener('gazi-country-changed', syncCountry);
+      window.removeEventListener('storage', syncCountry);
+    };
+  }, []);
+
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
   };
@@ -53,7 +66,7 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
 
   if (images.length === 0) {
     return (
-      <div className="product-gallery-premium">
+      <div className={`product-gallery-premium ${country === 'IN' ? 'product-gallery-india' : ''}`}>
         <div className="relative aspect-square overflow-hidden rounded-[1.5rem] border border-primary/10 bg-gradient-to-br from-primary/5 via-white to-accent/10 shadow-inner">
           <div className="flex h-full w-full items-center justify-center text-6xl">🌱</div>
         </div>
@@ -63,7 +76,7 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
   }
 
   return (
-    <div className="product-gallery-premium">
+    <div className={`product-gallery-premium ${country === 'IN' ? 'product-gallery-india' : ''}`}>
       <div
         className="group relative aspect-square overflow-hidden rounded-[1.5rem] border border-primary/10 bg-gradient-to-br from-primary/[0.035] via-white to-accent/[0.07] shadow-[0_18px_45px_-30px_rgba(15,23,42,.45)] sm:rounded-[1.75rem]"
         onTouchStart={handleTouchStart}
@@ -193,6 +206,32 @@ function PremiumProductDetailStyles() {
         .min-h-screen:has(.product-gallery-premium) > .max-w-6xl > .grid:first-child > :nth-child(2) { border-radius: 1.5rem !important; }
         .min-h-screen:has(.product-gallery-premium) > .max-w-6xl > .grid:first-child > :first-child { padding: .45rem !important; }
         .min-h-screen:has(.product-gallery-premium) > .max-w-6xl > .grid:first-child > :nth-child(2) { padding: .9rem !important; }
+
+        /* India mobile audit I3: keep the gallery useful without pushing product details below the fold. */
+        .product-gallery-premium.product-gallery-india > .group:first-child {
+          aspect-ratio: 4 / 3 !important;
+          max-height: 285px !important;
+        }
+        .product-gallery-premium.product-gallery-india > .group:first-child > button {
+          width: 2.5rem !important;
+          height: 2.5rem !important;
+        }
+        .product-gallery-premium.product-gallery-india > div[aria-label] {
+          margin-top: .25rem !important;
+        }
+        .product-gallery-premium.product-gallery-india > div[aria-label] > button {
+          width: 2rem !important;
+          height: 2rem !important;
+        }
+        .product-gallery-premium.product-gallery-india > .mt-3 {
+          margin-top: .4rem !important;
+          gap: .4rem !important;
+        }
+        .product-gallery-premium.product-gallery-india > .mt-3 > button {
+          width: 3.5rem !important;
+          height: 3.5rem !important;
+          border-radius: .7rem !important;
+        }
       }
     `}</style>
   );
