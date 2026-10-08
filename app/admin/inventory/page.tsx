@@ -54,20 +54,18 @@ export default function AdminInventoryPage() {
 
   const updateStock = async () => {
     if (!editing) return;
-    const oldStock = editing.stock;
-    const change = newStock - oldStock;
-    const { error } = await supabase.from('products').update({ stock: newStock }).eq('id', editing.id).eq('country_code', adminBranch);
-    if (error) {
-      console.error('Inventory stock update failed:', error);
-      toast('স্টক আপডেট ব্যর্থ', 'error');
+    if (!Number.isInteger(newStock) || newStock < 0) {
+      toast('স্টক শূন্য বা তার বেশি পূর্ণসংখ্যা হতে হবে', 'error');
       return;
     }
-    if (change !== 0) {
-      const { error: historyError } = await supabase.from('inventory_history').insert({ product_id: editing.id, quantity_change: change, reason: 'Manual adjustment' });
-      if (historyError) {
-        console.error('Inventory history insert failed:', historyError);
-        toast('স্টক আপডেট হয়েছে, কিন্তু হিস্ট্রি লেখা যায়নি', 'error');
-      }
+    const { error } = await supabase.rpc('adjust_inventory_stock', {
+      p_product_id: editing.id,
+      p_new_stock: newStock,
+    });
+    if (error) {
+      console.error('Inventory stock adjustment failed:', error);
+      toast('স্টক আপডেট ব্যর্থ: ' + error.message, 'error');
+      return;
     }
     toast('স্টক আপডেট হয়েছে');
     setEditing(null);

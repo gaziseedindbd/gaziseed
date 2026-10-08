@@ -10,21 +10,43 @@ export default function AdminNavigationPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
+  const [adminBranch, setAdminBranch] = useState<'BD' | 'IN'>('BD');
 
-  useEffect(() => { loadNav(); }, []);
+  useEffect(() => {
+    const init = async () => {
+      const { data, error } = await supabase.rpc('current_admin_country');
+      const branch = String(data || '').toUpperCase();
+      if (error || !['BD', 'IN'].includes(branch)) {
+        toast('ব্রাঞ্চ তথ্য যাচাই করা যায়নি', 'error');
+        setLoading(false);
+        return;
+      }
+      setAdminBranch(branch as 'BD' | 'IN');
+      await loadNav(branch as 'BD' | 'IN');
+    };
+    init();
+    const handleBranchChange = () => { setShowForm(false); setEditing(null); init(); };
+    window.addEventListener('gazi-branch-change', handleBranchChange);
+    return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
+  }, []);
 
-  const loadNav = async () => {
-    const { data } = await supabase.from('navigation').select('*').order('display_order');
-    setItems(data || []);
+  const loadNav = async (branch: 'BD' | 'IN' = adminBranch) => {
+    const { data, error } = await supabase.from('navigation').select('*').eq('country_code', branch).order('display_order');
+    if (error) {
+      toast('নেভিগেশন লোড ব্যর্থ: ' + error.message, 'error');
+      setItems([]);
+    } else setItems(data || []);
     setLoading(false);
   };
 
   const handleSave = async (formData: any) => {
     if (editing) {
-      await supabase.from('navigation').update(formData).eq('id', editing.id);
+      const { error } = await supabase.from('navigation').update({ ...formData, country_code: adminBranch }).eq('id', editing.id).eq('country_code', adminBranch);
+      if (error) { toast('মেনু আপডেট ব্যর্থ: ' + error.message, 'error'); return; }
       toast('মেনু আপডেট হয়েছে');
     } else {
-      await supabase.from('navigation').insert(formData);
+      const { error } = await supabase.from('navigation').insert({ ...formData, country_code: adminBranch });
+      if (error) { toast('মেনু যোগ ব্যর্থ: ' + error.message, 'error'); return; }
       toast('মেনু যোগ হয়েছে');
     }
     setShowForm(false); setEditing(null); loadNav();
@@ -32,7 +54,8 @@ export default function AdminNavigationPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('মেনু আইটেম মুছতে চান?')) return;
-    await supabase.from('navigation').delete().eq('id', id);
+    const { error } = await supabase.from('navigation').delete().eq('id', id).eq('country_code', adminBranch);
+    if (error) { toast('মেনু মুছতে ব্যর্থ: ' + error.message, 'error'); return; }
     toast('মেনু মুছে ফেলা হয়েছে');
     loadNav();
   };
@@ -43,8 +66,10 @@ export default function AdminNavigationPage() {
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= sorted.length) return;
     const swapItem = sorted[swapIdx];
-    await supabase.from('navigation').update({ display_order: swapItem.display_order }).eq('id', item.id);
-    await supabase.from('navigation').update({ display_order: item.display_order }).eq('id', swapItem.id);
+    const { error: firstError } = await supabase.from('navigation').update({ display_order: swapItem.display_order }).eq('id', item.id).eq('country_code', adminBranch);
+    if (firstError) { toast('মেনু অর্ডার পরিবর্তন ব্যর্থ: ' + firstError.message, 'error'); return; }
+    const { error: secondError } = await supabase.from('navigation').update({ display_order: item.display_order }).eq('id', swapItem.id).eq('country_code', adminBranch);
+    if (secondError) { toast('মেনু অর্ডার পরিবর্তন অসম্পূর্ণ: ' + secondError.message, 'error'); return; }
     loadNav();
   };
 
@@ -78,13 +103,14 @@ export default function AdminNavigationPage() {
         ))}
         {items.length === 0 && <p className="p-8 text-center text-muted-foreground">কোন মেনু নেই</p>}
       </div>
-      {showForm && <NavForm item={editing} onSave={handleSave} onClose={() => { setShowForm(false); setEditing(null); }} />}
+      {showForm && <NavForm item={editing} countryCode={adminBranch} onSave={handleSave} onClose={() => { setShowForm(false); setEditing(null); }} />}
     </div>
   );
 }
 
-function NavForm({ item, onSave, onClose }: any) {
+function NavForm({ item, countryCode, onSave, onClose }: any) {
   const [form, setForm] = useState({
+    country_code: item?.country_code || countryCode,
     title: item?.title || '', url: item?.url || '/',
     display_order: item?.display_order || 0, is_active: item?.is_active ?? true,
   });

@@ -14,15 +14,30 @@ export default function AdminAdsLandingPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [adminBranch, setAdminBranch] = useState<'BD' | 'IN'>('BD');
 
-  useEffect(() => { loadLandings(); }, []);
+  useEffect(() => {
+    const init = async () => {
+      const { data, error } = await supabase.rpc('current_admin_country');
+      const branch = String(data || '').toUpperCase();
+      if (error || !['BD', 'IN'].includes(branch)) { toast('ব্রাঞ্চ তথ্য যাচাই করা যায়নি', 'error'); setLoading(false); return; }
+      setAdminBranch(branch as 'BD' | 'IN');
+      await loadLandings(branch as 'BD' | 'IN');
+    };
+    init();
+    const handleBranchChange = () => { setShowCreate(false); init(); };
+    window.addEventListener('gazi-branch-change', handleBranchChange);
+    return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
+  }, []);
 
-  const loadLandings = async () => {
-    const { data } = await supabase
+  const loadLandings = async (branch: 'BD' | 'IN' = adminBranch) => {
+    const { data, error } = await supabase
       .from('landing_pages')
       .select('*, products(name_bn, name_en, slug, image, is_ads_only, stock)')
+      .eq('country_code', branch)
       .order('created_at', { ascending: false });
-    setLandings(data || []);
+    if (error) { toast('Landing Page লোড ব্যর্থ: ' + error.message, 'error'); setLandings([]); }
+    else setLandings(data || []);
     setLoading(false);
   };
 
@@ -34,14 +49,16 @@ export default function AdminAdsLandingPage() {
 
   const toggleStatus = async (l: any) => {
     const newStatus = l.status === 'active' ? 'paused' : 'active';
-    await supabase.from('landing_pages').update({ status: newStatus, is_active: newStatus === 'active' }).eq('id', l.id);
+    const { error } = await supabase.from('landing_pages').update({ status: newStatus, is_active: newStatus === 'active' }).eq('id', l.id).eq('country_code', adminBranch);
+    if (error) { toast('স্ট্যাটাস পরিবর্তন ব্যর্থ: ' + error.message, 'error'); return; }
     toast(newStatus === 'active' ? 'ল্যান্ডিং পেজ চালু হয়েছে' : 'ল্যান্ডিং পেজ বিরতি দেওয়া হয়েছে');
-    loadLandings();
+    loadLandings(adminBranch);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('এই Ads Landing Page মুছতে চান?')) return;
-    await supabase.from('landing_pages').delete().eq('id', id);
+    const { error } = await supabase.from('landing_pages').delete().eq('id', id).eq('country_code', adminBranch);
+    if (error) { toast('Landing Page মুছতে ব্যর্থ: ' + error.message, 'error'); return; }
     toast('Landing Page মুছে ফেলা হয়েছে');
     loadLandings();
   };
@@ -56,7 +73,7 @@ export default function AdminAdsLandingPage() {
       title, subtitle, images, video_url, compare_price, offer_price, benefits, features,
       description, growing_guide, trust_text, cod_text, delivery_text, faq, cta_text,
       pricing_tiers: pricing_tiers || tiers || [], tiers: pricing_tiers || tiers || [],
-      section_visibility, status: 'draft', is_active: false
+      section_visibility, country_code: adminBranch, status: 'draft', is_active: false
     });
     if (error) { toast('ডুপ্লিকেট ব্যর্থ: ' + error.message, 'error'); return; }
     toast('Landing Page ডুপ্লিকেট করা হয়েছে');
@@ -135,12 +152,12 @@ export default function AdminAdsLandingPage() {
         </div>
       )}
 
-      {showCreate && <CreateLandingModal onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); loadLandings(); }} />}
+      {showCreate && <CreateLandingModal countryCode={adminBranch} onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); loadLandings(adminBranch); }} />}
     </div>
   );
 }
 
-function CreateLandingModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 'BD' | 'IN'; onClose: () => void; onCreated: () => void }) {
   const [mode, setMode] = useState<'select' | 'existing' | 'new'>('select');
   const [products, setProducts] = useState<any[]>([]);
   const [selectedProductId, setSelectedProductId] = useState('');
@@ -175,9 +192,9 @@ function CreateLandingModal({ onClose, onCreated }: { onClose: () => void; onCre
 
   useEffect(() => {
     if (mode === 'existing') {
-      supabase.from('products').select('*').eq('is_active', true).eq('is_ads_only', false).order('name_bn').then(({ data }) => setProducts(data || []));
+      supabase.from('products').select('*').eq('country_code', countryCode).eq('is_active', true).eq('is_ads_only', false).order('name_bn').then(({ data }) => setProducts(data || []));
     }
-  }, [mode]);
+  }, [mode, countryCode]);
 
   const handleCreate = async () => {
     setLoading(true);
@@ -190,7 +207,7 @@ function CreateLandingModal({ onClose, onCreated }: { onClose: () => void; onCre
           name_bn: newProduct.name_bn, name_en: newProduct.name_en, sku: newProduct.sku,
           stock: Number(newProduct.stock) || 0, short_description: newProduct.short_description,
           description: newProduct.description, regular_price: Number(newProduct.regular_price) || 0,
-          slug, is_active: true, is_ads_only: true, image: images[0] || '',
+          slug, is_active: true, is_ads_only: true, image: images[0] || '', country_code: countryCode,
         }).select().single();
         if (prodError) throw prodError;
         productId = prod.id;
@@ -217,6 +234,7 @@ function CreateLandingModal({ onClose, onCreated }: { onClose: () => void; onCre
 
       const { data: lpData, error: lpError } = await supabase.from('landing_pages').insert({
         product_id: productId,
+        country_code: countryCode,
         landing_name: landing.landing_name,
         landing_slug: landingSlug,
         slug: landingSlug,
@@ -247,6 +265,7 @@ function CreateLandingModal({ onClose, onCreated }: { onClose: () => void; onCre
       if (formattedTiers.length > 0) {
         const inserts = formattedTiers.map((qo, idx) => ({
           landing_page_id: lpData.id,
+          country_code: countryCode,
           product_id: productId,
           quantity: qo.quantity,
           offer_price: qo.offer_price,

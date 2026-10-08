@@ -13,21 +13,43 @@ export default function AdminCategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
+  const [adminBranch, setAdminBranch] = useState<'BD' | 'IN'>('BD');
 
-  useEffect(() => { loadCategories(); }, []);
+  useEffect(() => {
+    const init = async () => {
+      const { data, error } = await supabase.rpc('current_admin_country');
+      if (error || !['BD', 'IN'].includes(String(data).toUpperCase())) {
+        toast('ব্রাঞ্চ তথ্য যাচাই করা যায়নি', 'error');
+        setLoading(false);
+        return;
+      }
+      const branch = String(data).toUpperCase() as 'BD' | 'IN';
+      setAdminBranch(branch);
+      await loadCategories(branch);
+    };
+    init();
+    const handleBranchChange = () => { setShowForm(false); setEditing(null); init(); };
+    window.addEventListener('gazi-branch-change', handleBranchChange);
+    return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
+  }, []);
 
-  const loadCategories = async () => {
-    const { data } = await supabase.from('categories').select('*').order('display_order');
-    setCategories(data || []);
+  const loadCategories = async (branch: 'BD' | 'IN' = adminBranch) => {
+    const { data, error } = await supabase.from('categories').select('*').eq('country_code', branch).order('display_order');
+    if (error) {
+      toast('ক্যাটাগরি লোড ব্যর্থ: ' + error.message, 'error');
+      setCategories([]);
+    } else setCategories(data || []);
     setLoading(false);
   };
 
   const handleSave = async (formData: any) => {
     if (editing) {
-      await supabase.from('categories').update(formData).eq('id', editing.id);
+      const { error } = await supabase.from('categories').update({ ...formData, country_code: adminBranch }).eq('id', editing.id).eq('country_code', adminBranch);
+      if (error) { toast('ক্যাটাগরি আপডেট ব্যর্থ: ' + error.message, 'error'); return; }
       toast('ক্যাটাগরি আপডেট হয়েছে');
     } else {
-      await supabase.from('categories').insert(formData);
+      const { error } = await supabase.from('categories').insert({ ...formData, country_code: adminBranch });
+      if (error) { toast('ক্যাটাগরি যোগ ব্যর্থ: ' + error.message, 'error'); return; }
       toast('ক্যাটাগরি যোগ হয়েছে');
     }
     setShowForm(false);
@@ -37,7 +59,8 @@ export default function AdminCategoriesPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('ক্যাটাগরি মুছতে চান?')) return;
-    await supabase.from('categories').delete().eq('id', id);
+    const { error } = await supabase.from('categories').delete().eq('id', id).eq('country_code', adminBranch);
+    if (error) { toast('ক্যাটাগরি মুছতে ব্যর্থ: ' + error.message, 'error'); return; }
     toast('ক্যাটাগরি মুছে ফেলা হয়েছে');
     loadCategories();
   };
@@ -75,14 +98,15 @@ export default function AdminCategoriesPage() {
       )}
 
       {showForm && (
-        <CategoryForm category={editing} onSave={handleSave} onClose={() => { setShowForm(false); setEditing(null); }} />
+        <CategoryForm category={editing} countryCode={adminBranch} onSave={handleSave} onClose={() => { setShowForm(false); setEditing(null); }} />
       )}
     </div>
   );
 }
 
-function CategoryForm({ category, onSave, onClose }: { category: any; onSave: (data: any) => void; onClose: () => void }) {
+function CategoryForm({ category, countryCode, onSave, onClose }: { category: any; countryCode: 'BD' | 'IN'; onSave: (data: any) => void; onClose: () => void }) {
   const [form, setForm] = useState({
+    country_code: category?.country_code || countryCode,
     name_bn: category?.name_bn || '',
     name_en: category?.name_en || '',
     slug: category?.slug || '',

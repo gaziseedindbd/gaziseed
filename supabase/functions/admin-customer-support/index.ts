@@ -59,7 +59,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: adminRecord } = await userClient
       .from("admin_users")
-      .select("is_active, role")
+      .select("is_active, role, country_code")
       .eq("user_id", adminUserId)
       .maybeSingle();
 
@@ -70,6 +70,14 @@ Deno.serve(async (req: Request) => {
     }
 
     const isMaster = adminRecord.role === "master_admin";
+
+    const { data: adminCountry, error: countryError } = await userClient.rpc("current_admin_country");
+    const currentAdminCountry = String(adminCountry || adminRecord.country_code || "").toUpperCase();
+    if (countryError || !["BD", "IN"].includes(currentAdminCountry)) {
+      return new Response(JSON.stringify({ error: "Unable to verify admin branch" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -110,6 +118,24 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Scope service-role customer access to the caller's selected branch.
+    const [{ data: targetOrders, error: targetOrdersError }, { data: targetAddresses, error: targetAddressesError }] = await Promise.all([
+      adminClient.from("orders").select("country_code").eq("user_id", targetUserId),
+      adminClient.from("customer_addresses").select("country_code").eq("user_id", targetUserId),
+    ]);
+    if (targetOrdersError || targetAddressesError) {
+      return new Response(JSON.stringify({ error: "Failed to verify customer branch" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const hasBranchRecord = [...(targetOrders || []), ...(targetAddresses || [])]
+      .some((row: any) => String(row.country_code || "").toUpperCase() === currentAdminCountry);
+    if (!isMaster && !hasBranchRecord) {
+      return new Response(JSON.stringify({ error: "Customer not found in your branch" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Get target user email if not provided
     if (!targetEmail) {
       const { data: targetUser } = await adminClient.auth.admin.getUserById(targetUserId);
@@ -130,8 +156,17 @@ Deno.serve(async (req: Request) => {
 
         const tempPassword = generateTempPassword(12);
 
+        const { data: currentMeta, error: currentMetaError } = await adminClient.auth.admin.getUserById(targetUserId);
+        if (currentMetaError || !currentMeta?.user) {
+          return new Response(JSON.stringify({ error: "Failed to read customer account" }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const existingAppMeta = currentMeta.user.app_metadata || {};
         const { error: updateError } = await adminClient.auth.admin.updateUserById(targetUserId, {
           password: tempPassword,
+          app_metadata: { ...existingAppMeta, must_change_password: true },
         });
 
         if (updateError) {
@@ -140,21 +175,19 @@ Deno.serve(async (req: Request) => {
           });
         }
 
-        // Set must_change_password flag in raw_app_meta_data
-        const { data: currentMeta } = await adminClient.auth.admin.getUserById(targetUserId);
-        const existingAppMeta = currentMeta?.user?.app_metadata || {};
-        await adminClient.auth.admin.updateUserById(targetUserId, {
-          app_metadata: { ...existingAppMeta, must_change_password: false },
-        });
-
         responseData = { temp_password: tempPassword };
         auditAction = "set_temp_password";
-        auditDetails = { must_change_password: false };
+        auditDetails = { must_change_password: true };
         // NEVER store the temp password in audit details
         break;
       }
 
       case "send_reset_link": {
+        if (!isMaster) {
+          return new Response(JSON.stringify({ error: "Only MASTER_ADMIN can manage customer account access" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         if (!targetEmail) {
           return new Response(JSON.stringify({ error: "Customer email required" }), {
             status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -175,11 +208,26 @@ Deno.serve(async (req: Request) => {
       }
 
       case "force_password_change": {
-        const { data: currentMeta } = await adminClient.auth.admin.getUserById(targetUserId);
-        const existingAppMeta = currentMeta?.user?.app_metadata || {};
-        await adminClient.auth.admin.updateUserById(targetUserId, {
-          app_metadata: { ...existingAppMeta, must_change_password: false },
+        if (!isMaster) {
+          return new Response(JSON.stringify({ error: "Only MASTER_ADMIN can manage customer account access" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { data: currentMeta, error: currentMetaError } = await adminClient.auth.admin.getUserById(targetUserId);
+        if (currentMetaError || !currentMeta?.user) {
+          return new Response(JSON.stringify({ error: "Failed to read customer account" }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const existingAppMeta = currentMeta.user.app_metadata || {};
+        const { error: forceError } = await adminClient.auth.admin.updateUserById(targetUserId, {
+          app_metadata: { ...existingAppMeta, must_change_password: true },
         });
+        if (forceError) {
+          return new Response(JSON.stringify({ error: `Failed to force password change: ${forceError.message}` }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
 
         responseData = { forced: true };
         auditAction = "force_password_change";
@@ -188,12 +236,17 @@ Deno.serve(async (req: Request) => {
       }
 
       case "unlock_account": {
+        if (!isMaster) {
+          return new Response(JSON.stringify({ error: "Only MASTER_ADMIN can manage customer account access" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         // Clear ban by setting ban_duration to 'none' (Supabase Admin API)
         const { data: currentMeta2 } = await adminClient.auth.admin.getUserById(targetUserId);
         const existingAppMeta2 = currentMeta2?.user?.app_metadata || {};
         const { error: unlockError } = await adminClient.auth.admin.updateUserById(targetUserId, {
           ban_duration: "none",
-          app_metadata: { ...existingAppMeta2, must_change_password: false, banned_until: undefined },
+          app_metadata: { ...existingAppMeta2, banned_until: undefined },
         });
 
         if (unlockError) {
@@ -222,6 +275,7 @@ Deno.serve(async (req: Request) => {
           .from("customer_addresses")
           .select("*")
           .eq("user_id", targetUserId)
+          .eq("country_code", currentAdminCountry)
           .order("created_at", { ascending: false });
 
         // Fetch orders
@@ -229,6 +283,7 @@ Deno.serve(async (req: Request) => {
           .from("orders")
           .select("*")
           .eq("user_id", targetUserId)
+          .eq("country_code", currentAdminCountry)
           .order("created_at", { ascending: false });
 
         // Fetch audit logs
@@ -236,6 +291,7 @@ Deno.serve(async (req: Request) => {
           .from("admin_audit_log")
           .select("*")
           .eq("target_user_id", targetUserId)
+          .eq("country_code", currentAdminCountry)
           .order("created_at", { ascending: false })
           .limit(50);
 
@@ -280,6 +336,7 @@ Deno.serve(async (req: Request) => {
       target_email: targetEmail,
       action: auditAction,
       details: auditDetails,
+      country_code: currentAdminCountry,
     });
 
     return new Response(JSON.stringify(responseData), {

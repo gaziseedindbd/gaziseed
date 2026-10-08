@@ -157,7 +157,12 @@ export default function AIMessengerAdminPage() {
     }
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void load();
+    const handleBranchChange = () => { setData(null); setSupportQueue([]); void load(); };
+    window.addEventListener('gazi-branch-change', handleBranchChange);
+    return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
+  }, []);
 
   if (loading && !data) return <div className="flex min-h-[420px] items-center justify-center"><RefreshCw className="h-6 w-6 animate-spin text-primary" /></div>;
   if (error && !data) return <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-6 text-sm text-destructive">{error}</div>;
