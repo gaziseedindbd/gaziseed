@@ -28,6 +28,7 @@ type OrderRow = {
   order_status: string | null;
   status: string | null;
   country_code: CountryCode;
+  order_source: string | null;
 };
 
 function adminSupabase() {
@@ -118,11 +119,13 @@ export async function processMessengerOrderConfirmationNotifications(
   const safeLimit = Math.max(1, Math.min(limit, 100));
 
   const staleSendingBefore = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-  const { error: recoveryError } = await supabase
+  let recoveryQuery = supabase
     .from('messenger_order_notifications')
     .update({ status: 'pending', updated_at: new Date().toISOString() })
     .eq('status', 'sending')
     .lt('updated_at', staleSendingBefore);
+  if (orderId) recoveryQuery = recoveryQuery.eq('order_id', orderId);
+  const { error: recoveryError } = await recoveryQuery;
   if (recoveryError) throw recoveryError;
 
   let queueQuery = supabase
@@ -173,7 +176,7 @@ export async function processMessengerOrderConfirmationNotifications(
     const { data: orderData, error: orderError } = await supabase
       .from('orders')
       .select(
-        'id,order_number,customer_name,customer_phone,grand_total,final_amount,total_amount,payment_method,payment_status,order_status,status,country_code',
+        'id,order_number,customer_name,customer_phone,grand_total,final_amount,total_amount,payment_method,payment_status,order_status,status,country_code,order_source',
       )
       .eq('id', notification.order_id)
       .maybeSingle();
