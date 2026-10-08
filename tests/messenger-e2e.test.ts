@@ -13,6 +13,14 @@ import {
   shouldTrackMessengerAIDeliveryStatus,
 } from '../lib/ai/messenger-delivery-state';
 import { verifyMessengerWebhookSignature } from '../lib/ai/messenger-webhook-security';
+import {
+  serializeMessengerProducts,
+  type MessengerProduct,
+} from '../lib/ai/messenger-product-tool';
+import {
+  limitMessengerAIHistoryMessages,
+  shouldIncludeMessengerAIHistoryMessage,
+} from '../lib/ai/messenger-history';
 
 const TEST_ENV_KEYS = [
   'AI_MESSENGER_ENABLED',
@@ -200,4 +208,88 @@ test('keeps Messenger AI delivery state transitions narrow and deterministic', (
     getMessengerAIDeliveryActionStatus('send_failure'),
     'failed',
   );
+});
+
+
+test('keeps a bounded recent suffix in chronological order', () => {
+  const messages = Array.from({ length: 40 }, (_, index) => ({
+    role: index % 2 === 0 ? 'user' : 'assistant',
+    content: 'message-' + index,
+  }));
+
+  const result = limitMessengerAIHistoryMessages(messages, {
+    maxMessages: 30,
+    maxCharacters: 10_000,
+  });
+
+  assert.equal(result.length, 30);
+  assert.equal(result[0].content, 'message-10');
+  assert.equal(result.at(-1)?.content, 'message-39');
+});
+
+test('drops older history to stay within the character budget', () => {
+  const messages = [
+    { role: 'user', content: 'oldest' },
+    { role: 'assistant', content: 'older' },
+    { role: 'user', content: 'recent' },
+    { role: 'assistant', content: 'latest' },
+  ];
+
+  const result = limitMessengerAIHistoryMessages(messages, {
+    maxMessages: 10,
+    maxCharacters: 12,
+  });
+
+  assert.deepEqual(result.map((message) => message.content), ['recent', 'latest']);
+});
+
+test('preserves the latest message intact when it exceeds the budget', () => {
+  const messages = [
+    { role: 'user', content: 'an older turn that is too long to keep' },
+    { role: 'user', content: 'the complete latest customer message' },
+  ];
+
+  const result = limitMessengerAIHistoryMessages(messages, {
+    maxMessages: 10,
+    maxCharacters: 8,
+  });
+
+  assert.deepEqual(result, [messages[1]]);
+});
+
+test('excludes provider and failed internal states from history', () => {
+  assert.equal(shouldIncludeMessengerAIHistoryMessage({ action_status: 'provider_result' }), false);
+  assert.equal(shouldIncludeMessengerAIHistoryMessage({ action_status: 'generated' }), false);
+  assert.equal(shouldIncludeMessengerAIHistoryMessage({ action_status: 'failed' }), false);
+  assert.equal(shouldIncludeMessengerAIHistoryMessage({ action_status: 'sent' }), true);
+  assert.equal(shouldIncludeMessengerAIHistoryMessage({ action_status: null }), true);
+});
+
+
+test('exposes growing instructions only for trusted catalog matches', () => {
+  const products = serializeMessengerProducts([
+    {
+      id: 'trusted-product',
+      name_bn: 'পরীক্ষার বীজ',
+      name_en: 'Test Seed',
+      slug: 'test-seed',
+      cultivation_instructions: 'Verified sowing instructions',
+      plant_spacing: '30 cm',
+      search_match_type: 'exact',
+    } as unknown as MessengerProduct,
+    {
+      id: 'similar-product',
+      name_bn: 'অনুরূপ বীজ',
+      name_en: 'Similar Seed',
+      slug: 'similar-seed',
+      cultivation_instructions: 'Unverified instructions',
+      plant_spacing: '90 cm',
+      search_match_type: 'similar',
+    } as unknown as MessengerProduct,
+  ]);
+
+  assert.equal(products[0].cultivation_instructions, 'Verified sowing instructions');
+  assert.equal(products[0].plant_spacing, '30 cm');
+  assert.equal(products[1].cultivation_instructions, null);
+  assert.equal(products[1].plant_spacing, null);
 });

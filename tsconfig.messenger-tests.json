@@ -22,6 +22,7 @@
     "lib/ai/messenger-product-tool.ts",
     "lib/ai/messenger-customer-tool.ts",
     "lib/ai/messenger-human-support.ts",
+    "lib/ai/messenger-history.ts",
     "lib/ai/messenger-rate-limit.ts",
     "lib/ai/messenger-knowledge-tool.ts"
   ]

@@ -26,6 +26,19 @@ export type MessengerProduct = {
   germination_rate: string | null;
   harvest_time: string | null;
   country_code: string;
+  description?: string | null;
+  brand?: string | null;
+  origin?: string | null;
+  plant_spacing?: string | null;
+  planting_depth?: string | null;
+  sunlight?: string | null;
+  water_requirement?: string | null;
+  soil_type?: string | null;
+  growing_location?: string | null;
+  expected_yield?: string | null;
+  cultivation_instructions?: string | null;
+  storage_instructions?: string | null;
+  seed_quantity?: string | null;
   search_match_type?: MessengerProductSearchMatchType | null;
   search_match_score?: number | null;
 };
@@ -283,6 +296,67 @@ export async function searchMessengerProducts(
   return sortMessengerProducts(Array.from(merged.values())).slice(0, safeLimit);
 }
 
+const MESSENGER_KNOWLEDGE_FIELDS = [
+  'description',
+  'brand',
+  'origin',
+  'plant_spacing',
+  'planting_depth',
+  'sunlight',
+  'water_requirement',
+  'soil_type',
+  'growing_location',
+  'expected_yield',
+  'cultivation_instructions',
+  'storage_instructions',
+  'seed_quantity',
+].join(',');
+
+/**
+ * Load detailed growing facts only for trusted product matches. The ranked
+ * search RPC intentionally returns a compact catalog result; this second read
+ * supplies verified product knowledge without changing its search contract.
+ */
+export async function enrichMessengerProductsWithKnowledge(
+  supabase: SupabaseClient,
+  country: MessengerCountry,
+  products: MessengerProduct[],
+): Promise<MessengerProduct[]> {
+  const trustedProducts = products
+    .filter(isTrustedMessengerProductMatch)
+    .slice(0, 3);
+
+  if (!trustedProducts.length) return products;
+
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('id,' + MESSENGER_KNOWLEDGE_FIELDS)
+      .eq('country_code', country)
+      .eq('is_active', true)
+      .in('id', trustedProducts.map((product) => product.id));
+
+    if (error) throw error;
+
+    const knowledgeById = new Map(
+      ((data || []) as unknown as Array<Partial<MessengerProduct> & { id: string }>)
+        .map((product) => [product.id, product]),
+    );
+
+    return products.map((product) => {
+      if (!isTrustedMessengerProductMatch(product)) return product;
+      return { ...product, ...(knowledgeById.get(product.id) || {}) };
+    });
+  } catch (error) {
+    console.error(
+      'Messenger product knowledge enrichment failed:',
+      error instanceof Error ? error.message : 'Unknown product knowledge error',
+    );
+    // Keep existing catalog replies available if this optional read fails.
+    return products;
+  }
+}
+
 export function serializeMessengerProducts(products: MessengerProduct[]) {
   return products.map((product) => {
     const transactionalDataVerified = isTrustedMessengerProductMatch(product);
@@ -312,6 +386,20 @@ export function serializeMessengerProducts(products: MessengerProduct[]) {
       germination_time: product.germination_time,
       germination_rate: product.germination_rate,
       harvest_time: product.harvest_time,
+      // Detailed growing facts are authoritative only for exact/strong matches.
+      description: transactionalDataVerified ? product.description || null : null,
+      brand: transactionalDataVerified ? product.brand || null : null,
+      origin: transactionalDataVerified ? product.origin || null : null,
+      plant_spacing: transactionalDataVerified ? product.plant_spacing || null : null,
+      planting_depth: transactionalDataVerified ? product.planting_depth || null : null,
+      sunlight: transactionalDataVerified ? product.sunlight || null : null,
+      water_requirement: transactionalDataVerified ? product.water_requirement || null : null,
+      soil_type: transactionalDataVerified ? product.soil_type || null : null,
+      growing_location: transactionalDataVerified ? product.growing_location || null : null,
+      expected_yield: transactionalDataVerified ? product.expected_yield || null : null,
+      cultivation_instructions: transactionalDataVerified ? product.cultivation_instructions || null : null,
+      storage_instructions: transactionalDataVerified ? product.storage_instructions || null : null,
+      seed_quantity: transactionalDataVerified ? product.seed_quantity || null : null,
       country_code: product.country_code,
       search_match_type: product.search_match_type || null,
       search_match_score: product.search_match_score ?? null,
