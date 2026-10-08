@@ -206,23 +206,7 @@ export default function OfferLandingPage() {
         p_gclid: utm.gclid,
       });
 
-      if (rpcError) {
-        const { error: directErr } = await supabase.from('orders').insert([{
-          customer_name: form.name.trim(),
-          customer_phone: phone,
-          customer_address: fullAddress,
-          subtotal: offerPrice,
-          shipping_fee: deliveryCharge,
-          total_amount: grandTotal,
-          items: itemsPayload,
-          order_source: 'ads',
-          utm_campaign: slug,
-          order_status: 'pending'
-        }]);
-        if (directErr) throw directErr;
-        window.location.href = `/order-success?number=ORD-${Date.now().toString().slice(-6)}`;
-        return;
-      }
+      if (rpcError) throw rpcError;
 
       if (data?.error) { setError(data.error); return; }
       window.location.href = `/order-success?number=${data?.order_number || ''}`;
