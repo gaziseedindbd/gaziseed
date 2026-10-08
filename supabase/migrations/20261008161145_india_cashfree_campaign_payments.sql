@@ -168,6 +168,8 @@ DECLARE
   v_package_name text;
   v_quantity integer;
   v_stock integer;
+  v_tiers jsonb;
+  v_tier jsonb;
   v_offer_price numeric;
   v_compare_price numeric;
   v_delivery numeric;
