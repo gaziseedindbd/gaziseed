@@ -1,11 +1,9 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+import { createServerSupabase } from '@/lib/supabase/server';
 
 const BASE_URL = 'https://www.gaziseed.com';
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
 type IndiaCategory = {
   id: string;
   name_en: string;
@@ -49,59 +47,30 @@ export const metadata: Metadata = {
   },
 };
 
-async function fetchIndiaRows<T>(table: string, query: string): Promise<T[]> {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 2500);
-
-  try {
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/${table}?${query}`,
-      {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          'x-gazi-country': 'IN',
-        },
-        next: { revalidate: 3600 },
-        signal: controller.signal,
-      },
-    );
-
-    if (!response.ok) return [];
-    return (await response.json()) as T[];
-  } catch {
-    return [];
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
 export default async function IndiaLandingPage() {
-  const [categories, products] = await Promise.all([
-    fetchIndiaRows<IndiaCategory>(
-      'categories',
-      new URLSearchParams({
-        select: 'id,name_en,name_bn,slug,description,image,display_order',
-        is_active: 'eq.true',
-        country_code: 'eq.IN',
-        order: 'display_order.asc',
-        limit: '8',
-      }).toString(),
-    ),
-    fetchIndiaRows<IndiaProduct>(
-      'products',
-      new URLSearchParams({
-        select: 'id,name_en,name_bn,slug,image,regular_price,sale_price,short_description',
-        is_active: 'eq.true',
-        country_code: 'eq.IN',
-        is_ads_only: 'eq.false',
-        order: 'is_featured.desc,created_at.desc',
-        limit: '8',
-      }).toString(),
-    ),
+  const supabase = await createServerSupabase('IN');
+
+  const [categoriesResult, productsResult] = await Promise.all([
+    supabase
+      .from('categories')
+      .select('id,name_en,name_bn,slug,description,image,display_order')
+      .eq('is_active', true)
+      .eq('country_code', 'IN')
+      .order('display_order', { ascending: true })
+      .limit(8),
+    supabase
+      .from('products')
+      .select('id,name_en,name_bn,slug,image,regular_price,sale_price,short_description')
+      .eq('is_active', true)
+      .eq('country_code', 'IN')
+      .eq('is_ads_only', false)
+      .order('is_featured', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(8),
   ]);
+
+  const categories = (categoriesResult.data || []) as IndiaCategory[];
+  const products = (productsResult.data || []) as IndiaProduct[];
 
   const organizationLd = {
     '@context': 'https://schema.org',
