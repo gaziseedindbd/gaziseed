@@ -1,8 +1,19 @@
+import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { getAdapter } from '@/lib/ai/adapters';
 import type { AIFeatureFlags, AISettings } from '@/lib/ai/types';
 import { getMetaAdsAiContext } from '@/lib/server/meta-ads';
+
+function secretSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
+  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  if (!url || !serviceRole) return null;
+
+  return createClient(url, serviceRole, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
 
 const MODULES: Record<keyof AIFeatureFlags, string> = {
   business_analysis: 'Business Analysis',
@@ -54,17 +65,37 @@ export async function POST(req: NextRequest) {
 
     const { data: settings, error: settingsError } = await supabase
       .from('ai_settings')
-      .select('is_enabled,provider,api_key,model,base_url,temperature,max_tokens,feature_flags,country_code')
+      .select('is_enabled,provider,model,base_url,temperature,max_tokens,feature_flags,country_code,api_key_secret_id')
       .eq('id', 1)
       .eq('country_code', countryCode)
       .maybeSingle();
 
     if (settingsError || !settings) return NextResponse.json({ success: false, message: 'AI settings are not configured for this branch' }, { status: 400 });
-    const ai = settings as AISettings;
-    const flags = (ai.feature_flags || {}) as AIFeatureFlags;
-    if (!ai.is_enabled) return NextResponse.json({ success: false, message: 'AI System is OFF' }, { status: 403 });
+    const flags = (settings.feature_flags || {}) as AIFeatureFlags;
+    if (!settings.is_enabled) return NextResponse.json({ success: false, message: 'AI System is OFF' }, { status: 403 });
     if (!flags[moduleName]) return NextResponse.json({ success: false, message: `${MODULES[moduleName]} is OFF in AI Settings` }, { status: 403 });
-    if (!ai.api_key) return NextResponse.json({ success: false, message: 'AI API key is not configured' }, { status: 400 });
+
+    const secretClient = secretSupabase();
+    if (!secretClient) {
+      return NextResponse.json({ success: false, message: 'AI secret storage is not configured' }, { status: 500 });
+    }
+
+    const { data: apiKey, error: apiKeyError } = await secretClient.rpc('ai_get_api_key', {
+      p_country_code: countryCode,
+    });
+
+    if (apiKeyError) {
+      return NextResponse.json({ success: false, message: 'AI API key could not be loaded' }, { status: 500 });
+    }
+
+    if (!apiKey || typeof apiKey !== 'string') {
+      return NextResponse.json({ success: false, message: 'AI API key is not configured' }, { status: 400 });
+    }
+
+    const ai = {
+      ...settings,
+      api_key: apiKey,
+    } as AISettings;
 
     const since = new Date();
     since.setDate(since.getDate() - 30);

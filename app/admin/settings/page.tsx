@@ -41,7 +41,7 @@ export default function AdminSettingsPage() {
       const [site, mkt, ai, ref] = await Promise.all([
         supabase.from('site_settings').select('*').eq('country_code', branch).maybeSingle(),
         supabase.from('marketing_settings').select('*').eq('id', 1).eq('country_code', branch).maybeSingle(),
-        supabase.from('ai_settings').select('id,is_enabled,provider,model,base_url,temperature,max_tokens,feature_flags,country_code').eq('id', 1).eq('country_code', branch).maybeSingle(),
+        supabase.from('ai_settings').select('id,is_enabled,provider,model,base_url,temperature,max_tokens,feature_flags,country_code,api_key_secret_id').eq('id', 1).eq('country_code', branch).maybeSingle(),
         supabase.from('referral_settings').select('*').eq('id', 1).eq('country_code', branch).maybeSingle(),
       ]);
       setSiteForm(site.data || {});
@@ -49,7 +49,7 @@ export default function AdminSettingsPage() {
       const aiData = (ai.data || {}) as Record<string, any>;
       setAiForm({
         ...aiData,
-        api_key: '',
+        api_key: aiData.api_key_secret_id ? '••••••••' : '',
         feature_flags: { ...DEFAULT_FEATURE_FLAGS, ...(aiData.feature_flags || {}) },
       });
       setReferralForm(ref.data || { enabled: false, reward_type: 'fixed', reward_value: 0, min_order_amount: 0, max_reward_per_referral: null, terms: '' });
@@ -124,23 +124,58 @@ export default function AdminSettingsPage() {
   const saveAI = async () => {
     setSaving(true);
     setAiTestResult(null);
-    const payload: Record<string, unknown> = {
-      is_enabled: aiForm.is_enabled ?? false,
-      provider: aiForm.provider || 'openai',
-      model: aiForm.model || '',
-      base_url: aiForm.base_url || '',
-      temperature: aiForm.temperature ?? null,
-      max_tokens: aiForm.max_tokens ?? null,
-      feature_flags: aiForm.feature_flags,
-    };
-    if (aiKeyEdited && aiForm.api_key && !isApiKeyMasked(aiForm.api_key)) {
-      payload.api_key = aiForm.api_key;
+
+    try {
+      const payload: Record<string, unknown> = {
+        is_enabled: aiForm.is_enabled ?? false,
+        provider: aiForm.provider || 'openai',
+        model: aiForm.model || '',
+        base_url: aiForm.base_url || '',
+        temperature: aiForm.temperature ?? null,
+        max_tokens: aiForm.max_tokens ?? null,
+        feature_flags: aiForm.feature_flags,
+      };
+
+      const { error } = await supabase
+        .from('ai_settings')
+        .update({ ...payload, country_code: adminCountry })
+        .eq('id', 1)
+        .eq('country_code', adminCountry);
+
+      if (error) throw error;
+
+      if (aiKeyEdited && aiForm.api_key && !isApiKeyMasked(aiForm.api_key)) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token || '';
+        if (!accessToken) throw new Error('Admin authentication is required');
+
+        const keyResponse = await fetch('/api/admin/ai-settings/api-key', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            country_code: adminCountry,
+            api_key: aiForm.api_key,
+          }),
+        });
+
+        const keyResult = await keyResponse.json();
+        if (!keyResponse.ok || !keyResult.success) {
+          throw new Error(keyResult.message || 'AI API key save failed');
+        }
+
+        setAiForm({ ...aiForm, api_key: '••••••••', api_key_secret_id: true });
+      }
+
+      toast('AI settings saved');
+      setAiKeyEdited(false);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'AI settings save failed', 'error');
+    } finally {
+      setSaving(false);
     }
-    const { error } = await supabase.from('ai_settings').update({ ...payload, country_code: adminCountry }).eq('id', 1).eq('country_code', adminCountry);
-    setSaving(false);
-    if (error) { toast('AI settings save failed', 'error'); return; }
-    toast('AI settings saved');
-    setAiKeyEdited(false);
   };
 
   const saveReferral = async () => {
@@ -388,7 +423,7 @@ export default function AdminSettingsPage() {
           <div>
             <label className="mb-1 block text-sm font-medium">API Key</label>
             <input type="password" value={aiForm.api_key || ''} onChange={(e) => { setAiForm({ ...aiForm, api_key: e.target.value }); setAiKeyEdited(true); }} placeholder="Enter API key" className="input-bangla" />
-            <p className="mt-1 text-xs text-muted-foreground">Generic AI module key only. Messenger AI provider keys are managed separately as server environment secrets.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Generic AI module key only. Stored encrypted in Supabase Vault; the plaintext key is never saved in ai_settings. Messenger AI provider keys remain separate server environment secrets.</p>
           </div>
 
           <div>
