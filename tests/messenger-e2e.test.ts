@@ -15,6 +15,7 @@ import {
 import { verifyMessengerWebhookSignature } from '../lib/ai/messenger-webhook-security';
 import {
   classifyMessengerProductMatch,
+  getMessengerProductSelectionQuickReplies,
   normalizeMessengerProductQuery,
   serializeMessengerProducts,
   type MessengerProduct,
@@ -366,4 +367,27 @@ test('normalizes Bengali price and stock questions into precise product matches'
     }),
     'similar',
   );
+});
+test('offers selection options for trusted products and excludes similar matches', () => {
+  const options = getMessengerProductSelectionQuickReplies([
+    {
+      id: '2bd79fb9-c9ca-4e45-9db1-2a1f8fc075ae',
+      name_bn: 'লাল গোলাপ ফুলের বীজ',
+      name_en: 'Red Rose Flower Seeds',
+      slug: 'lal-golap-fuler-bij',
+      search_match_type: 'strong',
+    },
+    {
+      id: 'd47e1d77-7ec2-4d0c-9f1b-d97d7ac640e4',
+      name_bn: 'মিক্স ডালিয়া ফুলের বীজ',
+      name_en: 'Mixed Dahlia Flower Seeds',
+      slug: 'mix-dalia-fuler-bij',
+      search_match_type: 'similar',
+    },
+  ]);
+
+  assert.deepEqual(options, [{
+    title: 'লাল গোলাপ ফুলের বীজ',
+    payload: 'PRODUCT_SELECT:2bd79fb9-c9ca-4e45-9db1-2a1f8fc075ae',
+  }]);
 });
