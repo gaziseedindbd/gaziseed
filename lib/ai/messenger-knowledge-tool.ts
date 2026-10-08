@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   detectMessengerReplyLanguage,
@@ -14,10 +15,13 @@ export type MessengerKnowledgeCountry = 'IN' | 'BD';
 type ProductKnowledgeMetadata = Record<string, unknown> | null | undefined;
 
 type ProductFaq = {
+  id: string;
   question_bn: string | null;
   answer_bn: string | null;
   question_en: string | null;
   answer_en: string | null;
+  question_hi?: string | null;
+  answer_hi?: string | null;
   display_order: number | null;
 };
 
@@ -29,6 +33,38 @@ type ProductKnowledgeResult = {
 
 const KNOWLEDGE_KEYWORDS = [
   'বিস্তারিত',
+  'विवरण',
+  'विशेषता',
+  'किस्म',
+  'बीज का प्रकार',
+  'मौसम',
+  'बुवाई',
+  'बोएं',
+  'अंकुरण',
+  'फसल',
+  'कटाई',
+  'दूरी',
+  'गहराई',
+  'धूप',
+  'सूरज की रोशनी',
+  'पानी',
+  'मिट्टी',
+  'गमले',
+  'गमला',
+  'छत',
+  'पैकेट',
+  'कितने बीज',
+  'उपज',
+  'खेती',
+  'देखभाल',
+  'भंडारण',
+  'कैसे उगाएं',
+  'कैसे लगाएं',
+  'कब बोएं',
+  'कब लगाएं',
+  'कैसे बोएं',
+  'रोपाई',
+  'प्रश्न',
   'তথ্য',
   'বৈশিষ্ট্য',
   'ব্র্যান্ড',
@@ -101,11 +137,11 @@ function isSimpleProductFieldQuestion(text: string): boolean {
   const normalized = normalizeText(text);
   if (normalized.length > 60) return false;
 
-  if (/(কীভাবে|কিভাবে|কী ভাবে|কি ভাবে|প্রস্তুত|বপন|রোপণ|চাষ|পরিচর্যা|how to|prepare|preparing|sow|sowing|planting|cultivation|care)/i.test(normalized)) {
+  if (/(किस तरह|कैसे|तैयार|बुवाई|बोएं|रोपाई|खेती|उगाएं|लगाएं|देखभाल|कীভাবে|কিভাবে|কী ভাবে|কি ভাবে|প্রস্তুত|বপন|রোপণ|চাষ|পরিচর্যা|how to|prepare|preparing|sow|sowing|planting|cultivation|care)/i.test(normalized)) {
     return false;
   }
 
-  return /(ব্র্যান্ড|brand|উৎপত্তি|origin|জাত|variety|বীজের ধরন|seed type|মৌসুম|season|অঙ্কুর|germination|দূরত্ব|spacing|গভীরতা|depth|রোদ|সূর্যালোক|sunlight|পানি|জল|water|মাটি|soil|প্যাকেট|packet|ফলন|yield|harvest|সংরক্ষণ|storage)/i.test(normalized);
+  return /(ब्रांड|कंपनी|उत्पत्ति|कहां का|कहाँ का|किस्म|बीज का प्रकार|मौसम|अंकुरण|कितने दिन|दूरी|गहराई|धूप|सूरज की रोशनी|पानी|मिट्टी|पैकेट|कितने बीज|उपज|कटाई|भंडारण|brand|origin|variety|बীজের ধরন|seed type|season|মৌসুম|অঙ্কুর|germination|দূরত্ব|spacing|গভীরতা|depth|রোদ|সূর্যালোক|sunlight|পানি|জল|water|মাটি|soil|প্যাকেট|packet|ফলন|yield|harvest|সংরক্ষণ|storage)/i.test(normalized);
 }
 
 export function isMessengerProductSpecificKnowledgeQuery(
@@ -114,7 +150,7 @@ export function isMessengerProductSpecificKnowledgeQuery(
 ): boolean {
   const normalized = normalizeText(text);
 
-  if (/(এই\s+(?:বীজ|পণ্য|প্রোডাক্ট)|এটার|এটি|এইটা|this\s+seed|this\s+product)/i.test(normalized)) {
+  if (/(इस\s+(?:बीज|उत्पाद|प्रोडक्ट)|इसका|इसकी|यह\s+(?:बीज|उत्पाद)|ये\s+(?:बीज|उत्पाद)|এই\s+(?:বীজ|পণ্য|প্রোডাক্ট)|এটার|এটি|এইটা|this\s+seed|this\s+product)/i.test(normalized)) {
     return true;
   }
 
@@ -162,6 +198,28 @@ const STOP_WORDS = new Set([
   'how',
   'can',
   'please',
+  'क्या',
+  'कैसे',
+  'कब',
+  'कितने',
+  'कितनी',
+  'कौन',
+  'है',
+  'हैं',
+  'का',
+  'की',
+  'के',
+  'में',
+  'और',
+  'से',
+  'पर',
+  'को',
+  'यह',
+  'इस',
+  'मेरा',
+  'मेरी',
+  'आप',
+  'लिए',
 ]);
 
 function normalizeText(value: string): string {
@@ -173,7 +231,7 @@ function normalizeText(value: string): string {
 
 function tokenize(value: string): string[] {
   const rawTokens =
-    value.match(/[A-Za-z0-9\u0980-\u09FF]+/g) || [];
+    value.match(/[A-Za-z0-9\u0900-\u09FF]+/g) || [];
 
   const variants = rawTokens.flatMap((token) => {
     const normalized = token.toLocaleLowerCase().trim();
@@ -340,21 +398,69 @@ async function findFaq(
 ): Promise<ProductFaq | null> {
   const { data, error } = await supabase
     .from('product_faqs')
-    .select('question_bn,answer_bn,question_en,answer_en,display_order')
+    .select('id,question_bn,answer_bn,question_en,answer_en,display_order')
     .eq('product_id', productId)
     .eq('is_active', true)
     .order('display_order', { ascending: true });
 
   if (error) throw error;
 
-  const rows = (data || []) as ProductFaq[];
+  let rows = (data || []) as ProductFaq[];
   if (!rows.length) return null;
+
+  if (detectMessengerReplyLanguage(text) === 'Hindi') {
+    try {
+      const { data: cachedTranslations, error: translationError } = await supabase
+        .from('translation_cache')
+        .select('entity_id,source_hash,translated_payload')
+        .eq('entity_type', 'product_faq')
+        .eq('target_lang', 'hi')
+        .in('entity_id', rows.map((row) => row.id));
+
+      if (translationError) throw translationError;
+
+      const translatedById = new Map(
+        (cachedTranslations || []).map((entry) => [
+          entry.entity_id,
+          entry as {
+            entity_id: string;
+            source_hash: string;
+            translated_payload: unknown;
+          },
+        ]),
+      );
+
+      rows = rows.map((row) => {
+        const translation = translatedById.get(row.id);
+        if (!translation || translation.source_hash !== getMessengerFaqSourceHash(row)) {
+          return row;
+        }
+
+        const payload = translation.translated_payload;
+        if (!payload || typeof payload !== 'object') return row;
+        const values = payload as Record<string, unknown>;
+
+        return {
+          ...row,
+          question_hi:
+            typeof values.question_hi === 'string' ? values.question_hi : null,
+          answer_hi:
+            typeof values.answer_hi === 'string' ? values.answer_hi : null,
+        };
+      });
+    } catch (error) {
+      console.error(
+        'Messenger Hindi FAQ lookup failed:',
+        error instanceof Error ? error.message : 'Unknown Hindi FAQ lookup error',
+      );
+    }
+  }
 
   const queryTokens = tokenize(text);
   let best: { row: ProductFaq; score: number } | null = null;
 
   for (const row of rows) {
-    const question = [row.question_bn, row.question_en]
+    const question = [row.question_bn, row.question_en, row.question_hi]
       .filter(Boolean)
       .join(' ');
     const questionTokens = tokenize(question);
@@ -381,6 +487,12 @@ async function findFaq(
   return best && best.score >= 2 ? best.row : null;
 }
 
+function getMessengerFaqSourceHash(faq: Pick<ProductFaq, 'question_en' | 'answer_en'>): string {
+  return createHash('sha256')
+    .update((faq.question_en || '') + '\\n' + (faq.answer_en || ''))
+    .digest('hex');
+}
+
 function firstNonEmpty(...values: unknown[]): string | null {
   for (const value of values) {
     if (typeof value === 'string' && value.trim()) {
@@ -396,6 +508,15 @@ export function selectMessengerFaqResponse(
 ): { question: string | null; answer: string | null } {
   const englishAnswer = firstNonEmpty(faq.answer_en);
   const bengaliAnswer = firstNonEmpty(faq.answer_bn);
+  const hindiAnswer = firstNonEmpty(faq.answer_hi);
+  const preferHindi = language === 'Hindi' && hindiAnswer;
+  if (preferHindi) {
+    return {
+      question: firstNonEmpty(faq.question_hi, faq.question_en, faq.question_bn),
+      answer: hindiAnswer,
+    };
+  }
+
   const preferEnglish = language === 'English' || language === 'Hindi';
   const answer = preferEnglish
     ? englishAnswer || bengaliAnswer
@@ -631,14 +752,13 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
 
   const faq = await findFaq(supabase, candidate.id, text);
   if (faq) {
-    const localizedFaq = selectMessengerFaqResponse(
-      faq,
-      detectMessengerReplyLanguage(text),
-    );
+    const replyLanguage = detectMessengerReplyLanguage(text);
+    const localizedFaq = selectMessengerFaqResponse(faq, replyLanguage);
     const answer = localizedFaq.answer;
     if (answer) {
       const name =
         firstNonEmpty(
+          replyLanguage === 'Hindi' ? fullProduct.name_en : null,
           fullProduct.name_bn,
           fullProduct.name_en,
           fullProduct.slug,
