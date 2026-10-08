@@ -10,6 +10,14 @@ const HINDI_LATIN_HINTS = new Set([
   'ye', 'woh', 'koi', 'milta', 'milega', 'denge', 'dena', 'do',
 ]);
 
+const BANGLISH_LATIN_HINTS = new Set([
+  'ami', 'amake', 'amar', 'amader', 'apni', 'apnar', 'tomar', 'chai',
+  'chaie', 'chay', 'koto', 'koyta', 'dam', 'daam', 'ase', 'ache', 'nai',
+  'naie', 'nei', 'dorkar', 'lagbe', 'pabo', 'paben', 'diben', 'kibhabe',
+  'kivabe', 'kobe', 'kothay', 'keno', 'nibo', 'nite', 'kinbo', 'kinte',
+  'korbo', 'korben', 'bolen', 'dekhan', 'dekhte', 'ropon', 'bopon',
+]);
+
 const ENGLISH_LATIN_HINTS = new Set([
   'how', 'what', 'when', 'where', 'which', 'why', 'is', 'are', 'am',
   'the', 'this', 'that', 'these', 'those', 'price', 'grow', 'from',
@@ -36,9 +44,11 @@ export function detectMessengerReplyLanguage(text: string): MessengerReplyLangua
   // Latin-script Hinglish/Roman-Hindi should remain Hindi even when the
   // message is short, e.g. "2 packet chahiye", "haan", or "mujhe chahiye".
   const hindiScore = tokenScore(value, HINDI_LATIN_HINTS);
+  const banglishScore = tokenScore(value, BANGLISH_LATIN_HINTS);
   const englishScore = tokenScore(value, ENGLISH_LATIN_HINTS);
 
-  if (hindiScore > englishScore && hindiScore >= 1) return 'Hindi';
+  if (banglishScore > 0 && banglishScore >= hindiScore) return 'Bengali';
+  if (hindiScore > 0) return 'Hindi';
   if (englishScore > 0) return 'English';
 
   return 'English';

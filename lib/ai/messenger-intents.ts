@@ -1,10 +1,52 @@
+const BANGLISH_INTENT_ALIASES: Array<[RegExp, string]> = [
+  [/\bami\b/g, 'আমি'], [/\bamake\b/g, 'আমাকে'], [/\bamar\b/g, 'আমার'],
+  [/\bamader\b/g, 'আমাদের'], [/\bapni\b/g, 'আপনি'], [/\bapnar\b/g, 'আপনার'],
+  [/\bkoto\b/g, 'কত'], [/\bkoyta\b/g, 'কয়টা'], [/\b(?:daam|dam)\b/g, 'দাম'],
+  [/\b(?:ache|ase)\b/g, 'আছে'], [/\b(?:nai|naie|nei)\b/g, 'নেই'],
+  [/\b(?:chaie|chai|chay)\b/g, 'চাই'], [/\b(?:mati|matti)\b/g, 'মাটি'],
+  [/\bpani\b/g, 'পানি'], [/\bsar\b/g, 'সার'], [/\bbij\b/g, 'বীজ'],
+  [/\bful\b/g, 'ফুল'], [/\bshobji\b/g, 'সবজি'], [/\bkibhabe\b/g, 'কিভাবে'],
+  [/\bkivabe\b/g, 'কিভাবে'], [/\bkobe\b/g, 'কবে'], [/\bkothay\b/g, 'কোথায়'],
+  [/\bkinte\b/g, 'কিনতে'], [/\bkinbo\b/g, 'কিনব'], [/\bnite\b/g, 'নিতে'],
+  [/\bnibo\b/g, 'নেব'], [/\bropon\b/g, 'রোপণ'], [/\bbopon\b/g, 'বপন'],
+  [/\bdorkar\b/g, 'দরকার'], [/\blagbe\b/g, 'লাগবে'], [/\bden\b/g, 'দিন'],
+  [/\bbolen\b/g, 'বলেন'], [/\bdekhte\b/g, 'দেখতে'], [/\bdekhan\b/g, 'দেখান'],
+];
+
+const HINDI_SEARCH_ALIASES: Array<[string, string]> = [
+  ['बीज', 'বীজ'], ['गुलाब', 'গোলাপ'], ['लाल', 'লাল'], ['फूल', 'ফুল'],
+  ['कीमत', 'দাম'], ['मूल्य', 'দাম'], ['दाम', 'দাম'], ['स्टॉक', 'স্টক'],
+  ['उपलब्ध', 'আছে'], ['मिट्टी', 'মাটি'], ['पानी', 'পানি'], ['खाद', 'সার'],
+  ['कैसे', 'কীভাবে'], ['कब', 'কখন'], ['कितने दिन', 'কতদিন'],
+  ['अंकुरण', 'অঙ্কুরোদগম'], ['बुवाई', 'বপন'], ['रोपाई', 'রোপণ'],
+  ['डिलीवरी', 'ডেলিভারি'], ['चाहिए', 'চাই'], ['मुझे', 'আমাকে'],
+  ['भुगतान', 'পেমেন্ট'], ['पैसे', 'টাকা'], ['ब्रांड', 'ব্র্যান্ড'],
+  ['उत्पत्ति', 'উৎপত্তি'], ['किस्म', 'জাত'], ['मौसम', 'মৌসুম'],
+  ['दूरी', 'দূরত্ব'], ['गहराई', 'গভীরতা'], ['धूप', 'রোদ'],
+  ['भंडारण', 'সংরক্ষণ'], ['उपज', 'ফলন'], ['कटाई', 'হারভেস্ট'],
+  ['पैकेट', 'প্যাকেট'], ['बीज का प्रकार', 'বীজের ধরন'],
+];
+
+export function normalizeMessengerHindiSearchText(text: string): string {
+  let normalized = text.toLocaleLowerCase();
+  for (const [source, replacement] of HINDI_SEARCH_ALIASES) {
+    normalized = normalized.replaceAll(source, replacement);
+  }
+  return normalized;
+}
+
 export function normalizeMessengerIntentText(text: string): string {
-  return text
+  let normalized = text
     .toLocaleLowerCase()
     .replace(/\bprodcuts?\b/g, 'products')
-    .replace(/\bprod(?:cut|cuct|ect|duct)\b/g, 'product')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/\bprod(?:cut|cuct|ect|duct)\b/g, 'product');
+
+  for (const [pattern, replacement] of BANGLISH_INTENT_ALIASES) {
+    normalized = normalized.replace(pattern, replacement);
+  }
+
+  normalized = normalizeMessengerHindiSearchText(normalized);
+  return normalized.replace(/\s+/g, ' ').trim();
 }
 
 export function isOtherProductRequest(text: string): boolean {
@@ -42,7 +84,7 @@ export function isOtherProductRequest(text: string): boolean {
 export function isProductAvailabilityQuestion(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
 
-  return /(?:\b(?:ki|kono|kon|what|which|any|anything)\s+(?:products?|product)\s+(?:(?:is|are)\s+)?(?:ache|ase|nei|naie|available|there)\b|(?:ki|kono|kon|কী|কি|কোনো|কোন)\s*(?:কি\s*)?(?:প্রোডাক্ট|পণ্য|products?|product)\s*(?:আছে|আছেন|নেই|নাই|naie|nei|ache|ase|available|there)|(?:কোনো|কোন)\s*(?:প্রোডাক্ট|পণ্য|products?|product)\s*(?:নেই|নাই|আছে|আছেন)|\b(?:anything|any)\s+(?:available|in stock|there)\b|\bavailable\s+prod[a-z0-9_-]*\b|\bprod[a-z0-9_-]*\s+(?:available|in stock|there)\b)/i.test(
+  return /(?:\b(?:ki|kono|kon|what|which|any|anything)\s+(?:products?|product)\s+(?:(?:is|are)\s+)?(?:ache|ase|nei|naie|available|there)\b|(?:ki|kono|kon|কী|কি|কোনো|কোন)\s*(?:কি\s*)?(?:প্রোডাক্ট|পণ্য|products?|product)\s*(?:আছে|আছেন|নেই|নাই|naie|nei|ache|ase|available|there)|(?:কোনো|কোন)\s*(?:প্রোডাক্ট|পণ্য|products?|product)\s*(?:নেই|নাই|আছে|আছেন)|\b(?:anything|any)\s+(?:available|in stock|there)\b|\bavailable\s+prod[a-z0-9_-]*\b|\bprod[a-z0-9_-]*\s+(?:available|in stock|there)\b|(?:कौन\s*से?\s*(?:उत्पाद|प्रोडक्ट|बीज|বীজ)|क्या\s*(?:उपलब्ध|मिलता|मिलते)|उपलब्ध\s*(?:उत्पाद|प्रोडक्ट|বীজ)|कोई\s*(?:उत्पाद|प्रोडक्ट|बीज)))/i.test(
     normalized,
   );
 }
@@ -53,7 +95,7 @@ export function isProductCatalogRequest(text: string): boolean {
   return (
     isOtherProductRequest(normalized) ||
     isProductAvailabilityQuestion(normalized) ||
-    /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে|দাম|price|স্টক|stock|available|উপলব্ধ)/i.test(
+    /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে|দাম|price|স্টক|stock|available|উপলব্ধ|कीमत|मूल्य|दाम|स्टॉक|उपलब्ध|उत्पाद|प्रोडक्ट)/i.test(
       normalized,
     )
   );
@@ -64,7 +106,7 @@ export function isProductListRequest(text: string): boolean {
   return (
     isOtherProductRequest(normalized) ||
     isProductAvailabilityQuestion(normalized) ||
-    /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে)/i.test(
+    /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে|उत्पादों?\s*(?:की\s*)?(?:सूची|लिस्ट)|प्रोडक्ट्स?\s*(?:की\s*)?(?:सूची|लिस्ट)|आपके पास.*(?:उत्पाद|प्रोडक्ट|बीज|বীজ)|कौन\s*से?\s*(?:बीज|বীজ))/i.test(
       normalized,
     )
   );
@@ -72,7 +114,7 @@ export function isProductListRequest(text: string): boolean {
 
 export function isMessengerDeliveryIntent(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
-  return /(delivery|deliver|shipping|ship|courier|cod|cash on delivery|delivery charge|shipping charge|delivery fee|delivery time|কুরিয়ার|ডেলিভারি|শিপিং|ডেলিভারি চার্জ|ডেলিভারি ফি|ডেলিভারি খরচ|কত টাকা ডেলিভারি|কখন পাব|কত দিনে|ক্যাশ অন ডেলিভারি|সিওডি)/i.test(
+  return /(delivery|deliver|shipping|ship|courier|cod|cash on delivery|delivery charge|shipping charge|delivery fee|delivery time|কুরিয়ার|ডেলিভারি|শিপিং|ডেলিভারি চার্জ|ডেলিভারি ফি|ডেলিভারি খরচ|কত টাকা ডেলিভারি|কখন পাব|কত দিনে|ক্যাশ অন ডেলিভারি|সিওডি|डिलीवरी|पहुंचाने|कूरियर|कैश ऑन डिलीवरी|कितने दिन|डिलीवरी शुल्क|शिपिंग)/i.test(
     normalized,
   );
 }
@@ -80,11 +122,11 @@ export function isMessengerDeliveryIntent(text: string): boolean {
 export function isMessengerSeedKnowledgeQuestion(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
   const hasSeedTopic =
-    /(seed|seeds|বীজ|চারা|গাছ|ফসল|সবজি|ফুল|বাগান|কৃষি|চাষ|রোপণ|বপন|অঙ্কুরোদগম|germination|sowing|planting|cultivation|variety|season|fertilizer|সার|মাটি|soil|পানি|জল|watering)/i.test(
+    /(seed|seeds|বীজ|চারা|গাছ|ফসল|সবজি|ফুল|বাগান|কৃষি|চাষ|রোপণ|বপন|অঙ্কুরোদগম|germination|sowing|planting|cultivation|variety|season|fertilizer|সার|মাটি|soil|পানি|জল|watering|बीज|पौधा|पौधे|फसल|सब्जी|फूल|बागवानी|खेती|बुवाई|रोपाई|अंकुरण|किस्म|मौसम|खाद|मिट्टी|पानी|सिंचाई)/i.test(
       normalized,
     );
   const hasQuestionOrAdviceIntent =
-    /(কীভাবে|কিভাবে|কী ভাবে|কি ভাবে|কী করে|কি করে|কখন|কতদিন|কত দিনে|অঙ্কুর|বপন|রোপণ|পরিচর্যা|মাটি|সার|পানি|জল|ব্র্যান্ড|জাত|variety|season|germination|sow|sowing|plant|planting|care|soil|fertilizer|water|watering|brand|origin|কোথাকার|উৎপত্তি|details|about|তথ্য|বিস্তারিত)/i.test(
+    /(কীভাবে|কিভাবে|কী ভাবে|কি ভাবে|কী করে|কি করে|কখন|কতদিন|কত দিনে|অঙ্কুর|বপন|রোপণ|পরিচর্যা|মাটি|সার|পানি|জল|ব্র্যান্ড|জাত|variety|season|germination|sow|sowing|plant|planting|care|soil|fertilizer|water|watering|brand|origin|কোথাকার|উৎপত্তি|details|about|তথ্য|বিস্তারিত|कैसे|कब|कितने दिन|अंकुरण|बुवाई|रोपाई|देखभाल|मिट्टी|खाद|पानी|सिंचाई|ब्रांड|किस्म|मौसम|उत्पत्ति|जानकारी|विवरण)/i.test(
       normalized,
     );
 

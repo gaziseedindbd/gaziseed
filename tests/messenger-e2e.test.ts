@@ -368,7 +368,7 @@ test('normalizes Bengali price and stock questions into precise product matches'
     'similar',
   );
 });
-test('offers selection options for trusted products and excludes similar matches', () => {
+test('offers selection options for trusted and similar products', () => {
   const options = getMessengerProductSelectionQuickReplies([
     {
       id: '2bd79fb9-c9ca-4e45-9db1-2a1f8fc075ae',
@@ -386,8 +386,14 @@ test('offers selection options for trusted products and excludes similar matches
     },
   ]);
 
-  assert.deepEqual(options, [{
-    title: 'লাল গোলাপ ফুলের বীজ',
-    payload: 'PRODUCT_SELECT:2bd79fb9-c9ca-4e45-9db1-2a1f8fc075ae',
-  }]);
+  assert.deepEqual(options, [
+    {
+      title: 'লাল গোলাপ ফুলের বীজ',
+      payload: 'PRODUCT_SELECT:2bd79fb9-c9ca-4e45-9db1-2a1f8fc075ae',
+    },
+    {
+      title: 'মিক্স ডালিয়া ফুলের …',
+      payload: 'PRODUCT_SELECT:d47e1d77-7ec2-4d0c-9f1b-d97d7ac640e4',
+    },
+  ]);
 });

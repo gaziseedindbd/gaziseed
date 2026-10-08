@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { normalizeMessengerIntentText } from './messenger-intents';
 import {
   detectMessengerReplyLanguage,
   type MessengerReplyLanguage,
@@ -29,9 +30,11 @@ type ProductKnowledgeResult = {
   handled: boolean;
   reply?: string;
   productId?: string | null;
+  verifiedContext?: string;
 };
 
 const KNOWLEDGE_KEYWORDS = [
+  'বীজ',
   'বিস্তারিত',
   'विवरण',
   'विशेषता',
@@ -152,7 +155,7 @@ export function isMessengerProductSpecificKnowledgeQuery(
 ): boolean {
   const normalized = normalizeText(text);
 
-  if (/(इस\s+(?:बीज|उत्पाद|प्रोडक्ट)|इसका|इसकी|यह\s+(?:बीज|उत्पाद)|ये\s+(?:बीज|उत्पाद)|এই\s+(?:বীজ|পণ্য|প্রোডাক্ট)|এটার|এটি|এইটা|this\s+seed|this\s+product)/i.test(normalized)) {
+  if (/(इस\s+(?:बीज|বীজ|उत्पाद|प्रोडक्ट)|इसका|इसकी|यह\s+(?:बीज|বীজ|उत्पाद)|ये\s+(?:बीज|বীজ|उत्पाद)|এই\s+(?:বীজ|পণ্য|প্রোডাক্ট)|এটার|এটি|এইটা|this\s+seed|this\s+product)/i.test(normalized)) {
     return true;
   }
 
@@ -225,15 +228,12 @@ const STOP_WORDS = new Set([
 ]);
 
 function normalizeText(value: string): string {
-  return value
-    .toLocaleLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
+  return normalizeMessengerIntentText(value);
 }
 
 function tokenize(value: string): string[] {
   const rawTokens =
-    value.match(/[A-Za-z0-9\u0900-\u09FF]+/g) || [];
+    normalizeMessengerIntentText(value).match(/[A-Za-z0-9\u0900-\u097F\u0980-\u09FF]+/g) || [];
 
   const variants = rawTokens.flatMap((token) => {
     const normalized = token.toLocaleLowerCase().trim();
@@ -678,7 +678,25 @@ export function isBangladeshPaymentMethodQuestion(text: string): boolean {
   );
 }
 
-export function getBangladeshPaymentMethodReply(): string {
+export function getBangladeshPaymentMethodReply(
+  language: MessengerReplyLanguage = 'Bengali',
+): string {
+  if (language === 'English') {
+    return [
+      '🇧🇩 Bangladesh currently accepts Cash on Delivery (COD) only.',
+      '',
+      '📦 Pay the delivery agent when your order arrives.',
+    ].join('\n');
+  }
+
+  if (language === 'Hindi') {
+    return [
+      '🇧🇩 Bangladesh में अभी केवल Cash on Delivery (COD) उपलब्ध है।',
+      '',
+      '📦 Order मिलने पर delivery agent को payment करें।',
+    ].join('\n');
+  }
+
   return [
     '🇧🇩 Bangladesh-এ বর্তমানে আমরা শুধু Cash on Delivery (COD) payment গ্রহণ করি।',
     '',
@@ -697,7 +715,7 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
   if (country === 'BD' && isBangladeshPaymentMethodQuestion(text)) {
     return {
       handled: true,
-      reply: getBangladeshPaymentMethodReply(),
+      reply: getBangladeshPaymentMethodReply(detectMessengerReplyLanguage(text)),
     };
   }
 
@@ -745,6 +763,16 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
   // "ব্র্যান্ড কী?" or "মাটি কেমন?".
   const fieldReply = buildFieldReply(fullProduct, text);
   if (fieldReply) {
+    const language = detectMessengerReplyLanguage(text);
+    if (language !== 'Bengali') {
+      return {
+        handled: false,
+        productId: candidate.id,
+        verifiedContext:
+          `Verified product data for ${firstNonEmpty(fullProduct.name_en, fullProduct.name_bn, fullProduct.slug) || 'Product'}:\n${fieldReply}`,
+      };
+    }
+
     return {
       handled: true,
       productId: candidate.id,
@@ -765,6 +793,19 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
           fullProduct.name_en,
           fullProduct.slug,
         ) || 'এই পণ্য';
+
+      const requestedLanguageAnswerMissing =
+        (replyLanguage === 'Hindi' && !faq.answer_hi) ||
+        (replyLanguage === 'English' && !faq.answer_en) ||
+        (replyLanguage === 'Bengali' && !faq.answer_bn);
+      if (requestedLanguageAnswerMissing) {
+        return {
+          handled: false,
+          productId: candidate.id,
+          verifiedContext:
+            `Product: ${name}\nVerified FAQ question: ${localizedFaq.question || 'FAQ'}\nVerified database answer: ${answer}`,
+        };
+      }
 
       return {
         handled: true,
