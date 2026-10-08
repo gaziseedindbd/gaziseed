@@ -85,7 +85,10 @@ import {
   type MessengerReplyLanguage,
 } from '@/lib/ai/messenger-language';
 
-import { shouldIncludeMessengerAIHistoryMessage } from '@/lib/ai/messenger-history';
+import {
+  limitMessengerAIHistoryMessages,
+  shouldIncludeMessengerAIHistoryMessage,
+} from '@/lib/ai/messenger-history';
 import { detectExplicitMessengerCountry } from '@/lib/ai/messenger-country';
 import {
   getMessengerAIDeliveryActionStatus,
@@ -1016,7 +1019,7 @@ async function getRecentMessages(
     // deterministic/customer-facing messages legitimately have no status.
     .or('action_status.is.null,action_status.neq.provider_result')
     .order('created_at', { ascending: false })
-    .limit(20);
+    .limit(60);
 
   if (error) throw error;
 
@@ -1036,7 +1039,10 @@ async function getRecentMessages(
       })
     : recentMessages;
 
-  return filteredMessages.reverse().map(({ role, content }) => ({ role, content }));
+  return limitMessengerAIHistoryMessages(
+    filteredMessages.reverse(),
+    { maxMessages: 30, maxCharacters: 8_000 },
+  ).map(({ role, content }) => ({ role, content }));
 }
 
 async function processMessengerEvent(event: MessengerEvent) {
