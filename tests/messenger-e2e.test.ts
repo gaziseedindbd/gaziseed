@@ -14,6 +14,10 @@ import {
 } from '../lib/ai/messenger-delivery-state';
 import { verifyMessengerWebhookSignature } from '../lib/ai/messenger-webhook-security';
 import {
+  serializeMessengerProducts,
+  type MessengerProduct,
+} from '../lib/ai/messenger-product-tool';
+import {
   limitMessengerAIHistoryMessages,
   shouldIncludeMessengerAIHistoryMessage,
 } from '../lib/ai/messenger-history';
@@ -259,4 +263,33 @@ test('excludes provider and failed internal states from history', () => {
   assert.equal(shouldIncludeMessengerAIHistoryMessage({ action_status: 'failed' }), false);
   assert.equal(shouldIncludeMessengerAIHistoryMessage({ action_status: 'sent' }), true);
   assert.equal(shouldIncludeMessengerAIHistoryMessage({ action_status: null }), true);
+});
+
+
+test('exposes growing instructions only for trusted catalog matches', () => {
+  const products = serializeMessengerProducts([
+    {
+      id: 'trusted-product',
+      name_bn: 'পরীক্ষার বীজ',
+      name_en: 'Test Seed',
+      slug: 'test-seed',
+      cultivation_instructions: 'Verified sowing instructions',
+      plant_spacing: '30 cm',
+      search_match_type: 'exact',
+    } as unknown as MessengerProduct,
+    {
+      id: 'similar-product',
+      name_bn: 'অনুরূপ বীজ',
+      name_en: 'Similar Seed',
+      slug: 'similar-seed',
+      cultivation_instructions: 'Unverified instructions',
+      plant_spacing: '90 cm',
+      search_match_type: 'similar',
+    } as unknown as MessengerProduct,
+  ]);
+
+  assert.equal(products[0].cultivation_instructions, 'Verified sowing instructions');
+  assert.equal(products[0].plant_spacing, '30 cm');
+  assert.equal(products[1].cultivation_instructions, null);
+  assert.equal(products[1].plant_spacing, null);
 });
