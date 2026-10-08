@@ -173,7 +173,7 @@ export function normalizeMessengerProductQuery(value: string): string {
     return term;
   }
 
-  const tokens = term.match(/[A-Za-z0-9\\u0900-\\u09FF]+/g) || [];
+  const tokens = term.match(/[A-Za-z0-9\u0900-\u09FF]+/g) || [];
   const productTokens = tokens
     .filter((token) => !TRANSACTIONAL_QUERY_STOP_WORDS.has(token.toLocaleLowerCase()))
     .map((token) => token.toLocaleLowerCase() === 'বীজের' ? 'বীজ' : token);
