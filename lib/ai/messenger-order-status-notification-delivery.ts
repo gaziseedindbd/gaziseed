@@ -12,7 +12,7 @@ type StatusNotification = {
   phone: string;
   page_id: string | null;
   external_user_id: string | null;
-  status: 'pending' | 'sent' | 'failed';
+  status: 'pending' | 'sending' | 'sent' | 'failed';
   attempts: number;
   last_error: string | null;
   meta_message_id: string | null;
@@ -27,6 +27,7 @@ type OrderRow = {
   order_status: string | null;
   status: string | null;
   payment_status: string | null;
+  order_source: string | null;
 };
 
 type MessengerSendResult = {
@@ -146,6 +147,15 @@ export async function processMessengerOrderStatusNotifications(
   const supabase = adminSupabase();
   const safeLimit = Math.max(1, Math.min(limit, 100));
 
+  const staleSendingBefore = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const { error: recoveryError } = await supabase
+    .from('messenger_order_status_notifications')
+    .update({ status: 'pending', updated_at: new Date().toISOString() })
+    .eq('status', 'sending')
+    .lt('updated_at', staleSendingBefore);
+
+  if (recoveryError) throw recoveryError;
+
   const { data, error } = await supabase
     .from('messenger_order_status_notifications')
     .select(
@@ -166,7 +176,7 @@ export async function processMessengerOrderStatusNotifications(
     const { data: orderData, error: orderError } = await supabase
       .from('orders')
       .select(
-        'id,order_number,customer_name,customer_phone,country_code,order_status,status,payment_status',
+        'id,order_number,customer_name,customer_phone,country_code,order_status,status,payment_status,order_source',
       )
       .eq('id', notification.order_id)
       .maybeSingle();
@@ -187,43 +197,139 @@ export async function processMessengerOrderStatusNotifications(
       continue;
     }
 
-    const phone = String(
-      order.customer_phone || notification.phone || '',
-    ).trim();
+    const { data: claim, error: claimError } = await supabase
+      .from('messenger_order_status_notifications')
+      .update({
+        status: 'sending',
+        attempts: Number(notification.attempts || 0) + 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', notification.id)
+      .eq('status', 'pending')
+      .select('id')
+      .maybeSingle();
 
-    if (!phone) {
-      skipped += 1;
-      continue;
-    }
-
-    const { data: profiles, error: profileError } = await supabase
-      .from('messenger_customer_profiles')
-      .select('page_id,external_user_id')
-      .eq('phone', phone)
-      .eq('country_code', order.country_code)
-      .limit(2);
-
-    if (profileError) {
-      console.error(
-        'Messenger order status notification profile lookup failed:',
-        profileError,
-      );
+    if (claimError) {
+      console.error('Messenger order status notification claim failed:', claimError);
       failed += 1;
       continue;
     }
 
+    if (!claim) continue;
+
+    const releaseClaim = async (lastError: string | null = null) => {
+      await supabase
+        .from('messenger_order_status_notifications')
+        .update({
+          status: 'pending',
+          last_error: lastError,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', notification.id)
+        .eq('status', 'sending');
+    };
+
+    let recipient = notification.page_id && notification.external_user_id
+      ? { page_id: notification.page_id, external_user_id: notification.external_user_id }
+      : null;
+
     if (
-      !profiles ||
-      profiles.length !== 1 ||
-      !profiles[0]?.external_user_id
+      !recipient &&
+      order.country_code === 'IN' &&
+      order.order_source === 'facebook_messenger_ai'
     ) {
+      const { data: intent, error: intentError } = await supabase
+        .from('cashfree_payment_intents')
+        .select('cashfree_order_id,metadata')
+        .eq('completed_order_id', order.id)
+        .eq('country_code', 'IN')
+        .maybeSingle();
+
+      if (intentError) {
+        await releaseClaim('Payment intent lookup failed');
+        console.error('Messenger order status payment lookup failed:', intentError);
+        failed += 1;
+        continue;
+      }
+
+      const cashfreeOrderId = typeof intent?.cashfree_order_id === 'string'
+        ? intent.cashfree_order_id
+        : '';
+
+      if (cashfreeOrderId && intent?.metadata?.order_source === 'facebook_messenger_ai') {
+        let conversationQuery = supabase
+          .from('ai_conversations')
+          .select('page_id,external_user_id')
+          .eq('channel', 'facebook_messenger')
+          .eq('country_code', 'IN')
+          .eq('metadata->messenger_payment->>cashfree_order_id', cashfreeOrderId);
+
+        const expectedPageId = process.env.META_PAGE_ID;
+        if (expectedPageId) conversationQuery = conversationQuery.eq('page_id', expectedPageId);
+
+        const { data: conversations, error: conversationError } = await conversationQuery.limit(2);
+
+        if (conversationError) {
+          await releaseClaim('Messenger conversation lookup failed');
+          console.error('Messenger order status conversation lookup failed:', conversationError);
+          failed += 1;
+          continue;
+        }
+
+        if (
+          conversations?.length === 1 &&
+          conversations[0]?.page_id &&
+          conversations[0]?.external_user_id
+        ) {
+          recipient = {
+            page_id: conversations[0].page_id,
+            external_user_id: conversations[0].external_user_id,
+          };
+        }
+      }
+    }
+
+    const phone = String(order.customer_phone || notification.phone || '').trim();
+
+    if (!recipient && phone) {
+      const { data: profiles, error: profileError } = await supabase
+        .from('messenger_customer_profiles')
+        .select('page_id,external_user_id')
+        .eq('phone', phone)
+        .eq('country_code', order.country_code)
+        .limit(2);
+
+      if (profileError) {
+        await releaseClaim('Customer profile lookup failed');
+        console.error(
+          'Messenger order status notification profile lookup failed:',
+          profileError,
+        );
+        failed += 1;
+        continue;
+      }
+
+      if (
+        profiles?.length === 1 &&
+        profiles[0]?.page_id &&
+        profiles[0]?.external_user_id
+      ) {
+        recipient = {
+          page_id: profiles[0].page_id,
+          external_user_id: profiles[0].external_user_id,
+        };
+      }
+    }
+
+    if (!recipient) {
+      await releaseClaim('No unique Messenger recipient found');
       skipped += 1;
       continue;
     }
 
     try {
       const sendResult = await sendMessengerText(
-        profiles[0].external_user_id,
+        recipient.external_user_id,
         buildStatusMessage(order, notification),
       );
 
@@ -233,7 +339,7 @@ export async function processMessengerOrderStatusNotifications(
           notificationId: notification.id,
           orderNumber: order.order_number,
           newStatus: notification.new_status,
-          recipientId: profiles[0].external_user_id,
+          recipientId: recipient.external_user_id,
           metaMessageId: sendResult.messageId,
         }),
       );
@@ -241,8 +347,8 @@ export async function processMessengerOrderStatusNotifications(
       const { error: updateError } = await supabase
         .from('messenger_order_status_notifications')
         .update({
-          page_id: profiles[0].page_id ?? null,
-          external_user_id: profiles[0].external_user_id,
+          page_id: recipient.page_id,
+          external_user_id: recipient.external_user_id,
           meta_message_id: sendResult.messageId,
           status: 'sent',
           sent_at: new Date().toISOString(),
@@ -251,7 +357,7 @@ export async function processMessengerOrderStatusNotifications(
           attempts: Number(notification.attempts || 0) + 1,
         })
         .eq('id', notification.id)
-        .eq('status', 'pending');
+        .eq('status', 'sending');
 
       if (updateError) {
         console.error(
@@ -270,12 +376,11 @@ export async function processMessengerOrderStatusNotifications(
         .from('messenger_order_status_notifications')
         .update({
           status: 'pending',
-          attempts: Number(notification.attempts || 0) + 1,
           last_error: message.slice(0, 500),
           updated_at: new Date().toISOString(),
         })
         .eq('id', notification.id)
-        .eq('status', 'pending');
+        .eq('status', 'sending');
 
       console.error(
         'Messenger order status notification delivery failed:',
