@@ -54,7 +54,7 @@ type WalletSummary = {
 declare global {
   interface Window {
     Cashfree?: (options: { mode: 'production' | 'sandbox' }) => {
-      checkout: (options: { paymentSessionId: string }) => Promise<unknown> | unknown;
+      checkout: (options: { paymentSessionId: string; redirectTarget?: string }) => Promise<unknown> | unknown;
     };
   }
 }

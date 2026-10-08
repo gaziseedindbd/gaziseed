@@ -4,6 +4,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const corsHeaders = {"Content-Type":"application/json"};
 const COMPLETE_ORDER_URL = "https://ufxsthshyebahkwbmioe.supabase.co/functions/v1/cashfree-complete-order";
 const COMPLETE_COD_ORDER_URL = "https://ufxsthshyebahkwbmioe.supabase.co/functions/v1/cashfree-complete-cod-order";
+const COMPLETE_CAMPAIGN_ORDER_URL = "https://ufxsthshyebahkwbmioe.supabase.co/functions/v1/cashfree-campaign-payment";
 const MAX_SKEW_MS = 5 * 60 * 1000;
 
 function json(body: unknown, status = 200) {
@@ -65,6 +66,22 @@ Deno.serve(async (req: Request) => {
   if (intent.completed_order_id) return json({ ok: true, already_completed: true, order_id: intent.completed_order_id });
 
   if (type === "PAYMENT_SUCCESS_WEBHOOK" || paymentStatus === "SUCCESS") {
+    if (intent.metadata?.payment_flow === "india_campaign") {
+      const response = await fetch(COMPLETE_CAMPAIGN_ORDER_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${JSON.parse(rawSecretKeys)["default"]}`,
+        },
+        body: JSON.stringify({ action: "complete", payment_intent_id: intent.id }),
+      });
+      const responseText = await response.text();
+      let result: unknown;
+      try { result = JSON.parse(responseText); } catch { result = { raw: responseText }; }
+      if (!response.ok) return json({ ok: false, error: "Verified campaign payment could not be completed", details: result }, 502);
+      return json({ ok: true, processed: true, payment_flow: "india_campaign", result });
+    }
+
     const isCod = intent.metadata?.payment_method === "cod";
     const completionUrl = isCod ? COMPLETE_COD_ORDER_URL : COMPLETE_ORDER_URL;
     const response = await fetch(completionUrl, {

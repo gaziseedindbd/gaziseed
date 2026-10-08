@@ -23,6 +23,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
+import { IndiaPaymentMethodSelector, type IndiaPaymentMethod } from '@/components/site/india-payment-method-selector';
+import { startIndiaCampaignPayment } from '@/lib/india-campaign-payment';
 
 type Country = 'BD' | 'IN';
 
@@ -88,6 +90,9 @@ export default function ComboLandingPage() {
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<IndiaPaymentMethod>('online');
+  const [indiaDeliveryQuote, setIndiaDeliveryQuote] = useState<number | null>(null);
+  const [indiaDeliveryQuoteLoading, setIndiaDeliveryQuoteLoading] = useState(false);
   const { lang, t } = useLang();
   const [timeLeft, setTimeLeft] = useState(3 * 3600);
 
@@ -110,6 +115,7 @@ export default function ComboLandingPage() {
         .select('*')
         .eq('slug', slug)
         .eq('is_active', true)
+        .eq('country_code', getVisitorCountry())
         .single();
 
       if (error || !data) {
@@ -157,8 +163,6 @@ export default function ComboLandingPage() {
   const tiers = Array.isArray(combo?.tier_pricing) ? (combo?.tier_pricing ?? []) : [];
   const items: ComboItem[] = Array.isArray(combo?.combo_items) ? (combo?.combo_items ?? []) : [];
   const getQty = (tier: any) => Number(tier?.qty ?? tier?.quantity ?? 1);
-  const getFree = (tier: any) => tier?.freeDelivery === true || tier?.free_delivery === true;
-
   const currentTier = useMemo(
     () => tiers.find((tier: any) => getQty(tier) === Number(selectedQty)) || tiers[0] || {},
     [tiers, selectedQty],
@@ -167,9 +171,46 @@ export default function ComboLandingPage() {
   const offer = Number(currentTier?.offer) || Number(combo?.combo_price) || 0;
   const regular = Number(currentTier?.regular) || Number(combo?.regular_total) || 0;
   const savings = Math.max(0, regular - offer);
-  const freeDelivery = getFree(currentTier) || (country === 'IN' ? offer >= 999 : offer >= 600);
-  const delivery = freeDelivery ? 0 : country === 'IN' ? (offer >= 499 ? 60 : 90) : offer >= 400 ? 50 : offer >= 200 ? 70 : 120;
+  // India quotes use the same explicit free-delivery flag as the database.
+  const currentTierFreeValue = currentTier?.freeDelivery ?? currentTier?.free_delivery;
+  const freeDelivery = typeof currentTierFreeValue === 'boolean'
+    ? currentTierFreeValue
+    : combo?.free_delivery === true || (country === 'BD' && offer >= 600);
+  const fallbackDelivery = freeDelivery ? 0 : country === 'IN' ? (offer >= 499 ? 60 : 90) : offer >= 400 ? 50 : offer >= 200 ? 70 : 120;
+  const delivery = country === 'IN' && indiaDeliveryQuote !== null ? indiaDeliveryQuote : fallbackDelivery;
   const total = offer + delivery;
+  const codAdvance = delivery > 0 ? delivery : 120;
+  const codDue = Math.max(0, total - codAdvance);
+
+  useEffect(() => {
+    let active = true;
+    const loadQuote = async () => {
+      if (country !== 'IN' || offer <= 0) {
+        setIndiaDeliveryQuote(null);
+        setIndiaDeliveryQuoteLoading(false);
+        return;
+      }
+      if (freeDelivery) {
+        setIndiaDeliveryQuote(0);
+        setIndiaDeliveryQuoteLoading(false);
+        return;
+      }
+      setIndiaDeliveryQuoteLoading(true);
+      const { data, error } = await supabase.rpc('calculate_delivery_charge', {
+        p_order_value: offer,
+        p_free_delivery: false,
+      });
+      if (!active) return;
+      const charge = Number(data);
+      if (error || data === null || !Number.isFinite(charge) || charge < 0) {
+        setIndiaDeliveryQuote(null);
+        toast('Delivery charge could not be verified. Please try again.', 'error');
+      } else setIndiaDeliveryQuote(charge);
+      setIndiaDeliveryQuoteLoading(false);
+    };
+    void loadQuote();
+    return () => { active = false; };
+  }, [country, offer, freeDelivery]);
   const heroImages = useMemo(() => (combo ? getComboHeroImages(combo, items) : []), [combo, items]);
   const timer = {
     h: String(Math.floor(timeLeft / 3600)).padStart(2, '0'),
@@ -191,6 +232,19 @@ export default function ComboLandingPage() {
 
     setSubmitting(true);
     try {
+      if (country === 'IN') {
+        if (indiaDeliveryQuoteLoading || indiaDeliveryQuote === null) throw new Error('Delivery charge is still being verified');
+        if (paymentMethod === 'cod' && codAdvance > total) throw new Error('COD advance is higher than the payable total. Choose online payment.');
+        await startIndiaCampaignPayment({
+          flow: 'combo',
+          context: { combo_id: combo?.id, quantity: selectedQty },
+          method: paymentMethod,
+          customerName: name.trim(),
+          customerPhone: cleanPhone,
+          deliveryAddress: address.trim(),
+        });
+        return;
+      }
       const { data, error } = await supabase.rpc('create_combo_order', {
         p_combo_id: combo?.id,
         p_quantity: selectedQty,
@@ -202,7 +256,7 @@ export default function ComboLandingPage() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast(country === 'IN' ? 'Your order has been received successfully!' : 'আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে!');
+      toast('আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে!');
       router.push(`/order-success?number=${data.order_number}`);
     } catch (error: any) {
       toast((country === 'IN' ? 'Order failed: ' : 'অর্ডার করতে সমস্যা হয়েছে: ') + (error?.message || ''), 'error');
@@ -377,7 +431,10 @@ export default function ComboLandingPage() {
                   const tierOffer = Number(tier?.offer) || offer;
                   const tierRegular = Number(tier?.regular) || tierOffer;
                   const tierSavings = Math.max(0, tierRegular - tierOffer);
-                  const tierFree = getFree(tier) || (country === 'IN' ? tierOffer >= 999 : tierOffer >= 600);
+                  const tierFreeValue = tier?.freeDelivery ?? tier?.free_delivery;
+                  const tierFree = typeof tierFreeValue === 'boolean'
+                    ? tierFreeValue
+                    : combo?.free_delivery === true || (country === 'BD' && tierOffer >= 600);
                   const selected = qty === selectedQty;
                   return (
                     <button key={qty} type="button" onClick={() => setSelectedQty(qty)} className={`group w-full rounded-[26px] border-2 p-4 text-left transition-all ${selected ? 'border-emerald-600 bg-emerald-50 shadow-[0_14px_35px_rgba(5,150,105,.14)]' : 'border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/40'}`}>
@@ -397,8 +454,16 @@ export default function ComboLandingPage() {
                   <div className="space-y-1.5"><label htmlFor="combo-name" className="flex items-center gap-1.5 text-xs font-black text-slate-700"><User className="h-3.5 w-3.5 text-emerald-700" />{country === 'IN' ? 'Full name' : 'পুরো নাম'} <span className="text-rose-500">*</span></label><input id="combo-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={country === 'IN' ? 'Your full name' : 'যেমন: মো: আরিফুল ইসলাম'} className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" required /></div>
                   <div className="space-y-1.5"><label htmlFor="combo-phone" className="flex items-center gap-1.5 text-xs font-black text-slate-700"><Phone className="h-3.5 w-3.5 text-emerald-700" />{country === 'IN' ? 'Mobile number' : 'মোবাইল নম্বর'} <span className="text-rose-500">*</span></label><input id="combo-phone" type="tel" inputMode="tel" maxLength={country === 'IN' ? 10 : 11} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={country === 'IN' ? '10-digit mobile number' : '01XXXXXXXXX'} className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" required /></div>
                   <div className="space-y-1.5"><label htmlFor="combo-address" className="flex items-center gap-1.5 text-xs font-black text-slate-700"><MapPin className="h-3.5 w-3.5 text-emerald-700" />{country === 'IN' ? 'Delivery address' : 'সম্পূর্ণ ঠিকানা'} <span className="text-rose-500">*</span></label><textarea id="combo-address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder={country === 'IN' ? 'House / road / area / city / PIN' : 'গ্রাম/মহল্লা, থানা, জেলা, বিস্তারিত ঠিকানা'} className="min-h-28 w-full resize-y rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" required /></div>
-                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4"><div className="flex items-center justify-between gap-3 text-xs font-bold text-slate-600"><span className="inline-flex items-center gap-2"><ShoppingCart className="h-4 w-4 text-emerald-700" />{selectedQty}× {country === 'IN' ? 'Pack' : 'প্যাকেট'}</span><span className="font-black text-emerald-800">{formatPrice(total)}</span></div><div className="mt-2 flex items-center justify-between gap-3 text-xs"><span className="text-slate-500">{country === 'IN' ? 'Delivery' : 'ডেলিভারি'}</span><span className="font-black text-emerald-700">{freeDelivery ? (country === 'IN' ? 'FREE' : 'ফ্রি') : formatPrice(delivery)}</span></div></div>
-                  <button disabled={submitting} type="submit" className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[20px] bg-amber-400 px-5 text-sm font-black text-amber-950 shadow-xl shadow-amber-900/10 transition hover:-translate-y-0.5 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"><ShieldCheck className="h-5 w-5" />{submitting ? (country === 'IN' ? 'Placing order…' : 'অর্ডার নেওয়া হচ্ছে…') : `${country === 'IN' ? 'Confirm order' : 'অর্ডার কনফার্ম করুন'} ${formatPrice(total)}`}</button>
+                  {country === 'IN' && <IndiaPaymentMethodSelector
+                    value={paymentMethod}
+                    onChange={setPaymentMethod}
+                    advanceAmount={codAdvance}
+                    dueAmount={codDue}
+                    codAvailable={!indiaDeliveryQuoteLoading && indiaDeliveryQuote !== null && codAdvance <= total}
+                    language={lang === 'hi' ? 'hi' : lang === 'en' ? 'en' : 'bn'}
+                  />}
+                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4"><div className="flex items-center justify-between gap-3 text-xs font-bold text-slate-600"><span className="inline-flex items-center gap-2"><ShoppingCart className="h-4 w-4 text-emerald-700" />{selectedQty}× {country === 'IN' ? 'Pack' : 'প্যাকেট'}</span><span className="font-black text-emerald-800">{formatPrice(total)}</span></div><div className="mt-2 flex items-center justify-between gap-3 text-xs"><span className="text-slate-500">{country === 'IN' ? 'Delivery' : 'ডেলিভারি'}</span><span className="font-black text-emerald-700">{freeDelivery ? (country === 'IN' ? 'FREE' : 'ফ্রি') : formatPrice(delivery)}</span></div>{country === 'IN' && paymentMethod === 'cod' && <div className="mt-2 flex items-center justify-between gap-3 border-t border-emerald-200 pt-2 text-xs"><span className="font-bold text-slate-600">Advance now · due on delivery</span><span className="font-black text-emerald-800">{formatPrice(codAdvance)} · {formatPrice(codDue)}</span></div>}</div>
+                  <button disabled={submitting || (country === 'IN' && (indiaDeliveryQuoteLoading || indiaDeliveryQuote === null || (paymentMethod === 'cod' && codAdvance > total)))} type="submit" className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[20px] bg-amber-400 px-5 text-sm font-black text-amber-950 shadow-xl shadow-amber-900/10 transition hover:-translate-y-0.5 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"><ShieldCheck className="h-5 w-5" />{submitting ? (country === 'IN' ? 'Starting secure checkout…' : 'অর্ডার নেওয়া হচ্ছে…') : country === 'IN' ? (paymentMethod === 'cod' ? `Pay ${formatPrice(codAdvance)} advance` : `Pay online ${formatPrice(total)}`) : `অর্ডার কনফার্ম করুন ${formatPrice(total)}`}</button>
                   <div className="flex items-center justify-center gap-3 pt-1 text-[10px] font-bold text-slate-500"><span className="inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />Secure</span><span className="h-1 w-1 rounded-full bg-slate-300"/><span className="inline-flex items-center gap-1"><WalletCards className="h-3.5 w-3.5 text-emerald-700"/>COD</span><span className="h-1 w-1 rounded-full bg-slate-300"/><span className="inline-flex items-center gap-1"><Truck className="h-3.5 w-3.5 text-emerald-700"/>{country === 'IN' ? 'India' : 'Bangladesh'}</span></div>
                 </form>
               </div>
