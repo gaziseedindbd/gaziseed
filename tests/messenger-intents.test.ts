@@ -45,6 +45,7 @@ import {
 } from '../lib/ai/messenger-product-tool';
 import {
   getBangladeshPaymentMethodReply,
+  isMessengerExplicitProductKnowledgeQuery,
   isBangladeshPaymentMethodQuestion,
   isMessengerProductSpecificKnowledgeQuery,
 } from '../lib/ai/messenger-knowledge-tool';
@@ -237,6 +238,26 @@ test('keeps similar Messenger matches out of transactional product data', () => 
   assert.equal(serialized.regular_price, null);
   assert.equal(serialized.sale_price, null);
   assert.equal(serialized.offer_price, null);
+});
+
+test('prefers an explicitly named crop over a stale referenced product', () => {
+  const rose = {
+    name_bn: 'লাল গোলাপ ফুলের বীজ',
+    name_en: 'Red Rose Flower Seeds',
+    slug: 'lal-golap-fuler-bij',
+  };
+  const chili = {
+    name_bn: 'বিদেশি লাল লম্বা মরিচের বীজ',
+    name_en: 'Foreign Red Long Chili Seeds',
+    slug: 'bideshi-lal-lomba-moricher-bij',
+  };
+  const question = 'বিদেশি লাল লম্বা মরিচের বীজ etar germination kemon?';
+
+  assert.equal(isMessengerExplicitProductKnowledgeQuery(question, chili), true);
+  assert.equal(isMessengerExplicitProductKnowledgeQuery(question, rose), false);
+  assert.equal(isMessengerProductSpecificKnowledgeQuery(question, chili), true);
+  assert.equal(isMessengerProductSpecificKnowledgeQuery(question, rose), false);
+  assert.equal(isMessengerProductSpecificKnowledgeQuery('এটার germination কেমন?', rose), true);
 });
 
 test('offers selectable options for similar product matches without disclosing their price', () => {
