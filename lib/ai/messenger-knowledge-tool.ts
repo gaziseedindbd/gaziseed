@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { detectMessengerReplyLanguage } from './messenger-language';
 import {
   isTrustedMessengerProductMatch,
   searchMessengerProducts,
@@ -386,6 +387,26 @@ function firstNonEmpty(...values: unknown[]): string | null {
   return null;
 }
 
+export function selectMessengerFaqResponse(
+  faq: ProductFaq,
+  language: MessengerReplyLanguage,
+): { question: string | null; answer: string | null } {
+  const englishAnswer = firstNonEmpty(faq.answer_en);
+  const bengaliAnswer = firstNonEmpty(faq.answer_bn);
+  const preferEnglish = language === 'English' || language === 'Hindi';
+  const answer = preferEnglish
+    ? englishAnswer || bengaliAnswer
+    : bengaliAnswer || englishAnswer;
+  const selectedAnswerIsEnglish = Boolean(
+    preferEnglish ? englishAnswer : !bengaliAnswer && englishAnswer,
+  );
+  const question = selectedAnswerIsEnglish
+    ? firstNonEmpty(faq.question_en, faq.question_bn)
+    : firstNonEmpty(faq.question_bn, faq.question_en);
+
+  return { question, answer };
+}
+
 function buildFieldReply(
   product: Record<string, unknown>,
   text: string,
@@ -607,7 +628,11 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
 
   const faq = await findFaq(supabase, candidate.id, text);
   if (faq) {
-    const answer = firstNonEmpty(faq.answer_bn, faq.answer_en);
+    const localizedFaq = selectMessengerFaqResponse(
+      faq,
+      detectMessengerReplyLanguage(text),
+    );
+    const answer = localizedFaq.answer;
     if (answer) {
       const name =
         firstNonEmpty(
@@ -620,10 +645,7 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
         handled: true,
         productId: candidate.id,
         reply:
-          `🌱 ${name}\n\n❓ ${firstNonEmpty(
-            faq.question_bn,
-            faq.question_en,
-          ) || 'FAQ'}\n\n${answer}`,
+          `🌱 ${name}\n\n❓ ${localizedFaq.question || 'FAQ'}\n\n${answer}`,
       };
     }
   }
