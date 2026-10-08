@@ -41,6 +41,10 @@ export default function OfferLandingPage() {
 
   const isPreview = searchParams.get('preview') === '1';
 
+  // Ads landing pages belong to a specific branch; checkout must use that branch
+  // instead of AddressSelector's Bangladesh default.
+  const countryCode = String(landing?.country_code || product?.country_code || 'BD').toUpperCase() === 'IN' ? 'IN' : 'BD';
+
   const utm = useMemo(() => ({
     source: searchParams.get('utm_source') || '',
     medium: searchParams.get('utm_medium') || '',
@@ -165,7 +169,13 @@ export default function OfferLandingPage() {
     if (!addrValue.division || !addrValue.district || !addrValue.thana || !addrValue.detail) { setError('সম্পূর্ণ ঠিকানা নির্বাচন ও প্রদান করুন'); return; }
     if (!selectedTier && !selectedBundle) { setError('একটি অফার প্যাকেজ নির্বাচন করুন'); return; }
     const phone = form.phone.replace(/[^0-9]/g, '');
-    if (!/^01[0-9]{9}$/.test(phone)) { setError('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (যেমন: 017XXXXXXXX)'); return; }
+    const phoneValid = countryCode === 'IN' ? /^[6-9][0-9]{9}$/.test(phone) : /^01[0-9]{9}$/.test(phone);
+    if (!phoneValid) {
+      setError(countryCode === 'IN'
+        ? 'সঠিক ১০ সংখ্যার ভারতীয় মোবাইল নম্বর দিন (যেমন: 9876543210)'
+        : 'সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (যেমন: 017XXXXXXXX)');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -515,19 +525,19 @@ export default function OfferLandingPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs sm:text-sm font-bold text-gray-700">মোবাইল নম্বর (১১ ডিজিট) *</label>
+                  <label className="mb-1 block text-xs sm:text-sm font-bold text-gray-700">{countryCode === 'IN' ? 'মোবাইল নম্বর (১০ ডিজিট) *' : 'মোবাইল নম্বর (১১ ডিজিট) *'}</label>
                   <input 
                     type="tel" 
                     value={form.phone} 
                     onChange={(e) => setForm({ ...form, phone: e.target.value })} 
                     className="input-bangla w-full" 
-                    placeholder="01XXXXXXXXX" 
+                    placeholder={countryCode === 'IN' ? '9876543210' : '01XXXXXXXXX'} 
                     required 
                   />
                 </div>
 <div>
                   <label className="mb-1 block text-xs sm:text-sm font-bold text-gray-700">সম্পূর্ণ ঠিকানা নির্বাচন করুন *</label>
-                  <AddressSelector value={addrValue} onChange={setAddrValue} />
+                  <AddressSelector value={addrValue} onChange={setAddrValue} countryCode={countryCode} />
                 </div>
 
                 <div>
