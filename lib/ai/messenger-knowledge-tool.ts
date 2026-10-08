@@ -131,11 +131,33 @@ const GENERIC_PRODUCT_TOKENS = new Set([
   'পণ্য',
   'প্রোডাক্ট',
   'ফুল',
+  'লাল',
+  'সাদা',
+  'কালো',
+  'হলুদ',
+  'গোলাপি',
+  'বেগুনি',
+  'মিশ্র',
+  'মিক্স',
   'seed',
   'seeds',
   'product',
   'products',
   'flower',
+  'red',
+  'white',
+  'black',
+  'yellow',
+  'pink',
+  'purple',
+  'mixed',
+  'mix',
+  'लाल',
+  'सफेद',
+  'काला',
+  'पीला',
+  'गुलाबी',
+  'बैंगनी',
 ]);
 
 function isSimpleProductFieldQuestion(text: string): boolean {
@@ -149,15 +171,11 @@ function isSimpleProductFieldQuestion(text: string): boolean {
   return /(ब्रांड|कंपनी|उत्पत्ति|कहां का|कहाँ का|किस्म|बीज का प्रकार|मौसम|अंकुरण|कितने दिन|दूरी|गहराई|धूप|सूरज की रोशनी|पानी|मिट्टी|पैकेट|कितने बीज|उपज|कटाई|भंडारण|brand|origin|variety|बীজের ধরন|seed type|season|মৌসুম|অঙ্কুর|germination|দূরত্ব|spacing|গভীরতা|depth|রোদ|সূর্যালোক|sunlight|পানি|জল|water|মাটি|soil|প্যাকেট|packet|ফলন|yield|harvest|সংরক্ষণ|storage)/i.test(normalized);
 }
 
-export function isMessengerProductSpecificKnowledgeQuery(
+export function isMessengerExplicitProductKnowledgeQuery(
   text: string,
   product: Pick<MessengerProduct, 'name_bn' | 'name_en' | 'slug'>,
 ): boolean {
   const normalized = normalizeText(text);
-
-  if (/(इस\s+(?:बीज|বীজ|उत्पाद|प्रोडक्ट)|इसका|इसकी|यह\s+(?:बीज|বীজ|उत्पाद)|ये\s+(?:बीज|বীজ|उत्पाद)|এই\s+(?:বীজ|পণ্য|প্রোডাক্ট)|এটার|এটি|এইটা|this\s+seed|this\s+product)/i.test(normalized)) {
-    return true;
-  }
 
   const queryTokens = tokenize(normalized);
   const productTokens = tokenize(
@@ -165,6 +183,16 @@ export function isMessengerProductSpecificKnowledgeQuery(
   ).filter((token) => !GENERIC_PRODUCT_TOKENS.has(token));
 
   return productTokens.some((token) => queryTokens.includes(token));
+}
+
+export function isMessengerProductSpecificKnowledgeQuery(
+  text: string,
+  product: Pick<MessengerProduct, 'name_bn' | 'name_en' | 'slug'>,
+): boolean {
+  if (isMessengerExplicitProductKnowledgeQuery(text, product)) return true;
+
+  const normalized = normalizeText(text);
+  return /(इस\s+(?:बीज|বীজ|उत्पाद|प्रोडक्ट)|इसका|इसकी|यह\s+(?:बीज|বীজ|उत्पाद)|ये\s+(?:बीज|বীজ|उत्पाद)|এই\s+(?:বীজ|পণ্য|প্রোডাক্ট)|এটার|এটি|এইটা|this\s+seed|this\s+product)/i.test(normalized);
 }
 
 const STOP_WORDS = new Set([
@@ -725,8 +753,20 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
 
   let candidate: MessengerProduct | null = null;
 
+  // An explicit product name in the current question must win over a stale
+  // conversational product reference (for example, "chili seed ... this seed").
+  const matches = await searchMessengerProducts(supabase, country, text, 8);
+  const explicitlyNamedProducts = matches.filter(
+    (match) =>
+      isTrustedMessengerProductMatch(match) &&
+      isMessengerExplicitProductKnowledgeQuery(text, match),
+  );
+  if (explicitlyNamedProducts.length === 1) {
+    candidate = explicitlyNamedProducts[0];
+  }
+
   const verifiedProductId = getVerifiedProductId(metadata);
-  if (verifiedProductId) {
+  if (!candidate && verifiedProductId) {
     const verifiedProduct = await getProductById(supabase, country, verifiedProductId);
     if (
       verifiedProduct &&
@@ -738,7 +778,6 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
   }
 
   if (!candidate) {
-    const matches = await searchMessengerProducts(supabase, country, text, 4);
     const productSpecificMatches = matches.filter(
       (match) =>
         isTrustedMessengerProductMatch(match) &&
