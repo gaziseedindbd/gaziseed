@@ -168,7 +168,7 @@ gtag('config', ${JSON.stringify(ga4MeasurementId)});
               <main className="min-h-screen">{children}</main>
               <SiteFooter initialCountry={visitorCountry} />
               <WhatsAppButton />
-              <BottomNav />
+              <BottomNav initialCountry={visitorCountry} />
               <ThemeSwitcher />
               <DeferredHomeWidgets />
             </CartProvider>
