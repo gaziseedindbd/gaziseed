@@ -74,7 +74,10 @@ export async function GET(request: Request) {
       {
         key: 'gemini',
         label: 'Gemini',
-        configured: Boolean(process.env.GEMINI_API_KEY),
+        configured:
+          Boolean(process.env.GEMINI_API_KEY) &&
+          process.env.GEMINI_MESSENGER_ENABLED === 'true',
+        key_present: Boolean(process.env.GEMINI_API_KEY),
         model: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
         priority: 1,
       },
@@ -82,6 +85,7 @@ export async function GET(request: Request) {
         key: 'groq',
         label: 'Groq',
         configured: Boolean(process.env.GROQ_API_KEY),
+        key_present: Boolean(process.env.GROQ_API_KEY),
         model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
         priority: 2,
       },
@@ -89,14 +93,18 @@ export async function GET(request: Request) {
         key: 'cerebras',
         label: 'Cerebras',
         configured: Boolean(process.env.CEREBRAS_API_KEY),
-        model: process.env.CEREBRAS_MODEL || 'llama-3.3-70b',
+        key_present: Boolean(process.env.CEREBRAS_API_KEY),
+        model: process.env.CEREBRAS_MODEL || 'qwen-3.8-27b',
         priority: 3,
       },
       {
         key: 'openrouter',
         label: 'OpenRouter',
         configured: Boolean(process.env.OPENROUTER_API_KEY),
-        model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct',
+        key_present: Boolean(process.env.OPENROUTER_API_KEY),
+        model:
+          process.env.OPENROUTER_MODEL ||
+          'nvidia/nemotron-3-ultra-550b-a55b:free',
         priority: 4,
       },
     ];
