@@ -21,6 +21,7 @@ import {
   limitMessengerAIHistoryMessages,
   shouldIncludeMessengerAIHistoryMessage,
 } from '../lib/ai/messenger-history';
+import { selectMessengerFaqResponse } from '../lib/ai/messenger-knowledge-tool';
 
 const TEST_ENV_KEYS = [
   'AI_MESSENGER_ENABLED',
@@ -292,4 +293,32 @@ test('exposes growing instructions only for trusted catalog matches', () => {
   assert.equal(products[0].plant_spacing, '30 cm');
   assert.equal(products[1].cultivation_instructions, null);
   assert.equal(products[1].plant_spacing, null);
+});
+
+test('selects the FAQ answer in the customer language when available', () => {
+  const faq = {
+    question_bn: 'কখন বপন করব?',
+    answer_bn: 'বাংলা উত্তর',
+    question_en: 'When should I sow?',
+    answer_en: 'English answer',
+    display_order: 1,
+  };
+
+  assert.deepEqual(selectMessengerFaqResponse(faq, 'Bengali'), {
+    question: faq.question_bn,
+    answer: faq.answer_bn,
+  });
+  assert.deepEqual(selectMessengerFaqResponse(faq, 'English'), {
+    question: faq.question_en,
+    answer: faq.answer_en,
+  });
+  // FAQ rows currently have no Hindi columns, so Hindi uses English where available.
+  assert.deepEqual(selectMessengerFaqResponse(faq, 'Hindi'), {
+    question: faq.question_en,
+    answer: faq.answer_en,
+  });
+  assert.deepEqual(
+    selectMessengerFaqResponse({ ...faq, question_en: null, answer_en: null }, 'English'),
+    { question: faq.question_bn, answer: faq.answer_bn },
+  );
 });
