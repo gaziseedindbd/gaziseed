@@ -59,9 +59,23 @@ export default function MessengerPaymentPage() {
         const result = await complete.json();
         if (!complete.ok || !result?.completed) throw new Error(result?.error || 'Advance payment was not completed');
         setOrderNumber(typeof result.order_number === 'string' ? result.order_number : '');
+        let messengerSent = false;
+        try {
+          const notification = await fetch('/api/messenger-payment-confirmation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ payment_intent_id: data.payment_intent_id }),
+          });
+          const notificationResult = await notification.json();
+          messengerSent = notification.ok && notificationResult?.sent === true;
+        } catch {
+          // Order payment is already verified; keep the success page available if Messenger is temporarily unavailable.
+        }
         window.sessionStorage.removeItem('gazi_messenger_payment_order_id');
         setState('success');
-        setMessage('COD order successfully confirmed.');
+        setMessage(messengerSent
+          ? 'COD order successfully confirmed. Order number sent to Messenger.'
+          : 'COD order successfully confirmed.');
         return;
       }
 
