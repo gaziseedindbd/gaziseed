@@ -28,13 +28,6 @@ export default function AdsLandingEditorPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
 
-  useEffect(() => {
-    loadData();
-    const handleBranchChange = () => loadData();
-    window.addEventListener('gazi-branch-change', handleBranchChange);
-    return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
-  }, [loadData]);
-
   const loadData = useCallback(async () => {
     const { data: branchData, error: branchError } = await supabase.rpc('current_admin_country');
     const countryCode = String(branchData || '').toUpperCase();
@@ -63,6 +56,15 @@ export default function AdsLandingEditorPage() {
     });
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    loadData();
+    const handleBranchChange = () => loadData();
+    window.addEventListener('gazi-branch-change', handleBranchChange);
+    return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
+  }, [loadData]);
+
+
 
   const saveLanding = async () => {
     setSaving(true);
