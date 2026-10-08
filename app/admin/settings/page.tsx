@@ -406,11 +406,14 @@ export default function AdminSettingsPage() {
       {tab === 'ai' && aiForm && (
         <div className="max-w-2xl space-y-5 rounded-2xl border border-border bg-card p-6">
           <div className="flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-lg font-semibold"><Sparkles className="h-5 w-5 text-primary" /> AI Integration</h3>
+            <h3 className="flex items-center gap-2 text-lg font-semibold"><Sparkles className="h-5 w-5 text-primary" /> Generic AI Modules</h3>
             <label className="flex items-center gap-2 text-sm font-medium">
               <input type="checkbox" checked={aiForm.is_enabled ?? false} onChange={(e) => setAiForm({ ...aiForm, is_enabled: e.target.checked })} className="h-5 w-5 accent-primary" />
-              AI System ON
+              Generic AI Modules ON
             </label>
+          </div>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+            This switch controls only the branch-specific Generic AI modules in Admin. It does not enable or disable Facebook Messenger AI. Messenger runtime is controlled separately by the server AI_MESSENGER_ENABLED setting and is monitored from AI Messenger.
           </div>
 
           <div>
