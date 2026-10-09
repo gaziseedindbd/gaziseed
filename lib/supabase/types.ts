@@ -172,6 +172,10 @@ export type LandingFaq = {
   landing_page_id: string;
   question: string;
   answer: string;
+  question_en?: string | null;
+  answer_en?: string | null;
+  question_hi?: string | null;
+  answer_hi?: string | null;
   display_order: number;
   is_active: boolean;
   created_at: string;
