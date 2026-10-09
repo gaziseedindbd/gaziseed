@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Sparkles, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useLang } from '@/components/site/language-provider';
+import { localizedField } from '@/lib/combo-localization';
 
 export default function CombosPage() {
   const [combos, setCombos] = useState<any[]>([]);
@@ -118,8 +119,8 @@ export default function CombosPage() {
             const totalItems = getItemsCount(combo);
             const badge = firstTier.badge || 'SPECIAL OFFER';
 
-            const comboTitle = lang === 'en' && combo.title_en ? combo.title_en : combo.title_bn;
-            const comboDesc = lang === 'en' && combo.description_en ? combo.description_en : combo.description_bn;
+            const comboTitle = localizedField(combo, lang, 'title', 'Combo Pack');
+            const comboDesc = localizedField(combo, lang, 'description');
 
             return (
               <Link

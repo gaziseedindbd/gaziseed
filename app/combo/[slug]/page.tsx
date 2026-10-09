@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLang } from '@/components/site/language-provider';
 import { supabase, getVisitorCountry } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/data';
+import { comboCopy, localizedField } from '@/lib/combo-localization';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowRight,
@@ -94,6 +95,7 @@ export default function ComboLandingPage() {
   const [indiaDeliveryQuote, setIndiaDeliveryQuote] = useState<number | null>(null);
   const [indiaDeliveryQuoteLoading, setIndiaDeliveryQuoteLoading] = useState(false);
   const { lang, t } = useLang();
+  const copy = (en: string, bn: string, hi: string) => comboCopy(lang, en, bn, hi);
 
   useEffect(() => {
     setCountry(getVisitorCountry());
@@ -214,10 +216,10 @@ export default function ComboLandingPage() {
     const phoneValid = country === 'IN' ? /^[6-9][0-9]{9}$/.test(cleanPhone) : /^01[0-9]{9}$/.test(cleanPhone);
 
     if (!name.trim() || !address.trim() || !cleanPhone) {
-      return toast(country === 'IN' ? 'Please enter your name, address and phone number' : 'দয়া করে নাম, ঠিকানা ও ফোন নাম্বার দিন', 'error');
+      return toast(copy('Please enter your name, address and phone number', 'দয়া করে নাম, ঠিকানা ও ফোন নাম্বার দিন', 'कृपया नाम, पता और फोन नंबर दर्ज करें'), 'error');
     }
     if (!phoneValid) {
-      return toast(country === 'IN' ? 'Enter a valid 10-digit Indian mobile number' : 'সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন', 'error');
+      return toast(country === 'IN' ? copy('Enter a valid 10-digit Indian mobile number', 'সঠিক ১০ সংখ্যার ভারতীয় মোবাইল নম্বর দিন', 'मान्य 10 अंकों का भारतीय मोबाइल नंबर दर्ज करें') : copy('Enter a valid 11-digit mobile number', 'সঠিক ১১ সংখ্যার মোবাইল নম্বর দিন', 'सही 11 अंकों का मोबाइल नंबर दर्ज करें'), 'error');
     }
 
     setSubmitting(true);
@@ -249,7 +251,7 @@ export default function ComboLandingPage() {
       toast('আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে!');
       router.push(`/order-success?number=${data.order_number}`);
     } catch (error: any) {
-      toast((country === 'IN' ? 'Order failed: ' : 'অর্ডার করতে সমস্যা হয়েছে: ') + (error?.message || ''), 'error');
+      toast(copy('Order failed: ', 'অর্ডার ব্যর্থ: ', 'ऑर्डर विफल: ') + (error?.message || ''), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -275,9 +277,9 @@ export default function ComboLandingPage() {
       <div className="min-h-[70vh] bg-[#f5f8f4] px-4 py-28 text-center">
         <div className="mx-auto max-w-md rounded-[32px] border border-emerald-100 bg-white p-10 shadow-xl">
           <PackageCheck className="mx-auto h-14 w-14 text-emerald-700" />
-          <h2 className="mt-5 text-2xl font-black">{country === 'IN' ? 'Combo pack not found' : 'কম্বো প্যাকটি পাওয়া যায়নি'}</h2>
+          <h2 className="mt-5 text-2xl font-black">{copy('Combo pack not found', 'কম্বো প্যাকটি পাওয়া যায়নি', 'कॉम्बो पैक नहीं मिला')}</h2>
           <a href="/combos" className="mt-6 inline-flex rounded-2xl bg-emerald-800 px-5 py-3 font-bold text-white">
-            {country === 'IN' ? 'View all combos' : 'সব কম্বো দেখুন'}
+            {copy('View all combos', 'সব কম্বো দেখুন', 'सभी कॉम्बो देखें')}
           </a>
         </div>
       </div>
@@ -285,11 +287,10 @@ export default function ComboLandingPage() {
   }
 
   const translatedCombo = (combo as any)?.translations?.[lang] || {};
-  const comboTitle = translatedCombo.title || combo.title_bn || combo.title_en || '';
-  const comboDescription = translatedCombo.description || combo.description_bn || combo.description_en || '';
+  const comboTitle = localizedField(combo, lang, 'title');
+  const comboDescription = localizedField(combo, lang, 'description');
   // Locale follows the customer's language choice, independently of the branch.
-  const copy = (en: string, bn: string, hi: string) =>
-    lang === 'hi' ? hi : lang === 'bn' ? bn : en;
+
 
 
   return (
@@ -329,10 +330,10 @@ export default function ComboLandingPage() {
               </p>
 
               <div className="mt-6 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm"><Leaf className="h-4 w-4 text-lime-300" /><p className="mt-2 text-lg font-black">{items.length}</p><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100/65">Varieties</p></div>
-                <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm"><Gift className="h-4 w-4 text-lime-300" /><p className="mt-2 text-lg font-black">{selectedQty}×</p><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100/65">Pack</p></div>
-                <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm"><Zap className="h-4 w-4 text-amber-300" /><p className="mt-2 text-lg font-black">{formatPrice(savings)}</p><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100/65">You save</p></div>
-                <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm"><Truck className="h-4 w-4 text-sky-300" /><p className="mt-2 text-lg font-black">{freeDelivery ? 'FREE' : formatPrice(delivery)}</p><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100/65">Delivery</p></div>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm"><Leaf className="h-4 w-4 text-lime-300" /><p className="mt-2 text-lg font-black">{items.length}</p><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100/65">{copy('Varieties', 'বীজের ধরন', 'बीज की किस्में')}</p></div>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm"><Gift className="h-4 w-4 text-lime-300" /><p className="mt-2 text-lg font-black">{selectedQty}×</p><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100/65">{copy('Pack', 'প্যাক', 'पैक')}</p></div>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm"><Zap className="h-4 w-4 text-amber-300" /><p className="mt-2 text-lg font-black">{formatPrice(savings)}</p><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100/65">{copy('You save', 'সাশ্রয়', 'आपकी बचत')}</p></div>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm"><Truck className="h-4 w-4 text-sky-300" /><p className="mt-2 text-lg font-black">{freeDelivery ? 'FREE' : formatPrice(delivery)}</p><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100/65">{copy('Delivery', 'ডেলিভারি', 'डिलीवरी')}</p></div>
               </div>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -373,7 +374,7 @@ export default function ComboLandingPage() {
                         );
                       })}
                       <div className="absolute bottom-[6%] left-1/2 z-30 hidden -translate-x-1/2 rounded-full border border-white/90 bg-white/90 px-4 py-2 text-[10px] font-black text-emerald-900 shadow-lg backdrop-blur sm:bottom-[5%] sm:px-5 sm:py-2.5 sm:text-xs">
-                        {country === 'IN' ? '3 curated seed varieties' : '৩টি বাছাই করা বীজ একসাথে'}
+                        {copy('3 curated seed varieties', '৩টি বাছাই করা বীজ একসাথে', '3 चुनी हुई बीज किस्में')}
                       </div>
                     </div>
                   ) : (
@@ -391,7 +392,7 @@ export default function ComboLandingPage() {
 
       <section className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="-mt-6 grid gap-4 sm:grid-cols-3">
-          {[{ icon: PackageCheck, title: country === 'IN' ? 'Combo contents' : 'প্যাকেজে থাকছে', value: `${items.length} ${country === 'IN' ? 'seed varieties' : 'টি বীজ'}`, tone: 'emerald' }, { icon: Zap, title: country === 'IN' ? 'Smart saving' : 'স্মার্ট সাশ্রয়', value: `${formatPrice(savings)} ${country === 'IN' ? 'saved' : 'সাশ্রয়'}`, tone: 'amber' }, { icon: Truck, title: country === 'IN' ? 'Delivery' : 'ডেলিভারি', value: freeDelivery ? (country === 'IN' ? 'Free delivery' : 'ফ্রি ডেলিভারি') : formatPrice(delivery), tone: 'sky' }].map(({ icon: Icon, title, value, tone }) => (
+          {[{ icon: PackageCheck, title: copy('Combo contents','প্যাকেজে থাকছে','कॉम्बो में शामिल'), value: `${items.length} ${copy('seed varieties','টি বীজ','बीज किस्में')}`, tone: 'emerald' }, { icon: Zap, title: copy('Smart saving','স্মার্ট সাশ্রয়','अच्छी बचत'), value: `${formatPrice(savings)} ${copy('saved','সাশ্রয়','बचत')}`, tone: 'amber' }, { icon: Truck, title: copy('Delivery','ডেলিভারি','डिलीवरी'), value: freeDelivery ? (copy('Free delivery','ফ্রি ডেলিভারি','मुफ़्त डिलीवरी')) : formatPrice(delivery), tone: 'sky' }].map(({ icon: Icon, title, value, tone }) => (
             <div key={title} className="group rounded-[28px] border border-white bg-white p-5 shadow-[0_18px_40px_rgba(15,23,42,.09)] transition hover:-translate-y-1 hover:shadow-[0_24px_48px_rgba(15,23,42,.12)]"><div className="flex items-center gap-4"><span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tone === 'emerald' ? 'bg-emerald-100 text-emerald-800' : tone === 'amber' ? 'bg-amber-100 text-amber-700' : 'bg-sky-100 text-sky-700'}`}><Icon className="h-5 w-5" /></span><div className="min-w-0"><p className={`text-[10px] font-black uppercase tracking-[.16em] ${tone === 'emerald' ? 'text-emerald-700' : tone === 'amber' ? 'text-amber-700' : 'text-sky-700'}`}>{title}</p><p className="mt-1 text-lg font-black tracking-tight text-slate-900">{value}</p></div></div></div>
           ))}
         </div>
@@ -401,7 +402,7 @@ export default function ComboLandingPage() {
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_430px]">
           <div className="space-y-8">
             <section className="rounded-[34px] border border-emerald-100 bg-white p-5 shadow-sm sm:p-8">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[11px] font-black uppercase tracking-[.2em] text-emerald-700">WHAT&apos;S INSIDE</p><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{copy('What you get', 'এই প্যাকেজে যা পাবেন', 'इस पैक में क्या मिलेगा')}</h2><p className="mt-2 text-sm leading-6 text-slate-500">{country === 'IN' ? 'Every seed in this bundle is selected to complement the pack.' : 'একটি প্যাকের মধ্যে আপনার দরকারি বীজগুলো সুন্দরভাবে সাজানো।'}</p></div><span className="inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-800">{items.length} items</span></div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[11px] font-black uppercase tracking-[.2em] text-emerald-700">{copy("WHAT'S INSIDE", 'প্যাকেজে যা আছে', 'पैक में शामिल')}</p><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{copy('What you get', 'এই প্যাকেজে যা পাবেন', 'इस पैक में क्या मिलेगा')}</h2><p className="mt-2 text-sm leading-6 text-slate-500">{copy('Every seed in this bundle is selected to complement the pack.', 'একটি প্যাকের মধ্যে আপনার দরকারি বীজগুলো সুন্দরভাবে সাজানো।', 'इस पैक में आपके लिए उपयोगी बीज एक साथ शामिल हैं।')}</p></div><span className="inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-800">{items.length} {copy('items','পণ্য','उत्पाद')}</span></div>
               <div className="mt-7 grid gap-4 md:grid-cols-3">
                 {items.map((item, index) => {
                   const product = item.products || {};
@@ -411,14 +412,14 @@ export default function ComboLandingPage() {
                   return (
                     <article key={item.product_id || index} className="group overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fbf7] transition duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl">
                       <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_35%,#ffffff,#eef7f0)]">
-                        {image ? <img src={image} alt={product.name_bn || product.name_en || 'Seed'} className="h-full w-full object-contain p-4 transition duration-500 group-hover:scale-105" loading="lazy" /> : <Leaf className="h-14 w-14 text-emerald-700/25" />}
+                        {image ? <img src={image} alt={localizedField(product, lang, 'name', copy('Seed', 'বীজ', 'बीज'))} className="h-full w-full object-contain p-4 transition duration-500 group-hover:scale-105" loading="lazy" /> : <Leaf className="h-14 w-14 text-emerald-700/25" />}
                         <span className="absolute left-3 top-3 rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-black text-emerald-900 shadow-sm">0{index + 1}</span>
                         {index === items.length - 1 && <span className="absolute right-3 top-3 rounded-full bg-emerald-800 px-2.5 py-1 text-[9px] font-black text-white">FEATURED</span>}
                       </div>
                       <div className="p-4">
                         <h3 className="line-clamp-2 text-[15px] font-black leading-6 text-slate-900">{product.name_bn || product.name_en || 'বীজ'}</h3>
-                        <p className="mt-1 text-xs text-slate-500">{per} {country === 'IN' ? 'packet in combo' : 'প্যাকেট / কম্বো'}</p>
-                        <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-200 pt-3"><span className="text-xs font-semibold text-slate-500">{country === 'IN' ? 'In your pack' : 'বর্তমান প্যাকে'}</span><span className="rounded-full bg-emerald-800 px-2.5 py-1 text-[10px] font-black text-white">{totalQty} {country === 'IN' ? 'packs' : 'প্যাকেট'}</span></div>
+                        <p className="mt-1 text-xs text-slate-500">{per} {copy('packet in combo','প্যাকেট / কম্বো','कॉम्बो में पैकेट')}</p>
+                        <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-200 pt-3"><span className="text-xs font-semibold text-slate-500">{copy('In your pack','আপনার প্যাকে','आपके पैक में')}</span><span className="rounded-full bg-emerald-800 px-2.5 py-1 text-[10px] font-black text-white">{totalQty} {copy('packs','প্যাকেট','पैकेट')}</span></div>
                       </div>
                     </article>
                   );
@@ -429,13 +430,13 @@ export default function ComboLandingPage() {
             <section className="overflow-hidden rounded-[34px] bg-[#073d2b] p-5 text-white shadow-xl sm:p-8"><p className="text-[11px] font-black uppercase tracking-[.2em] text-lime-300">{copy('COMBO OFFER', 'কম্বো অফার', 'कॉम्बो ऑफर')}</p><h2 className="mt-2 text-2xl font-black sm:text-3xl">{copy('Choose the right bundle for your garden', 'আপনার বাগানের জন্য উপযুক্ত কম্বো বেছে নিন', 'अपने बगीचे के लिए सही कॉम्बो चुनें')}</h2><p className="mt-2 max-w-xl text-sm leading-6 text-emerald-100/75">{copy('Choose a package to review its current price and delivery charge before ordering.', 'অর্ডারের আগে প্যাকেজ বেছে নিয়ে বর্তমান দাম ও ডেলিভারি চার্জ দেখুন।', 'ऑर्डर से पहले पैक चुनकर कीमत और डिलीवरी शुल्क देखें।')}</p></section>
 
             <section className="grid gap-4 sm:grid-cols-3">
-              {[{ icon: BadgeCheck, title: country === 'IN' ? 'Curated combo' : 'বাছাই করা কম্বো', copy: country === 'IN' ? 'Useful seed varieties bundled for convenience.' : 'একসাথে দরকারি বীজ, সহজ ও সুবিধাজনক।' }, { icon: ShieldCheck, title: country === 'IN' ? 'Secure ordering' : 'নিরাপদ অর্ডার', copy: country === 'IN' ? 'Your order details are handled securely.' : 'আপনার অর্ডারের তথ্য নিরাপদে প্রক্রিয়া করা হয়।' }, { icon: Truck, title: country === 'IN' ? 'Doorstep delivery' : 'হোম ডেলিভারি', copy: country === 'IN' ? 'Delivery to serviceable addresses across India.' : 'সার্ভিসেবল ঠিকানায় সারাদেশে ডেলিভারি।' }].map(({ icon: Icon, title, copy }) => <div key={title} className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm"><Icon className="h-5 w-5 text-emerald-700" /><h3 className="mt-4 text-sm font-black">{title}</h3><p className="mt-1 text-xs leading-5 text-slate-500">{copy}</p></div>)}
+              {[{ icon: BadgeCheck, title: copy('Curated combo','বাছাই করা কম্বো','चुना हुआ कॉम्बो'), copy: copy('Useful seed varieties bundled for convenience.','একসাথে দরকারি বীজ, সহজ ও সুবিধাজনক।','सुविधा के लिए उपयोगी बीज एक साथ।') }, { icon: ShieldCheck, title: copy('Secure ordering','নিরাপদ অর্ডার','सुरक्षित ऑर्डर'), copy: copy('Your order details are handled securely.','আপনার অর্ডারের তথ্য নিরাপদে প্রক্রিয়া করা হয়।','आपके ऑर्डर की जानकारी सुरक्षित रूप से संसाधित होती है।') }, { icon: Truck, title: copy('Doorstep delivery','হোম ডেলিভারি','घर तक डिलीवरी'), copy: country === 'IN' ? copy('Delivery to serviceable addresses across India.','ভারতের সার্ভিসযোগ্য ঠিকানায় ডেলিভারি।','भारत में सेवा योग्य पतों पर डिलीवरी।') : copy('Delivery to serviceable addresses in Bangladesh.','বাংলাদেশের সার্ভিসযোগ্য ঠিকানায় ডেলিভারি।','बांग्लादेश में सेवा योग्य पतों पर डिलीवरी।') }].map(({ icon: Icon, title, copy }) => <div key={title} className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm"><Icon className="h-5 w-5 text-emerald-700" /><h3 className="mt-4 text-sm font-black">{title}</h3><p className="mt-1 text-xs leading-5 text-slate-500">{copy}</p></div>)}
             </section>
           </div>
 
           <aside id="deal" className="lg:sticky lg:top-24">
             <section className="overflow-hidden rounded-[34px] border border-emerald-100 bg-white shadow-[0_24px_65px_rgba(15,23,42,.12)]">
-              <div className="bg-[#086447] px-5 py-6 text-white sm:px-7"><div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[.2em] text-emerald-100">CHOOSE YOUR DEAL</p><h2 className="mt-2 text-2xl font-black">{copy('Pick your pack', 'প্যাকেজ বেছে নিন', 'अपना पैक चुनें')}</h2></div><span className="rounded-full bg-amber-300 px-3 py-1 text-[10px] font-black text-amber-950">BEST VALUE</span></div></div>
+              <div className="bg-[#086447] px-5 py-6 text-white sm:px-7"><div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[.2em] text-emerald-100">{copy('CHOOSE YOUR DEAL', 'অফার বেছে নিন', 'ऑफ़र चुनें')}</p><h2 className="mt-2 text-2xl font-black">{copy('Pick your pack', 'প্যাকেজ বেছে নিন', 'अपना पैक चुनें')}</h2></div><span className="rounded-full bg-amber-300 px-3 py-1 text-[10px] font-black text-amber-950">{copy('BEST VALUE','সেরা মূল্য','बेहतरीन मूल्य')}</span></div></div>
               <div className="space-y-3 p-4 sm:p-5">
                 {tiers.map((tier: any) => {
                   const qty = getQty(tier);
@@ -449,7 +450,7 @@ export default function ComboLandingPage() {
                   const selected = qty === selectedQty;
                   return (
                     <button key={qty} type="button" onClick={() => setSelectedQty(qty)} className={`group w-full rounded-[26px] border-2 p-4 text-left transition-all ${selected ? 'border-emerald-600 bg-emerald-50 shadow-[0_14px_35px_rgba(5,150,105,.14)]' : 'border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/40'}`}>
-                      <div className="flex items-start gap-3"><div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-black ${selected ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-700'}`}>{qty}×</div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-black">{qty} {country === 'IN' ? 'Pack' : 'প্যাকেট'}</p><p className="mt-0.5 text-[10px] text-slate-500">{formatPrice(tierRegular)} regular</p></div><span className={`rounded-full px-2.5 py-1 text-[9px] font-black ${selected ? 'bg-amber-300 text-amber-950' : 'bg-slate-100 text-slate-600'}`}>{qty === 1 ? 'BEST' : qty >= 3 ? 'MEGA DEAL' : 'SAVE MORE'}</span></div><div className="mt-4 flex items-end justify-between gap-3"><div><p className="text-[9px] font-black uppercase tracking-wider text-slate-400">OFFER PRICE</p><p className="mt-0.5 text-3xl font-black tracking-tight text-emerald-800">{formatPrice(tierOffer)}</p></div><div className="text-right"><p className="text-[10px] font-bold text-emerald-700">Save {formatPrice(tierSavings)}</p><p className="mt-1 text-[9px] font-black uppercase text-slate-400">{tierFree ? 'FREE DELIVERY' : 'DELIVERY APPLIES'}</p></div></div>{selected && <div className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-black text-emerald-700"><Check className="h-3.5 w-3.5" /> {country === 'IN' ? 'This pack is selected' : 'এই প্যাকেজটি নির্বাচিত'}</div>}</div></div>
+                      <div className="flex items-start gap-3"><div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-black ${selected ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-700'}`}>{qty}×</div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-black">{qty} {copy('Pack','প্যাকেট','पैक')}</p><p className="mt-0.5 text-[10px] text-slate-500">{formatPrice(tierRegular)} {copy('regular','নিয়মিত','नियमित')}</p></div><span className={`rounded-full px-2.5 py-1 text-[9px] font-black ${selected ? 'bg-amber-300 text-amber-950' : 'bg-slate-100 text-slate-600'}`}>{qty === 1 ? copy('BEST','সেরা','सबसे अच्छा') : qty >= 3 ? copy('MEGA DEAL','মেগা অফার','मेगा डील') : copy('SAVE MORE','আরও সাশ্রয়','अधिक बचत')}</span></div><div className="mt-4 flex items-end justify-between gap-3"><div><p className="text-[9px] font-black uppercase tracking-wider text-slate-400">{copy('OFFER PRICE', 'অফার মূল্য', 'ऑफ़र मूल्य')}</p><p className="mt-0.5 text-3xl font-black tracking-tight text-emerald-800">{formatPrice(tierOffer)}</p></div><div className="text-right"><p className="text-[10px] font-bold text-emerald-700">{copy('Save','সাশ্রয়','बचत')} {formatPrice(tierSavings)}</p><p className="mt-1 text-[9px] font-black uppercase text-slate-400">{tierFree ? copy('FREE DELIVERY', 'ফ্রি ডেলিভারি', 'मुफ़्त डिलीवरी') : copy('DELIVERY APPLIES', 'ডেলিভারি চার্জ প্রযোজ্য', 'डिलीवरी शुल्क लागू')}</p></div></div>{selected && <div className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-black text-emerald-700"><Check className="h-3.5 w-3.5" /> {copy('This pack is selected', 'এই প্যাকটি নির্বাচিত', 'यह पैक चुना गया है')}</div>}</div></div>
                     </button>
                   );
                 })}
@@ -460,11 +461,11 @@ export default function ComboLandingPage() {
               </div>
 
               <div id="quick-checkout" className="border-t border-slate-200 bg-white p-5 sm:p-6">
-                <div className="mb-5"><p className="text-[10px] font-black uppercase tracking-[.2em] text-emerald-700">QUICK CHECKOUT</p><h3 className="mt-2 text-2xl font-black">{copy('Complete your order', 'আপনার অর্ডার সম্পন্ন করুন', 'अपना ऑर्डर पूरा करें')}</h3><p className="mt-1 text-xs leading-5 text-slate-500">{country === 'IN' ? 'Just your name, phone and delivery address.' : 'শুধু নাম, ফোন ও ঠিকানা দিলেই হবে।'}</p></div>
+                <div className="mb-5"><p className="text-[10px] font-black uppercase tracking-[.2em] text-emerald-700">{copy('QUICK CHECKOUT', 'দ্রুত অর্ডার', 'त्वरित चेकआउट')}</p><h3 className="mt-2 text-2xl font-black">{copy('Complete your order', 'আপনার অর্ডার সম্পন্ন করুন', 'अपना ऑर्डर पूरा करें')}</h3><p className="mt-1 text-xs leading-5 text-slate-500">{copy('Just your name, phone and delivery address.','শুধু নাম, ফোন ও ঠিকানা দিলেই হবে।','केवल नाम, फोन और डिलीवरी पता भरें।')}</p></div>
                 <form onSubmit={submitOrder} className="space-y-4">
-                  <div className="space-y-1.5"><label htmlFor="combo-name" className="flex items-center gap-1.5 text-xs font-black text-slate-700"><User className="h-3.5 w-3.5 text-emerald-700" />{copy('Full name', 'পুরো নাম', 'पूरा नाम')} <span className="text-rose-500">*</span></label><input id="combo-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={country === 'IN' ? 'Your full name' : 'যেমন: মো: আরিফুল ইসলাম'} className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" required /></div>
-                  <div className="space-y-1.5"><label htmlFor="combo-phone" className="flex items-center gap-1.5 text-xs font-black text-slate-700"><Phone className="h-3.5 w-3.5 text-emerald-700" />{copy('Mobile number', 'মোবাইল নম্বর', 'मोबाइल नंबर')} <span className="text-rose-500">*</span></label><input id="combo-phone" type="tel" inputMode="tel" maxLength={country === 'IN' ? 10 : 11} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={country === 'IN' ? '10-digit mobile number' : '01XXXXXXXXX'} className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" required /></div>
-                  <div className="space-y-1.5"><label htmlFor="combo-address" className="flex items-center gap-1.5 text-xs font-black text-slate-700"><MapPin className="h-3.5 w-3.5 text-emerald-700" />{copy('Delivery address', 'ডেলিভারির ঠিকানা', 'डिलीवरी का पता')} <span className="text-rose-500">*</span></label><textarea id="combo-address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder={country === 'IN' ? 'House / road / area / city / PIN' : 'গ্রাম/মহল্লা, থানা, জেলা, বিস্তারিত ঠিকানা'} className="min-h-28 w-full resize-y rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" required /></div>
+                  <div className="space-y-1.5"><label htmlFor="combo-name" className="flex items-center gap-1.5 text-xs font-black text-slate-700"><User className="h-3.5 w-3.5 text-emerald-700" />{copy('Full name', 'পুরো নাম', 'पूरा नाम')} <span className="text-rose-500">*</span></label><input id="combo-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={copy('Your full name','আপনার পুরো নাম','आपका पूरा नाम')} className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" required /></div>
+                  <div className="space-y-1.5"><label htmlFor="combo-phone" className="flex items-center gap-1.5 text-xs font-black text-slate-700"><Phone className="h-3.5 w-3.5 text-emerald-700" />{copy('Mobile number', 'মোবাইল নম্বর', 'मोबाइल नंबर')} <span className="text-rose-500">*</span></label><input id="combo-phone" type="tel" inputMode="tel" maxLength={country === 'IN' ? 10 : 11} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={country === 'IN' ? copy('10-digit mobile number','১০ সংখ্যার মোবাইল নম্বর','10 अंकों का मोबाइल नंबर') : copy('11-digit mobile number','১১ সংখ্যার মোবাইল নম্বর','11 अंकों का मोबाइल नंबर')} className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" required /></div>
+                  <div className="space-y-1.5"><label htmlFor="combo-address" className="flex items-center gap-1.5 text-xs font-black text-slate-700"><MapPin className="h-3.5 w-3.5 text-emerald-700" />{copy('Delivery address', 'ডেলিভারির ঠিকানা', 'डिलीवरी का पता')} <span className="text-rose-500">*</span></label><textarea id="combo-address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder={copy('House / road / area / city / PIN','বাড়ি / রাস্তা / এলাকা / শহর / পিন','घर / सड़क / क्षेत्र / शहर / पिन')} className="min-h-28 w-full resize-y rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" required /></div>
                   {country === 'IN' && <div className="combo-payment-selector"><IndiaPaymentMethodSelector
                     value={paymentMethod}
                     onChange={setPaymentMethod}
@@ -473,8 +474,8 @@ export default function ComboLandingPage() {
                     codAvailable={!indiaDeliveryQuoteLoading && indiaDeliveryQuote !== null && codAdvance <= total}
                     language={lang === 'hi' ? 'hi' : lang === 'en' ? 'en' : 'bn'}
                   /></div>}
-                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4"><div className="flex items-center justify-between gap-3 text-xs font-bold text-slate-600"><span className="inline-flex items-center gap-2"><ShoppingCart className="h-4 w-4 text-emerald-700" />{selectedQty}× {country === 'IN' ? 'Pack' : 'প্যাকেট'}</span><span className="font-black text-emerald-800">{formatPrice(total)}</span></div><div className="mt-2 flex items-center justify-between gap-3 text-xs"><span className="text-slate-500">{copy('Delivery', 'ডেলিভারি', 'डिलीवरी')}</span><span className="font-black text-emerald-700">{freeDelivery ? (country === 'IN' ? 'FREE' : 'ফ্রি') : formatPrice(delivery)}</span></div>{country === 'IN' && paymentMethod === 'cod' && <div className="mt-2 flex items-center justify-between gap-3 border-t border-emerald-200 pt-2 text-xs"><span className="font-bold text-slate-600">Advance now · due on delivery</span><span className="font-black text-emerald-800">{formatPrice(codAdvance)} · {formatPrice(codDue)}</span></div>}</div>
-                  <button disabled={submitting || (country === 'IN' && (indiaDeliveryQuoteLoading || indiaDeliveryQuote === null || (paymentMethod === 'cod' && codAdvance > total)))} type="submit" className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[20px] bg-amber-400 px-5 text-sm font-black text-amber-950 shadow-xl shadow-amber-900/10 transition hover:-translate-y-0.5 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"><ShieldCheck className="h-5 w-5" />{submitting ? (country === 'IN' ? 'Starting secure checkout…' : 'অর্ডার নেওয়া হচ্ছে…') : country === 'IN' ? (paymentMethod === 'cod' ? `Pay ${formatPrice(codAdvance)} advance` : `Pay online ${formatPrice(total)}`) : `অর্ডার কনফার্ম করুন ${formatPrice(total)}`}</button>
+                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4"><div className="flex items-center justify-between gap-3 text-xs font-bold text-slate-600"><span className="inline-flex items-center gap-2"><ShoppingCart className="h-4 w-4 text-emerald-700" />{selectedQty}× {copy('Pack','প্যাকেট','पैक')}</span><span className="font-black text-emerald-800">{formatPrice(total)}</span></div><div className="mt-2 flex items-center justify-between gap-3 text-xs"><span className="text-slate-500">{copy('Delivery', 'ডেলিভারি', 'डिलीवरी')}</span><span className="font-black text-emerald-700">{freeDelivery ? (country === 'IN' ? 'FREE' : 'ফ্রি') : formatPrice(delivery)}</span></div>{country === 'IN' && paymentMethod === 'cod' && <div className="mt-2 flex items-center justify-between gap-3 border-t border-emerald-200 pt-2 text-xs"><span className="font-bold text-slate-600">{copy('Advance now · due on delivery','এখন অগ্রিম · ডেলিভারিতে বাকি','अभी अग्रिम · डिलीवरी पर शेष')}</span><span className="font-black text-emerald-800">{formatPrice(codAdvance)} · {formatPrice(codDue)}</span></div>}</div>
+                  <button disabled={submitting || (country === 'IN' && (indiaDeliveryQuoteLoading || indiaDeliveryQuote === null || (paymentMethod === 'cod' && codAdvance > total)))} type="submit" className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[20px] bg-amber-400 px-5 text-sm font-black text-amber-950 shadow-xl shadow-amber-900/10 transition hover:-translate-y-0.5 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"><ShieldCheck className="h-5 w-5" />{submitting ? (copy('Starting secure checkout…','নিরাপদ পেমেন্ট শুরু হচ্ছে…','सुरक्षित भुगतान शुरू हो रहा है…')) : country === 'IN' ? (paymentMethod === 'cod' ? `${copy('Pay advance','অগ্রিম পরিশোধ করুন','अग्रिम भुगतान करें')} ${formatPrice(codAdvance)}` : `${copy('Pay online','অনলাইনে পরিশোধ করুন','ऑनलाइन भुगतान करें')} ${formatPrice(total)}`) : `${copy('Confirm order','অর্ডার নিশ্চিত করুন','ऑर्डर की पुष्टि करें')} ${formatPrice(total)}`}</button>
                   <div className="flex items-center justify-center gap-3 pt-1 text-[10px] font-bold text-slate-500"><span className="inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />Secure</span><span className="h-1 w-1 rounded-full bg-slate-300"/><span className="inline-flex items-center gap-1"><WalletCards className="h-3.5 w-3.5 text-emerald-700"/>COD</span><span className="h-1 w-1 rounded-full bg-slate-300"/><span className="inline-flex items-center gap-1"><Truck className="h-3.5 w-3.5 text-emerald-700"/>{country === 'IN' ? 'India' : 'Bangladesh'}</span></div>
                 </form>
               </div>
