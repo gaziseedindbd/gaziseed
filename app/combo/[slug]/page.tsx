@@ -95,6 +95,7 @@ export default function ComboLandingPage() {
   const [indiaDeliveryQuote, setIndiaDeliveryQuote] = useState<number | null>(null);
   const [indiaDeliveryQuoteLoading, setIndiaDeliveryQuoteLoading] = useState(false);
   const { lang, t } = useLang();
+  const copy = (en: string, bn: string, hi: string) => comboCopy(lang, en, bn, hi);
 
   useEffect(() => {
     setCountry(getVisitorCountry());
@@ -289,7 +290,7 @@ export default function ComboLandingPage() {
   const comboTitle = localizedField(combo, lang, 'title');
   const comboDescription = localizedField(combo, lang, 'description');
   // Locale follows the customer's language choice, independently of the branch.
-  const copy = (en: string, bn: string, hi: string) => comboCopy(lang, en, bn, hi);
+
 
 
   return (
