@@ -747,7 +747,7 @@ export default function CheckoutPage() {
                   <Tag className="h-5 w-5 text-primary/70" />
                 </div>
 
-                <div className="mt-4 flex gap-3">
+                <div className="mt-4 flex min-w-0 flex-col gap-3 sm:flex-row">
                   <label htmlFor="coupon-code" className="sr-only">{t('কুপন কোড', 'Coupon code')}</label>
                   <input
                     id="coupon-code"
@@ -765,7 +765,7 @@ export default function CheckoutPage() {
                     type="button"
                     onClick={applyCoupon}
                     disabled={couponLoading || !couponCode.trim()}
-                    className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-2xl bg-primary px-5 text-xs font-black text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-black sm:w-auto text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('প্রয়োগ', 'Apply')}
                   </button>
