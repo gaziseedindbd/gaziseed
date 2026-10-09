@@ -27,8 +27,15 @@ function IndiaPaymentReturnContent() {
         });
         if (!active) return;
         if (data?.completed && data?.order_number) {
-          const status = Number(data.due_amount || 0) > 0 ? 'partially_paid' : 'paid';
-          router.replace(`/order-success?number=${encodeURIComponent(data.order_number)}&amount=${encodeURIComponent(data.amount || '')}&payment_status=${status}&due_amount=${encodeURIComponent(data.due_amount || '')}`);
+          const status = Number(data.due_amount || 0) > 0 ? 'cod' : 'paid';
+          const params = new URLSearchParams({
+            number: String(data.order_number),
+            amount: String(data.amount ?? ''),
+            payment_status: status,
+            due_amount: String(data.due_amount ?? ''),
+            advance_amount: String(data.advance_amount ?? ''),
+          });
+          router.replace(`/order-success?${params.toString()}`);
           return;
         }
         if (data?.processing && attempt < 5) {
