@@ -195,10 +195,14 @@ type SingleImageUploaderProps = {
   /** Max width/height for processing. Default 1200x1200. */
   maxWidth?: number;
   maxHeight?: number;
+  /** WebP/JPEG encoder quality, from 0 to 1. */
+  quality?: number;
+  /** Optional preview sizing for contexts that need a larger image check. */
+  previewClassName?: string;
   recommendation?: string;
 };
 
-export function SingleImageUploader({ imageUrl, onChange, label = 'ছবি', maxWidth = 1200, maxHeight = 1200, recommendation }: SingleImageUploaderProps) {
+export function SingleImageUploader({ imageUrl, onChange, label = 'ছবি', maxWidth = 1200, maxHeight = 1200, quality = 0.9, previewClassName, recommendation }: SingleImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [urlInput, setUrlInput] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(false);
@@ -207,7 +211,7 @@ export function SingleImageUploader({ imageUrl, onChange, label = 'ছবি', m
   const uploadImage = async (file: File) => {
     setUploading(true);
     try {
-      const processed = await processLocalImage(file, { maxWidth, maxHeight });
+      const processed = await processLocalImage(file, { maxWidth, maxHeight, quality });
       const url = await uploadProcessedFile(processed, 'product-images', supabase);
       onChange(url);
       toast('ছবি আপলোড ও ওয়াটারমার্ক হয়েছে');
@@ -222,7 +226,7 @@ export function SingleImageUploader({ imageUrl, onChange, label = 'ছবি', m
     if (!urlInput.trim()) return;
     setUploading(true);
     try {
-      const processed = await processUrlImage(urlInput.trim(), { maxWidth, maxHeight });
+      const processed = await processUrlImage(urlInput.trim(), { maxWidth, maxHeight, quality });
       const url = await uploadProcessedFile(processed, 'product-images', supabase);
       onChange(url);
       setUrlInput('');
@@ -240,8 +244,8 @@ export function SingleImageUploader({ imageUrl, onChange, label = 'ছবি', m
       <label className="mb-2 block text-sm font-medium">{label}</label>
       {recommendation && <p className="mb-2 text-xs text-muted-foreground">Recommended: {recommendation} — Best for display</p>}
       {imageUrl ? (
-        <div className="group relative inline-block">
-          <img src={imageUrl} alt="" className="h-24 w-24 rounded-lg border border-border object-cover" />
+        <div className="group relative inline-block max-w-full">
+          <img src={imageUrl} alt="" className={previewClassName || 'h-24 w-24 rounded-lg border border-border object-cover'} />
           <button onClick={() => onChange('')} className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground">
             <X className="h-3 w-3" />
           </button>
