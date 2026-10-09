@@ -442,6 +442,12 @@ export default function AnimatedLandingPage() {
         @keyframes skPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
         @keyframes skShimmer { from { background-position: -120% 0; } to { background-position: 120% 0; } }
         @keyframes skReveal { from { opacity:0; transform: translateY(22px) scale(.98); } to { opacity:1; transform: translateY(0) scale(1); } }
+        @media (max-width: 767px) {
+          /* Keep campaign content clear of global floating widgets on phones. */
+          body:has(#story) button[aria-label="Change Website Theme"],
+          body:has(#story) button[title="Change Website Theme"] { display: none !important; }
+          body:has(#story) button[aria-label="এই পণ্য শেয়ার করুন"] { display: none !important; }
+        }
         @media (max-width: 639px) {
           #story h1 { overflow-wrap: anywhere; }
           #story .sk-float { animation: none; }
@@ -553,7 +559,7 @@ export default function AnimatedLandingPage() {
         </div>
       </div>
 
-      <div className="fixed bottom-20 left-3 right-3 z-40 flex items-center justify-between gap-2 rounded-2xl border border-white/10 bg-[#07180f]/90 p-2 shadow-2xl backdrop-blur-xl lg:hidden"><button onClick={() => jump('story')} className="rounded-full px-3 py-2 text-xs font-bold text-white/70">{t('গল্প', 'Story', 'कहानी')}</button><button onClick={() => jump('benefits')} className="rounded-full px-3 py-2 text-xs font-bold text-white/70">{t('সুবিধা', 'Benefits', 'फ़ायदे')}</button><button onClick={() => jump('packages')} className="rounded-xl bg-lime-300 px-5 py-3 text-sm font-black text-[#07180f]">{t('অর্ডার', 'Order', 'ऑर्डर')}</button></div>
+      <div className="fixed bottom-20 left-3 right-3 z-30 flex items-center justify-between gap-2 rounded-2xl border border-white/10 bg-[#07180f]/90 p-2 shadow-2xl backdrop-blur-xl lg:hidden"><button onClick={() => jump('story')} className="rounded-full px-3 py-2 text-xs font-bold text-white/70">{t('গল্প', 'Story', 'कहानी')}</button><button onClick={() => jump('benefits')} className="rounded-full px-3 py-2 text-xs font-bold text-white/70">{t('সুবিধা', 'Benefits', 'फ़ायदे')}</button><button onClick={() => jump('packages')} className="rounded-xl bg-lime-300 px-5 py-3 text-sm font-black text-[#07180f]">{t('অর্ডার', 'Order', 'ऑर्डर')}</button></div>
     </main>
   );
 }
