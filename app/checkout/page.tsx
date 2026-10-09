@@ -883,7 +883,7 @@ export default function CheckoutPage() {
                             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Banknote className="h-4 w-4" /></span>
                             <span className="min-w-0">
                               <span className="block text-base font-black">{t('ক্যাশ অন ডেলিভারি', 'Cash on Delivery')}</span>
-                              <span className="mt-2 block text-sm leading-5 text-muted-foreground">{t(`অগ্রিম ${formatPrice(codAdvance)} · ডেলিভারিতে ${formatPrice(codDue)}`, `Advance ${formatPrice(codAdvance)} · ${formatPrice(codDue)} due on delivery`)}</span>
+                              <span className="mt-2 block space-y-1 text-sm leading-5 text-muted-foreground"><span className="block">{t("এখন অগ্রিম", "Advance now", "अभी अग्रिम")} <strong className="font-black text-foreground">{formatPrice(codAdvance)}</strong></span><span className="block">{t("ডেলিভারির সময় বাকি", "Due on delivery", "डिलीवरी पर शेष")} <strong className="font-black text-foreground">{formatPrice(codDue)}</strong></span></span>
                             </span>
                           </span>
                         </button>
