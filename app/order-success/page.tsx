@@ -42,8 +42,15 @@ function OrderSuccessInner() {
   const amount = searchParams.get('amount');
   const paymentStatus = searchParams.get('payment_status');
   const dueAmount = searchParams.get('due_amount');
+  const advanceAmount = searchParams.get('advance_amount');
   const isPaid = paymentStatus === 'paid';
-  const isCod = paymentStatus === 'cod';
+  const isCod = paymentStatus === 'cod' || paymentStatus === 'partially_paid';
+  const total = amount !== null && Number.isFinite(Number(amount)) ? Number(amount) : null;
+  const due = dueAmount !== null && Number.isFinite(Number(dueAmount)) ? Math.max(0, Number(dueAmount)) : null;
+  const advance = advanceAmount !== null && Number.isFinite(Number(advanceAmount))
+    ? Math.max(0, Number(advanceAmount))
+    : (isCod && total !== null && due !== null ? Math.max(0, total - due) : null);
+  const paidDisplay = isCod ? advance : total;
 
   return (
     <main className="min-h-[70vh] bg-gradient-to-b from-primary/[0.04] via-background to-background px-4 py-8 sm:py-12">
@@ -86,23 +93,30 @@ function OrderSuccessInner() {
               </div>
             )}
 
+            {isCod && total !== null && (
+              <div className="mx-auto mt-5 max-w-md rounded-2xl border border-primary/15 bg-primary/[0.045] p-4 text-left">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t('অর্ডারের মোট মূল্য', 'Total order amount')}</p>
+                <p className="mt-1 text-xl font-bold text-foreground">{formatPrice(total)}</p>
+              </div>
+            )}
+
             {(amount || isPaid || isCod) && (
               <div className="mx-auto mt-4 grid max-w-md gap-3 sm:grid-cols-2">
-                {amount && (
+                {(isCod || amount) && (
                   <div className="rounded-2xl border border-border/70 bg-background/70 p-4 text-left">
                     <div className="flex items-center gap-3">
                       <div className="rounded-xl bg-primary/10 p-2"><CreditCard className="h-5 w-5 text-primary" /></div>
                       <div>
                         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{isCod ? t('অগ্রিম পরিশোধের পরিমাণ', 'COD advance paid') : t('পরিশোধের পরিমাণ', 'Paid amount')}</p>
-                        <p className="mt-1 text-lg font-bold text-foreground">{formatPrice(Number(amount))}</p>
+                        <p className="mt-1 text-lg font-bold text-foreground">{paidDisplay !== null ? formatPrice(paidDisplay) : t('যাচাই করুন', 'Check payment details')}</p>
                       </div>
                     </div>
                   </div>
                 )}
                 {(isPaid || isCod) && (
                   <div className="rounded-2xl border border-primary/15 bg-primary/[0.045] p-4 text-left">
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{isCod && dueAmount ? t('ডেলিভারিতে পরিশোধযোগ্য', 'COD due on delivery') : t('পেমেন্ট স্ট্যাটাস', 'Payment status')}</p>
-                    <p className="mt-1 text-lg font-bold text-primary">{isCod && dueAmount ? formatPrice(Number(dueAmount)) : (isCod ? t('COD · আংশিক পরিশোধিত', 'COD · PARTIALLY PAID') : t('পরিশোধিত', 'PAID'))}</p>
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{isCod && due !== null ? t('ডেলিভারিতে পরিশোধযোগ্য', 'COD due on delivery') : t('পেমেন্ট স্ট্যাটাস', 'Payment status')}</p>
+                    <p className="mt-1 text-lg font-bold text-primary">{isCod && due !== null ? formatPrice(due) : (isCod ? t('COD · আংশিক পরিশোধিত', 'COD · PARTIALLY PAID') : t('পরিশোধিত', 'PAID'))}</p>
                   </div>
                 )}
               </div>
@@ -111,7 +125,7 @@ function OrderSuccessInner() {
             {isCod && (
               <div className="mx-auto mt-4 max-w-md rounded-2xl border border-amber-200/80 bg-amber-500/[0.08] p-4 text-left dark:border-amber-900/60">
                 <p className="text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">{t('COD বাকি টাকা', 'COD balance')}</p>
-                <p className="mt-1 text-sm font-semibold leading-6 text-amber-900/80 dark:text-amber-200/90">{dueAmount ? t(`ডেলিভারির সময় ${formatPrice(Number(dueAmount))} কুরিয়ারকে পরিশোধ করবেন।`, `Please pay ${formatPrice(Number(dueAmount))} to the courier when your order is delivered.`) : t('অবশিষ্ট টাকা ডেলিভারির সময় কুরিয়ারকে পরিশোধ করবেন।', 'Please pay the remaining balance to the courier when your order is delivered.')}</p>
+                <p className="mt-1 text-sm font-semibold leading-6 text-amber-900/80 dark:text-amber-200/90">{due !== null ? t(`ডেলিভারির সময় ${formatPrice(due)} কুরিয়ারকে পরিশোধ করবেন।`, `Please pay ${formatPrice(due)} to the courier when your order is delivered.`) : t('অবশিষ্ট টাকা ডেলিভারির সময় কুরিয়ারকে পরিশোধ করবেন।', 'Please pay the remaining balance to the courier when your order is delivered.')}</p>
               </div>
             )}
 
