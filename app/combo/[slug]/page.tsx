@@ -305,17 +305,17 @@ export default function ComboLandingPage() {
         <div className="pointer-events-none absolute -bottom-48 left-1/3 h-[32rem] w-[32rem] rounded-full bg-emerald-300/10 blur-3xl" />
 
         <div className="mx-auto max-w-7xl px-4 pb-14 pt-10 sm:px-6 lg:px-8 lg:pb-20 lg:pt-14">
-          <div className="grid items-center gap-10 lg:grid-cols-[1.02fr_.98fr] lg:gap-14">
+          <div className="grid items-center gap-8 lg:grid-cols-[1.02fr_.98fr] lg:gap-12">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[.18em] text-emerald-100">
                 <Sparkles className="h-4 w-4 text-lime-300" /> GAZI SEED • SMART COMBO
               </div>
-              <h1 className="mt-6 max-w-3xl text-4xl font-black leading-[1.02] tracking-tight sm:text-5xl lg:text-[4.35rem]">{comboTitle}</h1>
-              <p className="mt-5 max-w-2xl text-sm leading-7 text-emerald-50/80 sm:text-base">
+              <h1 className="mt-5 max-w-3xl text-[clamp(2rem,5vw,3.8rem)] font-black leading-[1.14] tracking-tight sm:text-[3.2rem] lg:text-[3.8rem]">{comboTitle}</h1>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-emerald-50/85 sm:text-base">
                 {comboDescription || (country === 'IN' ? 'Everything you need to start a beautiful home garden, bundled at a smarter price.' : 'প্রয়োজনীয় বীজ একসাথে নিন, স্মার্ট দামে বাগান শুরু করুন।')}
               </p>
 
-              <div className="mt-7 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="mt-6 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm"><Leaf className="h-4 w-4 text-lime-300" /><p className="mt-2 text-lg font-black">{items.length}</p><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100/65">Varieties</p></div>
                 <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm"><Gift className="h-4 w-4 text-lime-300" /><p className="mt-2 text-lg font-black">{selectedQty}×</p><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100/65">Pack</p></div>
                 <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm"><Zap className="h-4 w-4 text-amber-300" /><p className="mt-2 text-lg font-black">{formatPrice(savings)}</p><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100/65">You save</p></div>
@@ -341,14 +341,14 @@ export default function ComboLandingPage() {
                     <div className="relative flex min-h-[300px] items-center justify-center sm:min-h-[405px]">
                       {heroImages.slice(0, 3).map((image, index) => {
                         const positions = [
-                          'left-[6%] top-[20%] -rotate-6 sm:left-[7%] sm:top-[21%]',
-                          'left-1/2 top-[8%] -translate-x-1/2 sm:top-[5%]',
-                          'right-[6%] top-[23%] rotate-6 sm:right-[7%] sm:top-[24%]',
+                          'left-[3%] top-[20%] -rotate-3 sm:left-[3%] sm:top-[19%]',
+                          'left-1/2 top-[11%] -translate-x-1/2 sm:top-[10%]',
+                          'right-[3%] top-[20%] rotate-3 sm:right-[3%] sm:top-[19%]',
                         ];
                         const sizes = [
-                          'w-[39%] sm:w-[34%]',
-                          'w-[49%] sm:w-[41%]',
-                          'w-[39%] sm:w-[34%]',
+                          'w-[36%] sm:w-[32%]',
+                          'w-[37%] sm:w-[34%]',
+                          'w-[36%] sm:w-[32%]',
                         ];
                         return (
                           <div key={`${image}-${index}`} className={`absolute ${positions[index] || positions[2]} ${sizes[index] || sizes[2]} z-10 ${index === 1 ? 'z-20' : ''}`}>
@@ -359,7 +359,7 @@ export default function ComboLandingPage() {
                           </div>
                         );
                       })}
-                      <div className="absolute bottom-[6%] left-1/2 z-30 -translate-x-1/2 rounded-full border border-white/90 bg-white/90 px-4 py-2 text-[10px] font-black text-emerald-900 shadow-lg backdrop-blur sm:bottom-[5%] sm:px-5 sm:py-2.5 sm:text-xs">
+                      <div className="absolute bottom-[6%] left-1/2 z-30 hidden -translate-x-1/2 rounded-full border border-white/90 bg-white/90 px-4 py-2 text-[10px] font-black text-emerald-900 shadow-lg backdrop-blur sm:bottom-[5%] sm:px-5 sm:py-2.5 sm:text-xs">
                         {country === 'IN' ? '3 curated seed varieties' : '৩টি বাছাই করা বীজ একসাথে'}
                       </div>
                     </div>
