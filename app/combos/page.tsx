@@ -1,30 +1,37 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, getVisitorCountry, formatPriceEn } from '@/lib/supabase/client';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Sparkles, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useLang } from '@/components/site/language-provider';
-import { useFeatureFlags } from '@/components/site/feature-provider';
 
 export default function CombosPage() {
   const [combos, setCombos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { lang, t } = useLang();
-  const { ready, enabled } = useFeatureFlags();
+  const [country, setCountry] = useState<'BD' | 'IN'>('BD');
+  const [loadError, setLoadError] = useState(false);
+  useEffect(() => {
+    const sync = () => setCountry(getVisitorCountry());
+    sync();
+    window.addEventListener('gazi-country-changed', sync);
+    return () => window.removeEventListener('gazi-country-changed', sync);
+  }, []);
 
   useEffect(() => {
-    if (!ready || !enabled('enable_combos')) return;
-
     const fetchCombos = async () => {
       const { data, error } = await supabase
         .from('combo_packs')
         .select('*')
         .eq('is_active', true)
+        .eq('country_code', country)
         .order('created_at', { ascending: false });
 
-      if (!error && data) {
+      if (error) setLoadError(true);
+      else if (data) {
+        setLoadError(false);
         const comboIds = data.map((combo) => combo.id);
         let itemCounts: Record<string, number> = {};
 
@@ -49,18 +56,7 @@ export default function CombosPage() {
     };
 
     fetchCombos();
-  }, [ready, enabled]);
-
-  if (!ready) return null;
-
-  if (!enabled('enable_combos')) return (
-    <div className="container-custom py-24 text-center">
-      <div className="mx-auto max-w-md rounded-3xl border border-border bg-card p-8">
-        <h3 className="text-lg font-bold text-foreground">{t('এই ফিচারটি বর্তমানে বন্ধ আছে', 'This feature is currently disabled')}</h3>
-        <p className="mt-2 text-sm text-muted-foreground">{t('কম্বো অফার বর্তমানে সক্রিয় নয়।', 'Combo offers are currently unavailable.')}</p>
-      </div>
-    </div>
-  );
+  }, [country]);
 
   const getItemsCount = (combo: any) => {
     if (combo._item_count > 0) return combo._item_count;
@@ -87,6 +83,8 @@ export default function CombosPage() {
       </div>
     </div>
   );
+
+  if (loadError) return <div className="container-custom py-20 text-center" role="alert">{t('কম্বো লোড করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।', 'Unable to load combos. Please try again.')}</div>;
 
   if (combos.length === 0) return (
     <div className="container-custom py-24 text-center">
@@ -165,15 +163,15 @@ export default function CombosPage() {
                     <div>
                       <span className="text-xs text-emerald-300 block">{t('অফারমূল্য', 'Offer Price')}</span>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-black text-amber-400">৳{offerPrice}</span>
+                        <span className="text-2xl font-black text-amber-400">{formatPriceEn(offerPrice)}</span>
                         {regularPrice > 0 && (
-                          <span className="text-xs text-emerald-400/70 line-through">৳{regularPrice}</span>
+                          <span className="text-xs text-emerald-400/70 line-through">{formatPriceEn(regularPrice)}</span>
                         )}
                       </div>
                     </div>
                     {savings > 0 && (
                       <span className="rounded-xl bg-emerald-900/90 border border-emerald-600 px-2.5 py-1 text-[11px] font-bold text-green-400">
-                        {t('সাশ্রয়', 'Save')} ৳{savings}
+                        {t('সাশ্রয়', 'Save')} {formatPriceEn(savings)}
                       </span>
                     )}
                   </div>
