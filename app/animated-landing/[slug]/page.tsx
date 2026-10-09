@@ -442,6 +442,11 @@ export default function AnimatedLandingPage() {
         @keyframes skPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
         @keyframes skShimmer { from { background-position: -120% 0; } to { background-position: 120% 0; } }
         @keyframes skReveal { from { opacity:0; transform: translateY(22px) scale(.98); } to { opacity:1; transform: translateY(0) scale(1); } }
+        @media (max-width: 639px) {
+          #story h1 { overflow-wrap: anywhere; }
+          #story .sk-float { animation: none; }
+          #packages { padding-bottom: 11rem; }
+        }
         @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; } }
       `}</style>
 
@@ -474,16 +479,16 @@ export default function AnimatedLandingPage() {
         </aside>
 
         <div className="min-w-0">
-          <section id="story" className="relative overflow-hidden bg-[#06170f] px-5 py-14 text-white sm:px-8 lg:px-12 lg:py-16">
+          <section id="story" className="relative overflow-hidden bg-[#06170f] px-4 pb-12 pt-9 text-white sm:px-8 sm:py-14 lg:px-12 lg:py-16">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_35%,rgba(155,255,71,.12),transparent_30%),radial-gradient(circle_at_10%_20%,rgba(255,199,71,.11),transparent_30%)]" />
             <div className="absolute inset-y-0 right-0 hidden w-2/3 bg-[linear-gradient(90deg,rgba(6,23,15,0),rgba(6,23,15,.06))] lg:block" />
             <div className="relative mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.05fr_.95fr]">
               <div className="sk-reveal">
                 <span className="inline-flex items-center gap-2 rounded-full border border-lime-300/20 bg-lime-300/10 px-3 py-1.5 text-xs font-bold text-lime-200"><Sparkles className="h-4 w-4" />{heroBadge}</span>
-                <h1 className="mt-6 max-w-3xl text-4xl font-black leading-[1.12] sm:text-5xl lg:text-[3.5rem]">{heroTitle}<br /><span className="bg-gradient-to-r from-lime-300 via-lime-200 to-amber-200 bg-clip-text text-transparent">{heroHighlight}</span></h1>
-                <p className="mt-4 max-w-2xl text-base leading-7 text-white/80 sm:text-lg">{heroSubtitle}</p>
+                <h1 className="mt-5 max-w-3xl text-[clamp(1.9rem,8.2vw,2.65rem)] font-black leading-[1.16] tracking-tight sm:text-5xl lg:text-[3.5rem]">{heroTitle}<br /><span className="bg-gradient-to-r from-lime-300 via-lime-200 to-amber-200 bg-clip-text text-transparent">{heroHighlight}</span></h1>
+                <p className="mt-4 max-w-2xl text-sm leading-6 text-white/85 sm:text-lg sm:leading-8">{heroSubtitle}</p>
                 <div className="mt-6 grid max-w-3xl grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
-                  {(benefits.slice(0, 5)).map((item, index) => <div key={index} className={`sk-animate sk-delay-${(index % 3) + 1} rounded-2xl border border-white/10 bg-white/[.04] p-4 text-center backdrop-blur`}><div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl border border-lime-300/20 bg-lime-300/10 text-xl">{item.icon || '🌱'}</div><p className="mt-2 text-sm font-bold leading-snug text-white/90">{item.title || ''}</p></div>)}
+                  {(benefits.slice(0, 5)).map((item, index) => <div key={index} className={`sk-animate sk-delay-${(index % 3) + 1} rounded-2xl border border-white/10 bg-white/[.04] p-3 text-center backdrop-blur sm:p-4`}><div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl border border-lime-300/20 bg-lime-300/10 text-xl">{item.icon || '🌱'}</div><p className="mt-2 text-sm font-bold leading-snug text-white/90">{item.title || ''}</p></div>)}
                 </div>
                 <div className="mt-8 flex flex-wrap items-center gap-4"><button onClick={() => jump('packages')} className="sk-shimmer rounded-2xl bg-gradient-to-r from-amber-300 via-lime-300 to-amber-200 px-6 py-3.5 font-black text-[#06150d] shadow-xl shadow-amber-500/10 transition hover:scale-[1.02]"><span className="relative z-10">{ctaLabel} <ShoppingCart className="ml-2 inline h-4 w-4" /></span></button><button onClick={() => jump('benefits')} className="flex items-center gap-2 rounded-2xl border border-white/15 px-5 py-3.5 font-bold text-white/85 transition hover:bg-white/5">{t('বিস্তারিত দেখুন', 'Learn more', 'और जानें')} <ArrowDown className="h-4 w-4" /></button></div>
               </div>
@@ -548,7 +553,7 @@ export default function AnimatedLandingPage() {
         </div>
       </div>
 
-      <div className="fixed bottom-3 left-3 right-3 z-40 flex items-center justify-between gap-2 rounded-2xl border border-white/10 bg-[#07180f]/90 p-2 shadow-2xl backdrop-blur-xl lg:hidden"><button onClick={() => jump('story')} className="rounded-full px-3 py-2 text-xs font-bold text-white/70">{t('গল্প', 'Story', 'कहानी')}</button><button onClick={() => jump('benefits')} className="rounded-full px-3 py-2 text-xs font-bold text-white/70">{t('সুবিধা', 'Benefits', 'फ़ायदे')}</button><button onClick={() => jump('packages')} className="rounded-xl bg-lime-300 px-5 py-3 text-sm font-black text-[#07180f]">{t('অর্ডার', 'Order', 'ऑर्डर')}</button></div>
+      <div className="fixed bottom-20 left-3 right-3 z-40 flex items-center justify-between gap-2 rounded-2xl border border-white/10 bg-[#07180f]/90 p-2 shadow-2xl backdrop-blur-xl lg:hidden"><button onClick={() => jump('story')} className="rounded-full px-3 py-2 text-xs font-bold text-white/70">{t('গল্প', 'Story', 'कहानी')}</button><button onClick={() => jump('benefits')} className="rounded-full px-3 py-2 text-xs font-bold text-white/70">{t('সুবিধা', 'Benefits', 'फ़ायदे')}</button><button onClick={() => jump('packages')} className="rounded-xl bg-lime-300 px-5 py-3 text-sm font-black text-[#07180f]">{t('অর্ডার', 'Order', 'ऑर्डर')}</button></div>
     </main>
   );
 }
