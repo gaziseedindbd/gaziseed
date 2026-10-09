@@ -197,6 +197,8 @@ export default function CheckoutPage() {
             }
 
             if (data?.already_completed && data?.order_id) {
+              localStorage.removeItem('gazi_cart');
+              window.dispatchEvent(new Event('cart-updated'));
               localStorage.removeItem('cashfree_pending_order_id');
               localStorage.removeItem('cashfree_pending_payment_intent_id');
               localStorage.removeItem('cashfree_pending_payment_method');
