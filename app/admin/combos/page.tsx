@@ -42,6 +42,11 @@ export default function AdminComboPacksPage() {
       title_bn: rawPayload.title_bn,
       slug: rawPayload.slug,
       description_bn: rawPayload.description_bn,
+      translations: rawPayload.translations || {},
+      title_en: rawPayload.translations?.en?.title || rawPayload.title_bn,
+      description_en: rawPayload.translations?.en?.description || rawPayload.description_bn,
+      seo_title: rawPayload.translations?.en?.seo_title || null,
+      meta_description: rawPayload.translations?.en?.meta_description || null,
       regular_total: Number(rawPayload.regular_total) || 0,
       combo_price: Number(rawPayload.combo_price) || 0,
       tier_pricing: rawPayload.tier_pricing || [],
@@ -258,6 +263,15 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Published combinations must have language-specific copy; do not silently
+    // publish untranslated future combos.
+    if (form.is_active && (['en', 'bn', 'hi'] as const).some((locale) =>
+      !form.translations?.[locale]?.title?.trim() ||
+      !form.translations?.[locale]?.description?.trim()
+    )) {
+      toast('লাইভ করার আগে English, বাংলা ও हिन्दी Title এবং Description পূরণ করুন', 'error');
+      return;
+    }
     const baseSlug = form.slug || form.title_bn?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'combo';
     const slug = combo ? baseSlug : `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`;
     
