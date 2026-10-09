@@ -446,7 +446,10 @@ export default function AnimatedLandingPage() {
           /* Keep campaign content clear of global floating widgets on phones. */
           body:has(#story) button[aria-label="Change Website Theme"],
           body:has(#story) button[title="Change Website Theme"] { display: none !important; }
-          body:has(#story) button[aria-label="এই পণ্য শেয়ার করুন"] { display: none !important; }
+          body:has(#story) button[aria-label="এই পণ্য শেয়ার করুন"],
+          body:has(#story) button[aria-label="Share this product"],
+          body:has(#story) button[title="Share this product"],
+          body:has(#story) button[aria-label="इस उत्पाद को शेयर करें"] { display: none !important; }
         }
         @media (max-width: 639px) {
           #story h1 { overflow-wrap: anywhere; }
