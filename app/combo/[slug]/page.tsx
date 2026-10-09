@@ -295,6 +295,11 @@ export default function ComboLandingPage() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#f5f8f4] pb-28 text-slate-900">
       <style jsx global>{`
+        @media (max-width: 1023px) {
+          /* Leave room for the site-wide mobile navigation below the order CTA. */
+          .combo-detail-showcase { scroll-margin-top: 6rem; }
+          #quick-checkout, #deal { scroll-margin-top: 7rem; }
+        }
         /* The combo checkout sidebar is narrow even on large desktop viewports. */
         .combo-payment-selector fieldset > div { grid-template-columns: minmax(0, 1fr) !important; }
         .combo-payment-selector fieldset button { min-width: 0; overflow-wrap: anywhere; }
@@ -478,7 +483,7 @@ export default function ComboLandingPage() {
         </div>
       </section>
 
-      <div className="fixed inset-x-3 bottom-3 z-40 lg:hidden"><div className="flex items-center gap-3 rounded-[22px] border border-slate-200/90 bg-white/95 p-3 shadow-[0_20px_55px_rgba(15,23,42,.22)] backdrop-blur-xl" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}><div className="min-w-0 flex-1 pl-1"><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{copy('Selected pack', 'নির্বাচিত প্যাক', 'चुना हुआ पैक')}</p><p className="truncate text-lg font-black text-emerald-800">{formatPrice(total)}</p></div><a href="#quick-checkout" className="inline-flex min-h-12 shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-emerald-700 px-5 text-xs font-black text-white shadow-lg shadow-emerald-900/15 active:scale-[.98]">{copy('Order now', 'অর্ডার করুন', 'अभी ऑर्डर करें')} <ArrowRight className="h-4 w-4" /></a></div></div>
+      <div className="fixed inset-x-3 bottom-[calc(5.6rem+env(safe-area-inset-bottom))] z-40 lg:hidden"><div className="flex items-center gap-3 rounded-[22px] border border-slate-200/90 bg-white/95 p-3 shadow-[0_20px_55px_rgba(15,23,42,.22)] backdrop-blur-xl" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}><div className="min-w-0 flex-1 pl-1"><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{copy('Selected pack', 'নির্বাচিত প্যাক', 'चुना हुआ पैक')}</p><p className="truncate text-lg font-black text-emerald-800">{formatPrice(total)}</p></div><a href="#quick-checkout" className="inline-flex min-h-12 shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-emerald-700 px-5 text-xs font-black text-white shadow-lg shadow-emerald-900/15 active:scale-[.98]">{copy('Order now', 'অর্ডার করুন', 'अभी ऑर्डर करें')} <ArrowRight className="h-4 w-4" /></a></div></div>
     </main>
   );
 }
