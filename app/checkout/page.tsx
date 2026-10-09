@@ -82,6 +82,8 @@ export default function CheckoutPage() {
   const [freeDeliveryProductIds, setFreeDeliveryProductIds] = useState<Set<string>>(new Set());
   const [deliveryRules, setDeliveryRules] = useState<Array<{ min_order: number; max_order: number | null; charge: number; is_free: boolean }>>([]);
   const [deliveryCharge, setDeliveryCharge] = useState(0);
+  const [deliveryQuoteReady, setDeliveryQuoteReady] = useState(false);
+  const [deliveryQuoteRetry, setDeliveryQuoteRetry] = useState(0);
 
   useEffect(() => {
     const visitorCountry = getVisitorCountry();
@@ -259,10 +261,12 @@ export default function CheckoutPage() {
       if (cart.length === 0) {
         setDeliveryRules([]);
         setDeliveryCharge(0);
+        setDeliveryQuoteReady(false);
         setFreeDeliveryProductIds(new Set());
         return;
       }
 
+      setDeliveryQuoteReady(false);
       const productIds = Array.from(new Set(cart.map((item) => item.product_id)));
       const rulesPromise = supabase
         .from('delivery_charge_rules')
@@ -299,11 +303,13 @@ export default function CheckoutPage() {
 
       if (cancelled) return;
 
-      if (chargeError) {
+      const verifiedCharge = Number(chargeData);
+      if (chargeError || chargeData === null || !Number.isFinite(verifiedCharge) || verifiedCharge < 0) {
         console.error('Delivery charge calculation failed:', chargeError);
-        setDeliveryCharge(0);
+        setDeliveryQuoteReady(false);
       } else {
-        setDeliveryCharge(Number(chargeData || 0));
+        setDeliveryCharge(verifiedCharge);
+        setDeliveryQuoteReady(true);
       }
 
       setDeliveryRules((rulesData || []).map((rule) => ({
@@ -316,7 +322,7 @@ export default function CheckoutPage() {
 
     void syncDeliveryCharge();
     return () => { cancelled = true; };
-  }, [cart.length, country, subtotal]);
+  }, [cart.length, country, subtotal, deliveryQuoteRetry]);
   const couponDiscount = appliedCoupon
     ? appliedCoupon.type === 'percentage'
       ? Math.min(subtotal * (appliedCoupon.value / 100), appliedCoupon.max_discount || Infinity)
@@ -464,6 +470,10 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (!deliveryQuoteReady) {
+      setError(t('ডেলিভারি চার্জ নিশ্চিত হয়নি। আবার চেষ্টা করুন।', 'Delivery charge is not verified. Please retry.', 'डिलीवरी शुल्क की पुष्टि नहीं हुई। फिर कोशिश करें।'));
+      return;
+    }
 
     if (!form.name.trim()) {
       setError(t('নাম প্রয়োজন', 'Name is required'));
@@ -938,6 +948,7 @@ export default function CheckoutPage() {
                     <span className="text-3xl font-black tracking-tight text-primary tabular-nums sm:text-4xl">{formatPrice(country === 'IN' && paymentMethod === 'cod' ? codAdvance : payableTotal)}</span>
                   </div>
 
+                  {!deliveryQuoteReady && <div role="alert" className="rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-900"><p>{t('ডেলিভারি চার্জ যাচাই হচ্ছে বা সাময়িকভাবে পাওয়া যাচ্ছে না।', 'Delivery charge is being checked or is temporarily unavailable.', 'डिलीवरी शुल्क की जाँच हो रही है या अभी उपलब्ध नहीं है।')}</p><button type="button" onClick={() => setDeliveryQuoteRetry((n) => n + 1)} className="mt-2 rounded-xl border border-amber-400 px-4 py-2 font-black">{t('আবার চেষ্টা করুন', 'Retry delivery check', 'फिर कोशिश करें')}</button></div>}
                   {error && (
                     <div role="alert" className="flex items-start gap-2.5 rounded-2xl border border-rose-200/80 bg-rose-500/10 px-4 py-3 text-xs font-bold leading-5 text-rose-700 dark:border-rose-900/60 dark:text-rose-300">
                       <X className="mt-0.5 h-4 w-4 shrink-0" />
@@ -947,7 +958,7 @@ export default function CheckoutPage() {
 
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || !deliveryQuoteReady}
                     className="mt-4 inline-flex min-h-[64px] w-full items-center justify-center gap-3 rounded-[18px] bg-primary px-4 py-4 text-base font-black sm:px-6 sm:text-lg tracking-tight text-primary-foreground shadow-xl shadow-primary/30 transition-all hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-2xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-15"
                   >
                     {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম পরিশোধ করুন', 'Pay COD advance') : t('অনলাইনে পেমেন্ট করুন', 'Pay online')) : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
