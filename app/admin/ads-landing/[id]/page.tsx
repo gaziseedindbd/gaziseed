@@ -8,6 +8,7 @@ import { toast } from '@/components/site/toast-provider';
 import { Save, Eye, Copy, ChevronLeft, Plus, Trash2, CopyPlus } from 'lucide-react';
 import { ImageUploader, VideoUploader, SingleImageUploader } from '@/components/admin/image-uploader';
 import { RepeatableList } from '@/components/admin/repeatable-list';
+import { MultilingualFields } from '@/components/admin/multilingual-fields';
 import Link from 'next/link';
 
 const TABS = ['Basic Info', 'Media', 'Offer', 'Bundles', 'Quantity Offers', 'Content', 'Order Form', 'Delivery', 'Reviews & FAQ', 'Tracking', 'SEO', 'Preview'] as const;
@@ -78,6 +79,7 @@ export default function AdsLandingEditorPage() {
       benefits: landing.benefits, features: landing.features, description: landing.description,
       growing_guide: landing.growing_guide, trust_text: landing.trust_text, cod_text: landing.cod_text,
       delivery_text: landing.delivery_text, faq: landing.faq, section_visibility: landing.section_visibility,
+      translations: landing.translations || {},
       offer_headline: landing.offer_headline, offer_badge: landing.offer_badge, discount_label: landing.discount_label,
       seo_title: landing.seo_title, meta_description: landing.meta_description,
       og_title: landing.og_title, og_description: landing.og_description, og_image: landing.og_image,
@@ -360,6 +362,28 @@ export default function AdsLandingEditorPage() {
           <div><label className="mb-1 block text-sm font-medium">COD Text</label><input value={landing.cod_text || ''} onChange={(e) => setLanding({ ...landing, cod_text: e.target.value })} className="input-bangla" /></div>
           <div><label className="mb-1 block text-sm font-medium">Delivery Text</label><input value={landing.delivery_text || ''} onChange={(e) => setLanding({ ...landing, delivery_text: e.target.value })} className="input-bangla" /></div>
 
+          <MultilingualFields
+            value={landing.translations || {}}
+            onChange={(translations) => setLanding({ ...landing, translations })}
+            languages={landing.country_code === 'IN' ? ['en', 'bn', 'hi'] : ['en', 'bn']}
+            title="🌐 Customer-facing translations"
+            fields={[
+              { key: 'title', label: 'Product / landing title' },
+              { key: 'subtitle', label: 'Subtitle' },
+              { key: 'description', label: 'Description', multiline: true },
+              { key: 'growing_guide', label: 'Growing guide', multiline: true },
+              { key: 'benefits', label: 'Benefits (one item per line)', multiline: true },
+              { key: 'features', label: 'Features (one item per line)', multiline: true },
+              { key: 'offer_headline', label: 'Offer headline' },
+              { key: 'offer_badge', label: 'Offer badge' },
+              { key: 'discount_label', label: 'Discount label' },
+              { key: 'cta_text', label: 'Order button text' },
+              { key: 'trust_text', label: 'Trust text' },
+              { key: 'delivery_text', label: 'Delivery text' },
+              { key: 'cod_text', label: 'COD text' },
+            ]}
+          />
+
           <button onClick={saveAll} disabled={saving} className="rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">সেভ করুন</button>
         </div>
       )}
@@ -428,12 +452,18 @@ export default function AdsLandingEditorPage() {
             <RepeatableList
               items={faqs}
               onChange={setFaqs}
-              newItem={() => ({ _new: true, id: `new-${Date.now()}`, question: '', answer: '', display_order: faqs.length, is_active: true })}
+              newItem={() => ({ _new: true, id: `new-${Date.now()}`, question: '', answer: '', question_en: '', answer_en: '', question_hi: '', answer_hi: '', display_order: faqs.length, is_active: true })}
               addLabel="+ Add FAQ"
               renderItem={(item, update) => (
                 <div className="space-y-2">
                   <input value={item.question} onChange={(e) => update('question', e.target.value)} className="input-bangla" placeholder="Question" />
                   <textarea value={item.answer} onChange={(e) => update('answer', e.target.value)} className="input-bangla min-h-[60px]" placeholder="Answer" />
+                  <input value={item.question_en || ''} onChange={(e) => update('question_en', e.target.value)} className="input-bangla" placeholder="Question (English)" />
+                  <textarea value={item.answer_en || ''} onChange={(e) => update('answer_en', e.target.value)} className="input-bangla min-h-[60px]" placeholder="Answer (English)" />
+                  {landing.country_code === 'IN' && <>
+                    <input value={item.question_hi || ''} onChange={(e) => update('question_hi', e.target.value)} className="input-bangla" placeholder="प्रश्न (हिन्दी)" />
+                    <textarea value={item.answer_hi || ''} onChange={(e) => update('answer_hi', e.target.value)} className="input-bangla min-h-[60px]" placeholder="उत्तर (हिन्दी)" />
+                  </>}
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={item.is_active} onChange={(e) => update('is_active', e.target.checked)} className="accent-primary" /> Active</label>
                 </div>
               )}
