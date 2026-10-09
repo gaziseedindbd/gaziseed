@@ -118,8 +118,9 @@ export default function CombosPage() {
             const totalItems = getItemsCount(combo);
             const badge = firstTier.badge || 'SPECIAL OFFER';
 
-            const comboTitle = lang === 'en' && combo.title_en ? combo.title_en : combo.title_bn;
-            const comboDesc = lang === 'en' && combo.description_en ? combo.description_en : combo.description_bn;
+            const translated = combo.translations?.[lang] || {};
+            const comboTitle = translated.title || (lang === 'en' ? combo.title_en : combo.title_bn) || combo.title_bn || combo.title_en || 'Combo';
+            const comboDesc = translated.description || (lang === 'en' ? combo.description_en : combo.description_bn) || combo.description_bn || combo.description_en || '';
 
             return (
               <Link
