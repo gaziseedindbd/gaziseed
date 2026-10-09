@@ -608,22 +608,22 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50/90 pb-28 dark:bg-slate-950 sm:pb-14">
-      <div className="container-custom mx-auto max-w-6xl px-4 py-7 sm:py-10 lg:py-14">
-        <div className="mb-8 rounded-[2rem] border border-border/70 bg-card/95 p-5 shadow-sm sm:mb-10 sm:p-7">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+    <main className="min-h-screen overflow-x-clip bg-slate-50/90 pb-28 dark:bg-slate-950 sm:pb-14">
+      <div className="container-custom mx-auto max-w-6xl min-w-0 px-3 py-4 sm:px-4 sm:py-8 lg:py-12">
+        <div className="mb-5 rounded-[1.6rem] border border-border/70 bg-card/95 p-4 shadow-sm sm:mb-8 sm:rounded-[2rem] sm:p-7">
+          <div className="flex flex-col gap-3 sm:gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/10 px-3.5 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-primary">
                 <Sparkles className="h-3.5 w-3.5" />
                 {t('নিরাপদ চেকআউট', 'Secure checkout')}
               </div>
-              <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">{t('চেকআউট সম্পন্ন করুন', 'Complete your checkout')}</h1>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
+              <h1 className="mt-2 text-2xl font-black tracking-tight sm:mt-3 sm:text-4xl">{t('চেকআউট সম্পন্ন করুন', 'Complete your checkout')}</h1>
+              <p className="mt-1 max-w-xl text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-base sm:leading-6">
                 {t('ঠিকানা নিশ্চিত করুন, প্রয়োজনে কুপন বা ওয়ালেট ব্যবহার করুন, তারপর অর্ডার কনফার্ম করুন।', 'Confirm your delivery details, apply any coupon or wallet credit, then place your order.')}
               </p>
             </div>
 
-            <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground sm:justify-end">
+            <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-muted-foreground sm:justify-end sm:text-xs">
               <span className="inline-flex items-center gap-1.5 text-primary"><Check className="h-3.5 w-3.5" /> {t('কার্ট', 'Cart')}</span>
               <ChevronRight className="h-3.5 w-3.5 opacity-40" />
               <span className="inline-flex items-center gap-1.5 text-foreground"><Lock className="h-3.5 w-3.5 text-primary" /> {t('চেকআউট', 'Checkout')}</span>
@@ -740,7 +740,7 @@ export default function CheckoutPage() {
               <section className="rounded-[2rem] border border-border/70 bg-card p-5 shadow-sm sm:p-7">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">SAVE MORE</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">{t('আরও সাশ্রয়', 'SAVE MORE', 'और बचत')}</p>
                     <h2 className="mt-1 text-lg font-black">{t('কুপন কোড', 'Coupon code')}</h2>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('আপনার ডিসকাউন্ট কোড থাকলে এখানে ব্যবহার করুন।', 'Have a discount code? Apply it here.')}</p>
                   </div>
@@ -793,7 +793,7 @@ export default function CheckoutPage() {
                         <WalletCards className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">WALLET CREDIT</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">{t('ওয়ালেট ক্রেডিট', 'WALLET CREDIT', 'वॉलेट क्रेडिट')}</p>
                         <h2 className="mt-1 text-lg font-black">{t('আপনার রেফারেল ওয়ালেট', 'Your referral wallet')}</h2>
                         <p className="mt-1 text-xs leading-5 text-muted-foreground">
                           {walletLoading ? t('ব্যালেন্স যাচাই করা হচ্ছে...', 'Checking your wallet balance...') : t(`ব্যালেন্স ${formatPrice(walletSummary.balance)} · সর্বোচ্চ ব্যবহার ${formatPrice(walletSummary.max_usable)}`, `Balance ${formatPrice(walletSummary.balance)} · Up to ${formatPrice(walletSummary.max_usable)} usable`)}
@@ -821,7 +821,7 @@ export default function CheckoutPage() {
                     </button>
                   ) : !walletLoading ? (
                     <div className="mt-4 rounded-2xl border border-dashed border-border bg-background/70 px-4 py-3 text-xs font-semibold text-muted-foreground">
-                      {t(`৳${walletSummary.min_purchase_amount}+ অর্ডার হলে ওয়ালেট ব্যবহার করা যাবে।`, `Wallet credit unlocks at ${formatPrice(walletSummary.min_purchase_amount)} purchase.`)}
+                      {t(`${formatPrice(walletSummary.min_purchase_amount)} বা তার বেশি অর্ডারে ওয়ালেট ব্যবহার করা যাবে।`, `Wallet credit unlocks at ${formatPrice(walletSummary.min_purchase_amount)} purchase.`, `${formatPrice(walletSummary.min_purchase_amount)} या अधिक के ऑर्डर पर वॉलेट क्रेडिट उपलब्ध होगा।`)}
                     </div>
                   ) : null}
                 </section>
@@ -930,12 +930,12 @@ export default function CheckoutPage() {
                   <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারি', 'Delivery')}</span><span className="font-bold">{deliveryCharge === 0 ? t('ফ্রি', 'Free') : formatPrice(deliveryCharge)}</span></div>
                   {country === 'IN' && paymentMethod === 'cod' && <><div className="flex justify-between gap-4 text-sm text-primary"><span>{t('COD অগ্রিম','COD advance')}</span><span className="font-bold">{formatPrice(codAdvance)}</span></div><div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারিতে বাকি','Due on delivery')}</span><span className="font-bold">{formatPrice(codDue)}</span></div></>}
                   {walletCredit > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('ওয়ালেট ক্রেডিট', 'Wallet credit')}</span><span className="font-bold">-{formatPrice(walletCredit)}</span></div>}
-                  <div className="mt-4 flex flex-wrap items-end justify-between gap-4 border-t border-border pt-5">
+                  <div className="mt-4 flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-primary/15 bg-primary/[0.05] p-4">
                     <div>
                       <span className="block text-base font-black">{t('সর্বমোট', 'Total')}</span>
                       <span className="mt-0.5 block text-[10px] font-semibold text-muted-foreground">{t('চূড়ান্ত পরিশোধযোগ্য', 'Final payable amount')}</span>
                     </div>
-                    <span className="text-3xl font-black tracking-tight text-primary sm:text-4xl">{formatPrice(country === 'IN' && paymentMethod === 'cod' ? codAdvance : payableTotal)}</span>
+                    <span className="text-3xl font-black tracking-tight text-primary tabular-nums sm:text-4xl">{formatPrice(country === 'IN' && paymentMethod === 'cod' ? codAdvance : payableTotal)}</span>
                   </div>
 
                   {error && (
@@ -948,7 +948,7 @@ export default function CheckoutPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="mt-4 inline-flex min-h-[64px] w-full items-center justify-center gap-3 rounded-[18px] bg-primary px-6 py-4 text-lg font-black tracking-tight text-primary-foreground shadow-xl shadow-primary/30 transition-all hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-2xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-15"
+                    className="mt-4 inline-flex min-h-[64px] w-full items-center justify-center gap-3 rounded-[18px] bg-primary px-4 py-4 text-base font-black sm:px-6 sm:text-lg tracking-tight text-primary-foreground shadow-xl shadow-primary/30 transition-all hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-2xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-15"
                   >
                     {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম পরিশোধ করুন', 'Pay COD advance') : t('অনলাইনে পেমেন্ট করুন', 'Pay online')) : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
                   </button>
