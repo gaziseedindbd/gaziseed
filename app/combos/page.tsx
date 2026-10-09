@@ -6,13 +6,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Sparkles, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useLang } from '@/components/site/language-provider';
-import { useFeatureFlags } from '@/components/site/feature-provider';
 
 export default function CombosPage() {
   const [combos, setCombos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { lang, t } = useLang();
-  const { ready, enabled } = useFeatureFlags();
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
   const [loadError, setLoadError] = useState(false);
   useEffect(() => {
@@ -23,8 +21,6 @@ export default function CombosPage() {
   }, []);
 
   useEffect(() => {
-    if (!ready) return;
-
     const fetchCombos = async () => {
       const { data, error } = await supabase
         .from('combo_packs')
@@ -60,18 +56,7 @@ export default function CombosPage() {
     };
 
     fetchCombos();
-  }, [ready, country]);
-
-  if (!ready) return <div className="container-custom py-20 text-center" role="status">{t('কম্বো লোড হচ্ছে…', 'Loading combo packs…')}</div>;
-
-  if (!enabled('enable_combos') && combos.length === 0 && !loading) return (
-    <div className="container-custom py-24 text-center">
-      <div className="mx-auto max-w-md rounded-3xl border border-border bg-card p-8">
-        <h3 className="text-lg font-bold text-foreground">{t('এই ফিচারটি বর্তমানে বন্ধ আছে', 'This feature is currently disabled')}</h3>
-        <p className="mt-2 text-sm text-muted-foreground">{t('কম্বো অফার বর্তমানে সক্রিয় নয়।', 'Combo offers are currently unavailable.')}</p>
-      </div>
-    </div>
-  );
+  }, [country]);
 
   const getItemsCount = (combo: any) => {
     if (combo._item_count > 0) return combo._item_count;
