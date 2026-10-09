@@ -215,10 +215,10 @@ export default function ComboLandingPage() {
     const phoneValid = country === 'IN' ? /^[6-9][0-9]{9}$/.test(cleanPhone) : /^01[0-9]{9}$/.test(cleanPhone);
 
     if (!name.trim() || !address.trim() || !cleanPhone) {
-      return toast(country === 'IN' ? 'Please enter your name, address and phone number' : 'দয়া করে নাম, ঠিকানা ও ফোন নাম্বার দিন', 'error');
+      return toast(copy('Please enter your name, address and phone number', 'দয়া করে নাম, ঠিকানা ও ফোন নাম্বার দিন', 'कृपया नाम, पता और फोन नंबर दर्ज करें'), 'error');
     }
     if (!phoneValid) {
-      return toast(country === 'IN' ? 'Enter a valid 10-digit Indian mobile number' : 'সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন', 'error');
+      return toast(country === 'IN' ? copy('Enter a valid 10-digit Indian mobile number', 'সঠিক ১০ সংখ্যার ভারতীয় মোবাইল নম্বর দিন', 'मान्य 10 अंकों का भारतीय मोबाइल नंबर दर्ज करें') : copy('Enter a valid 11-digit mobile number', 'সঠিক ১১ সংখ্যার মোবাইল নম্বর দিন', 'सही 11 अंकों का मोबाइल नंबर दर्ज करें'), 'error');
     }
 
     setSubmitting(true);
@@ -250,7 +250,7 @@ export default function ComboLandingPage() {
       toast('আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে!');
       router.push(`/order-success?number=${data.order_number}`);
     } catch (error: any) {
-      toast((country === 'IN' ? 'Order failed: ' : 'অর্ডার করতে সমস্যা হয়েছে: ') + (error?.message || ''), 'error');
+      toast(copy('Order failed: ', 'অর্ডার ব্যর্থ: ', 'ऑर्डर विफल: ') + (error?.message || ''), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -276,9 +276,9 @@ export default function ComboLandingPage() {
       <div className="min-h-[70vh] bg-[#f5f8f4] px-4 py-28 text-center">
         <div className="mx-auto max-w-md rounded-[32px] border border-emerald-100 bg-white p-10 shadow-xl">
           <PackageCheck className="mx-auto h-14 w-14 text-emerald-700" />
-          <h2 className="mt-5 text-2xl font-black">{country === 'IN' ? 'Combo pack not found' : 'কম্বো প্যাকটি পাওয়া যায়নি'}</h2>
+          <h2 className="mt-5 text-2xl font-black">{copy('Combo pack not found', 'কম্বো প্যাকটি পাওয়া যায়নি', 'कॉम्बो पैक नहीं मिला')}</h2>
           <a href="/combos" className="mt-6 inline-flex rounded-2xl bg-emerald-800 px-5 py-3 font-bold text-white">
-            {country === 'IN' ? 'View all combos' : 'সব কম্বো দেখুন'}
+            {copy('View all combos', 'সব কম্বো দেখুন', 'सभी कॉम्बो देखें')}
           </a>
         </div>
       </div>
@@ -373,7 +373,7 @@ export default function ComboLandingPage() {
                         );
                       })}
                       <div className="absolute bottom-[6%] left-1/2 z-30 hidden -translate-x-1/2 rounded-full border border-white/90 bg-white/90 px-4 py-2 text-[10px] font-black text-emerald-900 shadow-lg backdrop-blur sm:bottom-[5%] sm:px-5 sm:py-2.5 sm:text-xs">
-                        {country === 'IN' ? '3 curated seed varieties' : '৩টি বাছাই করা বীজ একসাথে'}
+                        {copy('3 curated seed varieties', '৩টি বাছাই করা বীজ একসাথে', '3 चुनी हुई बीज किस्में')}
                       </div>
                     </div>
                   ) : (
@@ -401,7 +401,7 @@ export default function ComboLandingPage() {
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_430px]">
           <div className="space-y-8">
             <section className="rounded-[34px] border border-emerald-100 bg-white p-5 shadow-sm sm:p-8">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[11px] font-black uppercase tracking-[.2em] text-emerald-700">{copy("WHAT'S INSIDE", 'প্যাকেজে যা আছে', 'पैक में शामिल')}</p><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{copy('What you get', 'এই প্যাকেজে যা পাবেন', 'इस पैक में क्या मिलेगा')}</h2><p className="mt-2 text-sm leading-6 text-slate-500">{country === 'IN' ? 'Every seed in this bundle is selected to complement the pack.' : 'একটি প্যাকের মধ্যে আপনার দরকারি বীজগুলো সুন্দরভাবে সাজানো।'}</p></div><span className="inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-800">{items.length} items</span></div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[11px] font-black uppercase tracking-[.2em] text-emerald-700">{copy("WHAT'S INSIDE", 'প্যাকেজে যা আছে', 'पैक में शामिल')}</p><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{copy('What you get', 'এই প্যাকেজে যা পাবেন', 'इस पैक में क्या मिलेगा')}</h2><p className="mt-2 text-sm leading-6 text-slate-500">{copy('Every seed in this bundle is selected to complement the pack.', 'একটি প্যাকের মধ্যে আপনার দরকারি বীজগুলো সুন্দরভাবে সাজানো।', 'इस पैक में आपके लिए उपयोगी बीज एक साथ शामिल हैं।')}</p></div><span className="inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-800">{items.length} {copy('items','পণ্য','उत्पाद')}</span></div>
               <div className="mt-7 grid gap-4 md:grid-cols-3">
                 {items.map((item, index) => {
                   const product = item.products || {};
