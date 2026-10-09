@@ -317,7 +317,8 @@ export default function AnimatedLandingPage() {
   );
   const cleanCopy = (v: unknown) => { const x = typeof v === 'string' ? v.trim() : ''; return /^(?:[A-Z]{4,}(?:\s+[A-Z]{3,})*|TEST\w*|DEMO\w*)$/i.test(x) ? '' : x; };
   const heroTitle = cleanCopy(pageTranslation.hero_title) || cleanCopy(localizeContent(page?.hero_title)) || productTranslation.name || (lang === 'en' ? product?.name_en : lang === 'hi' ? product?.name_hi : product?.name_bn) || product?.name_en || t('মানসম্মত বীজ, ভালো ফলনের শুরু', 'Quality seeds for a better harvest', 'बेहतर फ़सल के लिए गुणवत्ता वाले बीज');
-  const heroHighlight = cleanCopy(pageTranslation.hero_highlight) || cleanCopy(localizeContent(page?.hero_highlight)) || t('বেশি ফলন, বেশি লাভ!', 'Higher yield, better returns!', 'बेहतर उपज, बेहतर मुनाफ़ा!');
+  const configuredHighlight = cleanCopy(pageTranslation.hero_highlight) || cleanCopy(localizeContent(page?.hero_highlight));
+  const heroHighlight = (lang === 'en' && /[\u0980-\u09ff\u0900-\u097f]/.test(configuredHighlight)) || (lang === 'hi' && /[\u0980-\u09ff]/.test(configuredHighlight)) ? t('বেশি ফলন, বেশি লাভ!', 'Grow with quality seeds', 'गुणवत्ता वाले बीज चुनें') : configuredHighlight || t('বেশি ফলন, বেশি লাভ!', 'Grow with quality seeds', 'गुणवत्ता वाले बीज चुनें');
   const heroSubtitle = cleanCopy(pageTranslation.hero_subtitle) || cleanCopy(localizeContent(page?.hero_subtitle)) || productTranslation.short_description || localizeContent(product?.short_description) || t('সঠিক বীজ ও সঠিক পরিচর্যা—কৃষকের সফলতার প্রথম ধাপ।', 'Quality seeds and careful growing are the first steps to a better harvest.', 'अच्छे बीज और सही देखभाल बेहतर पैदावार की पहली सीढ़ी हैं।');
   const heroImage = page?.hero_image || product?.image || '';
   const heroBadge = cleanCopy(pageTranslation.hero_badge) || cleanCopy(page?.hero_badge) || t('মানসম্মত বীজ', 'Quality seeds', 'गुणवत्ता वाले बीज');
