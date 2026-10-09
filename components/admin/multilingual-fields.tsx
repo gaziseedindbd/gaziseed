@@ -6,6 +6,7 @@ import { RichTextEditor } from '@/components/admin/rich-text-editor';
 export type MultilingualValue = Record<string, Record<string, string>>;
 
 type Field = { key: string; label: string; multiline?: boolean; richText?: boolean; placeholder?: string };
+type LanguageKey = 'en' | 'bn' | 'hi';
 
 const LANGS = [
   { key: 'en', label: 'English', flag: '🇬🇧' },
@@ -18,13 +19,19 @@ export function MultilingualFields({
   onChange,
   fields,
   title = 'Multilingual Content',
+  languages = ['en', 'bn', 'hi'],
 }: {
   value: MultilingualValue;
   onChange: (value: MultilingualValue) => void;
   fields: Field[];
   title?: string;
+  languages?: LanguageKey[];
 }) {
-  const [lang, setLang] = React.useState<(typeof LANGS)[number]['key']>('en');
+  const availableLangs = LANGS.filter((item) => languages.includes(item.key));
+  const [lang, setLang] = React.useState<LanguageKey>('en');
+  React.useEffect(() => {
+    if (!languages.includes(lang)) setLang(languages[0] || 'en');
+  }, [lang, languages]);
   const current = value?.[lang] || {};
 
   const setField = (key: string, next: string) => {
@@ -41,7 +48,7 @@ export function MultilingualFields({
         <p className="mt-1 text-xs text-muted-foreground">একই content-এর English, বাংলা ও हिन्दी version আলাদা করে সংরক্ষণ করুন। Existing content/logic অপরিবর্তিত থাকবে।</p>
       </div>
       <div className="mb-4 flex flex-wrap gap-2">
-        {LANGS.map((item) => (
+        {availableLangs.map((item) => (
           <button
             key={item.key}
             type="button"

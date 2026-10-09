@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -16,12 +16,17 @@ import { startIndiaCampaignPayment } from '@/lib/india-campaign-payment';
 interface FaqItem {
   question?: string;
   answer?: string;
+  question_en?: string;
+  answer_en?: string;
+  question_hi?: string;
+  answer_hi?: string;
   q?: string;
   a?: string;
 }
 
 export default function OfferLandingPage() {
-  const { lang } = useLang();
+  const { lang, t } = useLang();
+  const tr = useCallback((bn: string, en: string, hi: string) => t(bn, en, hi), [t]);
   const params = useParams();
   const searchParams = useSearchParams();
   const slug = (params?.slug as string) || '';
@@ -138,7 +143,7 @@ export default function OfferLandingPage() {
       }
       setLoading(false);
     })();
-  }, [slug]);
+  }, [slug, isPreview, utm]);
 
   useEffect(() => {
     let active = true;
@@ -171,7 +176,7 @@ export default function OfferLandingPage() {
 
         const charge = Number(data);
         if (quoteError || data === null || !Number.isFinite(charge) || charge < 0) {
-          setDeliveryQuoteError(quoteError?.message || 'ডেলিভারি চার্জ যাচাই করা যায়নি');
+          setDeliveryQuoteError(quoteError?.message || tr('ডেলিভারি চার্জ যাচাই করা যায়নি', 'Could not verify delivery charge', 'डिलीवरी शुल्क की पुष्टि नहीं हो सकी'));
           setDeliveryCharge(null);
         } else {
           setDeliveryCharge(charge);
@@ -179,7 +184,7 @@ export default function OfferLandingPage() {
         }
       } catch (quoteError: any) {
         if (!active) return;
-        setDeliveryQuoteError(quoteError?.message || 'ডেলিভারি চার্জ যাচাই করা যায়নি');
+        setDeliveryQuoteError(quoteError?.message || tr('ডেলিভারি চার্জ যাচাই করা যায়নি', 'Could not verify delivery charge', 'डिलीवरी शुल्क की पुष्टि नहीं हो सकी'));
         setDeliveryCharge(null);
       } finally {
         if (active) setDeliveryQuoteLoading(false);
@@ -188,26 +193,44 @@ export default function OfferLandingPage() {
 
     void loadQuote();
     return () => { active = false; };
-  }, [landing?.id, selectedTier?.quantity, selectedBundle?.id, offerPrice, isFreeDelivery]);
+  }, [landing, selectedTier, selectedBundle, offerPrice, isFreeDelivery, tr]);
 
   if (loading) return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-emerald-50/40">
       <Loader2 className="h-10 w-10 animate-spin text-emerald-700" />
-      <p className="text-sm font-semibold text-emerald-900">পেজ লোড হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...</p>
+      <p className="text-sm font-semibold text-emerald-900">{t('পেজ লোড হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...', 'Loading offer, please wait…', 'ऑफ़र लोड हो रहा है, कृपया प्रतीक्षा करें…')}</p>
     </div>
   );
 
   if (!product || !landing) {
     return (
       <div className="container-custom py-16 text-center">
-        <h1 className="text-2xl font-extrabold text-gray-800">অফারটি পাওয়া যায়নি</h1>
-        <p className="mt-2 text-sm text-gray-500">হয়তো অফারের মেয়াদ শেষ অথবা লিঙ্কটি সঠিক নয়।</p>
-        <a href="/all-products" className="mt-5 inline-block rounded-xl bg-emerald-700 px-6 py-2.5 text-sm font-bold text-white shadow hover:bg-emerald-800 transition">সকল প্রোডাক্ট দেখুন</a>
+        <h1 className="text-2xl font-extrabold text-gray-800">{t('অফারটি পাওয়া যায়নি', 'Offer not found', 'ऑफ़र नहीं मिला')}</h1>
+        <p className="mt-2 text-sm text-gray-500">{t('হয়তো অফারের মেয়াদ শেষ অথবা লিঙ্কটি সঠিক নয়।', 'This offer may have expired or the link may be incorrect.', 'ऑफ़र की अवधि समाप्त हो सकती है या लिंक गलत हो सकता है।')}</p>
+        <a href="/all-products" className="mt-5 inline-block rounded-xl bg-emerald-700 px-6 py-2.5 text-sm font-bold text-white shadow hover:bg-emerald-800 transition">{t('সকল প্রোডাক্ট দেখুন', 'View all products', 'सभी उत्पाद देखें')}</a>
       </div>
     );
   }
 
   const tiersList: any[] = landing?.pricing_tiers || landing?.tiers || landing?.quantity_pricing || [];
+  const landingTranslation = landing?.translations?.[lang] || {};
+  const localized = (field: string, fallback: string) => landingTranslation[field]?.trim?.() || fallback;
+  const localizedList = (field: string, fallback: any[]) => {
+    const value = landingTranslation[field];
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string' && value.trim()) return value.split('\n').map((item: string) => item.trim()).filter(Boolean);
+    return fallback;
+  };
+  const title = localized('title', lang === 'bn' ? (landing.title || product.name_bn || product.name_en || '') : (product.name_en || landing.title || product.name_bn || ''));
+  const subtitle = localized('subtitle', landing.subtitle || '');
+  const description = localized('description', landing.description || product.description || '');
+  const growingGuide = localized('growing_guide', landing.growing_guide || landing.cultivation_guide || '');
+  const deliveryText = localized('delivery_text', landing.delivery_text || t('সারাদেশে হোম ডেলিভারি', 'Home delivery available', 'घर तक डिलीवरी उपलब्ध'));
+  const codText = localized('cod_text', landing.cod_text || t('ক্যাশ অন ডেলিভারি', 'Cash on delivery', 'कैश ऑन डिलीवरी'));
+  const trustText = localized('trust_text', landing.trust_text || '');
+  const offerHeadline = localized('offer_headline', landing.offer_headline || '');
+  const discountLabel = localized('discount_label', landing.discount_label || tr('সাশ্রয়', 'You save', 'बचत'));
+  const benefitsList = localizedList('benefits', landing?.product_benefits || landing?.benefits || []);
   const images: string[] = landing?.images && landing.images.length > 0 ? landing.images : (product?.image ? [product.image] : []);
 
 
@@ -221,9 +244,12 @@ export default function OfferLandingPage() {
   const hasDeliveryQuote = isFreeDelivery || deliveryCharge !== null;
   const grandTotalLabel = hasDeliveryQuote
     ? formatPrice(grandTotal)
-    : deliveryQuoteLoading ? 'হিসাব হচ্ছে…' : '—';
+    : deliveryQuoteLoading ? tr('হিসাব হচ্ছে…', 'Calculating…', 'गणना हो रही है…') : '—';
   const savings = comparePrice > offerPrice ? comparePrice - offerPrice : 0;
   const discountPercent = comparePrice > 0 ? Math.round((savings / comparePrice) * 100) : 0;
+  const averageRating = reviews.length > 0
+    ? (reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length).toFixed(1)
+    : null;
 
   const nextImage = () => setActiveImage((prev) => (prev + 1) % images.length);
   const prevImage = () => setActiveImage((prev) => (prev - 1 + images.length) % images.length);
@@ -231,16 +257,16 @@ export default function OfferLandingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!form.name || !form.phone) { setError('সব প্রয়োজনীয় তথ্য পূরণ করুন'); return; }
-    if (!addrValue.division || !addrValue.district || !addrValue.thana || !addrValue.detail) { setError('সম্পূর্ণ ঠিকানা নির্বাচন ও প্রদান করুন'); return; }
-    if (!selectedTier && !selectedBundle) { setError('একটি অফার প্যাকেজ নির্বাচন করুন'); return; }
-    if (!isFreeDelivery && (deliveryQuoteLoading || deliveryCharge === null || deliveryQuoteError)) { setError('ডেলিভারি চার্জ যাচাই করা যায়নি। আবার চেষ্টা করুন।'); return; }
+    if (!form.name || !form.phone) { setError(tr('সব প্রয়োজনীয় তথ্য পূরণ করুন', 'Please complete all required fields', 'कृपया सभी ज़रूरी जानकारी भरें')); return; }
+    if (!addrValue.division || !addrValue.district || !addrValue.thana || !addrValue.detail) { setError(tr('সম্পূর্ণ ঠিকানা নির্বাচন ও প্রদান করুন', 'Please select and enter your full address', 'कृपया पूरा पता चुनें और भरें')); return; }
+    if (!selectedTier && !selectedBundle) { setError(tr('একটি অফার প্যাকেজ নির্বাচন করুন', 'Please select an offer package', 'कृपया एक ऑफ़र पैकेज चुनें')); return; }
+    if (!isFreeDelivery && (deliveryQuoteLoading || deliveryCharge === null || deliveryQuoteError)) { setError(tr('ডেলিভারি চার্জ যাচাই করা যায়নি। আবার চেষ্টা করুন।', 'Could not verify the delivery charge. Please try again.', 'डिलीवरी शुल्क की पुष्टि नहीं हो सकी। कृपया फिर कोशिश करें।')); return; }
     const phone = form.phone.replace(/[^0-9]/g, '');
     const phoneValid = countryCode === 'IN' ? /^[6-9][0-9]{9}$/.test(phone) : /^01[0-9]{9}$/.test(phone);
     if (!phoneValid) {
       setError(countryCode === 'IN'
-        ? 'সঠিক ১০ সংখ্যার ভারতীয় মোবাইল নম্বর দিন (যেমন: 9876543210)'
-        : 'সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (যেমন: 017XXXXXXXX)');
+        ? tr('সঠিক ১০ সংখ্যার ভারতীয় মোবাইল নম্বর দিন (যেমন: 9876543210)', 'Enter a valid 10-digit Indian mobile number (e.g. 9876543210)', 'सही 10 अंकों का भारतीय मोबाइल नंबर डालें (जैसे: 9876543210)')
+        : tr('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (যেমন: 017XXXXXXXX)', 'Enter a valid 11-digit Bangladesh mobile number (e.g. 01XXXXXXXXX)', 'बांग्लादेश का सही 11 अंकों का मोबाइल नंबर डालें (जैसे: 01XXXXXXXXX)'));
       return;
     }
 
@@ -249,7 +275,7 @@ export default function OfferLandingPage() {
       const fullAddress = formatAddressToString(addrValue);
       if (countryCode === 'IN') {
         if (paymentMethod === 'cod' && indiaCodAdvance > indiaGrandTotal) {
-          setError('এই অর্ডারের মোটের চেয়ে COD অগ্রিম বেশি হচ্ছে। Online payment বেছে নিন।');
+          setError(tr('এই অর্ডারের মোটের চেয়ে COD অগ্রিম বেশি হচ্ছে। Online payment বেছে নিন।', 'The COD advance is greater than the order total. Choose online payment.', 'COD अग्रिम राशि ऑर्डर की कुल राशि से अधिक है। ऑनलाइन भुगतान चुनें।'));
           return;
         }
         await startIndiaCampaignPayment({
@@ -306,31 +332,37 @@ export default function OfferLandingPage() {
       if (data?.error) { setError(data.error); return; }
       window.location.href = `/order-success?number=${data?.order_number || ''}`;
     } catch (err: any) {
-      setError('অর্ডার করতে সমস্যা হয়েছে: ' + (err?.message || 'আবার চেষ্টা করুন'));
+      setError(tr('অর্ডার করতে সমস্যা হয়েছে: ', 'Could not place the order: ', 'ऑर्डर नहीं हो सका: ') + (err?.message || tr('আবার চেষ্টা করুন', 'Please try again', 'कृपया फिर कोशिश करें')));
     } finally {
       setSubmitting(false);
     }
   };
 
   const faqItems: FaqItem[] = faqs.length > 0 ? faqs : (landing?.faq && landing.faq.length > 0 ? landing.faq : [
-    { q: 'বীজের কোয়ালিটি কেমন ও অঙ্কুরোদগম হার কত?', a: 'আমাদের সকল বীজ ৯৫%+ অঙ্কুরোদগম ক্ষমতাসম্পন্ন ও শতভাগ পরীক্ষিত।' },
-    { q: 'ডেলিভারি পেতে কত দিন সময় লাগবে?', a: 'ঢাকার সিটির ভেতর ২৪-৪৮ ঘণ্টা এবং ঢাকার বাইরে ২-৩ দিনের মধ্যে ডেলিভারি পেয়ে যাবেন।' },
-    { q: 'পেমেন্ট কিভাবে করতে হবে?', a: 'সম্পূর্ণ ক্যাশ অন ডেলিভারি (Cash on Delivery)। পণ্য হাতে পেয়ে যাচাই করে তারপর টাকা পরিশোধ করবেন।' },
+    {
+      q: tr('বীজ কীভাবে বপন করব?', 'How should I sow these seeds?', 'इन बीजों को कैसे बोएँ?'),
+      a: tr('প্যাকেটের নির্দেশনা অনুসরণ করুন। ফলাফল বীজ ও পরিবেশ অনুযায়ী ভিন্ন হতে পারে।', 'Follow the instructions on the packet. Results can vary by seed and growing conditions.', 'पैकेट पर दिए निर्देशों का पालन करें। नतीजे बीज और उगाने की परिस्थितियों के अनुसार बदल सकते हैं।'),
+    },
+    {
+      q: tr('ডেলিভারি সম্পর্কে কীভাবে জানব?', 'How can I check delivery details?', 'डिलीवरी की जानकारी कैसे मिलेगी?'),
+      a: tr('আপনার ঠিকানা দিয়ে অর্ডার ফর্ম পূরণ করুন। প্রযোজ্য ডেলিভারি চার্জ ও পরবর্তী নির্দেশনা সেখানে দেখানো হবে।', 'Enter your address in the order form to see the applicable delivery charge and instructions.', 'लागू डिलीवरी शुल्क और निर्देश देखने के लिए ऑर्डर फ़ॉर्म में अपना पता भरें।'),
+    },
+    {
+      q: tr('কীভাবে পেমেন্ট করব?', 'How can I pay?', 'भुगतान कैसे करूँ?'),
+      a: tr('আপনার ব্রাঞ্চে যে পেমেন্ট পদ্ধতি দেখানো হয়, সেটি বেছে নিন।', 'Choose one of the payment methods shown for your branch.', 'अपने ब्रांच के लिए दिखाए गए भुगतान तरीकों में से एक चुनें।'),
+    },
   ]);
 
-  const rawBenefits = landing?.product_benefits || landing?.benefits || [];
-  const rawFeatures = landing?.product_features || landing?.features || [];
-  const hasBenefits = Array.isArray(rawBenefits) && rawBenefits.length > 0;
-  const hasFeatures = Array.isArray(rawFeatures) && rawFeatures.length > 0;
-  const hasDescription = (landing?.description || product?.description) && (landing?.description || product?.description).trim();
-  const hasGrowingGuide = (landing?.growing_guide || landing?.cultivation_guide) && (landing?.growing_guide || landing?.cultivation_guide).trim();
+  const hasBenefits = Array.isArray(benefitsList) && benefitsList.length > 0;
+  const hasDescription = description && description.trim();
+  const hasGrowingGuide = growingGuide && growingGuide.trim();
 
   return (
     <div className="min-h-screen bg-[#fafbfc] text-gray-900 pb-28 lg:pb-12 selection:bg-emerald-500 selection:text-white">
       {/* টপ নোটিফিকেশন বার */}
       <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white text-center py-2 px-3 text-xs sm:text-sm font-semibold tracking-wide flex items-center justify-center gap-2 shadow-sm">
         <Sparkles className="h-4 w-4 text-amber-300 animate-pulse shrink-0" />
-        <span>সীমিত সময়ের স্পেশাল অফার — ক্যাশ অন ডেলিভারি সুবিধা!</span>
+        <span>{tr('সীমিত সময়ের স্পেশাল অফার — ক্যাশ অন ডেলিভারি সুবিধা!', 'Limited-time special offer — Cash on Delivery available!', 'सीमित समय का विशेष ऑफ़र — कैश ऑन डिलीवरी उपलब्ध!')}</span>
       </div>
 
       {/* ব্র্যান্ড হেডার */}
@@ -346,14 +378,14 @@ export default function OfferLandingPage() {
             href="#order-form" 
             className="flex items-center gap-1.5 rounded-full bg-emerald-700 px-4 py-1.5 text-xs font-bold text-white shadow hover:bg-emerald-800 transition active:scale-95"
           >
-            অর্ডার করুন <ArrowDownCircle className="h-3.5 w-3.5" />
+            {tr('অর্ডার করুন', 'Order now', 'अभी ऑर्डर करें')} <ArrowDownCircle className="h-3.5 w-3.5" />
           </a>
         </div>
       </header>
 
       {isPreview && (
         <div className="bg-amber-500 text-center text-xs font-bold text-white py-1.5 shadow-inner">
-          ⚠️ এডমিন প্রিভিউ মোড
+          ⚠️ {tr('এডমিন প্রিভিউ মোড', 'Admin preview mode', 'एडमिन प्रीव्यू मोड')}
         </div>
       )}
 
@@ -367,7 +399,7 @@ export default function OfferLandingPage() {
               {images.length > 0 ? (
                 <Image 
                   src={images[activeImage] || images[0]} 
-                  alt={landing?.title || product?.name_bn || ''} 
+                  alt={title}
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
                   priority
@@ -380,7 +412,7 @@ export default function OfferLandingPage() {
               {/* ডিসকাউন্ট ব্যাজ */}
               {discountPercent > 0 && (
                 <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-red-600 to-rose-500 text-white text-xs sm:text-sm font-black px-3.5 py-1.5 rounded-full shadow-md flex items-center gap-1">
-                  <Zap className="h-3.5 w-3.5 fill-current" /> {discountPercent}% ছাড়
+                  <Zap className="h-3.5 w-3.5 fill-current" /> {discountPercent}% {tr('ছাড়', 'off', 'छूट')}
                 </div>
               )}
 
@@ -434,28 +466,29 @@ export default function OfferLandingPage() {
             {/* হেডলাইন ও রেটিং */}
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                {landing?.offer_badge ? (
+                {localized('offer_badge', landing?.offer_badge || '') ? (
                   <span className="rounded-full bg-amber-100 text-amber-800 border border-amber-300/60 px-3 py-0.5 text-xs font-bold uppercase tracking-wider">
-                    {landing.offer_badge}
+                    {localized('offer_badge', landing.offer_badge)}
                   </span>
                 ) : (
                   <span className="rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300/60 px-3 py-0.5 text-xs font-bold">
-                    ১০০% খাঁটি ও পরীক্ষিত বীজ
+                    {tr('বীজের বিশেষ অফার', 'Seed offer', 'बीजों का विशेष ऑफ़र')}
                   </span>
                 )}
-                <div className="flex items-center gap-1 text-amber-500 text-xs font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                {averageRating && <div className="flex items-center gap-1 text-amber-500 text-xs font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
                   <Star className="h-3.5 w-3.5 fill-current" />
-                  <span>৪.৯/৫ (১৫০+ রিভিউ)</span>
-                </div>
+                  <span>{averageRating}/5 ({reviews.length} {tr('রিভিউ', 'reviews', 'समीक्षाएँ')})</span>
+                </div>}
               </div>
 
+              {offerHeadline && <p className="text-sm font-semibold text-emerald-800">{offerHeadline}</p>}
               <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight">
-                {landing?.title || landing?.landing_name || product?.name_bn}
+                {title || landing?.landing_name || product?.name_bn}
               </h1>
 
               {landing?.subtitle && (
                 <p className="text-sm sm:text-base text-gray-600 leading-relaxed font-medium">
-                  {landing.subtitle}
+                  {subtitle}
                 </p>
               )}
             </div>
@@ -463,7 +496,7 @@ export default function OfferLandingPage() {
             {/* প্রাইসিং কার্ড */}
             <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/80">
               <div>
-                <span className="text-xs font-semibold text-gray-500 block">বর্তমান অফার মূল্য</span>
+                <span className="text-xs font-semibold text-gray-500 block">{tr('বর্তমান অফার মূল্য', 'Current offer price', 'वर्तमान ऑफ़र मूल्य')}</span>
                 <div className="flex items-baseline gap-2.5">
                   <span className="text-3xl font-black text-emerald-800">{formatPrice(offerPrice)}</span>
                   {comparePrice > offerPrice && (
@@ -474,7 +507,7 @@ export default function OfferLandingPage() {
               {savings > 0 && (
                 <div className="text-right">
                   <span className="inline-block bg-emerald-600 text-white text-xs font-black px-3 py-1 rounded-full shadow-xs">
-                    সাশ্রয় {formatPrice(savings)}
+                    {discountLabel} {formatPrice(savings)}
                   </span>
                 </div>
               )}
@@ -484,26 +517,26 @@ export default function OfferLandingPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-1">
               <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-gray-100 shadow-2xs">
                 <Truck className="h-5 w-5 text-emerald-600 shrink-0" />
-                <span className="text-xs font-bold text-gray-700">{landing?.delivery_text || 'সারাদেশে হোম ডেলিভারি'}</span>
+                <span className="text-xs font-bold text-gray-700">{deliveryText}</span>
               </div>
               <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-gray-100 shadow-2xs">
                 <ShieldCheck className="h-5 w-5 text-emerald-600 shrink-0" />
-                <span className="text-xs font-bold text-gray-700">{landing?.cod_text || 'ক্যাশ অন ডেলিভারি'}</span>
+                <span className="text-xs font-bold text-gray-700">{codText}</span>
               </div>
-              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-gray-100 shadow-2xs col-span-2 sm:col-span-1">
+              {trustText && <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-gray-100 shadow-2xs col-span-2 sm:col-span-1">
                 <HeartHandshake className="h-5 w-5 text-emerald-600 shrink-0" />
-                <span className="text-xs font-bold text-gray-700">১০০% গ্যারান্টিযুক্ত</span>
-              </div>
+                <span className="text-xs font-bold text-gray-700">{trustText}</span>
+              </div>}
             </div>
 
             {/* বেনিফিট বা সুবিধার তালিকা */}
             {hasBenefits && (
               <div className="rounded-2xl bg-white p-4 border border-gray-200/80 shadow-xs space-y-2.5">
                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> এই প্রোডাক্টটির বিশেষত্ব:
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> {tr('এই প্রোডাক্টটির বিশেষত্ব:', 'Product benefits:', 'इस उत्पाद के लाभ:')}
                 </h3>
                 <ul className="space-y-1.5">
-                  {rawBenefits.map((b: any, idx: number) => (
+                  {benefitsList.map((b: any, idx: number) => (
                     <li key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-gray-700 font-medium">
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                       <span>{typeof b === 'string' ? b : b.text || b.title}</span>
@@ -518,10 +551,10 @@ export default function OfferLandingPage() {
               <div className="space-y-3 pt-1">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm sm:text-base font-extrabold text-gray-900 flex items-center gap-2">
-                    <Package className="h-5 w-5 text-emerald-700" /> প্যাকেজ নির্বাচন করুন:
+                    <Package className="h-5 w-5 text-emerald-700" /> {tr('প্যাকেজ নির্বাচন করুন:', 'Choose a package:', 'पैकेज चुनें:')}
                   </h3>
                   <span className="text-xs text-emerald-700 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                    বেশি নিলে বেশি সাশ্রয়
+                    {tr('বেশি নিলে বেশি সাশ্রয়', 'Save more when you buy more', 'ज़्यादा खरीदें, ज़्यादा बचाएँ')}
                   </span>
                 </div>
 
@@ -550,7 +583,7 @@ export default function OfferLandingPage() {
                           </span>
                         )}
                         <div className="flex items-center justify-between">
-                          <span className="font-extrabold text-sm text-gray-900">{tier.quantity} টি প্যাকেট</span>
+                          <span className="font-extrabold text-sm text-gray-900">{tier.quantity} {tr('টি প্যাকেট', 'packets', 'पैकेट')}</span>
                           <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-emerald-600 bg-emerald-600' : 'border-gray-300'}`}>
                             {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                           </div>
@@ -565,12 +598,12 @@ export default function OfferLandingPage() {
 
                         {tierSavings > 0 && (
                           <p className="mt-1 text-[11px] font-bold text-emerald-700">
-                            সাশ্রয় {formatPrice(tierSavings)} ({tierPercent}%)
+                            {tr('সাশ্রয়', 'Save', 'बचत')} {formatPrice(tierSavings)} ({tierPercent}%)
                           </p>
                         )}
                         {(tier.free_delivery || tier.is_free_delivery) && (
                           <span className="mt-1 inline-block text-[10px] font-extrabold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded">
-                            ✓ ফ্রি ডেলিভারি
+                            ✓ {tr('ফ্রি ডেলিভারি', 'Free delivery', 'मुफ़्त डिलीवरी')}
                           </span>
                         )}
                       </button>
@@ -585,26 +618,26 @@ export default function OfferLandingPage() {
               <div className="border-b border-gray-100 pb-3">
                 <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 flex items-center gap-2">
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-700 text-white text-xs">১</span>
-                  অর্ডার করতে নিচের ফর্মটি পূরণ করুন
+                  {tr('অর্ডার করতে নিচের ফর্মটি পূরণ করুন', 'Complete the form below to order', 'ऑर्डर करने के लिए नीचे दिया फ़ॉर्म भरें')}
                 </h2>
-                <p className="text-xs text-gray-500 mt-1">পণ্য হাতে পেয়ে সম্পূর্ণ মূল্য পরিশোধ করার সুবিধা রয়েছে।</p>
+                <p className="text-xs text-gray-500 mt-1">{tr('পণ্য হাতে পেয়ে সম্পূর্ণ মূল্য পরিশোধ করার সুবিধা রয়েছে।', 'Payment options are available at checkout for your branch.', 'आपके ब्रांच के लिए भुगतान विकल्प चेकआउट पर उपलब्ध हैं।')}</p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-3.5">
                 <div>
-                  <label className="mb-1 block text-xs sm:text-sm font-bold text-gray-700">আপনার পুরো নাম *</label>
+                  <label className="mb-1 block text-xs sm:text-sm font-bold text-gray-700">{tr('আপনার পুরো নাম', 'Full name', 'पूरा नाम')} *</label>
                   <input 
                     type="text" 
                     value={form.name} 
                     onChange={(e) => setForm({ ...form, name: e.target.value })} 
                     className="input-bangla w-full" 
-                    placeholder="আপনার নাম লিখুন" 
+                    placeholder={tr('আপনার নাম লিখুন', 'Enter your name', 'अपना नाम लिखें')}
                     required 
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs sm:text-sm font-bold text-gray-700">{countryCode === 'IN' ? 'মোবাইল নম্বর (১০ ডিজিট) *' : 'মোবাইল নম্বর (১১ ডিজিট) *'}</label>
+                  <label className="mb-1 block text-xs sm:text-sm font-bold text-gray-700">{countryCode === 'IN' ? tr('মোবাইল নম্বর (১০ ডিজিট)', 'Mobile number (10 digits)', 'मोबाइल नंबर (10 अंक)') : tr('মোবাইল নম্বর (১১ ডিজিট)', 'Mobile number (11 digits)', 'मोबाइल नंबर (11 अंक)')} *</label>
                   <input 
                     type="tel" 
                     value={form.phone} 
@@ -615,18 +648,18 @@ export default function OfferLandingPage() {
                   />
                 </div>
 <div>
-                  <label className="mb-1 block text-xs sm:text-sm font-bold text-gray-700">সম্পূর্ণ ঠিকানা নির্বাচন করুন *</label>
+                  <label className="mb-1 block text-xs sm:text-sm font-bold text-gray-700">{tr('সম্পূর্ণ ঠিকানা নির্বাচন করুন', 'Enter your complete address', 'पूरा पता भरें')} *</label>
                   <AddressSelector value={addrValue} onChange={setAddrValue} countryCode={countryCode} />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs sm:text-semibold text-gray-500">বিশেষ কোনো নির্দেশনা থাকলে লিখুন (ঐচ্ছিক)</label>
+                  <label className="mb-1 block text-xs sm:text-semibold text-gray-500">{tr('বিশেষ কোনো নির্দেশনা থাকলে লিখুন (ঐচ্ছিক)', 'Delivery instructions (optional)', 'डिलीवरी के लिए निर्देश (वैकल्पिक)')}</label>
                   <input 
                     type="text" 
                     value={form.instructions} 
                     onChange={(e) => setForm({ ...form, instructions: e.target.value })} 
                     className="input-bangla w-full text-xs" 
-                    placeholder="যেমন: বিকাল ৫টার পর ডেলিভারি দিন" 
+                    placeholder={tr('যেমন: বিকাল ৫টার পর ডেলিভারি দিন', 'For example: deliver after 5 PM', 'उदाहरण: शाम 5 बजे के बाद डिलीवर करें')}
                   />
                 </div>
 
@@ -642,22 +675,22 @@ export default function OfferLandingPage() {
                 {/* বিলিং সামারি */}
                 <div className="rounded-2xl bg-gray-50 border border-gray-200/70 p-4 text-xs sm:text-sm space-y-2">
                   <div className="flex justify-between text-gray-600">
-                    <span>নির্বাচিত পণ্য ও পরিমাণ</span>
-                    <span className="font-bold text-gray-900">{selectedTier ? `${selectedTier.quantity} টি প্যাকেট` : '১টি'}</span>
+                    <span>{tr('নির্বাচিত পণ্য ও পরিমাণ', 'Selected product and quantity', 'चुना गया उत्पाद और मात्रा')}</span>
+                    <span className="font-bold text-gray-900">{selectedTier ? `${selectedTier.quantity} ${tr('টি প্যাকেট', 'packets', 'पैकेट')}` : `1 ${tr('টি', 'item', 'वस्तु')}`}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
-                    <span>পণ্যের মূল্য</span>
+                    <span>{tr('পণ্যের মূল্য', 'Product price', 'उत्पाद का मूल्य')}</span>
                     <span className="font-semibold text-gray-900">{formatPrice(offerPrice)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
-                    <span>ডেলিভারি চার্জ</span>
+                    <span>{tr('ডেলিভারি চার্জ', 'Delivery charge', 'डिलीवरी शुल्क')}</span>
                     <span>
                       {isFreeDelivery ? (
-                        <span className="font-bold text-emerald-700">ফ্রি</span>
+                        <span className="font-bold text-emerald-700">{tr('ফ্রি', 'Free', 'मुफ़्त')}</span>
                       ) : deliveryQuoteLoading ? (
-                        <span className="text-gray-500">হিসাব হচ্ছে…</span>
+                        <span className="text-gray-500">{tr('হিসাব হচ্ছে…', 'Calculating…', 'गणना हो रही है…')}</span>
                       ) : deliveryQuoteError || deliveryCharge === null ? (
-                        <span className="font-semibold text-red-600">যাচাই করা যাচ্ছে না</span>
+                        <span className="font-semibold text-red-600">{tr('যাচাই করা যাচ্ছে না', 'Unable to verify', 'पुष्टि नहीं हो सकी')}</span>
                       ) : (
                         formatPrice(deliveryCharge)
                       )}
@@ -665,15 +698,15 @@ export default function OfferLandingPage() {
                   </div>
                   {savings > 0 && (
                     <div className="flex justify-between text-emerald-700 font-bold border-t border-gray-200 pt-2">
-                      <span>মোট সাশ্রয়</span>
+                      <span>{tr('মোট সাশ্রয়', 'Total savings', 'कुल बचत')}</span>
                       <span>-{formatPrice(savings)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm sm:text-base font-black text-gray-900 border-t border-gray-200 pt-2">
-                    <span>সর্বমোট প্রদেয় বিল</span>
+                    <span>{tr('সর্বমোট প্রদেয় বিল', 'Total amount due', 'कुल देय राशि')}</span>
                     <span className="text-emerald-800 text-lg sm:text-xl font-extrabold">{grandTotalLabel}</span>
                   </div>
-                  {countryCode === 'IN' && paymentMethod === 'cod' && <div className="flex justify-between border-t border-gray-200 pt-2 font-bold text-emerald-800"><span>এখন অগ্রিম / ডেলিভারিতে বাকি</span><span>{formatPrice(indiaCodAdvance)} / {formatPrice(indiaCodDue)}</span></div>}
+                  {countryCode === 'IN' && paymentMethod === 'cod' && <div className="flex justify-between border-t border-gray-200 pt-2 font-bold text-emerald-800"><span>{tr('এখন অগ্রিম / ডেলিভারিতে বাকি', 'Pay now / due on delivery', 'अभी भुगतान / डिलीवरी पर बाकी')}</span><span>{formatPrice(indiaCodAdvance)} / {formatPrice(indiaCodDue)}</span></div>}
                 </div>
 
                 {error && (
@@ -688,14 +721,14 @@ export default function OfferLandingPage() {
                   className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-800 py-4 text-base sm:text-lg font-extrabold text-white shadow-lg shadow-emerald-700/25 hover:from-emerald-800 hover:to-emerald-900 transition active:scale-98 disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? (
-                    <><Loader2 className="h-5 w-5 animate-spin" /> অর্ডার প্রসেস হচ্ছে...</>
+                    <><Loader2 className="h-5 w-5 animate-spin" /> {tr('অর্ডার প্রসেস হচ্ছে...', 'Processing your order…', 'आपका ऑर्डर प्रोसेस हो रहा है…')}</>
                   ) : (
-                    <><Zap className="h-5 w-5 fill-current text-amber-300" /> {countryCode === 'IN' ? (paymentMethod === 'cod' ? 'COD অগ্রিম পরিশোধ' : 'অনলাইনে পেমেন্ট করুন') : (landing?.cta_text || 'অর্ডার কনফার্ম করুন')} — {countryCode === 'IN' && paymentMethod === 'cod' ? formatPrice(indiaCodAdvance) : grandTotalLabel}</>
+                    <><Zap className="h-5 w-5 fill-current text-amber-300" /> {countryCode === 'IN' ? (paymentMethod === 'cod' ? tr('COD অগ্রিম পরিশোধ', 'Pay COD advance', 'COD अग्रिम भुगतान करें') : tr('অনলাইনে পেমেন্ট করুন', 'Pay online', 'ऑनलाइन भुगतान करें')) : localized('cta_text', landing?.cta_text || tr('অর্ডার কনফার্ম করুন', 'Confirm order', 'ऑर्डर की पुष्टि करें'))} — {countryCode === 'IN' && paymentMethod === 'cod' ? formatPrice(indiaCodAdvance) : grandTotalLabel}</>
                   )}
                 </button>
 
                 <p className="text-center text-[11px] font-semibold text-gray-500 flex items-center justify-center gap-1.5 pt-1">
-                  <Shield className="h-3.5 w-3.5 text-emerald-700" /> আপনার তথ্য শতভাগ নিরাপদ ও সুরক্ষিত
+                  <Shield className="h-3.5 w-3.5 text-emerald-700" /> {tr('আপনার তথ্য শতভাগ নিরাপদ ও সুরক্ষিত', 'Your information is secure', 'आपकी जानकारी सुरक्षित है')}
                 </p>
               </form>
             </div>
@@ -707,9 +740,9 @@ export default function OfferLandingPage() {
       <div className="border-t border-gray-200 bg-white mt-10">
         {hasDescription && (
           <section className="max-w-4xl mx-auto px-4 py-8">
-            <h2 className="mb-4 text-xl sm:text-2xl font-extrabold text-gray-900">পণ্যের বিস্তারিত বিবরণ</h2>
+            <h2 className="mb-4 text-xl sm:text-2xl font-extrabold text-gray-900">{tr('পণ্যের বিস্তারিত বিবরণ', 'Product details', 'उत्पाद का विवरण')}</h2>
             <div className="whitespace-pre-line text-sm sm:text-base text-gray-700 leading-relaxed space-y-2">
-              {landing?.description || product?.description}
+              {description}
             </div>
           </section>
         )}
@@ -717,11 +750,11 @@ export default function OfferLandingPage() {
         {hasGrowingGuide && (
           <section className="max-w-4xl mx-auto px-4 py-6">
             <div className="rounded-3xl border border-emerald-500/20 bg-emerald-50/60 p-6 sm:p-8">
-              <h2 className="mb-3 text-xl font-extrabold text-emerald-950 flex items-center gap-2">
-                🌱 সঠিক চাষ ও যত্ন নেওয়ার নিয়ম
+                <h2 className="mb-3 text-xl font-extrabold text-emerald-950 flex items-center gap-2">
+                🌱 {tr('সঠিক চাষ ও যত্ন নেওয়ার নিয়ম', 'Growing and care instructions', 'उगाने और देखभाल के निर्देश')}
               </h2>
               <div className="whitespace-pre-line text-sm sm:text-base text-emerald-900 leading-relaxed">
-                {landing?.growing_guide || landing?.cultivation_guide}
+                {growingGuide}
               </div>
             </div>
           </section>
@@ -730,7 +763,7 @@ export default function OfferLandingPage() {
         {/* কাস্টমার রিভিউ */}
         {reviews.length > 0 && (
           <section className="max-w-4xl mx-auto px-4 py-8 border-t border-gray-100">
-            <h2 className="mb-6 text-xl sm:text-2xl font-extrabold text-gray-900 text-center">গ্রাহকদের চমৎকার মতামত</h2>
+            <h2 className="mb-6 text-xl sm:text-2xl font-extrabold text-gray-900 text-center">{tr('গ্রাহকদের চমৎকার মতামত', 'Customer reviews', 'ग्राहकों की समीक्षाएँ')}</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {reviews.map((r: any) => (
                 <div key={r.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs space-y-2">
@@ -741,7 +774,7 @@ export default function OfferLandingPage() {
                       </div>
                       <div>
                         <p className="font-bold text-sm text-gray-900">{r.customer_name}</p>
-                        <p className="text-[10px] text-gray-400">ভেরিফায়েড ক্রেতা</p>
+                        <p className="text-[10px] text-gray-400">{tr('ভেরিফায়েড ক্রেতা', 'Verified buyer', 'सत्यापित खरीदार')}</p>
                       </div>
                     </div>
                     <div className="flex gap-0.5 text-amber-400">
@@ -759,16 +792,16 @@ export default function OfferLandingPage() {
 
         {/* সচরাচর জিজ্ঞাসা (FAQ) */}
         <section className="max-w-4xl mx-auto px-4 py-8 border-t border-gray-100">
-          <h2 className="mb-6 text-xl sm:text-2xl font-extrabold text-gray-900 text-center">সাধারণ জিজ্ঞাসা (FAQ)</h2>
+          <h2 className="mb-6 text-xl sm:text-2xl font-extrabold text-gray-900 text-center">{tr('সাধারণ জিজ্ঞাসা (FAQ)', 'Frequently asked questions', 'अक्सर पूछे जाने वाले सवाल')}</h2>
           <div className="space-y-3">
             {faqItems.map((item: FaqItem, idx: number) => (
               <details key={idx} className="group rounded-2xl border border-gray-200 bg-white p-4 transition-all open:border-emerald-500">
                 <summary className="flex cursor-pointer items-center justify-between font-bold text-sm sm:text-base text-gray-800">
-                  {item.question || item.q}
+                  {(lang === 'en' ? item.question_en : lang === 'hi' ? (item.question_hi || item.question_en) : item.question) || item.question || item.q}
                   <ChevronDown className="h-5 w-5 text-gray-400 transition-transform group-open:rotate-180 group-open:text-emerald-700" />
                 </summary>
                 <p className="mt-3 text-xs sm:text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-2.5">
-                  {item.answer || item.a}
+                  {(lang === 'en' ? item.answer_en : lang === 'hi' ? (item.answer_hi || item.answer_en) : item.answer) || item.answer || item.a}
                 </p>
               </details>
             ))}
@@ -781,7 +814,7 @@ export default function OfferLandingPage() {
         <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur-md p-3 shadow-2xl lg:hidden">
           <div className="max-w-md mx-auto flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs text-gray-500 font-semibold">{selectedTier ? `${selectedTier.quantity}টি প্যাকেট` : 'প্যাকেজ'}</p>
+              <p className="text-xs text-gray-500 font-semibold">{selectedTier ? `${selectedTier.quantity} ${tr('টি প্যাকেট', 'packets', 'पैकेट')}` : tr('প্যাকেজ', 'Package', 'पैकेज')}</p>
               <p className="text-xl font-black text-emerald-800">{grandTotalLabel}</p>
             </div>
             <a 
@@ -789,7 +822,7 @@ export default function OfferLandingPage() {
               className="flex items-center gap-1.5 rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-800 px-6 py-3 text-sm font-extrabold text-white shadow-md shadow-emerald-700/30 active:scale-95 transition"
             >
               <Zap className="h-4 w-4 fill-current text-amber-300" />
-              অর্ডার করুন
+              {tr('অর্ডার করুন', 'Order now', 'अभी ऑर्डर करें')}
             </a>
           </div>
         </div>

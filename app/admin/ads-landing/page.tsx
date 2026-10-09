@@ -66,12 +66,13 @@ export default function AdminAdsLandingPage() {
   const duplicate = async (l: any) => {
     const { landing_name, landing_slug, title, subtitle, images, video_url, compare_price, offer_price,
       benefits, features, description, growing_guide, trust_text, cod_text, delivery_text, faq,
-      cta_text, section_visibility, product_id, pricing_tiers, tiers } = l;
+      cta_text, section_visibility, product_id, pricing_tiers, tiers, translations } = l;
     const newSlug = (landing_slug || 'landing') + '-copy';
     const { error } = await supabase.from('landing_pages').insert({
       product_id, landing_name: (landing_name || title) + ' (Copy)', landing_slug: newSlug, slug: newSlug,
       title, subtitle, images, video_url, compare_price, offer_price, benefits, features,
       description, growing_guide, trust_text, cod_text, delivery_text, faq, cta_text,
+      translations: translations || {},
       pricing_tiers: pricing_tiers || tiers || [], tiers: pricing_tiers || tiers || [],
       section_visibility, country_code: adminBranch, status: 'draft', is_active: false
     });
@@ -346,7 +347,7 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
                 {products.map((p) => <option key={p.id} value={p.id}>{p.name_bn || p.name_en} — {formatPrice(p.sale_price || p.regular_price)} (Stock: {p.stock})</option>)}
               </select>
             </div>
-            <MultilingualFields value={landing.translations || {}} onChange={(translations) => setLanding({ ...landing, translations })} title="🌐 Ads Landing Page Language Versions" fields={[{ key: 'title', label: 'Title' }, { key: 'subtitle', label: 'Subtitle' }, { key: 'description', label: 'Description', multiline: true }, { key: 'cta_text', label: 'CTA Text' }, { key: 'trust_text', label: 'Trust Text' }, { key: 'delivery_text', label: 'Delivery Text' }, { key: 'cod_text', label: 'COD Text' }]} />
+            <MultilingualFields languages={countryCode === 'IN' ? ['en', 'bn', 'hi'] : ['en', 'bn']} value={landing.translations || {}} onChange={(translations) => setLanding({ ...landing, translations })} title="🌐 Ads Landing Page Language Versions" fields={[{ key: 'title', label: 'Title' }, { key: 'subtitle', label: 'Subtitle' }, { key: 'description', label: 'Description', multiline: true }, { key: 'cta_text', label: 'CTA Text' }, { key: 'trust_text', label: 'Trust Text' }, { key: 'delivery_text', label: 'Delivery Text' }, { key: 'cod_text', label: 'COD Text' }]} />
             <LandingFields landing={landing} setLanding={setLanding} />
             <MediaUploader images={images} setImages={setImages} imageUrl={imageUrl} setImageUrl={setImageUrl} uploading={uploading} setUploading={setUploading} />
             <DescriptionFields landing={landing} setLanding={setLanding} benefits={benefits} setBenefits={setBenefits} features={features} setFeatures={setFeatures} />
