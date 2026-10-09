@@ -300,7 +300,18 @@ export default function ComboLandingPage() {
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#f5f8f4] pb-28 text-slate-900">
-      <section className="relative overflow-hidden bg-[#063d2c] text-white">
+      <style jsx global>{`
+        /* Keep floating global utility widgets off this focused campaign checkout. */
+        body:has(main .combo-detail-showcase) button[aria-label="Change Website Theme"],
+        body:has(main .combo-detail-showcase) button[title="Change Website Theme"],
+        body:has(main .combo-detail-showcase) button[aria-label="এই পণ্য শেয়ার করুন"],
+        body:has(main .combo-detail-showcase) button[aria-label="Share this product"],
+        body:has(main .combo-detail-showcase) button[title="Share this product"],
+        body:has(main .combo-detail-showcase) button[aria-label="इस उत्पाद को शेयर करें"] {
+          display: none !important;
+        }
+      `}</style>
+      <section className="combo-detail-showcase relative overflow-hidden bg-[#063d2c] text-white">
         <div className="pointer-events-none absolute -right-40 -top-40 h-[34rem] w-[34rem] rounded-full bg-lime-300/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-48 left-1/3 h-[32rem] w-[32rem] rounded-full bg-emerald-300/10 blur-3xl" />
 
@@ -367,10 +378,10 @@ export default function ComboLandingPage() {
                     <div className="flex min-h-[300px] items-center justify-center sm:min-h-[405px]"><div className="max-w-xs text-center"><div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[30px] bg-emerald-100 text-emerald-700 shadow-inner"><Leaf className="h-11 w-11" /></div><p className="mt-5 text-sm font-black text-slate-800">{country === 'IN' ? 'Add product images to build the combo showcase.' : 'পণ্যের ছবি যোগ করলেই এখানে কম্বো শোকেস তৈরি হবে।'}</p></div></div>
                   )}
                   <div className="absolute left-5 top-5 z-40 rounded-[20px] bg-amber-400 px-4 py-2.5 text-center text-amber-950 shadow-[0_14px_28px_rgba(0,0,0,.14)] sm:left-7 sm:top-7 sm:px-5 sm:py-3"><div className="text-[8px] font-black uppercase tracking-[.18em]">SAVE</div><div className="mt-0.5 text-2xl font-black leading-none sm:text-[1.7rem]">{formatPrice(savings)}</div></div>
-                  <div className="absolute bottom-5 right-5 z-40 rounded-[20px] border border-white/70 bg-slate-950/92 px-4 py-2.5 text-white shadow-xl backdrop-blur sm:bottom-7 sm:right-7 sm:px-5 sm:py-3"><div className="text-[8px] font-black uppercase tracking-[.16em] text-slate-400">Selected pack</div><div className="mt-0.5 text-lg font-black sm:text-xl">{selectedQty}× Pack</div></div>
+                  
                 </div>
               </div>
-              <div className="absolute -bottom-4 left-1/2 hidden -translate-x-1/2 rounded-full border border-emerald-100 bg-white px-5 py-2.5 text-xs font-black text-emerald-900 shadow-xl sm:block">{country === 'IN' ? 'Three useful seed varieties in one smart bundle' : 'এক অর্ডারে প্রয়োজনীয় বীজ একসাথে'}</div>
+              
             </div>
           </div>
         </div>
