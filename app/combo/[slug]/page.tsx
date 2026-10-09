@@ -94,7 +94,6 @@ export default function ComboLandingPage() {
   const [indiaDeliveryQuote, setIndiaDeliveryQuote] = useState<number | null>(null);
   const [indiaDeliveryQuoteLoading, setIndiaDeliveryQuoteLoading] = useState(false);
   const { lang, t } = useLang();
-  const [timeLeft, setTimeLeft] = useState(3 * 3600);
 
   useEffect(() => {
     setCountry(getVisitorCountry());
@@ -103,10 +102,6 @@ export default function ComboLandingPage() {
     return () => window.removeEventListener('gazi-country-changed', onCountryChange);
   }, []);
 
-  useEffect(() => {
-    const timer = setInterval(() => setTimeLeft((value) => (value > 0 ? value - 1 : 0)), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -212,11 +207,6 @@ export default function ComboLandingPage() {
     return () => { active = false; };
   }, [country, offer, freeDelivery]);
   const heroImages = useMemo(() => (combo ? getComboHeroImages(combo, items) : []), [combo, items]);
-  const timer = {
-    h: String(Math.floor(timeLeft / 3600)).padStart(2, '0'),
-    m: String(Math.floor((timeLeft % 3600) / 60)).padStart(2, '0'),
-    s: String(timeLeft % 60).padStart(2, '0'),
-  };
 
   const submitOrder = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -428,9 +418,7 @@ export default function ComboLandingPage() {
               </div>
             </section>
 
-            <section className="overflow-hidden rounded-[34px] bg-[#073d2b] p-5 text-white shadow-xl sm:p-8">
-              <div className="grid gap-7 md:grid-cols-[1fr_auto] md:items-center"><div><p className="text-[11px] font-black uppercase tracking-[.2em] text-lime-300">LIMITED-TIME OFFER</p><h2 className="mt-2 text-2xl font-black sm:text-3xl">{country === 'IN' ? "Don't miss today's offer" : 'আজকের অফারটি মিস করবেন না'}</h2><p className="mt-2 max-w-xl text-sm leading-6 text-emerald-100/75">{country === 'IN' ? 'Choose a pack and the price, savings and delivery update instantly.' : 'যে প্যাকেজটি নেবেন, সেটি সিলেক্ট করলেই দাম, সাশ্রয় ও ডেলিভারি সঙ্গে সঙ্গে আপডেট হবে।'}</p></div><div className="grid grid-cols-3 gap-2">{[['Hours', timer.h], ['Min', timer.m], ['Sec', timer.s]].map(([label, value]) => <div key={label} className="min-w-[70px] rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-3 text-center"><div className="text-2xl font-black leading-none sm:text-3xl">{value}</div><div className="mt-1 text-[9px] font-black uppercase tracking-wider text-emerald-100/55">{label}</div></div>)}</div></div>
-            </section>
+            <section className="overflow-hidden rounded-[34px] bg-[#073d2b] p-5 text-white shadow-xl sm:p-8"><p className="text-[11px] font-black uppercase tracking-[.2em] text-lime-300">{copy('COMBO OFFER', 'কম্বো অফার', 'कॉम्बो ऑफर')}</p><h2 className="mt-2 text-2xl font-black sm:text-3xl">{copy('Choose the right bundle for your garden', 'আপনার বাগানের জন্য উপযুক্ত কম্বো বেছে নিন', 'अपने बगीचे के लिए सही कॉम्बो चुनें')}</h2><p className="mt-2 max-w-xl text-sm leading-6 text-emerald-100/75">{copy('Choose a package to review its current price and delivery charge before ordering.', 'অর্ডারের আগে প্যাকেজ বেছে নিয়ে বর্তমান দাম ও ডেলিভারি চার্জ দেখুন।', 'ऑर्डर से पहले पैक चुनकर कीमत और डिलीवरी शुल्क देखें।')}</p></section>
 
             <section className="grid gap-4 sm:grid-cols-3">
               {[{ icon: BadgeCheck, title: country === 'IN' ? 'Curated combo' : 'বাছাই করা কম্বো', copy: country === 'IN' ? 'Useful seed varieties bundled for convenience.' : 'একসাথে দরকারি বীজ, সহজ ও সুবিধাজনক।' }, { icon: ShieldCheck, title: country === 'IN' ? 'Secure ordering' : 'নিরাপদ অর্ডার', copy: country === 'IN' ? 'Your order details are handled securely.' : 'আপনার অর্ডারের তথ্য নিরাপদে প্রক্রিয়া করা হয়।' }, { icon: Truck, title: country === 'IN' ? 'Doorstep delivery' : 'হোম ডেলিভারি', copy: country === 'IN' ? 'Delivery to serviceable addresses across India.' : 'সার্ভিসেবল ঠিকানায় সারাদেশে ডেলিভারি।' }].map(({ icon: Icon, title, copy }) => <div key={title} className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm"><Icon className="h-5 w-5 text-emerald-700" /><h3 className="mt-4 text-sm font-black">{title}</h3><p className="mt-1 text-xs leading-5 text-slate-500">{copy}</p></div>)}
