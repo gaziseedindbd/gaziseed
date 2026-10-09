@@ -681,10 +681,10 @@ export default function CheckoutPage() {
                   <ShieldCheck className="h-5 w-5 text-primary/70" />
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-5 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <label htmlFor="checkout-name" className="flex items-center gap-1.5 text-xs font-extrabold text-muted-foreground">
-                      <User className="h-3.5 w-3.5 text-primary" /> {t('আপনার নাম', 'Your name')} <span className="text-rose-500">*</span>
+                    <label htmlFor="checkout-name" className="flex items-center gap-1.5 text-sm font-extrabold text-foreground">
+                      <User className="h-3.5 w-3.5 text-primary" /> {t('পুরো নাম', 'Full name', 'पूरा नाम')} <span className="text-rose-500">*</span>
                     </label>
                     <input
                       id="checkout-name"
@@ -693,14 +693,14 @@ export default function CheckoutPage() {
                       autoComplete="name"
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      placeholder={t('যেমন: মো: আরিফুল ইসলাম', 'e.g. Md. Ariful Islam')}
-                      className="min-h-14 w-full rounded-[18px] border border-border/80 bg-slate-50/80 px-4 text-sm font-bold text-foreground shadow-sm transition-all placeholder:text-muted-foreground/70 hover:border-primary/30 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/15 focus:shadow-md focus:outline-none dark:bg-slate-900/40"
+                      placeholder={t('আপনার পুরো নাম লিখুন', 'Enter your full name', 'अपना पूरा नाम लिखें')}
+                      className="min-h-[60px] w-full rounded-[18px] border border-border/80 bg-slate-50/80 px-4 text-base font-semibold text-foreground shadow-sm transition-all placeholder:text-muted-foreground/70 hover:border-primary/30 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/15 focus:shadow-md focus:outline-none dark:bg-slate-900/40"
                       required
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label htmlFor="checkout-phone" className="flex items-center gap-1.5 text-xs font-extrabold text-muted-foreground">
+                    <label htmlFor="checkout-phone" className="flex items-center gap-1.5 text-sm font-extrabold text-foreground">
                       <Phone className="h-3.5 w-3.5 text-primary" /> {t('মোবাইল নম্বর', 'Phone number')} <span className="text-rose-500">*</span>
                     </label>
                     <input
@@ -712,19 +712,19 @@ export default function CheckoutPage() {
                       maxLength={country === 'IN' ? 10 : 11}
                       value={form.phone}
                       onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      placeholder={country === 'IN' ? '10-digit mobile number' : '01XXXXXXXXX'}
-                      className="min-h-14 w-full rounded-[18px] border border-border/80 bg-slate-50/80 px-4 text-sm font-bold tracking-wide text-foreground shadow-sm transition-all placeholder:text-muted-foreground/70 hover:border-primary/30 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/15 focus:shadow-md focus:outline-none dark:bg-slate-900/40"
+                      placeholder={country === 'IN' ? t('১০ সংখ্যার মোবাইল নম্বর', '10-digit mobile number', '10 अंकों का मोबाइल नंबर') : '01XXXXXXXXX'}
+                      className="min-h-[60px] w-full rounded-[18px] border border-border/80 bg-slate-50/80 px-4 text-base font-semibold tracking-wide text-foreground shadow-sm transition-all placeholder:text-muted-foreground/70 hover:border-primary/30 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/15 focus:shadow-md focus:outline-none dark:bg-slate-900/40"
                       required
                     />
                   </div>
                 </div>
 
-                <div className="mt-5">
+                <div className="mt-6 rounded-[22px] border border-border/60 bg-secondary/20 p-4 sm:p-5">
                   <AddressSelector value={addrValue} onChange={setAddrValue} countryCode={country} />
                 </div>
 
                 <div className="mt-5 space-y-1.5">
-                  <label htmlFor="checkout-instructions" className="text-xs font-extrabold text-muted-foreground">{t('অতিরিক্ত নির্দেশনা', 'Special instructions')}</label>
+                  <label htmlFor="checkout-instructions" className="text-sm font-extrabold text-foreground">{t('অতিরিক্ত নির্দেশনা', 'Special instructions')}</label>
                   <textarea
                     id="checkout-instructions"
                     name="instructions"
@@ -861,13 +861,13 @@ export default function CheckoutPage() {
                         type="button"
                         onClick={() => setPaymentMethod('online')}
                         aria-pressed={paymentMethod === 'online'}
-                        className={`rounded-2xl border-2 p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${paymentMethod === 'online' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border bg-background hover:border-primary/30'}`}
+                        className={`min-h-[112px] rounded-[22px] border-2 p-5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${paymentMethod === 'online' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border bg-background hover:border-primary/30'}`}
                       >
                         <span className="flex items-start gap-3">
                           <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><WalletCards className="h-4 w-4" /></span>
                           <span className="min-w-0">
-                            <span className="block text-sm font-black">{t('অনলাইন পেমেন্ট', 'Online payment')}</span>
-                            <span className="mt-1 block text-[10px] leading-4 text-muted-foreground">UPI / Card</span>
+                            <span className="block text-base font-black">{t('অনলাইন পেমেন্ট', 'Online payment')}</span>
+                            <span className="mt-2 block text-sm leading-5 text-muted-foreground">UPI / Card</span>
                           </span>
                         </span>
                       </button>
@@ -877,13 +877,13 @@ export default function CheckoutPage() {
                           type="button"
                           onClick={() => setPaymentMethod('cod')}
                           aria-pressed={paymentMethod === 'cod'}
-                          className={`rounded-2xl border-2 p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${paymentMethod === 'cod' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border bg-background hover:border-primary/30'}`}
+                          className={`min-h-[112px] rounded-[22px] border-2 p-5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${paymentMethod === 'cod' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border bg-background hover:border-primary/30'}`}
                         >
                           <span className="flex items-start gap-3">
                             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Banknote className="h-4 w-4" /></span>
                             <span className="min-w-0">
-                              <span className="block text-sm font-black">{t('ক্যাশ অন ডেলিভারি', 'Cash on Delivery')}</span>
-                              <span className="mt-1 block text-[10px] leading-4 text-muted-foreground">{t(`অগ্রিম ${formatPrice(codAdvance)} · ডেলিভারিতে ${formatPrice(codDue)}`, `Advance ${formatPrice(codAdvance)} · ${formatPrice(codDue)} due on delivery`)}</span>
+                              <span className="block text-base font-black">{t('ক্যাশ অন ডেলিভারি', 'Cash on Delivery')}</span>
+                              <span className="mt-2 block text-sm leading-5 text-muted-foreground">{t(`অগ্রিম ${formatPrice(codAdvance)} · ডেলিভারিতে ${formatPrice(codDue)}`, `Advance ${formatPrice(codAdvance)} · ${formatPrice(codDue)} due on delivery`)}</span>
                             </span>
                           </span>
                         </button>
@@ -923,19 +923,19 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
-                <div className="space-y-2 p-5 sm:p-6">
+                <div className="space-y-3 p-5 sm:p-6">
                   <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('সাবটোটাল', 'Subtotal')}</span><span className="font-bold">{formatPrice(subtotal)}</span></div>
                   {savingsTotal > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t(`আপনার সাশ্রয়${discountPercent ? ` (${discountPercent}%)` : ''}`, `You save${discountPercent ? ` (${discountPercent}%)` : ''}`)}</span><span className="font-bold">-{formatPrice(savingsTotal)}</span></div>}
                   {couponDiscount > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('কুপন ডিসকাউন্ট', 'Coupon discount')}</span><span className="font-bold">-{formatPrice(couponDiscount)}</span></div>}
                   <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারি', 'Delivery')}</span><span className="font-bold">{deliveryCharge === 0 ? t('ফ্রি', 'Free') : formatPrice(deliveryCharge)}</span></div>
                   {country === 'IN' && paymentMethod === 'cod' && <><div className="flex justify-between gap-4 text-sm text-primary"><span>{t('COD অগ্রিম','COD advance')}</span><span className="font-bold">{formatPrice(codAdvance)}</span></div><div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারিতে বাকি','Due on delivery')}</span><span className="font-bold">{formatPrice(codDue)}</span></div></>}
                   {walletCredit > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('ওয়ালেট ক্রেডিট', 'Wallet credit')}</span><span className="font-bold">-{formatPrice(walletCredit)}</span></div>}
-                  <div className="mt-3 flex items-end justify-between gap-4 border-t border-border pt-4">
+                  <div className="mt-4 flex flex-wrap items-end justify-between gap-4 border-t border-border pt-5">
                     <div>
-                      <span className="block text-sm font-black">{t('সর্বমোট', 'Total')}</span>
+                      <span className="block text-base font-black">{t('সর্বমোট', 'Total')}</span>
                       <span className="mt-0.5 block text-[10px] font-semibold text-muted-foreground">{t('চূড়ান্ত পরিশোধযোগ্য', 'Final payable amount')}</span>
                     </div>
-                    <span className="text-2xl font-black tracking-tight text-primary">{formatPrice(country === 'IN' && paymentMethod === 'cod' ? codAdvance : payableTotal)}</span>
+                    <span className="text-3xl font-black tracking-tight text-primary sm:text-4xl">{formatPrice(country === 'IN' && paymentMethod === 'cod' ? codAdvance : payableTotal)}</span>
                   </div>
 
                   {error && (
@@ -948,7 +948,7 @@ export default function CheckoutPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[18px] bg-primary px-6 text-base font-black tracking-tight text-primary-foreground shadow-xl shadow-primary/30 transition-all hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-2xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-15"
+                    className="mt-4 inline-flex min-h-[64px] w-full items-center justify-center gap-3 rounded-[18px] bg-primary px-6 py-4 text-lg font-black tracking-tight text-primary-foreground shadow-xl shadow-primary/30 transition-all hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-2xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-15"
                   >
                     {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম পরিশোধ করুন', 'Pay COD advance') : t('অনলাইনে পেমেন্ট করুন', 'Pay online')) : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
                   </button>
