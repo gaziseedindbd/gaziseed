@@ -337,7 +337,7 @@ export default function AnimatedLandingPage() {
 
   const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const renderOrderCta = (target: 'packages' | 'order-form' = 'packages') => (
-    <div className="flex justify-center px-5 py-6 sm:py-8">
+    <div className="flex justify-center px-5 py-4 sm:py-5">
       <button type="button" onClick={() => jump(target)} className="sk-shimmer rounded-2xl bg-gradient-to-r from-amber-300 via-lime-300 to-amber-200 px-7 py-3.5 font-black text-[#06150d] shadow-xl shadow-amber-500/10 transition hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lime-600">
         <span className="relative z-10 inline-flex items-center gap-2">{ctaLabel} <ShoppingCart className="h-4 w-4" /></span>
       </button>
@@ -443,6 +443,11 @@ export default function AnimatedLandingPage() {
         @keyframes skPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
         @keyframes skShimmer { from { background-position: -120% 0; } to { background-position: 120% 0; } }
         @keyframes skReveal { from { opacity:0; transform: translateY(22px) scale(.98); } to { opacity:1; transform: translateY(0) scale(1); } }
+        /* Floating utility widgets should never cover the checkout column. */
+        @media (min-width: 768px) {
+          body:has(#story) button[aria-label="Change Website Theme"],
+          body:has(#story) button[title="Change Website Theme"] { display: none !important; }
+        }
         @media (max-width: 767px) {
           /* Keep campaign content clear of global floating widgets on phones. */
           body:has(#story) button[aria-label="Change Website Theme"],
@@ -489,7 +494,7 @@ export default function AnimatedLandingPage() {
         </aside>
 
         <div className="min-w-0">
-          <section id="story" className="relative overflow-hidden bg-[#06170f] px-4 pb-12 pt-9 text-white sm:px-8 sm:py-14 lg:px-12 lg:py-16">
+          <section id="story" className="relative overflow-hidden bg-[#06170f] px-4 pb-10 pt-9 text-white sm:px-8 sm:py-12 lg:px-12 lg:py-14">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_35%,rgba(155,255,71,.12),transparent_30%),radial-gradient(circle_at_10%_20%,rgba(255,199,71,.11),transparent_30%)]" />
             <div className="absolute inset-y-0 right-0 hidden w-2/3 bg-[linear-gradient(90deg,rgba(6,23,15,0),rgba(6,23,15,.06))] lg:block" />
             <div className="relative mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.05fr_.95fr]">
@@ -514,12 +519,12 @@ export default function AnimatedLandingPage() {
           </section>
           {renderOrderCta()}
 
-          <section id="benefits" className="bg-[#f8f4e8] px-5 py-14 sm:px-8 lg:px-12 lg:py-16">
+          <section id="benefits" className="bg-[#f8f4e8] px-5 py-11 sm:px-8 lg:px-12 lg:py-12">
             <div className="mx-auto max-w-6xl"><div className="sk-animate text-center"><span className="text-xs font-black uppercase tracking-[.3em] text-amber-700">{t('উন্নত মান', 'Premium quality', 'बेहतर गुणवत्ता')}</span><h2 className="mt-2 text-3xl font-black text-[#082015] sm:text-4xl">{t('সুপার কিং সীডের বিশেষ সুবিধা', 'Why choose Super King Seed', 'सुपर किंग सीड क्यों चुनें')}</h2><div className="mx-auto mt-4 h-1 w-20 rounded-full bg-gradient-to-r from-lime-500 to-amber-400" /></div><div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{benefits.map((item, index) => <article key={index} className="sk-animate group rounded-3xl border border-[#113221]/10 bg-white p-6 text-center shadow-sm transition duration-500 hover:-translate-y-2 hover:shadow-xl"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#edf6e8] text-2xl transition group-hover:scale-110">{item.icon || '🌱'}</div><h3 className="mt-5 text-lg font-black text-[#0a2418]">{item.title}</h3><p className="mt-2 text-sm leading-6 text-[#3b5948]">{item.text}</p></article>)}</div></div>
           </section>
           {renderOrderCta()}
 
-          <section id="cultivation" className="border-y border-[#113221]/10 bg-[#fbf8f0] px-5 py-14 sm:px-8 lg:px-12 lg:py-16"><div className="mx-auto max-w-6xl"><div className="sk-animate text-center"><span className="text-xs font-black uppercase tracking-[.3em] text-lime-700">{t('সহজ চাষ', 'Easy cultivation', 'आसान खेती')}</span><h2 className="mt-2 text-3xl font-black text-[#082015] sm:text-4xl">{t('সহজ চাষ পদ্ধতি', 'How to grow', 'उगाने का तरीका')}</h2></div><div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">{cultivation.map((item, index) => <div key={index} className="sk-animate relative rounded-3xl border border-[#113221]/10 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0b6a31] text-xs font-black text-white">{item.icon || String(index + 1).padStart(2,'0')}</span>{index < cultivation.length - 1 && <ArrowRight className="hidden h-5 w-5 text-lime-700 lg:block" />}</div><div className="mt-5 flex h-20 items-center justify-center rounded-2xl bg-[#f2f6eb] text-4xl">{index === 0 ? '🌰' : index === 1 ? '💧' : index === 2 ? '🧺' : index === 3 ? '🌿' : '🥬'}</div><h3 className="mt-4 text-base font-black">{item.title}</h3><p className="mt-1 text-sm leading-6 text-[#56705f]">{item.text}</p></div>)}</div></div></section>
+          <section id="cultivation" className="border-y border-[#113221]/10 bg-[#fbf8f0] px-5 py-11 sm:px-8 lg:px-12 lg:py-12"><div className="mx-auto max-w-6xl"><div className="sk-animate text-center"><span className="text-xs font-black uppercase tracking-[.3em] text-lime-700">{t('সহজ চাষ', 'Easy cultivation', 'आसान खेती')}</span><h2 className="mt-2 text-3xl font-black text-[#082015] sm:text-4xl">{t('সহজ চাষ পদ্ধতি', 'How to grow', 'उगाने का तरीका')}</h2></div><div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">{cultivation.map((item, index) => <div key={index} className="sk-animate relative rounded-3xl border border-[#113221]/10 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0b6a31] text-xs font-black text-white">{item.icon || String(index + 1).padStart(2,'0')}</span>{index < cultivation.length - 1 && <ArrowRight className="hidden h-5 w-5 text-lime-700 lg:block" />}</div><div className="mt-5 flex h-20 items-center justify-center rounded-2xl bg-[#f2f6eb] text-4xl">{index === 0 ? '🌰' : index === 1 ? '💧' : index === 2 ? '🧺' : index === 3 ? '🌿' : '🥬'}</div><h3 className="mt-4 text-base font-black">{item.title}</h3><p className="mt-1 text-sm leading-6 text-[#56705f]">{item.text}</p></div>)}</div></div></section>
           {renderOrderCta()}
 
           <section id="packages" className="scroll-mt-24 bg-[#06170f] px-5 pt-14 pb-32 text-white sm:px-8 lg:px-12 lg:py-18 lg:pb-14"><div className="mx-auto max-w-6xl"><div className="sk-animate text-center"><span className="text-xs font-black uppercase tracking-[.3em] text-amber-300">{t('সেরা সাশ্রয়', 'Best value', 'सबसे बेहतर ऑफ़र')}</span><h2 className="mt-2 text-3xl font-black sm:text-4xl">{t('আপনার জন্য সেরা অফার', 'Choose your best offer', 'अपने लिए सबसे अच्छा ऑफ़र चुनें')}</h2><p className="mt-3 text-sm text-white/60">{t('একটি প্যাকেট নেবেন, নাকি বেশি সাশ্রয়ে বড় প্যাকেজ?', 'Choose one packet or save more with a larger pack.', 'एक पैकेट लें या बड़े पैक के साथ ज़्यादा बचत करें।')}</p></div><div className="mt-8 grid items-start gap-6 xl:grid-cols-[1.1fr_.9fr]">
