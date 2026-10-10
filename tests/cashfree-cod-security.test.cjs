@@ -1,0 +1,8 @@
+const assert=require('node:assert/strict');
+const {run}=require('./cashfree-amount-integrity.test.cjs');
+(async()=>{
+const cases=[['registered user internal webhook',{intent:{user_id:'owner'}},200,1],['registered user wrong caller',{noInternal:true,intent:{user_id:'owner'}},403,0],['registered user correct caller',{noInternal:true,uid:'owner',intent:{user_id:'owner'}},200,1],['spoofed internal secret',{badInternal:true,intent:{user_id:'owner'}},403,0],['guest COD',{},200,1],['missing credentials',{missingCredentials:true},500,0],['gateway exception',{offline:true},503,0],['refunded advance',{refunds:[{refund_status:'SUCCESS'}]},409,0],['pending refund',{refunds:[{refund_status:'PENDING'}]},409,0],['failed refund allowed',{refunds:[{refund_status:'FAILED'}]},200,1],['refund API error',{refundError:true},503,0]];
+for(const [name,c,status,count]of cases){const r=await run('cashfree-complete-cod-order',c);assert.equal(r.status,status,name);assert.equal(r.completions,count,name);if(c.missingCredentials)assert.equal(r.statuses.length,0);if(c.offline||c.refundError||c.refunds?.[0]?.refund_status==='SUCCESS')assert.ok(r.statuses.includes('created'));if(status===200){assert.equal(r.body.advance_amount,120);assert.equal(r.body.due_amount,380);}console.log('PASS',name);}
+for(const [name,c,status,count]of cases.filter(x=>x[0].includes('refund'))){const r=await run('cashfree-campaign-payment',{...c,intent:{metadata:{payment_flow:'india_campaign',payment_method:'cod'}}});assert.equal(r.status,status,name+' campaign');assert.equal(r.completions,count);console.log('PASS campaign',name);}
+console.log('All 15 COD security scenarios passed.');
+})().catch(e=>{console.error(e);process.exitCode=1;});
