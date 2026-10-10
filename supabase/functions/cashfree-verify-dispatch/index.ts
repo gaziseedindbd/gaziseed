@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, apikey, x-client-info, content-type",
+  "Access-Control-Allow-Headers": "authorization, apikey, x-client-info, content-type, x-gazi-country",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Content-Type": "application/json",
 };
@@ -96,6 +96,24 @@ Deno.serve(async (req: Request) => {
   if (cf.order_status !== "PAID" || cf.order_currency !== "INR" ||
       !moneyMatches(Number(cf.order_amount), expected))
     return fail("Cashfree did not verify the correct paid amount. Hold dispatch.");
+
+  // A PAID order can subsequently be refunded. Fail closed on refund API errors.
+  try {
+    const refundsResponse = await fetch(
+      "https://api.cashfree.com/pg/orders/" + encodeURIComponent(intent.cashfree_order_id) + "/refunds",
+      { method: "GET", headers: {
+        "x-api-version": "2025-01-01",
+        "x-client-id": cfId,
+        "x-client-secret": cfSecret,
+      } },
+    );
+    if (!refundsResponse.ok) return fail("Unable to verify refund status. Hold dispatch.", 502);
+    const refunds = await refundsResponse.json();
+    if (!Array.isArray(refunds)) return fail("Unexpected Cashfree refund response. Hold dispatch.", 502);
+    if (refunds.some((refund: { refund_status?: string }) =>
+      !["FAILED", "CANCELLED"].includes(String(refund.refund_status || "").toUpperCase())))
+      return fail("Cashfree refund or refund processing found. Hold dispatch.");
+  } catch { return fail("Unable to verify refund status. Hold dispatch.", 502); }
 
   const { data: updated, error: updateError } = await admin.from("orders").update({
     status: "shipped",
