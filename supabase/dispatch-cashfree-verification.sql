@@ -14,8 +14,15 @@ BEGIN
     AND lower(coalesce(NEW.status, '')) IN ('shipped', 'delivered')
     AND (
       lower(coalesce(NEW.payment_method, '')) IN ('cashfree', 'online')
+      OR lower(coalesce(OLD.payment_method, '')) IN ('cashfree', 'online')
       OR lower(coalesce(NEW.payment_status, '')) IN ('paid', 'partially_paid')
+      OR lower(coalesce(OLD.payment_status, '')) IN ('paid', 'partially_paid')
       OR coalesce(NEW.payment_advance_amount, 0) > 0
+      OR coalesce(OLD.payment_advance_amount, 0) > 0
+      OR EXISTS (
+        SELECT 1 FROM public.cashfree_payment_intents i
+        WHERE i.completed_order_id = NEW.id
+      )
     )
   THEN
     IF current_setting('request.jwt.claim.role', true) IS DISTINCT FROM 'service_role'
