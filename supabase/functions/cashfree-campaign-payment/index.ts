@@ -230,8 +230,24 @@ async function completePayment(body: Record<string, unknown>) {
     return json({ ok: true, paid: false, order_status: provider.order_status || "PENDING" });
   }
   const providerAmount = Number(provider.order_amount);
-  if (!Number.isFinite(providerAmount) || Math.abs(providerAmount - Number(intent.amount)) > 0.01 || String(provider.order_currency || "") !== "INR") {
+  if (provider.order_id !== intent.cashfree_order_id || !Number.isFinite(providerAmount) || providerAmount <= 0 ||
+      !Number.isFinite(Number(intent.amount)) || Number(intent.amount) <= 0 || intent.currency !== "INR" ||
+      Math.abs(providerAmount - Number(intent.amount)) > 0.01 || provider.order_currency !== "INR") {
     return json({ ok: false, error: "Paid amount does not match the saved payment" }, 409);
+  }
+
+  if (intent.metadata?.payment_method === "cod") {
+    try {
+      const refundsResponse = await fetch(`${CASHFREE_ORDERS_URL}/${encodeURIComponent(intent.cashfree_order_id)}/refunds`, {
+        headers: { "x-api-version": CASHFREE_API_VERSION, "x-client-id": appId, "x-client-secret": cashfreeSecret },
+      });
+      if (!refundsResponse.ok) return json({ ok: false, error: "Unable to verify COD advance refund status" }, 503);
+      const refunds = await refundsResponse.json();
+      if (!Array.isArray(refunds) || refunds.some((refund: { refund_status?: string }) =>
+        !["FAILED", "CANCELLED"].includes(String(refund.refund_status || "").toUpperCase()))) {
+        return json({ ok: false, error: "COD advance refund or refund processing found" }, 409);
+      }
+    } catch { return json({ ok: false, error: "Unable to verify COD advance refund status" }, 503); }
   }
 
   const { data: claimed } = await admin.from("cashfree_payment_intents")
