@@ -121,6 +121,6 @@ SELECT cron.schedule('cashfree-future-payment-recovery','*/5 * * * *',$job$
    url:='https://ufxsthshyebahkwbmioe.supabase.co/functions/v1/cashfree-recover-payments',
    headers:=jsonb_build_object('Content-Type','application/json','x-gazi-recovery-key',
      (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name='cashfree_recovery_worker_key')),
-   body:='{"action":"scan"}'::jsonb,timeout_milliseconds:=60000
+   body:='{"action":"scan"}'::jsonb,timeout_milliseconds:=120000
  ) WHERE EXISTS(SELECT 1 FROM public.cashfree_recovery_settings WHERE singleton AND enabled);
 $job$);
