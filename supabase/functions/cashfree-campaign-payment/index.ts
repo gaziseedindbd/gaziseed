@@ -230,7 +230,9 @@ async function completePayment(body: Record<string, unknown>) {
     return json({ ok: true, paid: false, order_status: provider.order_status || "PENDING" });
   }
   const providerAmount = Number(provider.order_amount);
-  if (!Number.isFinite(providerAmount) || Math.abs(providerAmount - Number(intent.amount)) > 0.01 || String(provider.order_currency || "") !== "INR") {
+  if (provider.order_id !== intent.cashfree_order_id || !Number.isFinite(providerAmount) || providerAmount <= 0 ||
+      !Number.isFinite(Number(intent.amount)) || Number(intent.amount) <= 0 || intent.currency !== "INR" ||
+      Math.abs(providerAmount - Number(intent.amount)) > 0.01 || provider.order_currency !== "INR") {
     return json({ ok: false, error: "Paid amount does not match the saved payment" }, 409);
   }
 
