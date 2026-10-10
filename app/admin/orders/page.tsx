@@ -138,17 +138,15 @@ export default function AdminOrdersPage() {
           toast('Payment verification-এর জন্য পুনরায় Admin Login করুন', 'error');
           return;
         }
-        const response = await fetch('/api/admin/orders/verified-dispatch', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
+        const { data: result, error: verificationError } = await supabase.functions.invoke(
+          'cashfree-verify-dispatch',
+          {
+            body: { orderId: selectedOrder.id, status: 'shipped', note },
+            headers: { Authorization: `Bearer ${accessToken}` },
           },
-          body: JSON.stringify({ orderId: selectedOrder.id, status: 'shipped', note }),
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || !result.ok || !result.verified) {
-          toast(result.error || 'Cashfree payment verification failed. Do not dispatch.', 'error');
+        );
+        if (verificationError || !result?.ok || !result?.verified) {
+          toast(result?.error || 'Cashfree payment verification failed. Do not dispatch.', 'error');
           return;
         }
       } else {
