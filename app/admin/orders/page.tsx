@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { PaymentAuditPanel } from '@/components/admin/payment-audit-panel';
 import { supabase } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/data';
 import { toast } from '@/components/site/toast-provider';
@@ -27,6 +28,7 @@ export default function AdminOrdersPage() {
   const [note, setNote] = useState('');
   const [settlingDue, setSettlingDue] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [auditRefreshKey, setAuditRefreshKey] = useState(0);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [verifiedCashfree, setVerifiedCashfree] = useState<{ amount: number; type: string; due: number } | null>(null);
 
@@ -141,6 +143,7 @@ export default function AdminOrdersPage() {
       toast('Cashfree verification unavailable — dispatch hold করুন', 'error');
     } finally {
       setVerifyingPayment(false);
+      setAuditRefreshKey(value => value + 1);
     }
   };
 
@@ -240,6 +243,7 @@ export default function AdminOrdersPage() {
       p_order_id: selectedOrder.id,
     });
     setSettlingDue(false);
+    setAuditRefreshKey(value => value + 1);
 
     if (error || !data?.success) {
       toast(data?.error || error?.message || 'Due collection ব্যর্থ হয়েছে', 'error');
@@ -575,6 +579,8 @@ export default function AdminOrdersPage() {
                 </button>
               </div>
             )}
+
+            {selectedOrder.country_code === 'IN' && <PaymentAuditPanel key={selectedOrder.id} orderId={selectedOrder.id} refreshKey={auditRefreshKey} />}
 
             {/* স্ট্যাটাস আপডেট */}
             <div className="space-y-2.5 border-t border-border pt-3.5">
