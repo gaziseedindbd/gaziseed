@@ -121,18 +121,49 @@ export default function AdminOrdersPage() {
 
     setUpdatingStatus(true);
     try {
-      const { error } = await supabase
-        .from('orders')
-        .update({
-          status: newStatus,
-          internal_notes: note,
-        })
-        .eq('id', selectedOrder.id);
+      const needsPaidDispatchVerification =
+        adminCountry === 'IN' &&
+        newStatus === 'shipped' &&
+        newStatus !== currentStatus &&
+        (
+          ['cashfree', 'online'].includes(String(selectedOrder.payment_method || '').toLowerCase()) ||
+          ['paid', 'partially_paid'].includes(String(selectedOrder.payment_status || '').toLowerCase()) ||
+          Number(selectedOrder.payment_advance_amount || 0) > 0
+        );
 
-      if (error) {
-        console.error('Order status update failed:', error);
-        toast(error.hint || error.message || 'আপডেট করতে সমস্যা হয়েছে', 'error');
-        return;
+      if (needsPaidDispatchVerification) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        if (!accessToken) {
+          toast('Payment verification-এর জন্য পুনরায় Admin Login করুন', 'error');
+          return;
+        }
+        const response = await fetch('/api/admin/orders/verified-dispatch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ orderId: selectedOrder.id, status: 'shipped', note }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok || !result.verified) {
+          toast(result.error || 'Cashfree payment verification failed. Do not dispatch.', 'error');
+          return;
+        }
+      } else {
+        const { error } = await supabase
+          .from('orders')
+          .update({
+            status: newStatus,
+            internal_notes: note,
+          })
+          .eq('id', selectedOrder.id);
+        if (error) {
+          console.error('Order status update failed:', error);
+          toast(error.hint || error.message || 'আপডেট করতে সমস্যা হয়েছে', 'error');
+          return;
+        }
       }
 
       if (newStatus !== currentStatus) {
