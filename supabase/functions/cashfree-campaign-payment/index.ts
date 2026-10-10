@@ -236,6 +236,20 @@ async function completePayment(body: Record<string, unknown>) {
     return json({ ok: false, error: "Paid amount does not match the saved payment" }, 409);
   }
 
+  if (intent.metadata?.payment_method === "cod") {
+    try {
+      const refundsResponse = await fetch(`${CASHFREE_ORDERS_URL}/${encodeURIComponent(intent.cashfree_order_id)}/refunds`, {
+        headers: { "x-api-version": CASHFREE_API_VERSION, "x-client-id": appId, "x-client-secret": cashfreeSecret },
+      });
+      if (!refundsResponse.ok) return json({ ok: false, error: "Unable to verify COD advance refund status" }, 503);
+      const refunds = await refundsResponse.json();
+      if (!Array.isArray(refunds) || refunds.some((refund: { refund_status?: string }) =>
+        !["FAILED", "CANCELLED"].includes(String(refund.refund_status || "").toUpperCase()))) {
+        return json({ ok: false, error: "COD advance refund or refund processing found" }, 409);
+      }
+    } catch { return json({ ok: false, error: "Unable to verify COD advance refund status" }, 503); }
+  }
+
   const { data: claimed } = await admin.from("cashfree_payment_intents")
     .update({ status: "processing", updated_at: new Date().toISOString() })
     .eq("id", intentId).in("status", ["created", "pending"]).is("completed_order_id", null)
