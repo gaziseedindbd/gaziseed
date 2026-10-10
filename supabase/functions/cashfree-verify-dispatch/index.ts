@@ -77,11 +77,12 @@ Deno.serve(async (req: Request) => {
   const expected = cod ? Number(order.payment_advance_amount) : Number(order.final_amount);
   if (!Number.isFinite(expected) || expected <= 0 || intent.currency !== "INR" ||
       !moneyMatches(Number(intent.amount), expected) || !intent.cashfree_order_id ||
-      (cod && (!Number.isFinite(Number(order.payment_due_amount)) || Number(order.payment_due_amount) < 0)) ||
+      (cod && (!Number.isFinite(Number(order.payment_due_amount)) || Number(order.payment_due_amount) < 0 ||
+        !moneyMatches(expected + Number(order.payment_due_amount), Number(order.final_amount)))) ||
       (!cod && Number(order.payment_due_amount || 0) !== 0))
     return fail("Cashfree amount or due balance mismatch. Hold dispatch.");
 
-  let cf: { order_status?: string; order_amount?: number; order_currency?: string };
+  let cf: { order_id?: string; order_status?: string; order_amount?: number; order_currency?: string };
   try {
     const response = await fetch(
       "https://api.cashfree.com/pg/orders/" + encodeURIComponent(intent.cashfree_order_id),
@@ -95,7 +96,7 @@ Deno.serve(async (req: Request) => {
     cf = await response.json();
   } catch { return fail("Cashfree lookup failed. Hold dispatch.", 502); }
 
-  if (cf.order_status !== "PAID" || cf.order_currency !== "INR" ||
+  if (cf.order_id !== intent.cashfree_order_id || cf.order_status !== "PAID" || cf.order_currency !== "INR" ||
       !moneyMatches(Number(cf.order_amount), expected))
     return fail("Cashfree did not verify the correct paid amount. Hold dispatch.");
 
