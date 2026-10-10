@@ -27,6 +27,8 @@ export default function AdminOrdersPage() {
   const [note, setNote] = useState('');
   const [settlingDue, setSettlingDue] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
+  const [verifiedCashfree, setVerifiedCashfree] = useState<{ amount: number; type: string; due: number } | null>(null);
 
   const [duplicateOrders, setDuplicateOrders] = useState<Record<string, any[]>>({});
   const [adminCountry, setAdminCountry] = useState<'BD' | 'IN'>('BD');
@@ -92,6 +94,7 @@ export default function AdminOrdersPage() {
 
   const openOrder = async (order: any) => {
     setSelectedOrder(order);
+    setVerifiedCashfree(null);
     setNewStatus(order.status);
     setNote(order.internal_notes || '');
     setLoadingItems(true);
@@ -107,6 +110,38 @@ export default function AdminOrdersPage() {
     }
     setOrderItems(data || []);
     setLoadingItems(false);
+  };
+
+  const verifyCashfreePayment = async () => {
+    if (!selectedOrder || verifyingPayment) return;
+    setVerifyingPayment(true);
+    setVerifiedCashfree(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) {
+        toast('Cashfree verify করতে Admin Login প্রয়োজন', 'error');
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke('cashfree-verify-dispatch', {
+        body: { orderId: selectedOrder.id, status: 'verify_only' },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (error || !data?.ok || !data.verified) {
+        toast(data?.error || 'Cashfree payment verified হয়নি। Dispatch hold করুন।', 'error');
+        return;
+      }
+      setVerifiedCashfree({
+        amount: Number(data.verified_amount),
+        type: String(data.payment_type),
+        due: Number(data.due_amount || 0),
+      });
+      toast('Cashfree API দিয়ে payment verified হয়েছে');
+    } catch {
+      toast('Cashfree verification unavailable — dispatch hold করুন', 'error');
+    } finally {
+      setVerifyingPayment(false);
+    }
   };
 
   const updateStatus = async () => {
@@ -510,6 +545,33 @@ export default function AdminOrdersPage() {
                 </div>
                 <button onClick={collectCodDue} disabled={settlingDue} className="mt-3 w-full rounded-xl bg-orange-600 py-2.5 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-60">
                   {settlingDue ? 'সংগ্রহ হচ্ছে...' : `বাকি ${formatAdminPrice(selectedOrder.payment_due_amount)} Paid করুন`}
+                </button>
+              </div>
+            )}
+
+            {selectedOrder.country_code === 'IN' && (
+              ['cashfree', 'online'].includes(String(selectedOrder.payment_method || '').toLowerCase()) ||
+              ['paid', 'partially_paid'].includes(String(selectedOrder.payment_status || '').toLowerCase()) ||
+              Number(selectedOrder.payment_advance_amount || 0) > 0
+            ) && (
+              <div className="mb-4 rounded-2xl border border-primary/20 bg-primary/[0.05] p-4">
+                <div className="text-sm font-bold">Cashfree Payment Verification</div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Live Cashfree API দিয়ে amount, INR, payment status ও refund যাচাই করুন।
+                  Shipment-এর আগে আবার automatic verification হবে।
+                </p>
+                {verifiedCashfree && (
+                  <div role="status" className="mt-3 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm font-semibold text-emerald-900">
+                    VERIFIED PAID — {formatAdminPrice(verifiedCashfree.amount)}
+                    {verifiedCashfree.type === 'cod_advance'
+                      ? ` (COD Advance; Due ${formatAdminPrice(verifiedCashfree.due)})`
+                      : ' (Fully Paid)'}
+                  </div>
+                )}
+                <button type="button" disabled={verifyingPayment || updatingStatus}
+                  onClick={verifyCashfreePayment}
+                  className="mt-3 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-60">
+                  {verifyingPayment ? 'Cashfree যাচাই হচ্ছে...' : 'Verify Cashfree Payment'}
                 </button>
               </div>
             )}
