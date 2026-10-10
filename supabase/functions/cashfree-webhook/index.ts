@@ -11,6 +11,21 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: corsHeaders });
 }
 
+async function completionResult(response: Response) {
+  const responseText = await response.text();
+  let result: Record<string, unknown>;
+  try {
+    const parsed = JSON.parse(responseText);
+    result = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch { result = {}; }
+  // A 2xx response can mean processing or unpaid. Acknowledge only a linked order.
+  if (!response.ok || result.ok !== true || typeof result.order_id !== "string" ||
+      !result.order_id || !(result.completed === true || result.already_completed === true)) {
+    return json({ ok: false, error: "Order completion is not confirmed. Retry webhook." }, 503);
+  }
+  return json({ ok: true, processed: true, order_id: result.order_id });
+}
+
 async function verifySignature(rawBody: string, timestamp: string, signature: string, secret: string) {
   const ts = Number(timestamp);
   if (!Number.isFinite(ts) || Math.abs(Date.now() - ts) > MAX_SKEW_MS) return false;
@@ -62,68 +77,60 @@ Deno.serve(async (req: Request) => {
     .eq("cashfree_order_id", cashfreeOrderId)
     .maybeSingle();
 
-  if (intentError || !intent) return json({ ok: true, ignored: true, reason: "Unknown Cashfree order" });
+  if (intentError) return json({ ok: false, error: "Payment intent lookup failed. Retry webhook." }, 503);
+  if (!intent) return json({ ok: true, ignored: true, reason: "Unknown Cashfree order" });
   if (intent.completed_order_id) return json({ ok: true, already_completed: true, order_id: intent.completed_order_id });
 
-  if (type === "PAYMENT_SUCCESS_WEBHOOK" || paymentStatus === "SUCCESS") {
-    if (intent.metadata?.payment_flow === "india_campaign") {
-      const response = await fetch(COMPLETE_CAMPAIGN_ORDER_URL, {
+  try {
+    if (type === "PAYMENT_SUCCESS_WEBHOOK" || paymentStatus === "SUCCESS") {
+      if (intent.metadata?.payment_flow === "india_campaign") {
+        const response = await fetch(COMPLETE_CAMPAIGN_ORDER_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${JSON.parse(rawSecretKeys)["default"]}`,
+          },
+          body: JSON.stringify({ action: "complete", payment_intent_id: intent.id }),
+        });
+        return await completionResult(response);
+      }
+
+      const isCod = intent.metadata?.payment_method === "cod";
+      const completionUrl = isCod ? COMPLETE_COD_ORDER_URL : COMPLETE_ORDER_URL;
+      const response = await fetch(completionUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${JSON.parse(rawSecretKeys)["default"]}`,
+          ...(isCod ? {} : { "x-cashfree-internal-secret": secret }),
         },
-        body: JSON.stringify({ action: "complete", payment_intent_id: intent.id }),
+        body: JSON.stringify({ payment_intent_id: intent.id, cashfree_order_id: cashfreeOrderId }),
       });
-      const responseText = await response.text();
-      let result: unknown;
-      try { result = JSON.parse(responseText); } catch { result = { raw: responseText }; }
-      if (!response.ok) return json({ ok: false, error: "Verified campaign payment could not be completed", details: result }, 502);
-      return json({ ok: true, processed: true, payment_flow: "india_campaign", result });
+
+      return await completionResult(response);
     }
 
-    const isCod = intent.metadata?.payment_method === "cod";
-    const completionUrl = isCod ? COMPLETE_COD_ORDER_URL : COMPLETE_ORDER_URL;
-    const response = await fetch(completionUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(isCod ? {} : { "x-cashfree-internal-secret": secret }),
-      },
-      body: JSON.stringify({ payment_intent_id: intent.id, cashfree_order_id: cashfreeOrderId }),
-    });
-
-    const responseText = await response.text();
-    let result: unknown;
-    try { result = JSON.parse(responseText); } catch { result = { raw: responseText }; }
-
-    if (!response.ok) {
-      return json({
-        ok: false,
-        error: isCod ? "Verified COD payment received but COD order completion failed" : "Verified online payment received but order completion failed",
-        details: result,
-      }, 502);
+    if (type === "PAYMENT_FAILED_WEBHOOK" || paymentStatus === "FAILED") {
+      const { error: updateError } = await admin.from("cashfree_payment_intents").update({
+        status: "failed",
+        updated_at: new Date().toISOString(),
+        metadata: { ...(intent.metadata || {}), last_webhook_type: type, payment_status: paymentStatus },
+      }).eq("id", intent.id).in("status", ["created", "pending"]);
+      if (updateError) return json({ ok: false, error: "Payment event update failed. Retry webhook." }, 503);
+      return json({ ok: true, processed: true, status: "failed" });
     }
-    return json({ ok: true, processed: true, payment_method: isCod ? "cod" : "cashfree", result });
-  }
 
-  if (type === "PAYMENT_FAILED_WEBHOOK" || paymentStatus === "FAILED") {
-    await admin.from("cashfree_payment_intents").update({
-      status: "failed",
-      updated_at: new Date().toISOString(),
-      metadata: { ...(intent.metadata || {}), last_webhook_type: type, payment_status: paymentStatus },
-    }).eq("id", intent.id).in("status", ["created", "pending"]);
-    return json({ ok: true, processed: true, status: "failed" });
-  }
+    if (type === "PAYMENT_USER_DROPPED_WEBHOOK" || paymentStatus === "USER_DROPPED") {
+      const { error: updateError } = await admin.from("cashfree_payment_intents").update({
+        status: "pending",
+        updated_at: new Date().toISOString(),
+        metadata: { ...(intent.metadata || {}), last_webhook_type: type, payment_status: paymentStatus },
+      }).eq("id", intent.id).in("status", ["created", "pending"]);
+      if (updateError) return json({ ok: false, error: "Payment event update failed. Retry webhook." }, 503);
+      return json({ ok: true, processed: true, status: "pending" });
+    }
 
-  if (type === "PAYMENT_USER_DROPPED_WEBHOOK" || paymentStatus === "USER_DROPPED") {
-    await admin.from("cashfree_payment_intents").update({
-      status: "pending",
-      updated_at: new Date().toISOString(),
-      metadata: { ...(intent.metadata || {}), last_webhook_type: type, payment_status: paymentStatus },
-    }).eq("id", intent.id).in("status", ["created", "pending"]);
-    return json({ ok: true, processed: true, status: "pending" });
+    return json({ ok: true, ignored: true, type, payment_status: paymentStatus });
+  } catch {
+    return json({ ok: false, error: "Webhook processing unavailable. Retry webhook." }, 503);
   }
-
-  return json({ ok: true, ignored: true, type, payment_status: paymentStatus });
 });
