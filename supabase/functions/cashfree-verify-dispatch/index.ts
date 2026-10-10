@@ -46,7 +46,7 @@ Deno.serve(async (req: Request) => {
   let body: { orderId?: string; status?: string; note?: string };
   try { body = await req.json(); } catch { return fail("Invalid JSON", 400); }
   if (!body.orderId || !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(body.orderId) ||
-      body.status !== "shipped")
+      !["shipped", "verify_only"].includes(String(body.status)))
     return fail("Expected an order ID and shipped status", 400);
 
   const admin = createClient(url, JSON.parse(secretKeys).default, {
@@ -56,8 +56,10 @@ Deno.serve(async (req: Request) => {
   const { data: order, error: orderError } = await admin.from("orders")
     .select("id,country_code,status,payment_method,payment_status,final_amount,payment_advance_amount,payment_due_amount")
     .eq("id", body.orderId).maybeSingle();
-  if (orderError || !order || order.country_code !== "IN" || order.status !== "packed")
-    return fail("India order must be packed before dispatch");
+  if (orderError || !order || order.country_code !== "IN" ||
+      (body.status === "shipped" && order.status !== "packed") ||
+      ["cancelled", "returned"].includes(String(order.status)))
+    return fail("Order is not eligible for payment verification or dispatch");
 
   const requiresPaidVerification = ["online", "cashfree"].includes(String(order.payment_method || "").toLowerCase()) ||
     ["paid", "partially_paid"].includes(String(order.payment_status || "").toLowerCase()) ||
@@ -114,6 +116,12 @@ Deno.serve(async (req: Request) => {
       !["FAILED", "CANCELLED"].includes(String(refund.refund_status || "").toUpperCase())))
       return fail("Cashfree refund or refund processing found. Hold dispatch.");
   } catch { return fail("Unable to verify refund status. Hold dispatch.", 502); }
+
+  if (body.status === "verify_only") {
+    return reply({ ok: true, verified: true, payment_type: cod ? "cod_advance" : "prepaid",
+      verified_amount: expected, due_amount: Number(order.payment_due_amount || 0),
+      gateway_status: "PAID", currency: "INR" });
+  }
 
   const { data: updated, error: updateError } = await admin.from("orders").update({
     status: "shipped",
