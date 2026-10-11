@@ -428,7 +428,7 @@ export default function AdminOrdersPage() {
       {selectedOrder && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setSelectedOrder(null)} />
-          <div className="relative z-10 max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-background p-4 pt-0 sm:p-6 sm:pt-0 shadow-2xl border border-border">
+          <div className="relative z-10 max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-background p-4 pt-0 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:p-6 sm:pt-0 shadow-2xl border border-border">
             <div className="sticky top-0 z-20 mb-4 flex items-center justify-between gap-3 border-b border-border bg-background pt-4 pb-3 sm:pt-6">
               <div>
                 <h2 className="text-base sm:text-xl font-bold break-words">অর্ডার: {selectedOrder.order_number}</h2>
