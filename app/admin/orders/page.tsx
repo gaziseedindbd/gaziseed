@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { PaymentAuditPanel } from '@/components/admin/payment-audit-panel';
 import { supabase } from '@/lib/supabase/client';
-import { formatPrice } from '@/lib/data';
+import { ORDER_SOURCE_LABELS } from '@/lib/admin-order-display';
+import { OrderPaymentSummary } from '@/components/admin/order-payment-summary';
+import { useSearchParams } from 'next/navigation';
 import { toast } from '@/components/site/toast-provider';
 import { Search, Eye, X, Printer, AlertTriangle, Package, Calendar, Phone, User, Globe } from 'lucide-react';
 
@@ -13,9 +15,10 @@ const STATUS_LABELS: Record<string, string> = {
   shipped: 'শিপড', delivered: 'ডেলিভারড', cancelled: 'বাতিল', returned: 'ফেরত',
 };
 
-const SOURCE_FILTERS = ['all', 'website', 'ads', 'facebook', 'instagram', 'google', 'tiktok'];
+const SOURCE_FILTERS = ['all', 'website', 'ads', 'facebook', 'instagram', 'google', 'tiktok', 'animated_landing', 'facebook_messenger_ai'];
 
 export default function AdminOrdersPage() {
+  const searchParams = useSearchParams();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -41,23 +44,24 @@ export default function AdminOrdersPage() {
       : '৳ ' + Number(price).toLocaleString('bn-BD');
 
   useEffect(() => {
-    const loadAdminCountry = async () => {
-      const { data, error } = await supabase.rpc('current_admin_country');
-      if (error) {
-        console.error('Orders admin branch check failed:', error);
-        return;
-      }
-      setAdminCountry(String(data).toUpperCase() === 'IN' ? 'IN' : 'BD');
-    };
-    const sourceFromUrl = new URLSearchParams(window.location.search).get('source');
-    if (sourceFromUrl && SOURCE_FILTERS.includes(sourceFromUrl)) setSourceFilter(sourceFromUrl);
-    loadAdminCountry();
-    loadOrders();
-  }, []);
+    const source = searchParams.get('source');
+    setSourceFilter(source && SOURCE_FILTERS.includes(source) ? source : 'all');
+  }, [searchParams]);
+
+  useEffect(() => { loadOrders(); }, []);
 
   const loadOrders = async () => {
-    let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
-    const { data } = await query;
+    setLoading(true);
+    const { data: branch, error: branchError } = await supabase.rpc('current_admin_country');
+    const country = String(branch || '').toUpperCase();
+    if (branchError || !['IN', 'BD'].includes(country)) {
+      setOrders([]); setDuplicateOrders({}); setLoading(false);
+      toast('Branch যাচাই করা যায়নি', 'error');
+      return;
+    }
+    setAdminCountry(country as 'BD' | 'IN');
+    const { data, error } = await supabase.from('orders').select('*').eq('country_code', country).order('created_at', { ascending: false });
+    if (error) toast('অর্ডার লোড করা যায়নি', 'error');
     setOrders(data || []);
     
     // ডুপ্লিকেট অর্ডার শনাক্তকরণ
@@ -295,7 +299,7 @@ export default function AdminOrdersPage() {
         </div>
         <div className="sm:col-span-3">
           <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className="input-bangla w-full">
-            {SOURCE_FILTERS.map((s) => <option key={s} value={s}>{s === 'all' ? 'সকল সোর্স' : s}</option>)}
+            {SOURCE_FILTERS.map((s) => <option key={s} value={s}>{s === 'all' ? 'সকল সোর্স' : ORDER_SOURCE_LABELS[s] || s}</option>)}
           </select>
         </div>
       </div>
@@ -335,7 +339,8 @@ export default function AdminOrdersPage() {
                   </span>
                 </div>
 
-                <div className="space-y-1.5 text-xs text-muted-foreground">
+                <OrderPaymentSummary order={o} />
+                <div className="mt-2 space-y-1.5 text-xs text-muted-foreground">
                   <div className="flex items-center justify-between text-foreground font-medium">
                     <span className="flex items-center gap-1.5">
                       <User className="h-3.5 w-3.5 text-primary" /> {o.customer_name}
@@ -349,7 +354,7 @@ export default function AdminOrdersPage() {
                       <Phone className="h-3.5 w-3.5 text-muted-foreground" /> {o.customer_phone}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Globe className="h-3.5 w-3.5" /> {o.order_source}
+                      <Globe className="h-3.5 w-3.5" /> {ORDER_SOURCE_LABELS[o.order_source] || o.order_source}
                     </span>
                   </div>
                   <div className="flex items-center justify-between pt-1 text-[11px]">
@@ -375,7 +380,7 @@ export default function AdminOrdersPage() {
                   <th className="p-3.5">ফোন</th>
                   <th className="p-3.5">সোর্স</th>
                   <th className="p-3.5">মোট</th>
-                  <th className="p-3.5">স্ট্যাটাস</th>
+                  <th className="p-3.5">পেমেন্ট</th><th className="p-3.5">স্ট্যাটাস</th>
                   <th className="p-3.5">তারিখ</th>
                   <th className="p-3.5 text-center">অ্যাকশন</th>
                 </tr>
@@ -387,14 +392,15 @@ export default function AdminOrdersPage() {
                       {o.order_number}
                       {duplicateOrders[o.customer_phone]?.find((d) => d.id === o.id) && (
                         <span className="ml-1 inline-flex items-center text-xs text-orange-600" title="সম্ভাব্য ডুপ্লিকেট অর্ডার">
-                          <AlertTriangle className="h-3.5 w-3.5" />
+                          <AlertTriangle className="h-3.5 w-3.5" /><span className="ml-1">সম্ভাব্য ডুপ্লিকেট</span>
                         </span>
                       )}
                     </td>
                     <td className="p-3.5 whitespace-nowrap">{o.customer_name}</td>
                     <td className="p-3.5 whitespace-nowrap">{o.customer_phone}</td>
-                    <td className="p-3.5 capitalize whitespace-nowrap">{o.order_source}</td>
+                    <td className="p-3.5 capitalize whitespace-nowrap">{ORDER_SOURCE_LABELS[o.order_source] || o.order_source}</td>
                     <td className="p-3.5 font-bold text-primary whitespace-nowrap">{formatAdminPrice(o.final_amount ?? o.grand_total ?? o.total_amount ?? 0)}</td>
+                    <td className="p-3.5 whitespace-nowrap"><OrderPaymentSummary order={o} /></td>
                     <td className="p-3.5 whitespace-nowrap">
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         o.status === 'delivered' ? 'bg-green-100 text-green-700' :
@@ -449,7 +455,7 @@ export default function AdminOrdersPage() {
             <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs sm:text-sm bg-secondary/15 p-3.5 rounded-2xl border border-border/50">
               <div><span className="text-muted-foreground">কাস্টমার: </span><span className="font-semibold">{selectedOrder.customer_name}</span></div>
               <div><span className="text-muted-foreground">ফোন: </span><span className="font-semibold">{selectedOrder.customer_phone}</span></div>
-              <div><span className="text-muted-foreground">সোর্স: </span><span className="font-semibold capitalize">{selectedOrder.order_source}</span></div>
+              <div><span className="text-muted-foreground">সোর্স: </span><span className="font-semibold capitalize">{ORDER_SOURCE_LABELS[selectedOrder.order_source] || selectedOrder.order_source}</span></div>
               <div><span className="text-muted-foreground">পেমেন্ট মেথড: </span><span className="font-semibold uppercase">{selectedOrder.payment_method || 'COD'}</span></div>
               <div><span className="text-muted-foreground">পেমেন্ট স্ট্যাটাস: </span><span className="font-semibold uppercase">{selectedOrder.payment_status || 'unpaid'}</span></div>
               <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-2 rounded-xl border border-border/60 bg-background/70 p-2.5">
@@ -507,7 +513,7 @@ export default function AdminOrdersPage() {
                           </div>
                         </div>
                         <span className="font-bold text-primary shrink-0">
-                          {item.is_free_gift ? '৳0' : formatAdminPrice(item.total_price || (item.unit_price * item.quantity))}
+                          {item.is_free_gift ? formatAdminPrice(0) : formatAdminPrice(item.total_price || (item.unit_price * item.quantity))}
                         </span>
                       </div>
                     );

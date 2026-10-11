@@ -75,10 +75,10 @@ export function NotificationCenter() {
   };
 
   return (
-    <div className="fixed top-4 right-4 z-[60]" ref={ref}>
+    <div className="relative z-[60] lg:fixed lg:top-4 lg:right-4" ref={ref}>
       <button
         onClick={() => { setOpen(!open); if (!open) fetchNotifications(); }}
-        className="relative flex h-11 w-11 items-center justify-center rounded-full bg-card border border-border shadow-lg transition-transform hover:scale-105 active:scale-95"
+        className="relative flex h-9 w-9 lg:h-11 lg:w-11 items-center justify-center rounded-full bg-card border border-border shadow-lg transition-transform hover:scale-105 active:scale-95"
         aria-label="Notifications"
       >
         <Bell className="h-5 w-5 text-foreground" />
@@ -89,7 +89,7 @@ export function NotificationCenter() {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-14 w-80 max-h-[70vh] overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+        <div className="fixed left-4 right-4 top-20 w-auto lg:absolute lg:left-auto lg:right-0 lg:top-14 lg:w-80 max-h-[70vh] overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
           <div className="flex items-center justify-between border-b border-border p-3">
             <h3 className="font-semibold text-foreground">Notifications</h3>
             <div className="flex items-center gap-2">

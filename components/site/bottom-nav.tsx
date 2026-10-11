@@ -24,6 +24,7 @@ export function BottomNav({ initialCountry = 'BD' }: { initialCountry?: 'BD' | '
     };
   }, []);
 
+  if (pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/allahmohammad/admin' || pathname.startsWith('/allahmohammad/admin/')) return null;
   if (isProductPage && country === 'IN') return null;
 
   const navItems = [
