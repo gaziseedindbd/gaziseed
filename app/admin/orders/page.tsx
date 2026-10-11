@@ -426,15 +426,15 @@ export default function AdminOrdersPage() {
 
       {/* Order Detail Modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setSelectedOrder(null)} />
-          <div className="relative z-10 max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-background p-4 sm:p-6 shadow-2xl border border-border">
-            <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
+          <div className="relative z-10 max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-background p-4 pt-0 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:p-6 sm:pt-0 shadow-2xl border border-border">
+            <div className="sticky top-0 z-20 mb-4 flex items-center justify-between gap-3 border-b border-border bg-background pt-4 pb-3 sm:pt-6">
               <div>
-                <h2 className="text-lg sm:text-xl font-bold">অর্ডার: {selectedOrder.order_number}</h2>
+                <h2 className="text-base sm:text-xl font-bold break-words">অর্ডার: {selectedOrder.order_number}</h2>
                 <span className="text-xs text-muted-foreground">{new Date(selectedOrder.created_at).toLocaleDateString('bn-BD')}</span>
               </div>
-              <button onClick={() => setSelectedOrder(null)} className="p-1 rounded-full hover:bg-secondary"><X className="h-6 w-6" /></button>
+              <button onClick={() => setSelectedOrder(null)} aria-label="Close order details" className="shrink-0 p-2 rounded-full hover:bg-secondary"><X className="h-6 w-6" /></button>
             </div>
 
             <div className="mb-4 flex gap-2">
@@ -457,7 +457,7 @@ export default function AdminOrdersPage() {
               <div><span className="text-muted-foreground">ফোন: </span><span className="font-semibold">{selectedOrder.customer_phone}</span></div>
               <div><span className="text-muted-foreground">সোর্স: </span><span className="font-semibold capitalize">{ORDER_SOURCE_LABELS[selectedOrder.order_source] || selectedOrder.order_source}</span></div>
               <div><span className="text-muted-foreground">পেমেন্ট মেথড: </span><span className="font-semibold uppercase">{selectedOrder.payment_method || 'COD'}</span></div>
-              <div><span className="text-muted-foreground">পেমেন্ট স্ট্যাটাস: </span><span className="font-semibold uppercase">{selectedOrder.payment_status || 'unpaid'}</span></div>
+              <div><span className="text-muted-foreground">পেমেন্ট স্ট্যাটাস: </span><OrderPaymentSummary order={{ payment_status: selectedOrder.payment_status }} /></div>
               <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-2 rounded-xl border border-border/60 bg-background/70 p-2.5">
                 <div><span className="text-muted-foreground">মোট: </span><span className="font-bold">{formatAdminPrice(selectedOrder.final_amount ?? selectedOrder.grand_total ?? selectedOrder.total_amount ?? 0)}</span></div>
                 <div><span className="text-muted-foreground">পেইড: </span><span className="font-bold text-green-600">{formatAdminPrice(Math.max(0, Number(selectedOrder.final_amount ?? selectedOrder.grand_total ?? selectedOrder.total_amount ?? 0) - Number(selectedOrder.payment_due_amount || 0)))}</span></div>

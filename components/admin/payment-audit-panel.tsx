@@ -53,12 +53,12 @@ export function PaymentAuditPanel({ orderId, refreshKey }: { orderId: string; re
       <p className="mt-1 text-xs text-muted-foreground">নতুন audit ব্যবস্থা চালুর পরের কার্যক্রম এখানে দেখা যাবে। সময় India সময় অনুযায়ী।</p>
       {error && <p role="alert" className="mt-3 text-xs text-red-600">{error}</p>}
       {!loading && !error && entries.length === 0 && <p className="mt-3 text-xs text-muted-foreground">এই অর্ডারে এখনও কোনো payment audit রেকর্ড নেই।</p>}
-      <ol className="mt-3 max-h-72 space-y-3 overflow-y-auto">
+      <ol className="mt-3 space-y-3">
         {entries.map(entry => (
           <li key={entry.id} className="rounded-lg bg-secondary/50 p-2.5 text-xs">
-            <div className="flex justify-between gap-2"><span className="font-semibold">{labels[entry.event_type] ?? entry.event_type}</span><span className={entry.outcome === 'blocked' ? 'text-orange-700' : 'text-muted-foreground'}>{outcomes[entry.outcome]}</span></div>
+            <div className="flex justify-between gap-2"><span className="font-semibold">{labels[entry.event_type] ?? entry.event_type}</span><span className={entry.outcome === 'blocked' ? 'text-orange-700 dark:text-orange-300' : entry.outcome === 'success' ? 'text-green-700 dark:text-green-300 font-semibold' : 'text-muted-foreground'}>{outcomes[entry.outcome]}</span></div>
             <time dateTime={entry.created_at} className="mt-1 block text-muted-foreground">{new Date(entry.created_at).toLocaleString('bn-IN', { timeZone: 'Asia/Kolkata' })} IST</time>
-            <p className="mt-1 break-all">{entry.actor_type === 'system' ? 'স্বয়ংক্রিয় ব্যবস্থা' : `Admin ID: ${entry.actor_id}`}</p>
+            <p className="mt-1 text-muted-foreground" title={entry.actor_id || undefined}>{entry.actor_type === 'system' ? 'স্বয়ংক্রিয় ব্যবস্থা' : entry.actor_id ? `Admin ID: ${entry.actor_id.slice(0, 8)}…` : 'Admin'}</p>
             {typeof entry.details.reason === 'string' && <p className="mt-1 break-words text-orange-700">{entry.details.reason}</p>}
             {(['verified_amount', 'amount', 'amount_collected', 'advance_amount', 'due_amount'] as const).map(key => (
               typeof entry.details[key] === 'number' && <span key={key} className="mr-3 mt-1 inline-block">{{ verified_amount: 'যাচাইকৃত', amount: 'পেমেন্ট', amount_collected: 'সংগৃহীত', advance_amount: 'অগ্রিম', due_amount: 'বাকি' }[key]}: ₹ {Number(entry.details[key]).toLocaleString('en-IN')}</span>
