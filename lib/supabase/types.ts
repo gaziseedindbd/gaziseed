@@ -598,6 +598,8 @@ export type StockNotification = {
 };
 
 export type ProductFaq = {
+  question_hi?: string | null;
+  answer_hi?: string | null;
   id: string;
   product_id: string;
   question_bn: string;

@@ -19,12 +19,14 @@ export function MultilingualFields({
   onChange,
   fields,
   title = 'Multilingual Content',
+  description = 'একই content-এর English, বাংলা ও हिन्दी version আলাদা করে সংরক্ষণ করুন। Existing content/logic অপরিবর্তিত থাকবে।',
   languages = ['en', 'bn', 'hi'],
 }: {
   value: MultilingualValue;
   onChange: (value: MultilingualValue) => void;
   fields: Field[];
   title?: string;
+  description?: string;
   languages?: LanguageKey[];
 }) {
   const availableLangs = LANGS.filter((item) => languages.includes(item.key));
@@ -45,7 +47,7 @@ export function MultilingualFields({
     <section className="rounded-2xl border border-border bg-card p-4">
       <div className="mb-3">
         <h3 className="font-bold">{title}</h3>
-        <p className="mt-1 text-xs text-muted-foreground">একই content-এর English, বাংলা ও हिन्दी version আলাদা করে সংরক্ষণ করুন। Existing content/logic অপরিবর্তিত থাকবে।</p>
+        <p className="mt-1 text-xs text-muted-foreground">{description}</p>
       </div>
       <div className="mb-4 flex flex-wrap gap-2">
         {availableLangs.map((item) => (

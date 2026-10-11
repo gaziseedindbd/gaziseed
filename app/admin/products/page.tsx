@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/data';
+import { adminPrice } from '@/lib/admin-order-display';
 import { Plus, Edit, Trash2, X, Search, Upload, Link as LinkIcon, Star, HelpCircle, ChevronDown } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 import { MediaUploader } from '@/components/admin/media-uploader';
@@ -107,9 +108,11 @@ export default function AdminProductsPage() {
       for (const f of formData.faqs) {
         if (f._new) {
           const { _new, ...rest } = f;
-          await supabase.from('product_faqs').insert({ ...rest, product_id: productId });
+          const { error: faqError } = await supabase.from('product_faqs').insert({ ...rest, product_id: productId });
+          if (faqError) { toast('প্রোডাক্ট সেভ হয়েছে, কিন্তু FAQ সেভ হয়নি। পরে প্রোডাক্ট এডিট করে FAQ আবার যোগ করুন।', 'error'); }
         } else {
-          await supabase.from('product_faqs').update({ question_bn: f.question_bn, answer_bn: f.answer_bn, question_en: f.question_en, answer_en: f.answer_en, display_order: f.display_order, is_active: f.is_active }).eq('id', f.id);
+          const { error: faqError } = await supabase.from('product_faqs').update({ question_bn: f.question_bn, answer_bn: f.answer_bn, question_en: f.question_en, answer_en: f.answer_en, question_hi: f.question_hi || null, answer_hi: f.answer_hi || null, display_order: f.display_order, is_active: f.is_active }).eq('id', f.id);
+          if (faqError) { toast('প্রোডাক্ট সেভ হয়েছে, কিন্তু FAQ আপডেট হয়নি। পরে প্রোডাক্ট এডিট করে FAQ আবার যোগ করুন।', 'error'); }
         }
       }
     }
@@ -223,7 +226,7 @@ export default function AdminProductsPage() {
                 <tr key={p.id} className="border-b border-border/50 hover:bg-secondary/20">
                   <td className="p-3 font-medium">{p.name_bn || p.name_en}</td>
                   <td className="p-3 text-muted-foreground">{p.sku}</td>
-                  <td className="p-3 font-bold">{formatPrice(p.sale_price || p.regular_price)}</td>
+                  <td className="p-3 font-bold">{adminPrice(p.sale_price || p.regular_price, p.country_code || adminBranch)}</td>
                   <td className="p-3">
                     <span className={p.stock <= 5 ? 'font-bold text-destructive' : ''}>{p.stock}</span>
                   </td>
@@ -258,9 +261,11 @@ export default function AdminProductsPage() {
 }
 
 function ProductForm({ product, categories, allProducts, adminBranch, onSave, onClose, onSaved }: { product: any; categories: any[]; allProducts: any[]; adminBranch: 'BD' | 'IN'; onSave: (data: any) => void; onClose: () => void; onSaved?: () => void }) {
+  const currencySymbol = adminBranch === 'IN' ? '₹' : '৳';
+  const formatPrice = (amount: number) => adminPrice(amount, adminBranch);
   const [faqs, setFaqs] = useState<any[]>([]);
   const [removedFaqs, setRemovedFaqs] = useState<string[]>([]);
-  const [faqForm, setFaqForm] = useState({ question_bn: '', answer_bn: '', question_en: '', answer_en: '', display_order: 0, is_active: true });
+  const [faqForm, setFaqForm] = useState({ question_bn: '', answer_bn: '', question_en: '', answer_en: '', question_hi: '', answer_hi: '', display_order: 0, is_active: true });
   const [relatedSearch, setRelatedSearch] = useState('');
   const [showRelatedPicker, setShowRelatedPicker] = useState(false);
   const [variants, setVariants] = useState<any[]>([]);
@@ -305,9 +310,10 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
 
   const addFaq = () => {
     if (!faqForm.question_bn || !faqForm.answer_bn) { toast('প্রশ্ন ও উত্তর দিন', 'error'); return; }
+    if (Boolean(faqForm.question_hi.trim()) !== Boolean(faqForm.answer_hi.trim())) { toast('Hindi প্রশ্ন ও উত্তর দুটোই দিন', 'error'); return; }
     const newFaq = { ...faqForm, product_id: product?.id, _new: true };
     setFaqs([...faqs, newFaq]);
-    setFaqForm({ question_bn: '', answer_bn: '', question_en: '', answer_en: '', display_order: faqs.length + 1, is_active: true });
+    setFaqForm({ question_bn: '', answer_bn: '', question_en: '', answer_en: '', question_hi: '', answer_hi: '', display_order: faqs.length + 1, is_active: true });
   };
 
   const removeFaq = (idx: number) => {
@@ -522,18 +528,19 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-10 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-background p-6">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="relative z-10 flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-background">
+        <div className="shrink-0 flex items-center justify-between gap-3 border-b border-border bg-background p-4 sm:px-6">
           <h2 className="text-xl font-bold">{product ? 'প্রোডাক্ট এডিট' : 'নতুন প্রোডাক্ট'}</h2>
-          <button onClick={onClose}><X className="h-6 w-6" /></button>
+          <button type="button" onClick={onClose} aria-label="Close product form" className="shrink-0 rounded-lg p-2 hover:bg-secondary"><X className="h-6 w-6" /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="mb-1 block text-sm font-medium">নাম (বাংলা)</label><input value={form.name_bn} onChange={(e) => setForm({ ...form, name_bn: e.target.value })} className="input-bangla" required /></div>
-            <div><label className="mb-1 block text-sm font-medium">নাম (English)</label><input value={form.name_en} onChange={(e) => setForm({ ...form, name_en: e.target.value })} className="input-bangla" /></div>
+        <form id="admin-product-form" onSubmit={handleSubmit} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:p-6">
+          <p className="text-sm text-muted-foreground">মূল নাম ও বিবরণ অনুবাদ না থাকলে দেখাবে। নিচের ভাষাভিত্তিক content দেওয়া থাকলে সেই ভাষায় সেটিই দেখাবে।</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div><label className="mb-1 block text-sm font-medium">মূল নাম (বাংলা)</label><input value={form.name_bn} onChange={(e) => setForm({ ...form, name_bn: e.target.value })} className="input-bangla" required /></div>
+            <div><label className="mb-1 block text-sm font-medium">মূল নাম (English)</label><input value={form.name_en} onChange={(e) => setForm({ ...form, name_en: e.target.value })} className="input-bangla" /></div>
             <div><label className="mb-1 block text-sm font-medium">Slug</label><input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className="input-bangla" placeholder="auto-generated" /></div>
             <div><label className="mb-1 block text-sm font-medium">SKU</label><input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} className="input-bangla" /></div>
             <div><label className="mb-1 block text-sm font-medium">ক্যাটাগরি</label>
@@ -542,21 +549,21 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name_bn}</option>)}
               </select>
             </div>
-            <div><label className="mb-1 block text-sm font-medium">রেগুলার দাম (৳)</label><input type="number" value={form.regular_price} onChange={(e) => setForm({ ...form, regular_price: e.target.value })} className="input-bangla" required /></div>
-            <div><label className="mb-1 block text-sm font-medium">সেল দাম (৳)</label><input type="number" value={form.sale_price} onChange={(e) => setForm({ ...form, sale_price: e.target.value })} className="input-bangla" /></div>
+            <div><label className="mb-1 block text-sm font-medium">রেগুলার দাম ({currencySymbol})</label><input type="number" value={form.regular_price} onChange={(e) => setForm({ ...form, regular_price: e.target.value })} className="input-bangla" required /></div>
+            <div><label className="mb-1 block text-sm font-medium">সেল দাম ({currencySymbol})</label><input type="number" value={form.sale_price} onChange={(e) => setForm({ ...form, sale_price: e.target.value })} className="input-bangla" /></div>
             <div><label className="mb-1 block text-sm font-medium">স্টক</label><input type="number" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="input-bangla" /></div>
             <div><label className="mb-1 block text-sm font-medium">লো স্টক থ্রেশহোল্ড</label><input type="number" value={form.low_stock_threshold} onChange={(e) => setForm({ ...form, low_stock_threshold: e.target.value })} className="input-bangla" /></div>
           </div>
 
-          <MultilingualFields value={form.translations || {}} onChange={(translations) => setForm({ ...form, translations })} title="🌐 Product Language Versions" fields={[{ key: 'name', label: 'Product Name' }, { key: 'short_description', label: 'Short Description', multiline: true }, { key: 'description', label: 'Description', multiline: true }, { key: 'seo_title', label: 'SEO Title' }, { key: 'meta_description', label: 'Meta Description', multiline: true }]} />
+          <MultilingualFields value={form.translations || {}} onChange={(translations) => setForm({ ...form, translations })} title="🌐 ভাষাভিত্তিক নাম ও বিবরণ" description="একটি ভাষার tab খুলে নাম ও বিবরণ লিখুন। কোনো field খালি থাকলে মূল content ব্যবহার হবে। ওয়েবসাইটে সেই ভাষার জন্য এখানে লেখা content অগ্রাধিকার পাবে।" fields={[{ key: 'name', label: 'Product Name' }, { key: 'short_description', label: 'Short Description', multiline: true }, { key: 'description', label: 'Description', multiline: true }]} />
 
-          <div><label className="mb-1 block text-sm font-medium">সংক্ষিপ্ত বিবরণ</label><textarea value={form.short_description} onChange={(e) => setForm({ ...form, short_description: e.target.value })} className="input-bangla min-h-[60px]" /></div>
+          <div><label className="mb-1 block text-sm font-medium">মূল সংক্ষিপ্ত বিবরণ (অনুবাদ না থাকলে)</label><textarea value={form.short_description} onChange={(e) => setForm({ ...form, short_description: e.target.value })} className="input-bangla min-h-[60px]" /></div>
 
           <MediaUploader images={form.images} setImages={(v) => setForm({ ...form, images: v, image: v[0] || '' })} productId={product?.id} bucket="product-images" label="পণ্যের ছবি (একাধিক)" recommendation="1600 × 1600 px" />
 
           {/* বিস্তারিত বিবরণ (গোছানো টেক্সট লেখার জন্য সাইজ ও গাইডলাইন আপডেট করা হয়েছে) */}
           <div>
-            <label className="mb-1 block text-sm font-medium">বিস্তারিত বিবরণ</label>
+            <label className="mb-1 block text-sm font-medium">মূল বিস্তারিত বিবরণ (অনুবাদ না থাকলে)</label>
             <textarea 
               value={form.description} 
               onChange={(e) => setForm({ ...form, description: e.target.value })} 
@@ -897,6 +904,8 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
                     <button type="button" onClick={() => removeFaq(idx)}><X className="h-4 w-4 text-destructive" /></button>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">{f.answer_bn}</p>
+                  {f.question_en && <p className="mt-2 text-xs"><strong>English:</strong> {f.question_en}<br />{f.answer_en}</p>}
+                  {f.question_hi && <p className="mt-2 text-xs"><strong>हिन्दी:</strong> {f.question_hi}<br />{f.answer_hi}</p>}
                 </div>
               ))}
             </div>
@@ -905,6 +914,8 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
               <textarea value={faqForm.answer_bn} onChange={(e) => setFaqForm({ ...faqForm, answer_bn: e.target.value })} placeholder="উত্তর (বাংলা)" className="input-bangla min-h-[60px]" />
               <input value={faqForm.question_en} onChange={(e) => setFaqForm({ ...faqForm, question_en: e.target.value })} placeholder="Question (English - optional)" className="input-bangla" />
               <textarea value={faqForm.answer_en} onChange={(e) => setFaqForm({ ...faqForm, answer_en: e.target.value })} placeholder="Answer (English - optional)" className="input-bangla min-h-[60px]" />
+              <input aria-label="FAQ question Hindi" value={faqForm.question_hi} onChange={(e) => setFaqForm({ ...faqForm, question_hi: e.target.value })} placeholder="प्रश्न (हिन्दी - optional)" className="input-bangla" />
+              <textarea aria-label="FAQ answer Hindi" value={faqForm.answer_hi} onChange={(e) => setFaqForm({ ...faqForm, answer_hi: e.target.value })} placeholder="उत्तर (हिन्दी - optional)" className="input-bangla min-h-[60px]" />
               <button type="button" onClick={addFaq} className="flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/20"><Plus className="h-4 w-4" /> FAQ যোগ করুন</button>
             </div>
           </div>
@@ -915,15 +926,15 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
             <div className="space-y-2">
               {variants.map((v, idx) => (
                 <div key={idx} className="flex items-center gap-2 rounded-lg bg-background p-2 text-sm">
-                  <span className="flex-1">{v.name} — ৳{v.regular_price} (স্টক: {v.stock})</span>
+                  <span className="flex-1">{v.name} — {formatPrice(v.regular_price)} (স্টক: {v.stock})</span>
                   <button type="button" onClick={() => removeVariant(idx)} className="text-destructive"><X className="h-4 w-4" /></button>
                 </div>
               ))}
             </div>
             <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg border border-dashed border-border p-3 sm:grid-cols-3">
               <input value={variantForm.name} onChange={(e) => setVariantForm({ ...variantForm, name: e.target.value })} placeholder="নাম (যেমন: ১০g)" className="input-bangla" />
-              <input value={variantForm.regular_price} onChange={(e) => setVariantForm({ ...variantForm, regular_price: e.target.value })} placeholder="দাম" type="number" className="input-bangla" />
-              <input value={variantForm.sale_price} onChange={(e) => setVariantForm({ ...variantForm, sale_price: e.target.value })} placeholder="সেল দাম" type="number" className="input-bangla" />
+              <input value={variantForm.regular_price} onChange={(e) => setVariantForm({ ...variantForm, regular_price: e.target.value })} placeholder={`দাম (${currencySymbol})`} type="number" className="input-bangla" />
+              <input value={variantForm.sale_price} onChange={(e) => setVariantForm({ ...variantForm, sale_price: e.target.value })} placeholder={`সেল দাম (${currencySymbol})`} type="number" className="input-bangla" />
               <input value={variantForm.stock} onChange={(e) => setVariantForm({ ...variantForm, stock: e.target.value })} placeholder="স্টক" type="number" className="input-bangla" />
               <input value={variantForm.sku} onChange={(e) => setVariantForm({ ...variantForm, sku: e.target.value })} placeholder="SKU" className="input-bangla" />
               <input value={variantForm.weight_or_count} onChange={(e) => setVariantForm({ ...variantForm, weight_or_count: e.target.value })} placeholder="ওজন/সংখ্যা" className="input-bangla" />
@@ -937,7 +948,7 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
               <div>
                 <h3 className="font-black text-gray-900">🔥 একসাথে বেশি নিলে বেশি সাশ্রয়</h3>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  যেমন: ২ প্যাকেট মোট ৳১৮০। সিস্টেম নিজে একক মূল্য ও সাশ্রয় হিসাব করবে।
+                  যেমন: ২ প্যাকেট মোট {currencySymbol}১৮০। সিস্টেম নিজে একক মূল্য ও সাশ্রয় হিসাব করবে।
                 </p>
               </div>
               {bulkBaseUnitPrice > 0 && (
@@ -994,7 +1005,7 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
               <input
                 value={bulkForm.offer_price}
                 onChange={(e) => setBulkForm({ ...bulkForm, offer_price: e.target.value })}
-                placeholder="মোট অফার মূল্য (যেমন ১৮০)"
+                placeholder={`মোট অফার মূল্য (${currencySymbol}, যেমন ১৮০)`}
                 type="number"
                 min="1"
                 step="0.01"
@@ -1075,13 +1086,14 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
           {/* Cost Price (admin only) */}
           <div className="rounded-xl bg-secondary/20 p-4">
             <h3 className="mb-3 font-semibold">ক্রয় মূল্য (Cost Price) — শুধু এডমিন</h3>
-            <input value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: e.target.value })} type="number" className="input-bangla" placeholder="ক্রয় মূল্য" />
+            <input value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: e.target.value })} type="number" className="input-bangla" placeholder={`ক্রয় মূল্য (${currencySymbol})`} />
             <label className="mt-2 flex items-center gap-2 text-sm"><input type="checkbox" checked={form.show_low_stock} onChange={(e) => setForm({ ...form, show_low_stock: e.target.checked })} /> কাস্টমারকে লো স্টক মেসেজ দেখান</label>
           </div>
 
           {/* SEO Settings */}
           <div className="rounded-xl bg-secondary/20 p-4">
-            <h3 className="mb-3 font-semibold">SEO সেটিংস</h3>
+            <h3 className="mb-3 font-semibold">SEO ও ছবির বিবরণ</h3>
+            <p className="mb-3 text-xs text-muted-foreground">Search engines-এর জন্য এই Title ও Meta Description ব্যবহার হবে। খালি রাখলে product-এর মূল content থেকে তৈরি হবে।</p>
             <div className="space-y-3">
               <div><label className="mb-1 block text-sm font-medium">SEO Title</label><input value={form.seo_title} onChange={(e) => setForm({ ...form, seo_title: e.target.value })} className="input-bangla" placeholder="SEO Title" /></div>
               <div><label className="mb-1 block text-sm font-medium">Meta Description</label><textarea value={form.meta_description} onChange={(e) => setForm({ ...form, meta_description: e.target.value })} className="input-bangla min-h-[60px]" placeholder="Meta Description" /></div>
@@ -1092,11 +1104,11 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <button type="submit" className="flex-1 rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90">সেভ করুন</button>
+        </form>
+          <div className="shrink-0 flex gap-2 border-t border-border bg-background p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6">
+            <button type="submit" form="admin-product-form" className="flex-1 rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90">সেভ করুন</button>
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-6 py-3 hover:bg-secondary">বাতিল</button>
           </div>
-        </form>
       </div>
     </div>
   );
