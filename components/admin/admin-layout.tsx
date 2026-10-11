@@ -174,15 +174,16 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="admin-shell min-h-screen bg-secondary/10 text-foreground">
-      <div className="sticky top-0 z-45 flex items-center justify-between border-b border-border bg-background px-4 py-3 lg:hidden">
-        <button onClick={() => setSidebarOpen(true)} className="p-1"><Menu className="h-6 w-6" /></button>
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-primary">GAZI SEED Admin</span>
-          <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold">{selectedBranch === 'IN' ? '🇮🇳 India' : '🇧🇩 Bangladesh'}</span>
+      <div className="sticky top-0 z-40 flex items-center justify-between gap-2 border-b border-border bg-background px-4 py-3 lg:contents">
+        <button onClick={() => setSidebarOpen(true)} className="shrink-0 p-1 lg:hidden" aria-label="Open admin menu"><Menu className="h-6 w-6" /></button>
+        <div className="min-w-0 flex items-center gap-2 lg:hidden">
+          <span className="whitespace-nowrap text-sm font-bold text-primary sm:text-base">GAZI SEED Admin</span>
+          <span className="hidden rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold sm:inline">{selectedBranch === 'IN' ? '🇮🇳 India' : '🇧🇩 Bangladesh'}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={toggleTheme} className="rounded-lg border border-border p-2 hover:bg-secondary">{theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}</button>
-          <button onClick={handleLogout} className="p-1 text-destructive"><LogOut className="h-5 w-5" /></button>
+        <div className="flex shrink-0 items-center gap-1 lg:contents">
+          <NotificationCenter />
+          <button onClick={toggleTheme} className="rounded-lg border border-border p-2 hover:bg-secondary lg:hidden">{theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}</button>
+          <button onClick={handleLogout} className="p-1 text-destructive lg:hidden"><LogOut className="h-5 w-5" /></button>
         </div>
       </div>
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 transform overflow-y-auto border-r border-border bg-background transition-transform lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -213,7 +214,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       {sidebarOpen && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />}
-      <div className="lg:pl-64"><NotificationCenter /><main className="p-4 lg:p-8 lg:pr-20">{children}</main></div>
+      <div className="lg:pl-64"><main className="p-4 lg:p-8 lg:pr-20">{children}</main></div>
     </div>
   );
 }
