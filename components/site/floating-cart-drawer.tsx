@@ -133,6 +133,8 @@ export default function FloatingCartDrawer() {
     refresh();
   };
 
+  if (pathname === '/admin' || pathname.startsWith('/admin/') || pathname.startsWith('/allahmohammad/admin/')) return null;
+
   return (
     <>
       {open && (

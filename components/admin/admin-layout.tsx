@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { Loader2, LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Tag, Star, Wrench, FileText, Image, Settings, FileBarChart, Menu, X, LogOut, Truck, Megaphone, Layers, BarChart3, Home, ShieldCheck, UserCog, Gift, Bell, Boxes, LifeBuoy, TrendingUp, Sun, Moon, Bot, MessageCircle, Sparkles, Globe2, ChevronDown, Video } from 'lucide-react';
 import Link from 'next/link';
@@ -65,6 +65,7 @@ const navGroups: NavGroup[] = [
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isMasterAdmin, setIsMasterAdmin] = useState(false);
@@ -163,13 +164,16 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push('/'); };
   const isActive = (href: string) => {
-    const cleanHref = href.split('?')[0];
-    if (cleanHref === '/admin') return pathname === '/admin';
-    return pathname.startsWith(cleanHref);
+    const [path, query = ''] = href.split('?');
+    if (!(pathname === path || (path !== '/admin' && pathname.startsWith(path + '/')))) return false;
+    const expected = new URLSearchParams(query);
+    if (path === '/admin/orders') return (searchParams.get('source') || 'all') === (expected.get('source') || 'all');
+    if (path === '/admin/settings') return (searchParams.get('tab') || 'general') === (expected.get('tab') || 'general');
+    return true;
   };
 
   return (
-    <div className="min-h-screen bg-secondary/10 text-foreground">
+    <div className="admin-shell min-h-screen bg-secondary/10 text-foreground">
       <div className="sticky top-0 z-45 flex items-center justify-between border-b border-border bg-background px-4 py-3 lg:hidden">
         <button onClick={() => setSidebarOpen(true)} className="p-1"><Menu className="h-6 w-6" /></button>
         <div className="flex items-center gap-2">
@@ -204,12 +208,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               )}
             </div>
           </div>
-          <nav className="flex-1 overflow-y-auto p-3">{navGroups.map((group, gidx) => { const items = group.items.filter((item) => !item.masterOnly || isMasterAdmin); if (items.length === 0) return null; return <div key={gidx} className="mb-4">{group.label && <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">{group.label}</p>}{items.map((item) => <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)} className={`mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive(item.href) ? 'bg-primary text-primary-foreground' : 'text-foreground/70 hover:bg-secondary'}`}><item.icon className="h-4 w-4" />{item.label}</Link>)}</div>; })}</nav>
+          <nav className="flex-1 overflow-y-auto p-3">{navGroups.map((group, gidx) => { const items = group.items.filter((item) => !item.masterOnly || isMasterAdmin); if (items.length === 0) return null; return <div key={gidx} className="mb-4">{group.label && <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">{group.label}</p>}{items.map((item) => <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)} aria-current={isActive(item.href) ? 'page' : undefined} className={`mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive(item.href) ? 'bg-primary text-primary-foreground' : 'text-foreground/70 hover:bg-secondary'}`}><item.icon className="h-4 w-4" />{item.label}</Link>)}</div>; })}</nav>
           <div className="border-t border-border p-3"><button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10"><LogOut className="h-4 w-4" /> লগআউট</button></div>
         </div>
       </aside>
       {sidebarOpen && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />}
-      <div className="lg:pl-64"><NotificationCenter /><main className="p-4 lg:p-8">{children}</main></div>
+      <div className="lg:pl-64"><NotificationCenter /><main className="p-4 lg:p-8 lg:pr-20">{children}</main></div>
     </div>
   );
 }

@@ -50,6 +50,7 @@ export const THEMES = [
 
 export function getStoredTheme(): HomePageTheme {
   if (typeof window === 'undefined') return 'theme1';
+
   return (localStorage.getItem(HOME_THEME_KEY) as HomePageTheme) || 'theme1';
 }
 
@@ -84,6 +85,7 @@ export function setStoredSiteTheme(theme: SiteTheme) {
 
 export function ThemeSwitcher({ defaultTheme }: { defaultTheme?: HomePageTheme }) {
   const pathname = usePathname();
+  const isAdminPage = pathname === '/admin' || pathname.startsWith('/admin/') || pathname.startsWith('/allahmohammad/admin/');
   const isCategoryPage = pathname === '/categories' || pathname.startsWith('/category/');
   const isHomePage = pathname === '/';
   const isIndiaLandingPage = pathname === '/india';
@@ -91,6 +93,7 @@ export function ThemeSwitcher({ defaultTheme }: { defaultTheme?: HomePageTheme }
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    if (isAdminPage) return;
     const stored = getStoredSiteTheme();
     setSiteTheme(stored);
     applyTheme(stored);
@@ -103,7 +106,7 @@ export function ThemeSwitcher({ defaultTheme }: { defaultTheme?: HomePageTheme }
 
     window.addEventListener('sb-site-theme-change', handler);
     return () => window.removeEventListener('sb-site-theme-change', handler);
-  }, []);
+  }, [isAdminPage]);
 
   const onChange = (t: SiteTheme) => {
     setSiteTheme(t);
@@ -111,7 +114,7 @@ export function ThemeSwitcher({ defaultTheme }: { defaultTheme?: HomePageTheme }
     setOpen(false);
   };
 
-  if (isCategoryPage || isHomePage || pathname === '/all-products' || pathname.startsWith('/product/') || pathname === '/cart' || pathname === '/checkout') return null;
+  if (isAdminPage || isCategoryPage || isHomePage || pathname === '/all-products' || pathname.startsWith('/product/') || pathname === '/cart' || pathname === '/checkout') return null;
 
   return (
     <>

@@ -58,3 +58,6 @@
 @media (max-width: 767px) {
   body { padding-bottom: 5.5rem !important; }
 }
+
+/* The storefront header is absent from the admin shell. */
+body:has(.admin-shell) { padding-top: 0 !important; }
