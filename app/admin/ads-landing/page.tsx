@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { formatPrice } from '@/lib/data';
+import { adminPrice } from '@/lib/admin-order-display';
 import { Plus, Edit, Eye, Copy, Trash2, Power, CopyPlus, X, Search, Megaphone, Upload, Link as LinkIcon } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 import { processLocalImage, processUrlImage, uploadProcessedFile } from '@/lib/image-processing';
@@ -136,7 +136,7 @@ export default function AdminAdsLandingPage() {
                 <h3 className="font-semibold">{l.landing_name || l.title || 'Untitled'}</h3>
                 <p className="text-xs text-muted-foreground">Product: {l.products?.name_bn || l.products?.name_en || '—'}</p>
                 <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                  {l.offer_price && <span className="rounded bg-secondary px-2 py-0.5">Offer: {formatPrice(l.offer_price)}</span>}
+                  {l.offer_price && <span className="rounded bg-secondary px-2 py-0.5">Offer: {adminPrice(l.offer_price, adminBranch)}</span>}
                   <span className="rounded bg-secondary px-2 py-0.5">URL: /offer/{l.landing_slug || l.slug || '—'}</span>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-1">
@@ -159,6 +159,7 @@ export default function AdminAdsLandingPage() {
 }
 
 function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 'BD' | 'IN'; onClose: () => void; onCreated: () => void }) {
+  const currencySymbol = countryCode === 'IN' ? '₹' : '৳';
   const [mode, setMode] = useState<'select' | 'existing' | 'new'>('select');
   const [products, setProducts] = useState<any[]>([]);
   const [selectedProductId, setSelectedProductId] = useState('');
@@ -310,14 +311,15 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-background p-6">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="relative z-10 flex max-h-[90dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-background">
+        <div className="shrink-0 flex items-center justify-between gap-3 border-b border-border p-6">
           <h2 className="text-xl font-bold">নতুন Ads Landing Page তৈরি করুন</h2>
-          <button onClick={onClose}><X className="h-6 w-6" /></button>
+          <button aria-label="Close ads landing form" onClick={onClose} className="shrink-0 rounded-lg p-2 hover:bg-secondary"><X className="h-6 w-6" /></button>
         </div>
 
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6">
         {mode === 'select' && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">আপনি কি বিদ্যমান প্রোডাক্ট ব্যবহার করবেন নাকি শুধু Ads-এর জন্য নতুন প্রোডাক্ট তৈরি করবেন?</p>
@@ -344,20 +346,16 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
               <label className="mb-1 block text-sm font-medium">প্রোডাক্ট নির্বাচন করুন</label>
               <select value={selectedProductId} onChange={(e) => setSelectedProductId(e.target.value)} className="input-bangla">
                 <option value="">প্রোডাক্ট বাছাই করুন</option>
-                {products.map((p) => <option key={p.id} value={p.id}>{p.name_bn || p.name_en} — {formatPrice(p.sale_price || p.regular_price)} (Stock: {p.stock})</option>)}
+                {products.map((p) => <option key={p.id} value={p.id}>{p.name_bn || p.name_en} — {adminPrice(p.sale_price || p.regular_price, countryCode)} (Stock: {p.stock})</option>)}
               </select>
             </div>
-            <MultilingualFields languages={countryCode === 'IN' ? ['en', 'bn', 'hi'] : ['en', 'bn']} value={landing.translations || {}} onChange={(translations) => setLanding({ ...landing, translations })} title="🌐 Ads Landing Page Language Versions" fields={[{ key: 'title', label: 'Title' }, { key: 'subtitle', label: 'Subtitle' }, { key: 'description', label: 'Description', multiline: true }, { key: 'cta_text', label: 'CTA Text' }, { key: 'trust_text', label: 'Trust Text' }, { key: 'delivery_text', label: 'Delivery Text' }, { key: 'cod_text', label: 'COD Text' }]} />
-            <LandingFields landing={landing} setLanding={setLanding} />
+            <p className="text-sm text-muted-foreground">নিচের মূল content সাধারণ সংস্করণের জন্য। ভাষার tab-এ সেই ভাষার Title, Description, CTA ও অন্যান্য লেখা দিন। Landing Page Name আপনার প্রশাসনিক পরিচিতি, Slug হলো পেজের লিংক।</p>
+            <MultilingualFields languages={countryCode === 'IN' ? ['en', 'bn', 'hi'] : ['en', 'bn']} value={landing.translations || {}} onChange={(translations) => setLanding({ ...landing, translations })} title="🌐 ভাষাভিত্তিক Landing Page content" fields={[{ key: 'title', label: 'Title' }, { key: 'subtitle', label: 'Subtitle' }, { key: 'description', label: 'Description', multiline: true }, { key: 'cta_text', label: 'CTA Text' }, { key: 'trust_text', label: 'Trust Text' }, { key: 'delivery_text', label: 'Delivery Text' }, { key: 'cod_text', label: 'COD Text' }]} />
+            <LandingFields countryCode={countryCode} landing={landing} setLanding={setLanding} />
             <MediaUploader images={images} setImages={setImages} imageUrl={imageUrl} setImageUrl={setImageUrl} uploading={uploading} setUploading={setUploading} />
             <DescriptionFields landing={landing} setLanding={setLanding} benefits={benefits} setBenefits={setBenefits} features={features} setFeatures={setFeatures} />
-            <QuantityOfferEditor offers={quantityOffers} setOffers={setQuantityOffers} basePrice={Number(landing.offer_price) || 0} />
-            <div className="flex gap-2">
-              <button onClick={() => setMode('select')} className="rounded-xl border border-border px-4 py-2 text-sm hover:bg-secondary">← পেছনে</button>
-              <button onClick={handleCreate} disabled={loading} className="flex-1 rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-                {loading ? 'তৈরি হচ্ছে...' : 'Landing Page তৈরি করুন'}
-              </button>
-            </div>
+            <QuantityOfferEditor countryCode={countryCode} offers={quantityOffers} setOffers={setQuantityOffers} basePrice={Number(landing.offer_price) || 0} />
+
           </div>
         )}
 
@@ -369,20 +367,24 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
               <div><label className="mb-1 block text-sm font-medium">নাম (English)</label><input value={newProduct.name_en} onChange={(e) => setNewProduct({ ...newProduct, name_en: e.target.value })} className="input-bangla" /></div>
               <div><label className="mb-1 block text-sm font-medium">SKU</label><input value={newProduct.sku} onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })} className="input-bangla" /></div>
               <div><label className="mb-1 block text-sm font-medium">স্টক</label><input type="number" value={newProduct.stock} onChange={(e) => setNewProduct({ ...newProduct, stock: Number(e.target.value) })} className="input-bangla" /></div>
-              <div><label className="mb-1 block text-sm font-medium">দাম (৳)</label><input type="number" value={newProduct.regular_price} onChange={(e) => setNewProduct({ ...newProduct, regular_price: Number(e.target.value) })} className="input-bangla" /></div>
+              <div><label className="mb-1 block text-sm font-medium">দাম ({currencySymbol})</label><input type="number" value={newProduct.regular_price} onChange={(e) => setNewProduct({ ...newProduct, regular_price: Number(e.target.value) })} className="input-bangla" /></div>
             </div>
             <div><label className="mb-1 block text-sm font-medium">সংক্ষিপ্ত বিবরণ</label><textarea value={newProduct.short_description} onChange={(e) => setNewProduct({ ...newProduct, short_description: e.target.value })} className="input-bangla min-h-[60px]" /></div>
             <div><label className="mb-1 block text-sm font-medium">পণ্যের বিস্তারিত বিবরণ</label><textarea value={newProduct.description} onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} className="input-bangla min-h-[120px]" placeholder="🌱 পণ্যের বিস্তারিত বিবরণ লিখুন..." /></div>
-            <LandingFields landing={landing} setLanding={setLanding} />
+            <LandingFields countryCode={countryCode} landing={landing} setLanding={setLanding} />
             <MediaUploader images={images} setImages={setImages} imageUrl={imageUrl} setImageUrl={setImageUrl} uploading={uploading} setUploading={setUploading} />
             <DescriptionFields landing={landing} setLanding={setLanding} benefits={benefits} setBenefits={setBenefits} features={features} setFeatures={setFeatures} />
-            <QuantityOfferEditor offers={quantityOffers} setOffers={setQuantityOffers} basePrice={Number(landing.offer_price) || Number(newProduct.regular_price) || 0} />
-            <div className="flex gap-2">
-              <button onClick={() => setMode('select')} className="rounded-xl border border-border px-4 py-2 text-sm hover:bg-secondary">← পেছনে</button>
-              <button onClick={handleCreate} disabled={loading} className="flex-1 rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-                {loading ? 'তৈরি হচ্ছে...' : 'প্রোডাক্ট ও Landing Page তৈরি করুন'}
-              </button>
-            </div>
+            <QuantityOfferEditor countryCode={countryCode} offers={quantityOffers} setOffers={setQuantityOffers} basePrice={Number(landing.offer_price) || Number(newProduct.regular_price) || 0} />
+
+          </div>
+        )}
+        </div>
+        {mode !== 'select' && (
+          <div className="shrink-0 flex gap-3 border-t border-border bg-background p-6">
+            <button onClick={() => setMode('select')} className="rounded-xl border border-border px-4 py-3 text-sm hover:bg-secondary">← পেছনে</button>
+            <button onClick={handleCreate} disabled={loading} className="flex-1 rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+              {loading ? 'তৈরি হচ্ছে...' : mode === 'new' ? 'প্রোডাক্ট ও Landing Page তৈরি করুন' : 'Landing Page তৈরি করুন'}
+            </button>
           </div>
         )}
       </div>
@@ -390,20 +392,21 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
   );
 }
 
-function LandingFields({ landing, setLanding }: { landing: any; setLanding: (v: any) => void }) {
+function LandingFields({ countryCode, landing, setLanding }: { countryCode: 'BD' | 'IN'; landing: any; setLanding: (v: any) => void }) {
+  const currencySymbol = countryCode === 'IN' ? '₹' : '৳';
   return (
     <div className="space-y-3 rounded-xl border border-border p-4">
       <h3 className="font-semibold">Landing Page তথ্য</h3>
       <div><label className="mb-1 block text-sm font-medium">Landing Page Name</label><input value={landing.landing_name} onChange={(e) => setLanding({ ...landing, landing_name: e.target.value })} className="input-bangla" placeholder="Tomato Seed Facebook Offer August" /></div>
       <div><label className="mb-1 block text-sm font-medium">Landing Page Slug</label><input value={landing.landing_slug} onChange={(e) => setLanding({ ...landing, landing_slug: e.target.value })} className="input-bangla" placeholder="tomato-seed-offer" /></div>
       {landing.landing_slug && <p className="text-xs text-muted-foreground">URL: /offer/{landing.landing_slug}</p>}
-      <div><label className="mb-1 block text-sm font-medium">টাইটেল</label><input value={landing.title} onChange={(e) => setLanding({ ...landing, title: e.target.value })} className="input-bangla" /></div>
-      <div><label className="mb-1 block text-sm font-medium">সাবটাইটেল</label><input value={landing.subtitle} onChange={(e) => setLanding({ ...landing, subtitle: e.target.value })} className="input-bangla" /></div>
+      <div><label className="mb-1 block text-sm font-medium">মূল টাইটেল</label><input value={landing.title} onChange={(e) => setLanding({ ...landing, title: e.target.value })} className="input-bangla" /></div>
+      <div><label className="mb-1 block text-sm font-medium">মূল সাবটাইটেল</label><input value={landing.subtitle} onChange={(e) => setLanding({ ...landing, subtitle: e.target.value })} className="input-bangla" /></div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="mb-1 block text-sm font-medium">Compare Price (৳)</label><input type="number" value={landing.compare_price} onChange={(e) => setLanding({ ...landing, compare_price: e.target.value })} className="input-bangla" /></div>
-        <div><label className="mb-1 block text-sm font-medium">Offer Price (৳)</label><input type="number" value={landing.offer_price} onChange={(e) => setLanding({ ...landing, offer_price: e.target.value })} className="input-bangla" /></div>
+        <div><label className="mb-1 block text-sm font-medium">Compare Price ({currencySymbol})</label><input type="number" value={landing.compare_price} onChange={(e) => setLanding({ ...landing, compare_price: e.target.value })} className="input-bangla" /></div>
+        <div><label className="mb-1 block text-sm font-medium">Offer Price ({currencySymbol})</label><input type="number" value={landing.offer_price} onChange={(e) => setLanding({ ...landing, offer_price: e.target.value })} className="input-bangla" /></div>
       </div>
-      <div><label className="mb-1 block text-sm font-medium">CTA Text</label><input value={landing.cta_text} onChange={(e) => setLanding({ ...landing, cta_text: e.target.value })} className="input-bangla" /></div>
+      <div><label className="mb-1 block text-sm font-medium">মূল CTA Text</label><input value={landing.cta_text} onChange={(e) => setLanding({ ...landing, cta_text: e.target.value })} className="input-bangla" /></div>
       <div><label className="mb-1 block text-sm font-medium">Status</label>
         <select value={landing.status} onChange={(e) => setLanding({ ...landing, status: e.target.value })} className="input-bangla">
           <option value="active">Active</option>
@@ -416,7 +419,8 @@ function LandingFields({ landing, setLanding }: { landing: any; setLanding: (v: 
   );
 }
 
-function QuantityOfferEditor({ offers, setOffers, basePrice }: { offers: any[]; setOffers: (o: any[]) => void; basePrice: number }) {
+function QuantityOfferEditor({ countryCode, offers, setOffers, basePrice }: { countryCode: 'BD' | 'IN'; offers: any[]; setOffers: (o: any[]) => void; basePrice: number }) {
+  const currencySymbol = countryCode === 'IN' ? '₹' : '৳';
   const addOffer = () => {
     setOffers([...offers, { quantity: offers.length + 1, offer_price: '', compare_price: '', badge: '', free_delivery: false, is_default_selected: false }]);
   };
@@ -444,31 +448,31 @@ function QuantityOfferEditor({ offers, setOffers, basePrice }: { offers: any[]; 
           const percent = compare > 0 ? Math.round((savings / compare) * 100) : 0;
           return (
             <div key={idx} className="rounded-lg border border-border bg-background p-3">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-0.5 block text-xs text-muted-foreground">পরিমাণ</label>
-                  <input type="number" min="1" value={qo.quantity} onChange={(e) => updateOffer(idx, 'quantity', e.target.value)} className="w-full rounded-lg border border-input px-2 py-1.5 text-sm" placeholder="1" />
+                  <label className="mb-1 block text-sm font-medium text-muted-foreground">পরিমাণ</label>
+                  <input type="number" min="1" value={qo.quantity} onChange={(e) => updateOffer(idx, 'quantity', e.target.value)} className="w-full rounded-lg border border-input px-3 py-2.5 text-sm" placeholder="1" />
                 </div>
                 <div>
-                  <label className="mb-0.5 block text-xs text-muted-foreground">সাধারণ মূল্য (৳)</label>
-                  <input type="number" value={qo.compare_price} onChange={(e) => updateOffer(idx, 'compare_price', e.target.value)} className="w-full rounded-lg border border-input px-2 py-1.5 text-sm" placeholder="500" />
+                  <label className="mb-1 block text-sm font-medium text-muted-foreground">সাধারণ মূল্য ({currencySymbol})</label>
+                  <input type="number" value={qo.compare_price} onChange={(e) => updateOffer(idx, 'compare_price', e.target.value)} className="w-full rounded-lg border border-input px-3 py-2.5 text-sm" placeholder="500" />
                 </div>
                 <div>
-                  <label className="mb-0.5 block text-xs text-muted-foreground">অফার মূল্য (৳)</label>
-                  <input type="number" value={qo.offer_price} onChange={(e) => updateOffer(idx, 'offer_price', e.target.value)} className="w-full rounded-lg border border-input px-2 py-1.5 text-sm" placeholder="300" />
+                  <label className="mb-1 block text-sm font-medium text-muted-foreground">অফার মূল্য ({currencySymbol})</label>
+                  <input type="number" value={qo.offer_price} onChange={(e) => updateOffer(idx, 'offer_price', e.target.value)} className="w-full rounded-lg border border-input px-3 py-2.5 text-sm" placeholder="300" />
                 </div>
                 <div>
-                  <label className="mb-0.5 block text-xs text-muted-foreground">Badge</label>
-                  <input value={qo.badge} onChange={(e) => updateOffer(idx, 'badge', e.target.value)} className="w-full rounded-lg border border-input px-2 py-1.5 text-sm" placeholder="BEST" />
+                  <label className="mb-1 block text-sm font-medium text-muted-foreground">Badge</label>
+                  <input value={qo.badge} onChange={(e) => updateOffer(idx, 'badge', e.target.value)} className="w-full rounded-lg border border-input px-3 py-2.5 text-sm" placeholder="BEST" />
                 </div>
               </div>
-              <div className="mt-2 flex flex-wrap items-center gap-3">
+              <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3">
                 <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={qo.free_delivery} onChange={(e) => updateOffer(idx, 'free_delivery', e.target.checked)} className="accent-primary" /> Free Delivery / বিনামূল্যে ডেলিভারি</label>
                 <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={qo.is_default_selected} onChange={(e) => {
                   const updated = offers.map((o, i) => ({ ...o, is_default_selected: i === idx }));
                   setOffers(updated);
                 }} className="accent-primary" /> Default Selected</label>
-                {savings > 0 && <span className="text-xs font-medium text-green-600">সাশ্রয় {formatPrice(savings)} ({percent}%)</span>}
+                {savings > 0 && <span className="text-xs font-medium text-green-600">সাশ্রয় {adminPrice(savings, countryCode)} ({percent}%)</span>}
                 <div className="flex-1" />
                 <button type="button" onClick={() => removeOffer(idx)} className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-destructive hover:bg-destructive/10">
                   <Trash2 className="h-3.5 w-3.5" /> মুছুন
@@ -566,7 +570,7 @@ function DescriptionFields({ landing, setLanding, benefits, setBenefits, feature
     <div className="space-y-3 rounded-xl border border-border p-4">
       <h3 className="font-semibold">পণ্যের বিবরণ ও বৈশিষ্ট্য</h3>
       <div>
-        <label className="mb-1 block text-sm font-medium">পণ্যের বিস্তারিত বিবরণ (Landing Page Description)</label>
+        <label className="mb-1 block text-sm font-medium">মূল Landing Page বিবরণ</label>
         <textarea value={landing.description} onChange={(e) => setLanding({ ...landing, description: e.target.value })} className="input-bangla min-h-[120px]" placeholder="🌱 পণ্যের বিস্তারিত বিবরণ লিখুন... (এন্টার দিয়ে নতুন লাইন তৈরি করুন)" />
         <p className="mt-1 text-xs text-muted-foreground">এন্টার দিয়ে নতুন লাইন, প্যারাগ্রাফ, ✅ চিহ্ন, ইমোজি — সব ফরম্যাটিং সংরক্ষিত থাকবে।</p>
       </div>
