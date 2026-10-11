@@ -14,6 +14,8 @@ export default function AdminComboPacksPage() {
   const [editing, setEditing] = useState<any>(null);
   const [adminBranch, setAdminBranch] = useState<'BD' | 'IN'>('BD');
 
+  const currencySymbol = adminBranch === 'IN' ? '₹' : '৳';
+
   useEffect(() => {
     const init = async () => {
       const { data, error } = await supabase.rpc('current_admin_country');
@@ -120,8 +122,8 @@ export default function AdminComboPacksPage() {
                 {c.description_bn && <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{c.description_bn}</p>}
                 
                 <div className="mt-3 flex items-center gap-3">
-                  {regularPrice > 0 && <span className="text-sm text-muted-foreground line-through">৳{regularPrice}</span>}
-                  <span className="text-xl font-bold text-primary">৳{offerPrice}</span>
+                  {regularPrice > 0 && <span className="text-sm text-muted-foreground line-through">{currencySymbol}{regularPrice}</span>}
+                  <span className="text-xl font-bold text-primary">{currencySymbol}{offerPrice}</span>
                 </div>
               </div>
 
@@ -146,6 +148,7 @@ export default function AdminComboPacksPage() {
 }
 
 function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countryCode: 'BD' | 'IN'; onSave: (data: any) => void; onClose: () => void }) {
+  const currencySymbol = countryCode === 'IN' ? '₹' : '৳';
   const [form, setForm] = useState({
     country_code: combo?.country_code || countryCode,
     title_bn: combo?.title_bn || '',
@@ -286,19 +289,19 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-background p-6 shadow-2xl border border-border">
+      <div className="relative z-10 flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-background shadow-2xl border border-border">
         
-        <div className="mb-4 flex items-center justify-between border-b pb-3">
+        <div className="shrink-0 flex items-center justify-between gap-3 border-b border-border bg-background p-6">
           <h3 className="text-xl font-bold">{combo ? 'কম্বো প্যাক এডিট করুন' : 'নতুন কম্বো প্যাক তৈরি করুন'}</h3>
-          <button onClick={onClose} className="rounded-full p-1.5 hover:bg-secondary"><X className="h-5 w-5" /></button>
+          <button aria-label="Close combo form" onClick={onClose} className="shrink-0 rounded-full p-2 hover:bg-secondary"><X className="h-5 w-5" /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form id="admin-combo-form" onSubmit={handleSubmit} className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-sm font-semibold">কম্বো নাম (বাংলা) *</label>
+              <label className="mb-1.5 block text-sm font-semibold">মূল কম্বো নাম (বাংলা) *</label>
               <input value={form.title_bn} onChange={(e) => setForm({ ...form, title_bn: e.target.value })} className="input-bangla border p-3 w-full rounded-xl bg-secondary/30" placeholder="যেমন: স্পেশাল বীজ কম্বো" required />
             </div>
             <div>
@@ -307,10 +310,11 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
             </div>
           </div>
 
-          <MultilingualFields value={form.translations || {}} onChange={(translations) => setForm({ ...form, translations })} title="🌐 Combo Language Versions" fields={[{ key: 'title', label: 'Combo Title' }, { key: 'subtitle', label: 'Subtitle' }, { key: 'description', label: 'Description', multiline: true }, { key: 'seo_title', label: 'SEO Title' }, { key: 'meta_description', label: 'Meta Description', multiline: true }]} />
+          <p className="text-sm text-muted-foreground">মূল বাংলা নাম ও বিবরণ কম্বোর পরিচিতি। লাইভ করতে নিচের English, বাংলা ও हिन्दी tab-এ Title ও Description পূরণ করুন। SEO প্রতিটি ভাষার tab-এ লিখুন।</p>
+          <MultilingualFields value={form.translations || {}} onChange={(translations) => setForm({ ...form, translations })} title="🌐 ভাষাভিত্তিক কম্বো নাম ও বিবরণ" fields={[{ key: 'title', label: 'Combo Title' }, { key: 'subtitle', label: 'Subtitle' }, { key: 'description', label: 'Description', multiline: true }, { key: 'seo_title', label: 'SEO Title' }, { key: 'meta_description', label: 'Meta Description', multiline: true }]} />
 
           <div>
-            <label className="mb-1.5 block text-sm font-semibold">কম্বো প্যাকেজ বিবরণ (Description)</label>
+            <label className="mb-1.5 block text-sm font-semibold">মূল কম্বো বিবরণ (বাংলা)</label>
             <textarea value={form.description_bn} onChange={(e) => setForm({ ...form, description_bn: e.target.value })} rows={3} className="input-bangla border p-3 w-full rounded-xl bg-secondary/30" placeholder="বিবরণ লিখুন..." />
           </div>
 
@@ -347,7 +351,7 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
                   <div className="flex items-center gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold truncate">{it.name}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">পণ্যের মূল্য: <span className="font-semibold text-foreground">৳{it.price}</span></div>
+                      <div className="text-xs text-muted-foreground mt-0.5">পণ্যের মূল্য: <span className="font-semibold text-foreground">{currencySymbol}{it.price}</span></div>
                     </div>
                     <input type="number" value={it.quantity} onChange={(e) => updateQty(idx, Number(e.target.value))} className="w-16 rounded-lg border px-2 py-1.5 text-sm text-center bg-secondary/30" min={1} />
                     <button type="button" onClick={() => removeItem(idx)} className="text-destructive p-1.5"><X className="h-4 w-4" /></button>
@@ -377,7 +381,7 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
                 <div className="absolute z-30 mt-1 max-h-40 w-full overflow-y-auto rounded-xl border bg-background shadow-xl">
                   {filteredProducts.map((p) => (
                     <button key={p.id} type="button" onClick={() => addProduct(p)} className="block w-full border-b px-3.5 py-2.5 text-left text-sm hover:bg-secondary">
-                      {p.name_bn || p.name_en} — ৳{p.regular_price || p.sale_price || 0}
+                      {p.name_bn || p.name_en} — {currencySymbol}{p.regular_price || p.sale_price || 0}
                     </button>
                   ))}
                 </div>
@@ -396,8 +400,8 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
             <div className="space-y-2">
               {manualItems.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2 bg-background p-2.5 border rounded-xl shadow-sm">
-                  <input type="text" value={item.name} onChange={(e) => updateManualRow(idx, 'name', e.target.value)} placeholder="বীজের নাম (যেমন: তরমুজ বীজ)" className="flex-1 border rounded-lg p-2 text-sm bg-secondary/30 input-bangla" />
-                  <input type="text" value={item.qty} onChange={(e) => updateManualRow(idx, 'qty', e.target.value)} placeholder="পরিমাণ (যেমন: ১০ পিস)" className="w-32 border rounded-lg p-2 text-sm bg-secondary/30 input-bangla" />
+                  <input type="text" value={item.name} onChange={(e) => updateManualRow(idx, 'name', e.target.value)} placeholder="বীজের নাম (যেমন: তরমুজ বীজ)" aria-label="Manual item name" className="min-w-0 flex-1 border rounded-lg p-2 text-sm bg-secondary/30 input-bangla" />
+                  <input type="text" value={item.qty} onChange={(e) => updateManualRow(idx, 'qty', e.target.value)} aria-label="Manual item quantity" placeholder="যেমন: ১০ পিস" className="w-44 shrink-0 border rounded-lg p-2 text-sm bg-secondary/30 input-bangla" />
                   {manualItems.length > 1 && <button type="button" onClick={() => removeManualRow(idx)} className="text-destructive p-1.5 hover:bg-destructive/10 rounded-lg"><X className="h-4 w-4" /></button>}
                 </div>
               ))}
@@ -417,8 +421,8 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
                     {tiers.length > 1 && <button type="button" onClick={() => removeTier(idx)} className="text-destructive p-1 hover:bg-destructive/10 rounded-lg"><X className="h-4 w-4" /></button>}
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div><label className="text-[11px] font-semibold text-muted-foreground block mb-0.5">সাধারণ মূল্য (৳)</label><input type="number" value={tier.regular} onChange={(e) => updateTier(idx, 'regular', Number(e.target.value))} className="w-full border rounded-lg p-2 text-sm bg-secondary/30" /></div>
-                    <div><label className="text-[11px] font-semibold text-muted-foreground block mb-0.5">অফার মূল্য (৳)</label><input type="number" value={tier.offer} onChange={(e) => updateTier(idx, 'offer', Number(e.target.value))} className="w-full border rounded-lg p-2 text-sm bg-secondary/30 font-bold text-primary" /></div>
+                    <div><label className="text-[11px] font-semibold text-muted-foreground block mb-0.5">সাধারণ মূল্য ({currencySymbol})</label><input type="number" value={tier.regular} onChange={(e) => updateTier(idx, 'regular', Number(e.target.value))} className="w-full border rounded-lg p-2 text-sm bg-secondary/30" /></div>
+                    <div><label className="text-[11px] font-semibold text-muted-foreground block mb-0.5">অফার মূল্য ({currencySymbol})</label><input type="number" value={tier.offer} onChange={(e) => updateTier(idx, 'offer', Number(e.target.value))} className="w-full border rounded-lg p-2 text-sm bg-secondary/30 font-bold text-primary" /></div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 items-center pt-1">
                     <div><label className="text-[11px] font-semibold text-muted-foreground block mb-0.5">ব্যাজ (যেমন: BEST)</label><input type="text" value={tier.badge} onChange={(e) => updateTier(idx, 'badge', e.target.value)} placeholder="BEST / POPULAR" className="w-full border rounded-lg p-1.5 text-xs bg-secondary/30" /></div>
@@ -431,11 +435,11 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
 
           <div className="flex items-center gap-2 pt-2"><label className="flex items-center gap-2 text-sm font-semibold cursor-pointer"><input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} className="rounded h-4 w-4 text-primary" /> ওয়েবসাইটে সক্রিয় রাখুন</label></div>
 
-          <div className="flex gap-3 pt-4 border-t">
-            <button type="submit" className="flex-1 rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90 shadow-lg">{combo ? 'আপডেট করুন' : 'তৈরি করুন'}</button>
+        </form>
+          <div className="shrink-0 flex gap-3 border-t border-border bg-background p-6">
+            <button type="submit" form="admin-combo-form" className="flex-1 rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90 shadow-lg">{combo ? 'আপডেট করুন' : 'তৈরি করুন'}</button>
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-6 py-3 hover:bg-secondary font-semibold">বাতিল</button>
           </div>
-        </form>
       </div>
     </div>
   );
