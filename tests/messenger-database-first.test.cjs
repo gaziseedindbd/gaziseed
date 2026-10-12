@@ -34,6 +34,9 @@ test('verified website/product knowledge and published CMS lookup run before gen
   assert.match(knowledgeTool, /explicitlyMentionedProducts\.length === 1/);
   assert.match(knowledgeTool, /explicitlyMentionedProducts\.length === 0 && verifiedProductId/);
   assert.match(knowledgeTool, /formatMessengerProductFaqReply/);
+  assert.match(knowledgeTool, /findExplicitKnowledgeProductsByName/);
+  assert.match(knowledgeTool, /name_bn\.ilike/);
+  assert.match(knowledgeTool, /\.eq\('country_code', country\)/);
   assert.match(cmsTool, /\.from\('landing_faqs'\)/);
   assert.match(cmsTool, /\.from\('pages'\)/);
   assert.match(cmsTool, /\.from\('blogs'\)/);
