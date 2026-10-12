@@ -43,6 +43,60 @@ export async function getMessengerOrderTrackingReply(args: {
   text: string;
 }): Promise<{ handled: boolean; reply: string; orderIds?: string[] }> {
   const requestedOrderNumber = parseOrderNumber(args.text);
+  const requestedPhoneRaw = extractMessengerPhone(args.text) || '';
+  const requestedPhone = requestedPhoneRaw ? normalizeMessengerPhone(requestedPhoneRaw) : '';
+
+  const fallbackReply =
+    'নিরাপত্তার কারণে এই মুহূর্তে order যাচাই করা যাচ্ছে না। অনুগ্রহ করে পরে আবার চেষ্টা করুন অথবা official WhatsApp support-এ যোগাযোগ করুন।';
+
+  async function callVerificationGate(action: 'check' | 'fail' | 'success') {
+    try {
+      const { data, error } = await args.supabase.rpc(
+        'consume_messenger_tracking_verification',
+        {
+          p_page_id: args.pageId,
+          p_external_user_id: args.externalUserId,
+          p_country_code: args.country,
+          p_action: action,
+        },
+      );
+      if (error || !data) return null;
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row || typeof row.allowed !== 'boolean') return null;
+      return {
+        allowed: row.allowed as boolean,
+        failedAttempts: Number(row.failed_attempts || 0),
+        retryAfterSeconds: Math.max(0, Number(row.retry_after_seconds || 0)),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  const gate = await callVerificationGate('check');
+  if (!gate) {
+    return { handled: true, reply: fallbackReply };
+  }
+  if (!gate.allowed) {
+    const remainingMinutes = Math.max(1, Math.ceil(gate.retryAfterSeconds / 60));
+    return {
+      handled: true,
+      reply:
+        'নিরাপত্তার কারণে order verification সাময়িকভাবে বন্ধ আছে। অনুগ্রহ করে ' +
+        remainingMinutes +
+        ' মিনিট পরে আবার চেষ্টা করুন।',
+    };
+  }
+
+  // An existing Messenger profile must never replace the two-factor requirement:
+  // every tracking request must contain both the order number and its registered phone.
+  if (!requestedOrderNumber || !requestedPhone) {
+    return {
+      handled: true,
+      reply:
+        'নিরাপত্তার জন্য order track করতে Order Number (যেমন GS-BD-XXXXXXXX) এবং অর্ডারের সময় দেওয়া registered mobile number—দুটো একসঙ্গে লিখুন।',
+    };
+  }
 
   const { data: profile, error: profileError } = await args.supabase
     .from('messenger_customer_profiles')
@@ -52,97 +106,79 @@ export async function getMessengerOrderTrackingReply(args: {
     .eq('country_code', args.country)
     .maybeSingle();
 
-  if (profileError) throw profileError;
+  if (profileError) {
+    return { handled: true, reply: fallbackReply };
+  }
 
   const profilePhone =
     profile && typeof profile.phone === 'string'
       ? normalizeMessengerPhone(profile.phone)
       : '';
 
-  const requestedPhone = extractMessengerPhone(args.text) || '';
-
-  if (profilePhone && requestedPhone && profilePhone !== requestedPhone) {
+  async function verificationFailed() {
+    const failed = await callVerificationGate('fail');
+    if (!failed) return { handled: true as const, reply: fallbackReply };
+    if (!failed.allowed) {
+      const remainingMinutes = Math.max(1, Math.ceil(failed.retryAfterSeconds / 60));
+      return {
+        handled: true as const,
+        reply:
+          'নিরাপত্তার কারণে order verification সাময়িকভাবে বন্ধ আছে। অনুগ্রহ করে ' +
+          remainingMinutes +
+          ' মিনিট পরে আবার চেষ্টা করুন।',
+      };
+    }
     return {
-      handled: true,
+      handled: true as const,
       reply:
-        'নিরাপত্তার জন্য এই Messenger account-এর সাথে আগে linked mobile number-টাই ব্যবহার করুন।',
+        'Order Number ও registered mobile number যাচাই করা যায়নি। তথ্য দুটি মিলিয়ে আবার চেষ্টা করুন।',
     };
   }
 
-  const phone = profilePhone || requestedPhone;
-
-  if (!phone) {
-    return {
-      handled: true,
-      reply:
-        'আপনার Messenger-এর সাথে কোনো verified order phone number এখনো linked নেই।\n\n' +
-        'নির্দিষ্ট order track করতে Order Number (যেমন GS-BD-XXXXXXXX) এবং অর্ডারের সময় দেওয়া mobile number লিখুন।',
-    };
+  // A conflicting previously linked phone is a failed verification, not an
+  // opportunity to reveal whether an order exists.
+  if (profilePhone && profilePhone !== requestedPhone) {
+    return await verificationFailed();
   }
 
-  if (!profilePhone && !requestedOrderNumber) {
-    return {
-      handled: true,
-      reply:
-        'নিরাপত্তার জন্য প্রথমবার order tracking করতে Order Number (যেমন GS-BD-XXXXXXXX) এবং অর্ডারের সময় দেওয়া mobile number একসাথে লিখুন।',
-    };
-  }
-
-  const baseOrdersQuery = args.supabase
+  const { data: orders, error: ordersError } = await args.supabase
     .from('orders')
-    .select(TRACKING_FIELDS)
+    .select('id,order_number,status,order_status,payment_status,final_amount,country_code,created_at,updated_at')
     .eq('country_code', args.country)
     .eq('order_source', 'facebook_messenger_ai')
-    .eq('customer_phone', phone);
+    .eq('customer_phone', requestedPhone)
+    .eq('order_number', requestedOrderNumber)
+    .limit(1);
 
-  const ordersQuery = requestedOrderNumber
-    ? baseOrdersQuery.eq('order_number', requestedOrderNumber).limit(1)
-    : baseOrdersQuery.order('created_at', { ascending: false }).limit(5);
-
-  const { data: orders, error: ordersError } = await ordersQuery;
-  if (ordersError) throw ordersError;
+  if (ordersError) {
+    return { handled: true, reply: fallbackReply };
+  }
 
   const rows = (orders || []) as Array<Record<string, unknown>>;
-
   if (!rows.length) {
-    return {
-      handled: true,
-      reply: requestedOrderNumber
-        ? 'এই Order Number এবং mobile number-এর সাথে কোনো Messenger order পাওয়া যায়নি। Order Number ও mobile number আবার মিলিয়ে দিন।'
-        : 'আপনার দেওয়া mobile number-এর সাথে কোনো Messenger order পাওয়া যায়নি।',
-    };
+    return await verificationFailed();
   }
 
-  if (requestedOrderNumber) {
-    const order = rows[0];
-    const amount = Number(order.final_amount || 0);
-
-    return {
-      handled: true,
-      orderIds: [String(order.id)],
-      reply:
-        '📦 আপনার অর্ডারের বর্তমান অবস্থা\n\n' +
-        `Order: ${String(order.order_number || requestedOrderNumber)}\n` +
-        `Status: ${statusLabel(order.order_status ?? order.status)}\n` +
-        `Payment: ${String(order.payment_status || 'unknown')}\n` +
-        `Total: ${currency(args.country)}${amount.toFixed(0)}\n` +
-        `Order date: ${new Date(String(order.created_at)).toLocaleDateString('en-IN')}\n\n` +
-        'Status পরিবর্তন হলে একই Messenger-এ আবার “order status” লিখে জানতে পারবেন।',
-    };
+  // Clear accumulated failures before disclosing any order details. If the
+  // limiter store is unavailable, fail closed and disclose nothing.
+  const verified = await callVerificationGate('success');
+  if (!verified) {
+    return { handled: true, reply: fallbackReply };
   }
 
-  const lines = rows.map((order) => {
-    const amount = Number(order.final_amount || 0);
-    return `• ${String(order.order_number || 'Unknown')} — ${statusLabel(order.order_status ?? order.status)} — ${currency(args.country)}${amount.toFixed(0)}`;
-  });
-
+  const order = rows[0];
+  const amount = Number(order.final_amount || 0);
   return {
     handled: true,
-    orderIds: rows.map((order) => String(order.id)),
+    orderIds: [String(order.id)],
     reply:
-      '📦 আপনার সাম্প্রতিক Messenger orders:\n\n' +
-      lines.join('\n') +
-      '\n\nনির্দিষ্ট order-এর বিস্তারিত status জানতে Order Number লিখুন।',
+      '📦 আপনার অর্ডারের বর্তমান অবস্থা\n\n' +
+      `Order: ${String(order.order_number || requestedOrderNumber)}\n` +
+      `Status: ${statusLabel(order.order_status ?? order.status)}\n` +
+      `Payment: ${String(order.payment_status || 'unknown')}\n` +
+      `Total: ${currency(args.country)}${amount.toFixed(0)}\n` +
+      `Order date: ${new Date(String(order.created_at)).toLocaleDateString('en-IN')}\n\n` +
+      'Status পরিবর্তন হলে আবার Order Number ও registered mobile number দিয়ে জানতে পারবেন।',
   };
 }
 
