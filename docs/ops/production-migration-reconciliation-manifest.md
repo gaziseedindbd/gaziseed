@@ -607,6 +607,35 @@ The public-RPC rate-limit migration also appears absent as a whole: table, enfor
 | `20261008102000_scope_messenger_profiles_by_country.sql` | `messenger_customer_profiles_country_code_check` exists, and `messenger_customer_profiles_admin_country_all` exists for authenticated admins with `can_access_country(country_code)` in both USING and WITH CHECK. | **Effect present.** |
 | `20261008103500_disable_unconfigured_generic_ai.sql` | An aggregate read-only count found **one** `ai_settings` row with `is_enabled=true` and `api_key_secret_id IS NULL`. The migration's intended invariant is therefore not fully reflected in current state. | **Configuration drift confirmed (one row).** Do not inspect/display the row or key value in this audit. Confirm the intended Generic AI state for that branch and disable it through a reviewed, controlled change if it should remain off without a Vault key. This is not evidence that the live Messenger AI runtime is affected. |
 
+## Referral-wallet readiness follow-up — 2026-10-12
+
+This section records a separate read-only follow-up for open Draft PR [#244](https://github.com/gaziseedindbd/gaziseed/pull/244), after inspecting Production's stored migration SQL and current referral-wallet schema. It does not modify the database or migration history.
+
+### Confirmed Production state
+
+- `public.referral_settings` contains two branch rows: BD (`id=1`) and IN (`id=2`); both currently have `enabled=true`.
+- `public.referral_wallet_settings` has **0 rows**.
+- `public.referral_wallet_transactions` has **0 rows**.
+- `referral_wallet_settings` has primary key `id` and a check constraint `id = 1`. It also has a `country_code` check accepting BD/IN. That means the current table can hold at most one row, and cannot hold independent ID-1 settings rows for both countries.
+- The Production-stored migration `20260906005940 / add_country_scope_referral_wallet` added `country_code` fields and country-filtered RLS policies but did **not** change the wallet-settings primary key/check constraint or seed a wallet-settings row. This is an inconsistency between the branch-scope intent and the actual schema constraints.
+- The wallet transaction `country_code` column has a default of `BD`.
+
+### RPC permission root cause and additional correctness blockers
+
+- `public.get_referral_wallet_summary(p_user_id uuid)` is executable by `postgres` and `service_role`, not `authenticated`. The browser checkout's direct call therefore correctly hits the existing privilege boundary; do not grant the parameterized RPC to authenticated users because callers could supply a different user ID.
+- The self-scoped replacement in PR #244 uses `auth.uid()`, which is the correct ownership basis, but its country-filtered query cannot support India with the current `id = 1` constraint, and Production currently has no wallet-settings row for either branch. The RPC has not been applied.
+- Lower-level wallet helpers are not consistently branch-scoped: `get_referral_wallet_balance(p_user_id)` aggregates by user ID without `country_code`; `is_referral_wallet_unlocked(p_user_id)` uses the user's orders and `referral_wallet_settings.id = 1` without a country predicate; `get_referral_wallet_max_usage(p_user_id, p_order_total)` also reads `id = 1` without country scoping.
+- `create_order_with_referral_wallet` calls the max-usage helper without a country argument and inserts `wallet_usage` without an explicit `country_code`, so the table default tags such transactions as BD, including an India-branch checkout. These behaviours need coordinated treatment, not just a summary RPC patch.
+
+### Required decision before a Production migration
+
+1. Confirm whether the referral wallet is meant to be **branch-specific** (separate BD/IN balances and rules) or **globally shared**. The code/schema alone is insufficient to infer the desired business rule safely.
+2. If branch-specific, design one reviewed forward migration to correct the wallet-settings key/constraints and configuration rows, then make balance, unlock, max-usage, checkout spend, reversal, and RLS predicates consistently country-aware. Ensure new wallet transactions always carry the intended country explicitly.
+3. If globally shared, document that rule and align the settings/read policies and ledger operations accordingly instead of adding a country filter to only the summary function.
+4. Exercise BD and IN independently in a non-production test environment, including cross-branch isolation, wallet application, duplicate checkout retries, and cancellation/refund reversal. Only then reconsider PR #244.
+
+**Safety:** This is evidence for planning only. No Production schema, data, settings, wallet transaction, permission, cron job, or migration-history entry was changed. No historic SQL was replayed or marked repaired.
+
 ## Whole-audit summary and proposed order of remediation
 
 The 72-file catalog review is complete. It found that many historical SQL effects are implemented under newer schemas, policies, index names, triggers, or RPC signatures; several old data-sensitive migrations cannot be safely inferred from catalog metadata alone. The unmatched fingerprint count must not be used as a migration replay list.
