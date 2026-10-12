@@ -368,6 +368,17 @@ test('recognizes a distinctive product name in a general agriculture FAQ questio
     true,
   );
 });
+
+test('recognizes English FAQ questions naming a product despite general sunlight wording', () => {
+  assert.equal(
+    isMessengerExplicitProductKnowledgeQuery('How much sunlight does Zinnia need?', {
+      name_bn: 'লাল জিনিয়া ফুলের বীজ',
+      name_en: 'Red Zinnia Flower Seeds',
+      slug: 'red-zinnia-flower-seeds',
+    }),
+    true,
+  );
+});
 test('normalizes Bengali price and stock questions into precise product matches', () => {
   const query = normalizeMessengerProductQuery('গোলাপ ফুলের বীজের দাম ও স্টক কত?');
 
