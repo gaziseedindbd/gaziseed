@@ -2445,7 +2445,14 @@ async function processMessengerEvent(event: MessengerEvent) {
   // Product/catalog questions with a seed-advice intent continue through the AI path
   // so multi-intent requests such as “দাম কত এবং কীভাবে বপন করব?” can be answered together.
 
-  if (!startsNewProductIntent) {
+  // A delivery-policy question is a fresh information request, not an
+  // order quantity/name answer. Route it before the pending-order handler so
+  // wording such as "ভারতে ₹৫০০ টাকার অর্ডারে ডেলিভারি চার্জ কত?" cannot
+  // be hijacked by the previously selected product's checkout flow.
+  if (
+    !startsNewProductIntent &&
+    !isMessengerDeliveryPolicyQuestion(normalizedActionText)
+  ) {
     try {
       const pendingOrderBeforeFlow = parsePendingMessengerOrder(
         conversation.metadata?.pending_messenger_order,
