@@ -8,7 +8,10 @@ export async function createServerSupabase(country?: 'BD' | 'IN') {
   const cookieStore = await cookies();
   const headerStore = await headers();
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || FALLBACK_KEY;
+  const supabaseAnonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    FALLBACK_KEY;
 
   const manualOverride = cookieStore.get('gazi_country_override')?.value?.toUpperCase();
   const detectedCountry = (
