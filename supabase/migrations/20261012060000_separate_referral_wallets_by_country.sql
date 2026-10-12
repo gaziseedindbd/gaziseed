@@ -177,6 +177,10 @@ BEGIN
 END;
 $function$;
 
+-- This is a trigger-only helper, not a public RPC endpoint.
+REVOKE ALL ON FUNCTION public.enforce_referral_wallet_transaction_country()
+  FROM PUBLIC, anon, authenticated;
+
 DROP TRIGGER IF EXISTS trg_enforce_referral_wallet_transaction_country
   ON public.referral_wallet_transactions;
 CREATE TRIGGER trg_enforce_referral_wallet_transaction_country
