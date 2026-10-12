@@ -105,7 +105,7 @@ export async function getProducts(filters?: {
 }): Promise<Product[]> {
   let query = supabase
     .from('products')
-    .select('*')
+    .select(PRODUCT_PUBLIC_COLUMNS)
     .eq('is_active', true)
     .eq('is_ads_only', false)
     .order('created_at', { ascending: false });
@@ -139,7 +139,7 @@ export async function getProducts(filters?: {
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   const { data } = await supabase
     .from('products')
-    .select('*')
+    .select(PRODUCT_PUBLIC_COLUMNS)
     .eq('slug', slug)
     .eq('is_active', true)
     .maybeSingle();
@@ -149,7 +149,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 export async function getProductById(id: string): Promise<Product | null> {
   const { data } = await supabase
     .from('products')
-    .select('*')
+    .select(PRODUCT_PUBLIC_COLUMNS)
     .eq('id', id)
     .maybeSingle();
   return data as Product | null;
@@ -205,7 +205,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
 export async function getReviews(productId: string): Promise<Review[]> {
   const { data } = await supabase
     .from('reviews')
-    .select('*')
+    .select(REVIEW_PUBLIC_COLUMNS)
     .eq('product_id', productId)
     .eq('is_approved', true)
     .order('created_at', { ascending: false });
@@ -262,7 +262,7 @@ export async function getLandingPageBySlug(landingSlug: string, includeAllStatus
   if (!landing) return { landing: null, product: null };
   const { data: product } = await supabase
     .from('products')
-    .select('*')
+    .select(PRODUCT_PUBLIC_COLUMNS)
     .eq('id', landing.product_id)
     .maybeSingle();
   return { landing: landing as LandingPage, product: product as Product };
@@ -290,7 +290,7 @@ export async function getOfferProducts(): Promise<{ product: Product; landing: L
   const productIds = landings.map((l) => l.product_id);
   const { data: products } = await supabase
     .from('products')
-    .select('*')
+    .select(PRODUCT_PUBLIC_COLUMNS)
     .in('id', productIds)
     .eq('is_active', true);
   const productMap = new Map((products || []).map((p) => [p.id, p]));
@@ -315,7 +315,7 @@ export function getDiscountPercent(product: Product): number {
 
 export async function getRelatedProducts(productId: string, relatedIds: string[]): Promise<Product[]> {
   if (!relatedIds || relatedIds.length === 0) return [];
-  const { data } = await supabase.from('products').select('*').in('id', relatedIds).eq('is_active', true);
+  const { data } = await supabase.from('products').select(PRODUCT_PUBLIC_COLUMNS).in('id', relatedIds).eq('is_active', true);
   return (data || []) as Product[];
 }
 
@@ -334,7 +334,7 @@ export async function getActivePromotions(): Promise<{ promotion: Promotion; gif
     const giftList = (gifts || []) as PromotionGift[];
     if (giftList.length === 0) continue;
     const productIds = giftList.map((g) => g.product_id);
-    const { data: products } = await supabase.from('products').select('*').in('id', productIds).eq('is_active', true).gt('stock', 0);
+    const { data: products } = await supabase.from('products').select(PRODUCT_PUBLIC_COLUMNS).in('id', productIds).eq('is_active', true).gt('stock', 0);
     const giftProducts = (products || []) as Product[];
     if (giftProducts.length === 0) continue;
     results.push({ promotion: p, gifts: giftList, giftProducts });
@@ -347,7 +347,7 @@ export async function getComboPacks(): Promise<{ combo: ComboPack; items: { prod
   if (!combos || combos.length === 0) return [];
   const results: { combo: ComboPack; items: { product: Product; quantity: number }[] }[] = [];
   for (const c of combos as ComboPack[]) {
-    const { data: items } = await supabase.from('combo_items').select('*, products(*)').eq('combo_id', c.id);
+    const { data: items } = await supabase.from('combo_items').select(`*, products(${PRODUCT_PUBLIC_COLUMNS})`).eq('combo_id', c.id);
     const comboItems = (items || []).map((item: any) => ({ product: item.products as Product, quantity: item.quantity })).filter((item: any) => item.product);
     if (comboItems.length === 0) continue;
     results.push({ combo: c, items: comboItems });
@@ -420,7 +420,7 @@ export async function getSupportTickets(userId?: string): Promise<SupportTicket[
 }
 
 export async function getSeasonalProducts(month: string, growingType?: string): Promise<Product[]> {
-  let query = supabase.from('products').select('*').eq('is_active', true).eq('is_ads_only', false).contains('suitable_months', [month]);
+  let query = supabase.from('products').select(PRODUCT_PUBLIC_COLUMNS).eq('is_active', true).eq('is_ads_only', false).contains('suitable_months', [month]);
   if (growingType) query = query.eq('growing_type', growingType);
   const { data } = await query.limit(12);
   return (data || []) as Product[];
