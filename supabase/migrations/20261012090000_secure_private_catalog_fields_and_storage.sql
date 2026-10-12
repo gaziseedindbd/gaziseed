@@ -53,6 +53,20 @@ WITH CHECK (
 REVOKE ALL ON TABLE public.product_costs FROM PUBLIC, anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.product_costs TO authenticated;
 
+-- Keep customer photo reviews working without giving customers write access to product assets.
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'review-images',
+  'review-images',
+  true,
+  5242880,
+  ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']::text[]
+)
+ON CONFLICT (id) DO UPDATE
+SET public = true,
+    file_size_limit = EXCLUDED.file_size_limit,
+    allowed_mime_types = EXCLUDED.allowed_mime_types;
+
 -- Replace table-wide SELECT privileges with explicit column grants.
 -- New columns are not automatically exposed; grant them only after review.
 DO $$
@@ -109,6 +123,13 @@ ON storage.objects
 FOR INSERT
 TO authenticated
 WITH CHECK (bucket_id = 'product-images' AND public.is_admin());
+
+DROP POLICY IF EXISTS "Review uploads can insert review images" ON storage.objects;
+CREATE POLICY "Review uploads can insert review images"
+ON storage.objects
+FOR INSERT
+TO anon, authenticated
+WITH CHECK (bucket_id = 'review-images' AND name LIKE 'review-%');
 
 CREATE POLICY "Storage admins can update product images"
 ON storage.objects
