@@ -22,6 +22,34 @@ SET country_code = EXCLUDED.country_code,
     cost_price = EXCLUDED.cost_price,
     updated_at = now();
 
+-- Remove the legacy duplicate after copying it into the private table.
+UPDATE public.products
+SET cost_price = NULL
+WHERE cost_price IS NOT NULL;
+
+-- Prevent future authenticated/admin inserts from repopulating the legacy column.
+CREATE OR REPLACE FUNCTION public.clear_legacy_product_cost_price()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public
+AS $function$
+BEGIN
+  IF coalesce(auth.role(), '') <> 'service_role' THEN
+    NEW.cost_price := NULL;
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.clear_legacy_product_cost_price() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.clear_legacy_product_cost_price() TO service_role;
+
+DROP TRIGGER IF EXISTS trg_clear_legacy_product_cost_price ON public.products;
+CREATE TRIGGER trg_clear_legacy_product_cost_price
+BEFORE INSERT OR UPDATE OF cost_price ON public.products
+FOR EACH ROW
+EXECUTE FUNCTION public.clear_legacy_product_cost_price();
+
 ALTER TABLE public.product_costs ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS product_costs_admin_branch_access ON public.product_costs;
