@@ -42,7 +42,7 @@ export default function AdminSettingsPage() {
         supabase.from('site_settings').select('*').eq('country_code', branch).maybeSingle(),
         supabase.from('marketing_settings').select('*').eq('id', 1).eq('country_code', branch).maybeSingle(),
         supabase.from('ai_settings').select('id,is_enabled,provider,model,base_url,temperature,max_tokens,feature_flags,country_code,api_key_secret_id').eq('id', 1).eq('country_code', branch).maybeSingle(),
-        supabase.from('referral_settings').select('*').eq('id', 1).eq('country_code', branch).maybeSingle(),
+        supabase.from('referral_settings').select('*').eq('country_code', branch).maybeSingle(),
       ]);
       setSiteForm(site.data || {});
       setMarketingForm(mkt.data || {});
@@ -190,7 +190,7 @@ export default function AdminSettingsPage() {
       terms: referralForm.terms || null,
       updated_by: userData.user?.id || null,
     };
-    const { error } = await supabase.from('referral_settings').update({ ...payload, country_code: adminCountry }).eq('id', 1).eq('country_code', adminCountry);
+    const { error } = await supabase.from('referral_settings').update({ ...payload, country_code: adminCountry }).eq('country_code', adminCountry);
     setSaving(false);
     if (error) { toast('সেভ ব্যর্থ', 'error'); return; }
     toast('রেফারেল সেটিংস সেভ হয়েছে');
@@ -494,19 +494,19 @@ export default function AdminSettingsPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">রিওয়ার্ড ভ্যালু {referralForm.reward_type === 'percentage' ? '(%)' : '(৳)'}</label>
+            <label className="mb-1 block text-sm font-medium">রিওয়ার্ড ভ্যালু {referralForm.reward_type === 'percentage' ? '(%)' : (adminCountry === 'IN' ? '(₹)' : '(৳)')}</label>
             <input type="number" min="0" step="0.01" value={referralForm.reward_value ?? 0} onChange={(e) => setReferralForm({ ...referralForm, reward_value: e.target.value })} className="input-bangla" />
-            <p className="mt-1 text-xs text-muted-foreground">{referralForm.reward_type === 'percentage' ? 'শতকরা হার (যেমন ১০ = ১০%)' : 'নির্দিষ্ট পরিমাণ (৳)'}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{referralForm.reward_type === 'percentage' ? 'শতকরা হার (যেমন ১০ = ১০%)' : `নির্দিষ্ট পরিমাণ (${adminCountry === 'IN' ? '₹' : '৳'})`}</p>
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">ন্যূনতম যোগ্য অর্ডার পরিমাণ (৳)</label>
+            <label className="mb-1 block text-sm font-medium">ন্যূনতম যোগ্য অর্ডার পরিমাণ {adminCountry === 'IN' ? '(₹)' : '(৳)'}</label>
             <input type="number" min="0" step="0.01" value={referralForm.min_order_amount ?? 0} onChange={(e) => setReferralForm({ ...referralForm, min_order_amount: e.target.value })} className="input-bangla" />
             <p className="mt-1 text-xs text-muted-foreground">রেফারেল রিওয়ার্ডের জন্য প্রয়োজনীয় ন্যূনতম অর্ডার মূল্য</p>
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">সর্বোচ্চ রিওয়ার্ড (৳) <span className="text-muted-foreground">(ঐচ্ছিক)</span></label>
+            <label className="mb-1 block text-sm font-medium">সর্বোচ্চ রিওয়ার্ড {adminCountry === 'IN' ? '(₹)' : '(৳)'} <span className="text-muted-foreground">(ঐচ্ছিক)</span></label>
             <input type="number" min="0" step="0.01" value={referralForm.max_reward_per_referral ?? ''} onChange={(e) => setReferralForm({ ...referralForm, max_reward_per_referral: e.target.value })} className="input-bangla" placeholder="সর্বোচ্চ সীমা নেই" />
             <p className="mt-1 text-xs text-muted-foreground">প্রতি রেফারেলে সর্বোচ্চ রিওয়ার্ড সীমা (ঐচ্ছিক)</p>
           </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { Copy, Check, Users, Clock, CheckCircle, Gift, Link2, Wallet } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 
@@ -34,19 +34,23 @@ export default function ReferralSection({ userId }: { userId: string }) {
 
   const loadReferralData = async () => {
     try {
-      const { data: codeData } = await supabase
-        .from('referral_codes')
-        .select('code')
-        .eq('user_id', userId)
-        .maybeSingle();
+      const country = getVisitorCountry();
+      const { data: codeData, error: codeError } = await supabase.rpc(
+        'get_or_create_my_referral_code',
+        { p_country_code: country },
+      );
 
-      if (codeData) setReferralCode(codeData.code);
+      if (!codeError && typeof codeData === 'string') setReferralCode(codeData);
+      else setReferralCode('');
 
-      const { data: referrals } = await supabase
+      const { data: referrals, error: referralsError } = await supabase
         .from('referrals')
         .select('id, status, created_at')
         .eq('referrer_id', userId)
+        .eq('country_code', country)
         .order('created_at', { ascending: false });
+
+      if (referralsError) throw referralsError;
 
       const referralList = referrals || [];
       const total = referralList.length;
@@ -59,7 +63,8 @@ export default function ReferralSection({ userId }: { userId: string }) {
         const { data: rewards } = await supabase
           .from('referral_rewards')
           .select('referral_id, status, amount')
-          .in('referral_id', referralIds);
+          .in('referral_id', referralIds)
+          .eq('country_code', country);
 
         const rewardMap = new Map<string, { status: string; amount: number }>();
         (rewards || []).forEach(rw => rewardMap.set(rw.referral_id, {
@@ -141,7 +146,9 @@ export default function ReferralSection({ userId }: { userId: string }) {
     return colors[status] || 'text-muted-foreground';
   };
 
-  const formatReward = (amount: number) => `৳${amount.toLocaleString('bn-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatReward = (amount: number) => getVisitorCountry() === 'IN'
+    ? `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : `৳${amount.toLocaleString('bn-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   if (loading) {
     return (
