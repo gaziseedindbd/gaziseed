@@ -28,6 +28,7 @@ type KnowledgeCandidate = {
   language: KnowledgePair['language'] | null;
   score: number;
   matchedTokens: number;
+  identity: string;
 };
 
 type TextScore = {
@@ -147,17 +148,6 @@ function buildFaqPairs(row: Record<string, unknown>): KnowledgePair[] {
   return pairs.filter((pair) => pair.question && pair.answer);
 }
 
-function pairPreference(language: KnowledgePair['language']): number {
-  const requested = detectMessengerReplyLanguageFromTarget();
-  return language === requested ? 0.5 : 0;
-}
-
-// Kept separate for focused unit tests; matching always stays paired with its
-// source-language answer so a mismatched translation cannot select another answer.
-function detectMessengerReplyLanguageFromTarget(): KnowledgePair['language'] {
-  return 'English';
-}
-
 export function rankMessengerCmsFaq(
   query: string,
   rows: Array<Record<string, unknown>>,
@@ -179,6 +169,7 @@ export function rankMessengerCmsFaq(
         language: pair.language,
         score: match.score + (pair.language === requestedLanguage ? 0.75 : 0),
         matchedTokens: match.matchedTokens,
+        identity: asText(row.id) || pair.question,
       });
     }
   }
@@ -237,6 +228,7 @@ function makeDocumentCandidate(
     language: null,
     score: combined,
     matchedTokens: bestParagraph.match.matchedTokens,
+    identity: slug || title || source,
   };
 }
 
@@ -250,7 +242,7 @@ function selectUnambiguousCandidate(
   const runnerUp = candidates[1];
   if (
     runnerUp &&
-    runnerUp.source !== best.source &&
+    runnerUp.identity !== best.identity &&
     Math.abs(best.score - runnerUp.score) < 1.5
   ) {
     return null;
