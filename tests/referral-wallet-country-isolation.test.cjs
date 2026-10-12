@@ -34,6 +34,10 @@ test('wallet ledger country is derived from its referral or order parent and mis
   assert.match(migration, /SELECT upper\(o\.country_code\)[\s\S]*?WHERE o\.id = NEW\.order_id/i);
   assert.match(migration, /cannot cross country scopes/i);
   assert.match(migration, /NEW\.country_code := v_country/i);
+  assert.match(
+    migration,
+    /REVOKE ALL ON FUNCTION public\.enforce_referral_wallet_transaction_country\(\)[\s\S]*?FROM PUBLIC, anon, authenticated/i,
+  );
 });
 
 test('qualification, reward issuance, and cancellation reversals preserve the referral country', () => {
