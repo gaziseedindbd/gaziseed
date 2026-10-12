@@ -193,7 +193,7 @@ export function formatMessengerDeliveryPolicyReply(
   const asksCodOnly = /(?:\bcod\b|cash on delivery|ক্যাশ অন ডেলিভারি|সিওডি|कैश ऑन डिलीवरी)/i.test(normalized)
     && !wantsCharge
     && !wantsTime;
-  const asksCoverage = /(?:do you deliver|delivery to|deliver to|delivery area|pincode|pin code|postcode|deliverable|ডেলিভারি হবে|ডেলিভারি করেন|কোন এলাকায়|কোন এলাকায়|পৌঁছাবে|পিন কোড|এলাকা|कहाँ डिलीवरी|डिलीवरी करते|पिन कोड|किस इलाके)/i.test(normalized);
+  const asksCoverage = /(?:do you deliver|delivery to|deliver to|delivery area|delivery.*(?:hobe|korbe|korben|ache|ase|hoy|হবে|হয়|হয়|আছে|করেন|করবে)|(?:hobe|korbe|korben).{0,20}delivery|pincode|pin code|postcode|deliverable|ডেলিভারি হবে|ডেলিভারি করেন|কোন এলাকায়|কোন এলাকায়|পৌঁছাবে|পিন কোড|এলাকা|कहाँ डिलीवरी|डिलीवरी करते|पिन कोड|किस इलाके)/i.test(normalized);
 
   // A list of general rates cannot verify whether a particular postal area is covered.
   if (asksCoverage && !wantsCharge && !wantsTime && !asksCodOnly) return null;
