@@ -221,6 +221,12 @@ declare
   v_order jsonb;
   v_items jsonb;
 BEGIN
+  -- Reject oversized input before touching counters or order records.
+  IF length(coalesce(p_order_number, '')) > 64
+     OR length(coalesce(p_customer_phone, '')) > 32 THEN
+    RETURN NULL;
+  END IF;
+
   -- Keep rate limiting inside the SECURITY DEFINER RPC so direct Data API
   -- callers cannot bypass the website's UI or Edge route.
   PERFORM public.enforce_public_rpc_rate_limit(
@@ -230,12 +236,6 @@ BEGIN
     30,
     100
   );
-
-  -- Reject oversized tracking input before querying order records.
-  IF length(coalesce(p_order_number, '')) > 64
-     OR length(coalesce(p_customer_phone, '')) > 32 THEN
-    RETURN NULL;
-  END IF;
   select jsonb_build_object(
     'id', o.id,
     'order_number', o.order_number,
