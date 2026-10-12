@@ -154,7 +154,7 @@ function AnimatedBuilder({ page, products, countryCode, onClose, onSaved }: { pa
           is_active: true,
           is_ads_only: false,
           country_code: countryCode,
-        }).select().single();
+        }).select('id, image').single();
         if (error) throw error;
         createdProduct = data;
         finalProductId = data.id;
