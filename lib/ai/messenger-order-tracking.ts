@@ -116,7 +116,7 @@ export async function getMessengerOrderTrackingReply(args: {
 
   if (ordersError) return { handled: true, reply: fallbackReply };
 
-  const rows = (orders || []) as Array<Record<string, unknown>>;
+  const rows = (orders || []) as unknown as Array<Record<string, unknown>>;
   if (!rows.length) {
     const failed = await callVerificationGate('fail');
     if (!failed) return { handled: true, reply: fallbackReply };
