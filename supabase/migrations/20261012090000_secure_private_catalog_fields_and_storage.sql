@@ -23,9 +23,16 @@ SET country_code = EXCLUDED.country_code,
     updated_at = now();
 
 -- Remove the legacy duplicate after copying it into the private table.
-UPDATE public.products
+UPDATE public.products AS p
 SET cost_price = NULL
-WHERE cost_price IS NOT NULL;
+WHERE p.cost_price IS NOT NULL
+  AND EXISTS (
+    SELECT 1
+    FROM public.product_costs AS pc
+    WHERE pc.product_id = p.id
+      AND pc.country_code = upper(p.country_code)
+      AND pc.cost_price IS NOT DISTINCT FROM p.cost_price
+  );
 
 -- Prevent future authenticated/admin inserts from repopulating the legacy column.
 CREATE OR REPLACE FUNCTION public.clear_legacy_product_cost_price()
