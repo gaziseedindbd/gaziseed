@@ -200,6 +200,106 @@
       "tokens": 124,
       "chars": 1945,
       "hasContent": true
+    },
+    {
+      "version": "20260810184101",
+      "name": "add_watermark_settings",
+      "filename": "20260810184101_add_watermark_settings.sql",
+      "path": "supabase/migrations/20260810184101_add_watermark_settings.sql",
+      "fnv64": "5ccd4c5ff1fae6b9",
+      "tokens": 75,
+      "chars": 564,
+      "hasContent": true
+    },
+    {
+      "version": "20260812205315",
+      "name": "20260812190000_add_referral_program_foundation",
+      "filename": "20260812205315_20260812190000_add_referral_program_foundation.sql",
+      "path": "supabase/migrations/20260812205315_20260812190000_add_referral_program_foundation.sql",
+      "fnv64": "466ded2effb40e0d",
+      "tokens": 874,
+      "chars": 11355,
+      "hasContent": true
+    },
+    {
+      "version": "20260812205724",
+      "name": "20260812210000_add_referral_code_auto_generation",
+      "filename": "20260812205724_20260812210000_add_referral_code_auto_generation.sql",
+      "path": "supabase/migrations/20260812205724_20260812210000_add_referral_code_auto_generation.sql",
+      "fnv64": "df711f67986f892d",
+      "tokens": 81,
+      "chars": 4841,
+      "hasContent": true
+    },
+    {
+      "version": "20260812211208",
+      "name": "add_referral_terms_column",
+      "filename": "20260812211208_add_referral_terms_column.sql.sql",
+      "path": "supabase/migrations/20260812211208_add_referral_terms_column.sql.sql",
+      "fnv64": "627fbfc5490d0266",
+      "tokens": 11,
+      "chars": 69,
+      "hasContent": true
+    },
+    {
+      "version": "20260812211600",
+      "name": "add_referral_qualification_logic",
+      "filename": "20260812211600_add_referral_qualification_logic.sql.sql",
+      "path": "supabase/migrations/20260812211600_add_referral_qualification_logic.sql.sql",
+      "fnv64": "6b4832fc6d6f8313",
+      "tokens": 97,
+      "chars": 3814,
+      "hasContent": true
+    },
+    {
+      "version": "20260812212031",
+      "name": "add_referral_reward_calculation",
+      "filename": "20260812212031_add_referral_reward_calculation.sql.sql",
+      "path": "supabase/migrations/20260812212031_add_referral_reward_calculation.sql.sql",
+      "fnv64": "5cfaf1ea6d614f60",
+      "tokens": 76,
+      "chars": 3112,
+      "hasContent": true
+    },
+    {
+      "version": "20260812212843",
+      "name": "add_referral_reward_issue_ledger",
+      "filename": "20260812212843_add_referral_reward_issue_ledger.sql.sql",
+      "path": "supabase/migrations/20260812212843_add_referral_reward_issue_ledger.sql.sql",
+      "fnv64": "305690316d6f8dfe",
+      "tokens": 55,
+      "chars": 3397,
+      "hasContent": true
+    },
+    {
+      "version": "20260812212916",
+      "name": "fix_reward_ledger_trigger_timing",
+      "filename": "20260812212916_fix_reward_ledger_trigger_timing.sql.sql",
+      "path": "supabase/migrations/20260812212916_fix_reward_ledger_trigger_timing.sql.sql",
+      "fnv64": "1c5a4deae0070737",
+      "tokens": 24,
+      "chars": 497,
+      "hasContent": true
+    },
+    {
+      "version": "20260814204631",
+      "name": "fix_referral_trigger_search_path",
+      "filename": "20260814204631_fix_referral_trigger_search_path.sql",
+      "path": "supabase/migrations/20260814204631_fix_referral_trigger_search_path.sql",
+      "fnv64": "68799f1f3b7f016e",
+      "tokens": 38,
+      "chars": 566,
+      "hasContent": true
+    },
+    {
+      "version": "20260815114254",
+      "name": "create_fresh_master_admin_account",
+      "filename": "20260815114254_create_fresh_master_admin_account.sql",
+      "path": "supabase/migrations/20260815114254_create_fresh_master_admin_account.sql",
+      "fnv64": "8301fbf67175dcd7",
+      "tokens": 124,
+      "chars": 1689,
+      "hasContent": true
     }
   ]
 }
