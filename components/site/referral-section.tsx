@@ -146,7 +146,9 @@ export default function ReferralSection({ userId }: { userId: string }) {
     return colors[status] || 'text-muted-foreground';
   };
 
-  const formatReward = (amount: number) => getVisitorCountry() === 'IN'\n    ? `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`\n    : `৳${amount.toLocaleString('bn-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatReward = (amount: number) => getVisitorCountry() === 'IN'
+    ? `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : `৳${amount.toLocaleString('bn-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   if (loading) {
     return (
