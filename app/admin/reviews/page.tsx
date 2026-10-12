@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { REVIEW_PUBLIC_COLUMNS } from '@/lib/supabase/public-columns';
 import { Check, X, Trash2, MessageCircle, Star, Edit, Loader2 } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 
@@ -19,7 +20,7 @@ export default function AdminReviewsPage() {
   const loadReviews = async (country = adminCountry) => {
     const { data, error } = await supabase
       .from('reviews')
-      .select('*')
+      .select(REVIEW_PUBLIC_COLUMNS)
       .eq('country_code', country)
       .order('created_at', { ascending: false });
 
