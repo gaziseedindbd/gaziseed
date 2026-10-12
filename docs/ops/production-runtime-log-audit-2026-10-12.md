@@ -8,7 +8,7 @@ No Production SQL, migration, data, environment variable, or deployment was chan
 
 ## Executive summary
 
-The production site alias `www.gaziseed.com` currently points to a READY Production deployment on `main` (commit `40d0abceb729`, merged PR #239). Vercel reported no Production runtime error records in the last 30-minute query window. That does **not** mean there are no backend errors: Supabase logs continued to show PostgREST timeout messages and API-key-related HTTP 401 responses.
+The production site alias `www.gaziseed.com` currently points to a READY Production deployment on `main` (commit `40d0abceb729`, merged PR #239). Vercel reported no Production runtime error records in the last 30-minute query window. Supabase edge logs did still show API-key-related HTTP 401 responses. The repeated PostgREST `Warp server error` line must be interpreted cautiously: the upstream PostgREST project confirms this exact message can be a false-positive log during ordinary thread cancellation, not necessarily a failed request (https://github.com/PostgREST/postgrest/issues/4799).
 
 The most actionable code/config mismatch is that Vercel has `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` configured for Production and Preview, but the current `main` browser/server Supabase helpers prioritize `NEXT_PUBLIC_SUPABASE_ANON_KEY` and then a hard-coded fallback. The publishable-key environment variable is ignored by those helpers. This is a strong candidate for the repeated `Invalid API key` / `401` reports; it is not yet proven by an end-to-end post-deploy test.
 
@@ -16,12 +16,13 @@ The most actionable code/config mismatch is that Vercel has `NEXT_PUBLIC_SUPABAS
 
 ### 1. Supabase PostgREST timeout message — HIGH, still occurring
 
-- In the 24-hour log window, **791** records matched `Warp server error: Thread killed by timeout manager` in `postgrest_logs`; the broader error/timeout search returned 935 PostgREST records.
-- In the final 30-minute check, **34** of the same timeout messages appeared; most recent timestamp: **2026-10-12 05:25:35 UTC**.
+- In the 24-hour log window, **791** records contained `Warp server error: Thread killed by timeout manager`; 34 more appeared in the final 30-minute check, most recently at **2026-10-12 05:25:35 UTC**.
+- The upstream PostgREST issue tracker states that this exact message can be a benign log during normal thread cancellation and was later changed to log only at debug level. The live database reported PostgREST 14.5, so the message count must **not** be counted as a matching number of failed user requests without corroboration.
 - A snapshot of `pg_stat_activity` showed 10 idle PostgREST client connections and no long-running active application query at the exact sample time.
-- `pg_stat_statements` did not reveal one obvious application query with latency large enough to explain these recurring timeout messages. A high-volume query on `admin_notifications` had 7,905 calls, ~12.5 ms mean, and ~346 ms maximum in that statistics snapshot. Those figures do not explain 30–60 second timeout messages by themselves.
+- `pg_stat_statements` did not reveal one obvious application query with latency large enough to explain recurring service-level errors. A high-volume query on `admin_notifications` had 7,905 calls, ~12.5 ms mean, and ~346 ms maximum in that statistics snapshot.
+- The 24-hour edge status aggregation did not show 500/503 responses associated with the timeout message; the visible non-2xx requests were predominantly 401 key/auth-related responses and a handful of 400/403 responses.
 
-**Conclusion:** the error is real and ongoing, but the available log fields do not link each timeout to a specific HTTP path or SQL statement. Do not blindly raise timeouts or delete indexes. The next diagnostic step is to correlate PostgREST service logs with contemporaneous edge request IDs and inspect query/lock waits during a live occurrence.
+**Conclusion:** classify these as **likely PostgREST log noise unless correlated to actual failed requests**, not 791 confirmed failures. No specific slow query or sustained connection saturation was found from the available snapshots. Do not blindly raise timeouts or delete indexes. If customers report failures that coincide with these timestamps, correlate edge request IDs, PostgREST logs, and query/lock waits before escalating.
 
 ### 2. Supabase Data API 401 responses — HIGH
 
