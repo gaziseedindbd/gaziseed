@@ -600,6 +600,106 @@
       "tokens": 64,
       "chars": 4494,
       "hasContent": true
+    },
+    {
+      "version": "20260824090000",
+      "name": "add_feature_toggle_columns",
+      "filename": "20260824090000_add_feature_toggle_columns.sql",
+      "path": "supabase/migrations/20260824090000_add_feature_toggle_columns.sql",
+      "fnv64": "5803cd8a0239c50f",
+      "tokens": 125,
+      "chars": 788,
+      "hasContent": true
+    },
+    {
+      "version": "20260824104500",
+      "name": "harden_rls_auth_initplan",
+      "filename": "20260824104500_harden_rls_auth_initplan.sql",
+      "path": "supabase/migrations/20260824104500_harden_rls_auth_initplan.sql",
+      "fnv64": "3ffa7051c2e1ad72",
+      "tokens": 133,
+      "chars": 931,
+      "hasContent": true
+    },
+    {
+      "version": "20260824220000",
+      "name": "referral_reward_safety",
+      "filename": "20260824220000_referral_reward_safety.sql",
+      "path": "supabase/migrations/20260824220000_referral_reward_safety.sql",
+      "fnv64": "cbf29ce484222325",
+      "tokens": 0,
+      "chars": 309,
+      "hasContent": true
+    },
+    {
+      "version": "20260824221500",
+      "name": "referral_reward_issuance",
+      "filename": "20260824221500_referral_reward_issuance.sql",
+      "path": "supabase/migrations/20260824221500_referral_reward_issuance.sql",
+      "fnv64": "cbf29ce484222325",
+      "tokens": 0,
+      "chars": 285,
+      "hasContent": true
+    },
+    {
+      "version": "20260824230000",
+      "name": "complete_referral_program",
+      "filename": "20260824230000_complete_referral_program.sql",
+      "path": "supabase/migrations/20260824230000_complete_referral_program.sql",
+      "fnv64": "df8bc8fa20d3520f",
+      "tokens": 1216,
+      "chars": 12845,
+      "hasContent": true
+    },
+    {
+      "version": "20260825041143",
+      "name": "harden_storage_object_policies",
+      "filename": "20260825041143_harden_storage_object_policies.sql",
+      "path": "supabase/migrations/20260825041143_harden_storage_object_policies.sql",
+      "fnv64": "de87d2ae38c48b2e",
+      "tokens": 286,
+      "chars": 1974,
+      "hasContent": true
+    },
+    {
+      "version": "20260825093000",
+      "name": "fix_referral_wallet_balance_ledger_usage",
+      "filename": "20260825093000_fix_referral_wallet_balance_ledger_usage.sql",
+      "path": "supabase/migrations/20260825093000_fix_referral_wallet_balance_ledger_usage.sql",
+      "fnv64": "8dc91090f31e2fec",
+      "tokens": 25,
+      "chars": 854,
+      "hasContent": true
+    },
+    {
+      "version": "20260929140000",
+      "name": "add_messenger_customer_profiles",
+      "filename": "20260929140000_add_messenger_customer_profiles.sql",
+      "path": "supabase/migrations/20260929140000_add_messenger_customer_profiles.sql",
+      "fnv64": "08ffa4d337beab98",
+      "tokens": 342,
+      "chars": 2384,
+      "hasContent": true
+    },
+    {
+      "version": "20260929145000",
+      "name": "messenger_rate_limit_abuse_protection",
+      "filename": "20260929145000_messenger_rate_limit_abuse_protection.sql",
+      "path": "supabase/migrations/20260929145000_messenger_rate_limit_abuse_protection.sql",
+      "fnv64": "9050fc64b0d7464e",
+      "tokens": 380,
+      "chars": 8959,
+      "hasContent": true
+    },
+    {
+      "version": "20260929170000",
+      "name": "messenger_product_search_optimization",
+      "filename": "20260929170000_messenger_product_search_optimization.sql",
+      "path": "supabase/migrations/20260929170000_messenger_product_search_optimization.sql",
+      "fnv64": "700f4b3b6c242f7a",
+      "tokens": 481,
+      "chars": 7449,
+      "hasContent": true
     }
   ]
 }
