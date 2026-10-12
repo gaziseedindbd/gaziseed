@@ -90,7 +90,7 @@ WITH CHECK (
 );
 
 REVOKE ALL ON TABLE public.product_costs FROM PUBLIC, anon;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.product_costs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.product_costs TO authenticated, service_role;
 
 -- Keep customer photo reviews working without giving customers write access to product assets.
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
