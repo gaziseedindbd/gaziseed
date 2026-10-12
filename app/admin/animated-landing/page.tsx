@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
-import { PRODUCT_PUBLIC_COLUMNS } from '@/lib/supabase/public-columns';
 import { toast } from '@/components/site/toast-provider';
 import { Copy, Eye, Pencil, Plus, Power, Sparkles, Trash2, X } from 'lucide-react';
 import { MultilingualFields } from '@/components/admin/multilingual-fields';
@@ -155,7 +154,7 @@ function AnimatedBuilder({ page, products, countryCode, onClose, onSaved }: { pa
           is_active: true,
           is_ads_only: false,
           country_code: countryCode,
-        }).select(PRODUCT_PUBLIC_COLUMNS).single();
+        }).select('id, image').single();
         if (error) throw error;
         createdProduct = data;
         finalProductId = data.id;
