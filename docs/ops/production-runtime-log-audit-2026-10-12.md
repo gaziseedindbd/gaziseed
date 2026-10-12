@@ -74,7 +74,7 @@ The earlier read-only catalog audit identified public-role column SELECT permiss
 
 ## Work currently in progress
 
-1. **Publishable-key resolution:** added to Draft PR #246 in `lib/supabase/client.ts`, `lib/supabase/server.ts`, and `app/api/products/route.ts`. Still requires a Vercel preview/runtime check and confirmation that the `marketing_settings` 401s stop.
+1. **Publishable-key resolution:** isolated in [Draft PR #248](https://github.com/gaziseedindbd/gaziseed/pull/248) and also present in Draft PR #246, in `lib/supabase/client.ts`, `lib/supabase/server.ts`, and `app/api/products/route.ts`. GitHub Build/ESLint checks for PR #248 were still running at report time. Requires a successful Vercel Preview and confirmation that `marketing_settings` 401s stop.
 2. **Private product/review fields and admin-only Storage writes:** Draft PR #246 includes application/migration/test changes. Do not merge or apply its migration until its preview, cost-field round trip, public review rendering, and Storage authorization checks pass in the intended test environment.
 3. **Referral wallet 403:** PR #244's self-scoped RPC fix needs merge/deployment status verification and an authenticated checkout regression.
 4. **PostgREST timeout cluster:** unresolved. A specific route/query has not yet been tied to these service-level timeout records; avoid claiming a root cause until edge/Postgres correlation exists.
