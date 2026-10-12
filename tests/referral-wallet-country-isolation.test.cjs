@@ -16,6 +16,8 @@ test('wallet settings can store separate BD and IN rows and are seeded from docu
   assert.match(migration, /\(1, 'BD', true, 2000, true, 'wallet_balance', 15\)/i);
   assert.match(migration, /\(1, 'IN', true, 2000, true, 'wallet_balance', 15\)/i);
   assert.match(migration, /ON CONFLICT \(id, country_code\) DO NOTHING/i);
+  assert.match(migration, /ALTER TABLE public\.referral_wallet_settings ENABLE ROW LEVEL SECURITY/i);
+  assert.match(migration, /CREATE POLICY referral_wallet_settings_branch_select[\s\S]*?FOR SELECT TO authenticated[\s\S]*?country_code = public\.current_visitor_country\(\)/i);
 });
 
 test('every balance and spend calculation includes the explicit wallet country', () => {
@@ -51,6 +53,12 @@ test('self-scoped checkout summary derives the owner from auth.uid() and validat
   assert.match(selfScoped[1], /v_user_id uuid := auth\.uid\(\)/i);
   assert.match(selfScoped[1], /v_country_code NOT IN \('BD', 'IN'\)/i);
   assert.match(selfScoped[1], /get_referral_wallet_balance\(v_user_id, v_country_code\)/i);
+  const publicWrapper = migration.match(
+    /CREATE OR REPLACE FUNCTION public\.get_my_referral_wallet_summary\(p_country_code text\)([\s\S]*?)\$function\$;/i,
+  );
+  assert.ok(publicWrapper, 'expected the public RPC wrapper');
+  assert.match(publicWrapper[1], /SECURITY INVOKER/i);
+  assert.doesNotMatch(publicWrapper[1], /SECURITY DEFINER/i);
   assert.match(checkout, /supabase\.rpc\(['"]get_my_referral_wallet_summary['"]\s*,\s*\{\s*p_country_code:\s*visitorCountry\s*\}\s*\)/);
   assert.doesNotMatch(checkout, /get_referral_wallet_summary['"]\s*,\s*\{\s*p_user_id\s*:/);
 });
