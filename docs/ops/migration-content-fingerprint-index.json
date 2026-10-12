@@ -300,6 +300,106 @@
       "tokens": 124,
       "chars": 1689,
       "hasContent": true
+    },
+    {
+      "version": "20260815114950",
+      "name": "create_product_images_bucket",
+      "filename": "20260815114950_create_product_images_bucket.sql",
+      "path": "supabase/migrations/20260815114950_create_product_images_bucket.sql",
+      "fnv64": "a3081e2a2d749b8a",
+      "tokens": 87,
+      "chars": 1704,
+      "hasContent": true
+    },
+    {
+      "version": "20260817020243",
+      "name": "create_master_admin_seedbari_account",
+      "filename": "20260817020243_create_master_admin_seedbari_account.sql",
+      "path": "supabase/migrations/20260817020243_create_master_admin_seedbari_account.sql",
+      "fnv64": "317ec4942c2b2331",
+      "tokens": 156,
+      "chars": 1751,
+      "hasContent": true
+    },
+    {
+      "version": "20260817020658",
+      "name": "fix_admin_rpc_search_path",
+      "filename": "20260817020658_fix_admin_rpc_search_path.sql",
+      "path": "supabase/migrations/20260817020658_fix_admin_rpc_search_path.sql",
+      "fnv64": "07bb89eab0fff7e9",
+      "tokens": 78,
+      "chars": 1604,
+      "hasContent": true
+    },
+    {
+      "version": "20260817044128",
+      "name": "20260812212031_add_referral_reward_calculation",
+      "filename": "20260817044128_20260812212031_add_referral_reward_calculation.sql.sql.sql",
+      "path": "supabase/migrations/20260817044128_20260812212031_add_referral_reward_calculation.sql.sql.sql",
+      "fnv64": "5cfaf1ea6d614f60",
+      "tokens": 76,
+      "chars": 1941,
+      "hasContent": true
+    },
+    {
+      "version": "20260817044137",
+      "name": "20260812212843_add_referral_reward_issue_ledger",
+      "filename": "20260817044137_20260812212843_add_referral_reward_issue_ledger.sql.sql.sql",
+      "path": "supabase/migrations/20260817044137_20260812212843_add_referral_reward_issue_ledger.sql.sql.sql",
+      "fnv64": "305690316d6f8dfe",
+      "tokens": 55,
+      "chars": 1981,
+      "hasContent": true
+    },
+    {
+      "version": "20260817044143",
+      "name": "20260812212916_fix_reward_ledger_trigger_timing",
+      "filename": "20260817044143_20260812212916_fix_reward_ledger_trigger_timing.sql.sql.sql",
+      "path": "supabase/migrations/20260817044143_20260812212916_fix_reward_ledger_trigger_timing.sql.sql.sql",
+      "fnv64": "1c5a4deae0070737",
+      "tokens": 24,
+      "chars": 212,
+      "hasContent": true
+    },
+    {
+      "version": "20260817044149",
+      "name": "20260814204631_fix_referral_trigger_search_path",
+      "filename": "20260817044149_20260814204631_fix_referral_trigger_search_path.sql.sql",
+      "path": "supabase/migrations/20260817044149_20260814204631_fix_referral_trigger_search_path.sql.sql",
+      "fnv64": "68799f1f3b7f016e",
+      "tokens": 38,
+      "chars": 238,
+      "hasContent": true
+    },
+    {
+      "version": "20260817044158",
+      "name": "20260815114254_create_fresh_master_admin_account",
+      "filename": "20260817044158_20260815114254_create_fresh_master_admin_account.sql.sql",
+      "path": "supabase/migrations/20260817044158_20260815114254_create_fresh_master_admin_account.sql.sql",
+      "fnv64": "8301fbf67175dcd7",
+      "tokens": 124,
+      "chars": 749,
+      "hasContent": true
+    },
+    {
+      "version": "20260817044206",
+      "name": "20260815114950_create_product_images_bucket",
+      "filename": "20260817044206_20260815114950_create_product_images_bucket.sql.sql",
+      "path": "supabase/migrations/20260817044206_20260815114950_create_product_images_bucket.sql.sql",
+      "fnv64": "a3081e2a2d749b8a",
+      "tokens": 87,
+      "chars": 464,
+      "hasContent": true
+    },
+    {
+      "version": "20260817044213",
+      "name": "20260817020243_create_master_admin_seedbari_account",
+      "filename": "20260817044213_20260817020243_create_master_admin_seedbari_account.sql.sql",
+      "path": "supabase/migrations/20260817044213_20260817020243_create_master_admin_seedbari_account.sql.sql",
+      "fnv64": "317ec4942c2b2331",
+      "tokens": 156,
+      "chars": 940,
+      "hasContent": true
     }
   ]
 }
