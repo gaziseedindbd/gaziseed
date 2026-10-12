@@ -39,6 +39,7 @@ import {
   isMessengerDeliveryPolicyQuestion,
   type MessengerDeliveryPolicy,
 } from '../lib/ai/messenger-delivery-tool';
+import { isMessengerOrderInterruptRequest } from '../lib/ai/messenger-intents';
 
 const TEST_ENV_KEYS = [
   'AI_MESSENGER_ENABLED',
@@ -549,6 +550,13 @@ function makeTestDeliveryPolicy(country: 'BD' | 'IN' = 'BD'): MessengerDeliveryP
       : [],
   };
 }
+
+test('delivery questions interrupt an unrelated pending product order and should route to delivery policy', () => {
+  const question = 'ভারতে ₹৫০০ টাকার অর্ডারে ডেলিভারি চার্জ কত?';
+
+  assert.equal(isMessengerDeliveryPolicyQuestion(question), true);
+  assert.equal(isMessengerOrderInterruptRequest(question), true);
+});
 
 test('Messenger delivery-charge replies use the checkout order-value rules directly', () => {
   const reply = formatMessengerDeliveryPolicyReply(
