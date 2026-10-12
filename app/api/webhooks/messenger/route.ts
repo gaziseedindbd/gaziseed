@@ -64,6 +64,7 @@ import {
   getMessengerWebsiteKnowledgeAnswer,
   isMessengerProductSpecificKnowledgeQuery,
 } from '@/lib/ai/messenger-knowledge-tool';
+import { getMessengerPublishedContentAnswer } from '@/lib/ai/messenger-cms-knowledge-tool';
 import { getMessengerCustomerRecommendations } from '@/lib/ai/messenger-recommendation-tool';
 import { extractMessengerPhone } from '@/lib/ai/messenger-phone';
 import { subscribeMessengerRestockNotification } from '@/lib/ai/messenger-restock-tool';
@@ -76,6 +77,7 @@ import {
 import {
   getBangladeshHumanSupportAcknowledgement,
   getBangladeshHumanSupportWaitingReply,
+  getMessengerHumanSupportContactReply,
 } from '@/lib/ai/messenger-human-support';
 import {
   classifyMessengerTransactionalReply,
@@ -409,26 +411,6 @@ async function getWebSeedContext(text: string): Promise<string> {
   } catch {
     return '';
   }
-}
-
-function getIndiaHumanSupportMessage(): string {
-  return [
-    'এই বিষয়ে বিস্তারিত তথ্য জানতে আমাদের customer support team-এর সাথে সরাসরি যোগাযোগ করুন।',
-    '',
-    '📱 WhatsApp: https://wa.me/918876981780',
-    '📞 Direct Call: +91 8876981780',
-    '',
-    'উপরের WhatsApp link-এ ক্লিক করে মেসেজ করতে পারেন অথবা সরাসরি কল করতে পারেন।',
-  ].join('\n');
-}
-
-function getBangladeshKnowledgeFallbackMessage(): string {
-  return [
-    'দুঃখিত, এই তথ্যটি এই মুহূর্তে নিশ্চিতভাবে দিতে পারছি না।',
-    '',
-    '🇧🇩 Bangladesh customer support team-এর সাহায্য নিন।',
-    '👤 একজন support agent আপনার বিষয়টি দেখে সাহায্য করবেন।',
-  ].join('\n');
 }
 
 function isKnowledgeFallbackResponse(text: string): boolean {
@@ -1326,11 +1308,14 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   // India customers retain the existing external WhatsApp/direct-call support flow.
   if (resolvedCountry === 'IN' && isHumanSupportRequest(normalizedActionText)) {
-    const supportMessage = getIndiaHumanSupportMessage();
+    const supportMessage = getMessengerHumanSupportContactReply(
+      'IN',
+      detectMessengerReplyLanguage(normalizedActionText),
+    );
     await markConversation(sb, conversation.id, 'handoff', {
       handoff_reason: 'customer_requested_human_support',
       handoff_at: new Date().toISOString(),
-      support_contact: '+91 8876981780',
+      support_contact: '+91 6002786881',
     }, 'IN');
     await saveMessage(sb, conversation.id, {
       role: 'assistant',
@@ -2673,6 +2658,47 @@ async function processMessengerEvent(event: MessengerEvent) {
     }
   }
 
+  // Search published CMS FAQs/pages/blogs before allowing a generative answer.
+  // Only high-confidence, country-scoped matches are sent as deterministic replies.
+  try {
+    const cmsKnowledge = await getMessengerPublishedContentAnswer({
+      supabase: sb,
+      country: activeCountry,
+      text: normalizedActionText,
+    });
+
+    if (cmsKnowledge.handled && cmsKnowledge.reply) {
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: cmsKnowledge.reply,
+        actionStatus: 'database_knowledge',
+        countryCode: activeCountry,
+        sourceContext: {
+          database_first: true,
+          ai_call_skipped: true,
+          source_table: cmsKnowledge.source || null,
+          source_slug: cmsKnowledge.sourceSlug || null,
+          confidence_score: cmsKnowledge.confidence || null,
+        },
+      });
+
+      await markConversation(sb, conversation.id, 'active', {
+        last_knowledge_source: cmsKnowledge.source || 'published_content',
+        last_knowledge_slug: cmsKnowledge.sourceSlug || null,
+        last_knowledge_confidence: cmsKnowledge.confidence || null,
+      }, activeCountry);
+
+      await sendMessengerText(senderId, cmsKnowledge.reply);
+      return;
+    }
+  } catch (error) {
+    console.error(
+      'Messenger published-content database lookup failed:',
+      error instanceof Error ? error.message : 'Unknown CMS knowledge lookup error',
+    );
+    // A failed lookup is not a verified answer; let the established fallback router continue.
+  }
+
   if (
     !verifiedWebsiteKnowledgeContext &&
     isDeterministicAgricultureFaqRequest(normalizedActionText)
@@ -2934,8 +2960,11 @@ async function processMessengerEvent(event: MessengerEvent) {
       ? getSafeGeneralAgricultureReply()
       : isKnowledgeFallbackResponse(result.content) && !isGeneralAgricultureMessage
         ? activeCountry === 'BD'
-          ? getBangladeshKnowledgeFallbackMessage()
-          : getIndiaHumanSupportMessage()
+          ? getMessengerHumanSupportContactReply(
+            activeCountry,
+            replyLanguage,
+            'unverified',
+          )
         : transactionallyUnsafeAIReply
           ? getMessengerTransactionalGuardReply()
           : repeatedHumanSupportReply
@@ -3035,7 +3064,7 @@ async function processMessengerEvent(event: MessengerEvent) {
     await createHumanHandoff(sb, conversation.id, reason, activeCountry);
 
     const handoffMessage =
-      getMessengerProviderFailureHandoffReply(replyLanguage);
+      getMessengerProviderFailureHandoffReply(replyLanguage, activeCountry);
 
     try {
       await saveMessage(sb, conversation.id, {
