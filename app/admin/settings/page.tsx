@@ -42,7 +42,7 @@ export default function AdminSettingsPage() {
         supabase.from('site_settings').select('*').eq('country_code', branch).maybeSingle(),
         supabase.from('marketing_settings').select('*').eq('id', 1).eq('country_code', branch).maybeSingle(),
         supabase.from('ai_settings').select('id,is_enabled,provider,model,base_url,temperature,max_tokens,feature_flags,country_code,api_key_secret_id').eq('id', 1).eq('country_code', branch).maybeSingle(),
-        supabase.from('referral_settings').select('*').eq('id', 1).eq('country_code', branch).maybeSingle(),
+        supabase.from('referral_settings').select('*').eq('country_code', branch).maybeSingle(),
       ]);
       setSiteForm(site.data || {});
       setMarketingForm(mkt.data || {});
@@ -190,7 +190,7 @@ export default function AdminSettingsPage() {
       terms: referralForm.terms || null,
       updated_by: userData.user?.id || null,
     };
-    const { error } = await supabase.from('referral_settings').update({ ...payload, country_code: adminCountry }).eq('id', 1).eq('country_code', adminCountry);
+    const { error } = await supabase.from('referral_settings').update({ ...payload, country_code: adminCountry }).eq('country_code', adminCountry);
     setSaving(false);
     if (error) { toast('সেভ ব্যর্থ', 'error'); return; }
     toast('রেফারেল সেটিংস সেভ হয়েছে');
@@ -494,9 +494,9 @@ export default function AdminSettingsPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">রিওয়ার্ড ভ্যালু {referralForm.reward_type === 'percentage' ? '(%)' : '(৳)'}</label>
+            <label className="mb-1 block text-sm font-medium">রিওয়ার্ড ভ্যালু {referralForm.reward_type === 'percentage' ? '(%)' : (adminCountry === 'IN' ? '(₹)' : '(৳)')}</label>
             <input type="number" min="0" step="0.01" value={referralForm.reward_value ?? 0} onChange={(e) => setReferralForm({ ...referralForm, reward_value: e.target.value })} className="input-bangla" />
-            <p className="mt-1 text-xs text-muted-foreground">{referralForm.reward_type === 'percentage' ? 'শতকরা হার (যেমন ১০ = ১০%)' : 'নির্দিষ্ট পরিমাণ (৳)'}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{referralForm.reward_type === 'percentage' ? 'শতকরা হার (যেমন ১০ = ১০%)' : 'নির্দিষ্ট পরিমাণ {adminCountry === 'IN' ? '(₹)' : '(৳)'}'}</p>
           </div>
 
           <div>
