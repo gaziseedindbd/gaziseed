@@ -14,7 +14,7 @@ type MockOptions = {
 };
 
 function makeSupabase(options: MockOptions = {}) {
-  const calls: Array<{ kind: string; args?: Record<string, unknown>; filters?: Array<[string, unknown]> }> = [];
+  const calls: Array<{ kind: string; args?: Record<string, unknown>; filters?: Array<[string, unknown]>; selectedColumns?: string }> = [];
   const gateRows = [...(options.gateRows || [{ allowed: true, failed_attempts: 0, retry_after_seconds: 0 }])];
   let profileReadCount = 0;
   let orderReadCount = 0;
@@ -27,8 +27,9 @@ function makeSupabase(options: MockOptions = {}) {
     },
     from: (table: string) => {
       let filters: Array<[string, unknown]> = [];
+      let selectedColumns = '';
       const query = {
-        select: (_columns: string) => query,
+        select: (columns: string) => { selectedColumns = columns; return query; },
         eq: (field: string, value: unknown) => {
           filters = [...filters, [field, value]];
           return query;
@@ -43,7 +44,7 @@ function makeSupabase(options: MockOptions = {}) {
           };
         },
         then: (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) => {
-          calls.push({ kind: 'orders:' + table, filters });
+          calls.push({ kind: 'orders:' + table, filters, selectedColumns });
           orderReadCount += 1;
           const matchedRows = (options.orders || []).filter((row) =>
             filters.every(([field, value]) => row[field] === value),
@@ -211,6 +212,7 @@ test('returns order status only when order number and supplied registered phone 
   assert.match(result.reply, /shipped/i);
   assert.equal(result.orderIds?.[0], 'internal-order-id');
   const query = mock.calls.find((call) => call.kind === 'orders:orders');
+  assert.match(query?.selectedColumns || '', /customer_phone/);
   assert.ok(query?.filters?.some(([field, value]) => field === 'order_number' && value === 'GS-BD-ABC12345'));
   assert.equal(query?.filters?.some(([field]) => field === 'order_source'), false, 'web/ads orders with the exact verified pair should also be trackable');
   assert.deepEqual(
