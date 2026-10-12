@@ -219,7 +219,7 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
           stock: Number(newProduct.stock) || 0, short_description: newProduct.short_description,
           description: newProduct.description, regular_price: Number(newProduct.regular_price) || 0,
           slug, is_active: true, is_ads_only: true, image: images[0] || '', country_code: activeCountryCode,
-        }).select().single();
+        }).select('id').single();
         if (prodError) throw prodError;
         productId = prod.id;
       }
