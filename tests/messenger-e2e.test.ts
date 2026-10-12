@@ -40,6 +40,7 @@ import {
   type MessengerDeliveryPolicy,
 } from '../lib/ai/messenger-delivery-tool';
 import { isMessengerOrderInterruptRequest } from '../lib/ai/messenger-intents';
+import { detectExplicitMessengerCountry } from '../lib/ai/messenger-country';
 
 const TEST_ENV_KEYS = [
   'AI_MESSENGER_ENABLED',
@@ -556,6 +557,18 @@ test('delivery questions interrupt an unrelated pending product order and should
 
   assert.equal(isMessengerDeliveryPolicyQuestion(question), true);
   assert.equal(isMessengerOrderInterruptRequest(question), true);
+});
+
+test('detects Bangladesh from a subtotal delivery question even when the amount follows the country phrase', () => {
+  assert.equal(
+    detectExplicitMessengerCountry('বাংলাদেশে ৳৫০০ টাকার অর্ডারে ডেলিভারি চার্জ কত?'),
+    'BD',
+  );
+  assert.equal(
+    detectExplicitMessengerCountry('ভারতে ₹৫০০ টাকার অর্ডারে ডেলিভারি চার্জ কত?'),
+    'IN',
+  );
+  assert.equal(detectExplicitMessengerCountry('বাংলাদেশি বীজের দাম কত?'), null);
 });
 
 test('Messenger delivery-charge replies use the checkout order-value rules directly', () => {

@@ -45,6 +45,9 @@ function hasBanglaCountryIntent(
     normalized.includes(postposition + ' ডেলিভারি') ||
     normalized.includes(postposition + ' শিপিং') ||
     normalized.includes(postposition + ' অর্ডার') ||
+    // Allow an amount or order subtotal between the country phrase and the
+    // delivery/order keyword, e.g. "বাংলাদেশে ৳৫০০ টাকার অর্ডারে ডেলিভারি...".
+    new RegExp(postposition + '.{0,48}(?:অর্ডার|ডেলিভারি|শিপিং)', 'i').test(normalized) ||
     normalized.includes(country + ' থেকে') ||
     normalized.includes(country + ' ব্রাঞ্চ') ||
     normalized.includes(country + ' শাখা') ||
