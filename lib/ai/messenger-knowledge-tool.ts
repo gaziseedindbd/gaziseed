@@ -883,7 +883,7 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
         `❓ ${faq.question || 'FAQ'}`,
         translationNote,
         faq.answer,
-      ].filter(Boolean).join('\\n\\n'),
+      ].filter(Boolean).join('\n\n'),
     };
   }
 
