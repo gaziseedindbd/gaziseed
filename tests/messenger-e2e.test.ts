@@ -25,6 +25,7 @@ import {
   shouldIncludeMessengerAIHistoryMessage,
 } from '../lib/ai/messenger-history';
 import {
+  isMessengerExplicitProductKnowledgeQuery,
   isMessengerProductSpecificKnowledgeQuery,
   isMessengerWebsiteKnowledgeRequest,
   selectMessengerFaqResponse,
@@ -352,6 +353,17 @@ test('routes Hindi product-growing questions into the database knowledge path', 
       name_bn: 'পরীক্ষার বীজ',
       name_en: 'Test Seed',
       slug: 'test-seed',
+    }),
+    true,
+  );
+});
+
+test('recognizes a distinctive product name in a general agriculture FAQ question', () => {
+  assert.equal(
+    isMessengerExplicitProductKnowledgeQuery('জিনিয়া ফুলের জন্য কতটা রোদ প্রয়োজন?', {
+      name_bn: 'লাল জিনিয়া ফুলের বীজ',
+      name_en: 'Red Zinnia Flower Seeds',
+      slug: 'red-zinnia-flower-seeds',
     }),
     true,
   );
