@@ -359,7 +359,7 @@ export async function getComboPacks(): Promise<{ combo: ComboPack; items: { prod
 export async function getComboPackBySlug(slug: string): Promise<{ combo: ComboPack; items: { product: Product; quantity: number }[] } | null> {
   const { data: combo } = await supabase.from('combo_packs').select('*').eq('slug', slug).eq('is_active', true).maybeSingle();
   if (!combo) return null;
-  const { data: items } = await supabase.from('combo_items').select('*, products(${PRODUCT_PUBLIC_COLUMNS})').eq('combo_id', (combo as ComboPack).id);
+  const { data: items } = await supabase.from('combo_items').select(`*, products(${PRODUCT_PUBLIC_COLUMNS})`).eq('combo_id', (combo as ComboPack).id);
   const comboItems = (items || []).map((item: any) => ({ product: item.products as Product, quantity: item.quantity })).filter((item: any) => item.product);
   return { combo: combo as ComboPack, items: comboItems };
 }
@@ -388,7 +388,7 @@ export async function getWishlist(userId: string): Promise<Product[]> {
   const country = getVisitorCountry();
   const { data } = await supabase
     .from('wishlists')
-    .select('product_id, products(${PRODUCT_PUBLIC_COLUMNS})')
+    .select(`product_id, products(${PRODUCT_PUBLIC_COLUMNS})`)
     .eq('user_id', userId)
     .eq('country_code', country);
   return (data || [])
