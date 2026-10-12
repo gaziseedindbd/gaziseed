@@ -14,8 +14,11 @@ import {
   serializeMessengerProducts,
 } from '@/lib/ai/messenger-product-tool';
 import {
+  formatMessengerDeliveryPolicyReply,
   getMessengerDeliveryPolicy,
+  isMessengerDeliveryChargeQuestion,
   isMessengerDeliveryPolicyQuestion,
+  isMessengerDeliveryTimeQuestion,
   serializeMessengerDeliveryPolicy,
 } from '@/lib/ai/messenger-delivery-tool';
 import {
@@ -62,6 +65,7 @@ import {
 } from '@/lib/ai/messenger-intents';
 import {
   getMessengerWebsiteKnowledgeAnswer,
+  isBangladeshPaymentMethodQuestion,
   isMessengerProductSpecificKnowledgeQuery,
 } from '@/lib/ai/messenger-knowledge-tool';
 import { getMessengerPublishedContentAnswer } from '@/lib/ai/messenger-cms-knowledge-tool';
@@ -2602,6 +2606,64 @@ async function processMessengerEvent(event: MessengerEvent) {
       await sendMessengerText(senderId, orderErrorMessage);
       return;
     }
+  }
+
+  // Handle delivery fees and timelines deterministically from the same tables
+  // used by checkout; never ask generative AI to calculate a live delivery fee.
+  const deliveryChargeQuestion = isMessengerDeliveryChargeQuestion(normalizedActionText);
+  const deliveryTimeQuestion = isMessengerDeliveryTimeQuestion(normalizedActionText);
+  const shouldUseExistingBangladeshPaymentReply =
+    activeCountry === 'BD' &&
+    isBangladeshPaymentMethodQuestion(normalizedActionText) &&
+    !deliveryChargeQuestion &&
+    !deliveryTimeQuestion;
+
+  if (
+    isMessengerDeliveryPolicyQuestion(normalizedActionText) &&
+    !shouldUseExistingBangladeshPaymentReply
+  ) {
+    const deliveryLanguage = detectMessengerReplyLanguage(normalizedActionText);
+    let deliveryReply: string | null = null;
+    let deliveryLookupFailed = false;
+
+    try {
+      const verifiedPolicy = await getMessengerDeliveryPolicy(sb, activeCountry);
+      deliveryReply = formatMessengerDeliveryPolicyReply(
+        verifiedPolicy,
+        activeCountry,
+        normalizedActionText,
+        deliveryLanguage,
+      );
+    } catch (error) {
+      deliveryLookupFailed = true;
+      console.error(
+        'Messenger delivery policy lookup failed:',
+        error instanceof Error ? error.message : 'Unknown delivery policy lookup error',
+      );
+    }
+
+    if (!deliveryReply) {
+      deliveryReply = getMessengerHumanSupportContactReply(
+        activeCountry,
+        deliveryLanguage,
+        'unverified',
+      );
+    }
+
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: deliveryReply,
+      actionStatus: deliveryLookupFailed ? 'delivery_policy_lookup_failed' : 'database_delivery_policy',
+      countryCode: activeCountry,
+      sourceContext: {
+        database_first: true,
+        ai_call_skipped: true,
+        database_lookup_failed: deliveryLookupFailed,
+        source_tables: ['delivery_country_settings', 'delivery_charge_rules'],
+      },
+    });
+    await sendMessengerText(senderId, deliveryReply);
+    return;
   }
 
   // Prefer verified website/catalog knowledge before generic agriculture AI.
