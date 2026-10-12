@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { PRODUCT_PUBLIC_COLUMNS } from '@/lib/supabase/public-columns';
 
 const FALLBACK_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
 const FALLBACK_KEY = 'sb_publishable_vCaz5OGrHocUTgpOXmE9xg_QVsuUJc0';
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
     const country = getCountry(req);
 
     const params = new URLSearchParams({
-      select: '*',
+      select: PRODUCT_PUBLIC_COLUMNS,
       is_active: 'eq.true',
       is_ads_only: 'eq.false',
       country_code: `eq.${country}`,
