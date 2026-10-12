@@ -546,3 +546,26 @@ The sales-operations migration explicitly says product cost price must not be ex
 - There are two order-user binding triggers; this may be intentional defense-in-depth, but the current dual-trigger behavior should be tested rather than deduplicated without evidence.
 - This batch shows multiple security migrations whose effects exist under current renamed objects or narrowed policies. Their lack of a matching migration-history fingerprint is not grounds to reapply them.
 
+## Live-schema effect review — batch 6 (60 of 72 unmatched files)
+
+**Method:** compare the next ten trigger/RPC-hardening files against live function definitions, effective EXECUTE privileges and installed triggers; read the current combo-order RPC body. No orders/auth-user rows were read.
+
+| Repository migration | Current evidence | Result / follow-up |
+|---|---|---|
+| `20260824043000_harden_last_master_admin_privilege.sql` | `guard_last_master_admin()` is SECURITY DEFINER, uses `search_path=public`, is called by the installed admin-user trigger, and effective EXECUTE is restricted to service_role (not anon/authenticated). | **Privilege hardening present.** |
+| `20260824044500_restrict_order_ownership_trigger.sql` | `guard_order_user_ownership()` uses `search_path=public`; the trigger is installed. Effective EXECUTE is denied to anon/authenticated and allowed to service_role. | **Privilege hardening present.** |
+| `20260824050000_harden_auto_confirm_user.sql` | `auto_confirm_user()` uses `search_path=public` and is not executable by anon/authenticated. No trigger invoking `auto_confirm_user()` was found among the current `auth.users` triggers (the referral-code signup trigger is present). | **Function hardening present; trigger behavior unverified.** Since this file only hardens the function rather than creating a trigger, verify current Auth confirmation behavior through the configured Auth flow before concluding whether the old trigger was intentionally removed. |
+| `20260824052000_harden_update_updated_at.sql` | `update_updated_at()` uses `search_path=public` and is used by current update triggers. But effective EXECUTE still returns true for anon and authenticated, contrary to the migration's intended revoke of direct EXECUTE. | **Partial ACL drift.** Trigger behavior is present; assess whether the Data API exposes this trigger-returning function. Reapply only a reviewed privilege fix if needed; do not rerun the entire migration blindly. |
+| `20260824053500_harden_set_order_number.sql` | `set_order_number()` uses `search_path=public` and `orders.trigger_set_order_number` is installed. Effective EXECUTE still returns true for anon and authenticated, despite the historical migration's revoke statements. | **Trigger behavior present; privilege state differs from intended hardening.** Confirm whether direct RPC exposure is possible and restrict unnecessary EXECUTE if so. |
+| `20260824054500_harden_calculate_delivery_charge.sql` | `calculate_delivery_charge(numeric, boolean)` is present, uses `search_path=public`, and remains executable by anon/authenticated as the migration intended. | **Effect present.** |
+| `20260824055500_harden_is_admin_search_path.sql` | `is_admin()` is SECURITY DEFINER with `search_path=public`; effective anon EXECUTE is false. | **Effect present.** |
+| `20260824061000_harden_is_master_admin_search_path.sql` | `is_master_admin()` is SECURITY DEFINER with `search_path=public`; effective anon EXECUTE is false. | **Effect present.** |
+| `20260824063000_harden_public_order_user_identity.sql` | Current `guard_order_user_ownership()` forces anonymous caller `user_id` to NULL and rejects authenticated callers trying to set another user's ID. It is attached to orders and direct anon EXECUTE is denied. | **Identity hardening present.** The additional `enforce_order_user_binding()` trigger also exists; test both together across guest checkout, signed-in checkout and service-role recovery. |
+| `20260824065000_fix_combo_order_item_line_total.sql` | Current `create_combo_order()` writes `quantity = v_qty`, `unit_price = v_combo_price`, and `total_price = v_combo_price * v_qty` to `order_items`, then decrements combo stock by the requested quantity. | **Persisted line-total fix present.** This is a current function-body match by behavior, not by migration fingerprint. |
+
+### Batch 6 conclusions
+
+- Most search-path, identity, order-number, delivery-charge and last-admin behaviors exist in current definitions.
+- Two trigger-only helpers (`update_updated_at()` and `set_order_number()`) still show effective anon/authenticated EXECUTE, whereas the historical migrations intended to revoke those privileges. Direct callability via PostgREST was not exercised; treat as a permissions-drift finding to validate, not as proof of exploitation.
+- `auto_confirm_user()` has no currently visible `auth.users` trigger; verify Auth confirmation configuration/flow rather than creating a new trigger based solely on this migration.
+
