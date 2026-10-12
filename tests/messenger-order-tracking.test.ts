@@ -77,6 +77,7 @@ const sampleOrder = {
   payment_status: 'paid',
   final_amount: 500,
   created_at: '2026-10-11T12:00:00.000Z',
+  customer_phone: '01712345678',
   order_source: 'website',
 };
 
@@ -124,7 +125,7 @@ test('uses a generic reply and counts a wrong registered phone without revealing
       { allowed: true, failed_attempts: 0, retry_after_seconds: 0 },
       { allowed: true, failed_attempts: 1, retry_after_seconds: 0 },
     ],
-    orders: [],
+    orders: [{ ...sampleOrder, customer_phone: '01812345678' }],
   });
   const result = await getMessengerOrderTrackingReply({
     ...baseArgs, supabase: mock.supabase, text: validTrackingText,
@@ -160,7 +161,6 @@ test('a failed exact order/phone match returns a generic response', async () => 
   const query = mock.calls.find((call) => call.kind === 'orders:orders');
   assert.ok(query);
   assert.ok(query?.filters?.some(([field, value]) => field === 'order_number' && value === 'GS-BD-ABC12345'));
-  assert.ok(query?.filters?.some(([field, value]) => field === 'customer_phone' && value === '01712345678'));
 });
 
 test('three failed verifications activate the 15-minute cooldown', async () => {
@@ -208,11 +208,45 @@ test('returns order status only when order number and supplied registered phone 
   assert.equal(result.orderIds?.[0], 'internal-order-id');
   const query = mock.calls.find((call) => call.kind === 'orders:orders');
   assert.ok(query?.filters?.some(([field, value]) => field === 'order_number' && value === 'GS-BD-ABC12345'));
-  assert.ok(query?.filters?.some(([field, value]) => field === 'customer_phone' && value === '01712345678'));
   assert.equal(query?.filters?.some(([field]) => field === 'order_source'), false, 'web/ads orders with the exact verified pair should also be trackable');
   assert.deepEqual(
     mock.calls.filter((call) => call.kind === 'rpc:consume_messenger_tracking_verification')
       .map((call) => call.args?.p_action),
     ['check', 'success'],
   );
+});
+
+
+test('accepts India phone with or without the +91 country prefix', async () => {
+  const mock = makeSupabase({
+    orders: [{ ...sampleOrder, customer_phone: '+91 98765 43210' }],
+    gateRows: [
+      { allowed: true, failed_attempts: 0, retry_after_seconds: 0 },
+      { allowed: true, failed_attempts: 0, retry_after_seconds: 0 },
+    ],
+  });
+  const result = await getMessengerOrderTrackingReply({
+    pageId: 'page-india',
+    externalUserId: 'customer-india',
+    country: 'IN',
+    supabase: mock.supabase,
+    text: 'GS-IN-ABC12345 9876543210',
+  });
+  assert.equal(result.handled, true);
+  assert.match(result.reply, /GS-BD-ABC12345/);
+});
+
+test('accepts Bangladesh phone with +880 or local 0 prefix', async () => {
+  const mock = makeSupabase({
+    orders: [{ ...sampleOrder, order_number: 'GS-BD-ABC12345', customer_phone: '+880 1712-345678' }],
+    gateRows: [
+      { allowed: true, failed_attempts: 0, retry_after_seconds: 0 },
+      { allowed: true, failed_attempts: 0, retry_after_seconds: 0 },
+    ],
+  });
+  const result = await getMessengerOrderTrackingReply({
+    ...baseArgs, supabase: mock.supabase, text: validTrackingText,
+  });
+  assert.equal(result.handled, true);
+  assert.match(result.reply, /GS-BD-ABC12345/);
 });
