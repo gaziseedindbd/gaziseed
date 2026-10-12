@@ -528,6 +528,10 @@ test('Messenger delivery times are localized and unknown coverage is not guessed
     formatMessengerDeliveryPolicyReply(policy, 'BD', 'Do you deliver to Kolkata?', 'English'),
     null,
   );
+  assert.equal(
+    formatMessengerDeliveryPolicyReply(policy, 'BD', 'Kolkata te delivery hobe?', 'English'),
+    null,
+  );
 });
 
 test('Messenger delivery intent recognizes Hindi and Romanized Bangla', () => {
