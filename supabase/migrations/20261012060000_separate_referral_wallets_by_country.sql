@@ -34,6 +34,17 @@ ALTER TABLE public.referral_wallet_settings
 ALTER TABLE public.referral_wallet_settings
   ADD CONSTRAINT referral_wallet_settings_pkey PRIMARY KEY (id, country_code);
 
+ALTER TABLE public.referral_wallet_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS referral_wallet_settings_branch_select
+  ON public.referral_wallet_settings;
+CREATE POLICY referral_wallet_settings_branch_select
+  ON public.referral_wallet_settings
+  FOR SELECT TO authenticated
+  USING (
+    public.can_access_country(country_code)
+    OR country_code = public.current_visitor_country()
+  );
+
 -- Rebuild the ledger's check constraints to include the wallet-debit transaction type.
 ALTER TABLE public.referral_wallet_transactions
   DROP CONSTRAINT IF EXISTS referral_wallet_transactions_type_check;
