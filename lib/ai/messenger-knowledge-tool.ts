@@ -810,6 +810,64 @@ export function getBangladeshPaymentMethodReply(
   ].join('\n');
 }
 
+const PRODUCT_NAME_SEARCH_STOP_WORDS = new Set([
+  'how', 'much', 'does', 'do', 'need', 'needs', 'hours', 'hour', 'sunlight',
+  'sun', 'light', 'grow', 'grows', 'growing', 'growth', 'flower', 'flowers',
+  'seed', 'seeds', 'plant', 'plants', 'for', 'the', 'and', 'what', 'when',
+  'where', 'which', 'is', 'are', 'can', 'i', 'to', 'in', 'on', 'of',
+  'কত', 'টা', 'জন্য', 'কি', 'কী', 'কেমন', 'রোদ', 'সূর্যালোক', 'আলো',
+  'ফুল', 'ফুলের', 'বীজ', 'বীজের', 'গাছ', 'গাছের', 'ঘণ্টা', 'ঘন্টা',
+  'कितना', 'कितनी', 'कैसी', 'कैसे', 'के', 'लिए', 'धूप', 'रोशनी',
+  'घंटे', 'फूल', 'बीज', 'पौधा',
+]);
+
+/**
+ * The indexed product RPC can return an empty/truncated result for a complete
+ * natural-language FAQ question even though the product exists. Use a narrow,
+ * country-scoped name lookup for distinctive query tokens before falling back
+ * to AI. The result is only used to find an active FAQ; it never authorizes
+ * price, stock, offers, or arbitrary product fields.
+ */
+async function findExplicitKnowledgeProductsByName(
+  supabase: SupabaseClient,
+  country: MessengerKnowledgeCountry,
+  text: string,
+): Promise<MessengerProduct[]> {
+  const tokens = tokenize(text)
+    .filter((token) =>
+      token.length >= 3 && !PRODUCT_NAME_SEARCH_STOP_WORDS.has(token.toLocaleLowerCase()),
+    )
+    .slice(0, 5);
+
+  if (!tokens.length) return [];
+
+  const lookups = await Promise.all(tokens.map((token) =>
+    supabase
+      .from('products')
+      .select('id,name_bn,name_en,slug,is_active,country_code')
+      .eq('country_code', country)
+      .eq('is_active', true)
+      .or('name_bn.ilike.%' + token + '%,name_en.ilike.%' + token + '%,slug.ilike.%' + token + '%')
+      .limit(8),
+  ));
+
+  const productsById = new Map<string, MessengerProduct>();
+  for (const lookup of lookups) {
+    if (lookup.error) throw lookup.error;
+    for (const row of (lookup.data || []) as unknown as Array<MessengerProduct>) {
+      if (isMessengerExplicitProductKnowledgeQuery(text, row)) {
+        productsById.set(row.id, {
+          ...row,
+          search_match_type: 'similar',
+          search_match_score: 0,
+        });
+      }
+    }
+  }
+
+  return Array.from(productsById.values());
+}
+
 export async function getMessengerWebsiteKnowledgeAnswer(args: {
   supabase: SupabaseClient;
   country: MessengerKnowledgeCountry;
@@ -834,9 +892,21 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
   // An explicit product name in the current question must win over a stale
   // conversational product reference (for example, "chili seed ... this seed").
   const matches = await searchMessengerProducts(supabase, country, text, 8);
-  const explicitlyMentionedProducts = matches.filter((match) =>
+  let explicitlyMentionedProducts = matches.filter((match) =>
     isMessengerExplicitProductKnowledgeQuery(text, match),
   );
+
+  // Natural-language FAQ questions can be missed by the indexed search RPC.
+  // If it did not return the explicitly named product, try a narrow direct
+  // name lookup before allowing an unverified AI fallback.
+  if (!explicitlyMentionedProducts.length) {
+    explicitlyMentionedProducts = await findExplicitKnowledgeProductsByName(
+      supabase,
+      country,
+      text,
+    );
+  }
+
   const explicitlyNamedProducts = explicitlyMentionedProducts.filter(
     isTrustedMessengerProductMatch,
   );
