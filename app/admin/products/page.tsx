@@ -83,17 +83,41 @@ export default function AdminProductsPage() {
       return;
     }
 
-    const { data: costs, error: costError } = await supabase
+    let costs: { product_id: string; cost_price: number | null }[] = [];
+    const { data: privateCosts, error: costError } = await supabase
       .from('product_costs')
       .select('product_id, cost_price')
       .eq('country_code', adminBranch);
 
-    if (costError) {
-      console.error('Private product cost load failed:', costError);
-      toast('ক্রয় মূল্যের তথ্য লোড করা যায়নি; ডাটাবেস migration প্রয়োজন হতে পারে', 'error');
+    if (!costError) {
+      costs = privateCosts || [];
+    } else {
+      const missingTable = ['PGRST205', '42P01'].includes(costError.code || '')
+        && /product_costs/i.test(costError.message || '');
+      if (missingTable) {
+        // Safe rollout fallback: this page may deploy immediately before the
+        // forward migration creates product_costs. The next migration closes
+        // legacy column access, so this fallback stops working after cutover.
+        const { data: legacyCosts, error: legacyCostError } = await supabase
+          .from('products')
+          .select('id, cost_price')
+          .eq('country_code', adminBranch);
+        if (!legacyCostError) {
+          costs = (legacyCosts || []).map((row) => ({
+            product_id: row.id,
+            cost_price: row.cost_price,
+          }));
+        } else {
+          console.error('Legacy product cost load failed:', legacyCostError);
+          toast('ক্রয় মূল্যের তথ্য লোড করা যায়নি', 'error');
+        }
+      } else {
+        console.error('Private product cost load failed:', costError);
+        toast('ক্রয় মূল্যের তথ্য লোড করা যায়নি; admin permission যাচাই করুন', 'error');
+      }
     }
 
-    const costByProduct = new Map((costs || []).map((row) => [row.product_id, row.cost_price]));
+    const costByProduct = new Map(costs.map((row) => [row.product_id, row.cost_price]));
     setProducts((data || []).map((product) => ({
       ...product,
       cost_price: costByProduct.get(product.id) ?? null,
@@ -137,17 +161,34 @@ export default function AdminProductsPage() {
     }
 
     if (productId) {
+      const normalizedCost = costPrice === '' || costPrice == null ? null : Number(costPrice);
       const { error: costError } = await supabase.from('product_costs').upsert({
         product_id: productId,
         country_code: adminBranch,
-        cost_price: costPrice === '' || costPrice == null ? null : Number(costPrice),
+        cost_price: normalizedCost,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'product_id' });
 
       if (costError) {
-        console.error('Private product cost save failed:', costError);
-        toast('প্রোডাক্ট সেভ হয়েছে, কিন্তু ক্রয় মূল্য সেভ হয়নি। migration ও admin permission যাচাই করুন।', 'error');
-        return;
+        const missingTable = ['PGRST205', '42P01'].includes(costError.code || '')
+          && /product_costs/i.test(costError.message || '');
+        if (missingTable) {
+          // Temporary compatibility until the private-table migration is applied.
+          const { error: legacyCostError } = await supabase
+            .from('products')
+            .update({ cost_price: normalizedCost })
+            .eq('id', productId)
+            .eq('country_code', adminBranch);
+          if (legacyCostError) {
+            console.error('Legacy product cost save failed:', legacyCostError);
+            toast('প্রোডাক্ট সেভ হয়েছে, কিন্তু ক্রয় মূল্য সেভ হয়নি', 'error');
+            return;
+          }
+        } else {
+          console.error('Private product cost save failed:', costError);
+          toast('প্রোডাক্ট সেভ হয়েছে, কিন্তু ক্রয় মূল্য সেভ হয়নি। admin permission যাচাই করুন।', 'error');
+          return;
+        }
       }
     }
     if (productId && formData.faqs) {
