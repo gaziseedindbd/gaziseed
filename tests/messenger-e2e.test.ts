@@ -29,6 +29,10 @@ import {
   isMessengerWebsiteKnowledgeRequest,
   selectMessengerFaqResponse,
 } from '../lib/ai/messenger-knowledge-tool';
+import {
+  rankMessengerCmsFaq,
+  scoreMessengerKnowledgeText,
+} from '../lib/ai/messenger-cms-knowledge-tool';
 
 const TEST_ENV_KEYS = [
   'AI_MESSENGER_ENABLED',
@@ -396,4 +400,42 @@ test('offers selection options for trusted and similar products', () => {
       payload: 'PRODUCT_SELECT:d47e1d77-7ec2-4d0c-9f1b-d97d7ac640e4',
     },
   ]);
+});
+
+
+test('database FAQ matching stays paired with its source-language question and answer', () => {
+  const match = rankMessengerCmsFaq(
+    'How deep should I sow rose seeds?',
+    [{
+      id: 'mixed-language-row',
+      question_en: 'How deep should I sow rose seeds?',
+      answer_en: 'Sow the seeds about 0.5 cm deep.',
+      question: 'লাল গোলাপের বীজ থেকে চারা হতে কতদিন লাগে?',
+      answer: 'গোলাপের বীজ থেকে চারা হতে কয়েক সপ্তাহ লাগতে পারে।',
+    }],
+    'English',
+  );
+
+  assert.equal(match?.language, 'English');
+  assert.equal(match?.answer, 'Sow the seeds about 0.5 cm deep.');
+});
+
+test('database knowledge matching rejects unrelated text and ambiguous FAQ hits', () => {
+  assert.equal(
+    scoreMessengerKnowledgeText(
+      'What is the return policy?',
+      'Sweet-tasting seeds suitable for home gardening.',
+    ).confident,
+    false,
+  );
+
+  const ambiguous = rankMessengerCmsFaq(
+    'What is my account policy?',
+    [
+      { id: 'faq-a', question_en: 'What is my account policy?', answer_en: 'Answer A' },
+      { id: 'faq-b', question_en: 'What is my account policy?', answer_en: 'Answer B' },
+    ],
+    'English',
+  );
+  assert.equal(ambiguous, null);
 });
