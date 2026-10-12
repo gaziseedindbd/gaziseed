@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { PRODUCT_PUBLIC_COLUMNS } from '@/lib/supabase/public-columns';
 import { MultilingualFields } from '@/components/admin/multilingual-fields';
 import { Plus, Edit, Trash2, X, Search, Upload, Loader2, Image as ImageIcon, FileText, Link as LinkIcon } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
@@ -189,13 +190,13 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data, error } = await supabase.from('products').select('*').eq('country_code', countryCode);
+      const { data, error } = await supabase.from('products').select(PRODUCT_PUBLIC_COLUMNS).eq('country_code', countryCode);
       if (!error && data) setAllProducts(data);
     };
     fetchProducts();
 
     if (combo?.id) {
-      supabase.from('combo_items').select('*, products(*)').eq('combo_id', combo.id).then(({ data }) => {
+      supabase.from('combo_items').select('*, products(${PRODUCT_PUBLIC_COLUMNS})').eq('combo_id', combo.id).then(({ data }) => {
         setItems((data || []).map((it: any) => ({
           product_id: it.product_id,
           quantity: it.quantity,
