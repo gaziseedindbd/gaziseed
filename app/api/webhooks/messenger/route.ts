@@ -2654,8 +2654,26 @@ async function processMessengerEvent(event: MessengerEvent) {
       'Messenger website knowledge lookup failed:',
       error instanceof Error ? error.message : 'Unknown knowledge lookup error',
     );
-      // Fall through to the existing deterministic/AI router.
-    }
+
+    // A database failure is not the same as a legitimate "no answer" result.
+    // Do not ask AI to guess when the authoritative lookup itself failed.
+    const lookupFailureReply = getMessengerHumanSupportContactReply(
+      activeCountry,
+      detectMessengerReplyLanguage(normalizedActionText),
+      'unverified',
+    );
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: lookupFailureReply,
+      actionStatus: 'knowledge_lookup_failed',
+      countryCode: activeCountry,
+      sourceContext: {
+        database_lookup_failed: true,
+        ai_call_skipped: true,
+      },
+    });
+    await sendMessengerText(senderId, lookupFailureReply);
+    return;
   }
 
   // Search published CMS FAQs/pages/blogs before allowing a generative answer.
@@ -2666,6 +2684,28 @@ async function processMessengerEvent(event: MessengerEvent) {
       country: activeCountry,
       text: normalizedActionText,
     });
+
+    // Only call AI when the database lookup completed successfully but found
+    // no trusted match. A failed lookup must never be treated as "no answer".
+    if (cmsKnowledge.lookupFailed && !cmsKnowledge.handled) {
+      const lookupFailureReply = getMessengerHumanSupportContactReply(
+        activeCountry,
+        detectMessengerReplyLanguage(normalizedActionText),
+        'unverified',
+      );
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: lookupFailureReply,
+        actionStatus: 'database_lookup_failed',
+        countryCode: activeCountry,
+        sourceContext: {
+          database_lookup_failed: true,
+          ai_call_skipped: true,
+        },
+      });
+      await sendMessengerText(senderId, lookupFailureReply);
+      return;
+    }
 
     if (cmsKnowledge.handled && cmsKnowledge.reply) {
       await saveMessage(sb, conversation.id, {
@@ -2696,7 +2736,23 @@ async function processMessengerEvent(event: MessengerEvent) {
       'Messenger published-content database lookup failed:',
       error instanceof Error ? error.message : 'Unknown CMS knowledge lookup error',
     );
-    // A failed lookup is not a verified answer; let the established fallback router continue.
+    const lookupFailureReply = getMessengerHumanSupportContactReply(
+      activeCountry,
+      detectMessengerReplyLanguage(normalizedActionText),
+      'unverified',
+    );
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: lookupFailureReply,
+      actionStatus: 'database_lookup_failed',
+      countryCode: activeCountry,
+      sourceContext: {
+        database_lookup_failed: true,
+        ai_call_skipped: true,
+      },
+    });
+    await sendMessengerText(senderId, lookupFailureReply);
+    return;
   }
 
   if (
