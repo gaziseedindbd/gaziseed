@@ -188,3 +188,4 @@ TO authenticated
 USING (bucket_id = 'product-images' AND public.is_admin());
 
 COMMIT;
+NOTIFY pgrst, 'reload schema';
