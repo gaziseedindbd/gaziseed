@@ -14,8 +14,11 @@ import {
   serializeMessengerProducts,
 } from '@/lib/ai/messenger-product-tool';
 import {
+  formatMessengerDeliveryPolicyReply,
   getMessengerDeliveryPolicy,
+  isMessengerDeliveryChargeQuestion,
   isMessengerDeliveryPolicyQuestion,
+  isMessengerDeliveryTimeQuestion,
   serializeMessengerDeliveryPolicy,
 } from '@/lib/ai/messenger-delivery-tool';
 import {
@@ -62,8 +65,10 @@ import {
 } from '@/lib/ai/messenger-intents';
 import {
   getMessengerWebsiteKnowledgeAnswer,
+  isBangladeshPaymentMethodQuestion,
   isMessengerProductSpecificKnowledgeQuery,
 } from '@/lib/ai/messenger-knowledge-tool';
+import { getMessengerPublishedContentAnswer } from '@/lib/ai/messenger-cms-knowledge-tool';
 import { getMessengerCustomerRecommendations } from '@/lib/ai/messenger-recommendation-tool';
 import { extractMessengerPhone } from '@/lib/ai/messenger-phone';
 import { subscribeMessengerRestockNotification } from '@/lib/ai/messenger-restock-tool';
@@ -76,6 +81,7 @@ import {
 import {
   getBangladeshHumanSupportAcknowledgement,
   getBangladeshHumanSupportWaitingReply,
+  getMessengerHumanSupportContactReply,
 } from '@/lib/ai/messenger-human-support';
 import {
   classifyMessengerTransactionalReply,
@@ -409,26 +415,6 @@ async function getWebSeedContext(text: string): Promise<string> {
   } catch {
     return '';
   }
-}
-
-function getIndiaHumanSupportMessage(): string {
-  return [
-    'এই বিষয়ে বিস্তারিত তথ্য জানতে আমাদের customer support team-এর সাথে সরাসরি যোগাযোগ করুন।',
-    '',
-    '📱 WhatsApp: https://wa.me/918876981780',
-    '📞 Direct Call: +91 8876981780',
-    '',
-    'উপরের WhatsApp link-এ ক্লিক করে মেসেজ করতে পারেন অথবা সরাসরি কল করতে পারেন।',
-  ].join('\n');
-}
-
-function getBangladeshKnowledgeFallbackMessage(): string {
-  return [
-    'দুঃখিত, এই তথ্যটি এই মুহূর্তে নিশ্চিতভাবে দিতে পারছি না।',
-    '',
-    '🇧🇩 Bangladesh customer support team-এর সাহায্য নিন।',
-    '👤 একজন support agent আপনার বিষয়টি দেখে সাহায্য করবেন।',
-  ].join('\n');
 }
 
 function isKnowledgeFallbackResponse(text: string): boolean {
@@ -1326,11 +1312,14 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   // India customers retain the existing external WhatsApp/direct-call support flow.
   if (resolvedCountry === 'IN' && isHumanSupportRequest(normalizedActionText)) {
-    const supportMessage = getIndiaHumanSupportMessage();
+    const supportMessage = getMessengerHumanSupportContactReply(
+      'IN',
+      detectMessengerReplyLanguage(normalizedActionText),
+    );
     await markConversation(sb, conversation.id, 'handoff', {
       handoff_reason: 'customer_requested_human_support',
       handoff_at: new Date().toISOString(),
-      support_contact: '+91 8876981780',
+      support_contact: '+91 6002786881',
     }, 'IN');
     await saveMessage(sb, conversation.id, {
       role: 'assistant',
@@ -2619,6 +2608,64 @@ async function processMessengerEvent(event: MessengerEvent) {
     }
   }
 
+  // Handle delivery fees and timelines deterministically from the same tables
+  // used by checkout; never ask generative AI to calculate a live delivery fee.
+  const deliveryChargeQuestion = isMessengerDeliveryChargeQuestion(normalizedActionText);
+  const deliveryTimeQuestion = isMessengerDeliveryTimeQuestion(normalizedActionText);
+  const shouldUseExistingBangladeshPaymentReply =
+    activeCountry === 'BD' &&
+    isBangladeshPaymentMethodQuestion(normalizedActionText) &&
+    !deliveryChargeQuestion &&
+    !deliveryTimeQuestion;
+
+  if (
+    isMessengerDeliveryPolicyQuestion(normalizedActionText) &&
+    !shouldUseExistingBangladeshPaymentReply
+  ) {
+    const deliveryLanguage = detectMessengerReplyLanguage(normalizedActionText);
+    let deliveryReply: string | null = null;
+    let deliveryLookupFailed = false;
+
+    try {
+      const verifiedPolicy = await getMessengerDeliveryPolicy(sb, activeCountry);
+      deliveryReply = formatMessengerDeliveryPolicyReply(
+        verifiedPolicy,
+        activeCountry,
+        normalizedActionText,
+        deliveryLanguage,
+      );
+    } catch (error) {
+      deliveryLookupFailed = true;
+      console.error(
+        'Messenger delivery policy lookup failed:',
+        error instanceof Error ? error.message : 'Unknown delivery policy lookup error',
+      );
+    }
+
+    if (!deliveryReply) {
+      deliveryReply = getMessengerHumanSupportContactReply(
+        activeCountry,
+        deliveryLanguage,
+        'unverified',
+      );
+    }
+
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: deliveryReply,
+      actionStatus: deliveryLookupFailed ? 'delivery_policy_lookup_failed' : 'database_delivery_policy',
+      countryCode: activeCountry,
+      sourceContext: {
+        database_first: true,
+        ai_call_skipped: true,
+        database_lookup_failed: deliveryLookupFailed,
+        source_tables: ['delivery_country_settings', 'delivery_charge_rules'],
+      },
+    });
+    await sendMessengerText(senderId, deliveryReply);
+    return;
+  }
+
   // Prefer verified website/catalog knowledge before generic agriculture AI.
   // A fresh "other product" browse request must go directly to the catalog so
   // stale last_messenger_product context cannot answer for the previous item.
@@ -2669,8 +2716,106 @@ async function processMessengerEvent(event: MessengerEvent) {
       'Messenger website knowledge lookup failed:',
       error instanceof Error ? error.message : 'Unknown knowledge lookup error',
     );
-      // Fall through to the existing deterministic/AI router.
+
+    // A database failure is not the same as a legitimate "no answer" result.
+    // Do not ask AI to guess when the authoritative lookup itself failed.
+    const lookupFailureReply = getMessengerHumanSupportContactReply(
+      activeCountry,
+      detectMessengerReplyLanguage(normalizedActionText),
+      'unverified',
+    );
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: lookupFailureReply,
+      actionStatus: 'knowledge_lookup_failed',
+      countryCode: activeCountry,
+      sourceContext: {
+        database_lookup_failed: true,
+        ai_call_skipped: true,
+      },
+    });
+    await sendMessengerText(senderId, lookupFailureReply);
+    return;
+  }
+
+  // Search published CMS FAQs/pages/blogs before allowing a generative answer.
+  // Only high-confidence, country-scoped matches are sent as deterministic replies.
+  try {
+    const cmsKnowledge = await getMessengerPublishedContentAnswer({
+      supabase: sb,
+      country: activeCountry,
+      text: normalizedActionText,
+    });
+
+    // Only call AI when the database lookup completed successfully but found
+    // no trusted match. A failed lookup must never be treated as "no answer".
+    if (cmsKnowledge.lookupFailed && !cmsKnowledge.handled) {
+      const lookupFailureReply = getMessengerHumanSupportContactReply(
+        activeCountry,
+        detectMessengerReplyLanguage(normalizedActionText),
+        'unverified',
+      );
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: lookupFailureReply,
+        actionStatus: 'database_lookup_failed',
+        countryCode: activeCountry,
+        sourceContext: {
+          database_lookup_failed: true,
+          ai_call_skipped: true,
+        },
+      });
+      await sendMessengerText(senderId, lookupFailureReply);
+      return;
     }
+
+    if (cmsKnowledge.handled && cmsKnowledge.reply) {
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: cmsKnowledge.reply,
+        actionStatus: 'database_knowledge',
+        countryCode: activeCountry,
+        sourceContext: {
+          database_first: true,
+          ai_call_skipped: true,
+          source_table: cmsKnowledge.source || null,
+          source_slug: cmsKnowledge.sourceSlug || null,
+          confidence_score: cmsKnowledge.confidence || null,
+        },
+      });
+
+      await markConversation(sb, conversation.id, 'active', {
+        last_knowledge_source: cmsKnowledge.source || 'published_content',
+        last_knowledge_slug: cmsKnowledge.sourceSlug || null,
+        last_knowledge_confidence: cmsKnowledge.confidence || null,
+      }, activeCountry);
+
+      await sendMessengerText(senderId, cmsKnowledge.reply);
+      return;
+    }
+  } catch (error) {
+    console.error(
+      'Messenger published-content database lookup failed:',
+      error instanceof Error ? error.message : 'Unknown CMS knowledge lookup error',
+    );
+    const lookupFailureReply = getMessengerHumanSupportContactReply(
+      activeCountry,
+      detectMessengerReplyLanguage(normalizedActionText),
+      'unverified',
+    );
+    await saveMessage(sb, conversation.id, {
+      role: 'assistant',
+      content: lookupFailureReply,
+      actionStatus: 'database_lookup_failed',
+      countryCode: activeCountry,
+      sourceContext: {
+        database_lookup_failed: true,
+        ai_call_skipped: true,
+      },
+    });
+    await sendMessengerText(senderId, lookupFailureReply);
+    return;
+  }
   }
 
   if (
@@ -2933,9 +3078,11 @@ async function processMessengerEvent(event: MessengerEvent) {
     const finalReply = unsafeGeneralAgricultureReply
       ? getSafeGeneralAgricultureReply()
       : isKnowledgeFallbackResponse(result.content) && !isGeneralAgricultureMessage
-        ? activeCountry === 'BD'
-          ? getBangladeshKnowledgeFallbackMessage()
-          : getIndiaHumanSupportMessage()
+        ? getMessengerHumanSupportContactReply(
+            activeCountry,
+            replyLanguage,
+            'unverified',
+          )
         : transactionallyUnsafeAIReply
           ? getMessengerTransactionalGuardReply()
           : repeatedHumanSupportReply
@@ -3035,7 +3182,7 @@ async function processMessengerEvent(event: MessengerEvent) {
     await createHumanHandoff(sb, conversation.id, reason, activeCountry);
 
     const handoffMessage =
-      getMessengerProviderFailureHandoffReply(replyLanguage);
+      getMessengerProviderFailureHandoffReply(replyLanguage, activeCountry);
 
     try {
       await saveMessage(sb, conversation.id, {

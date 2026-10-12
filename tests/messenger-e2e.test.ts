@@ -29,6 +29,15 @@ import {
   isMessengerWebsiteKnowledgeRequest,
   selectMessengerFaqResponse,
 } from '../lib/ai/messenger-knowledge-tool';
+import {
+  rankMessengerCmsFaq,
+  scoreMessengerKnowledgeText,
+} from '../lib/ai/messenger-cms-knowledge-tool';
+import {
+  formatMessengerDeliveryPolicyReply,
+  isMessengerDeliveryPolicyQuestion,
+  type MessengerDeliveryPolicy,
+} from '../lib/ai/messenger-delivery-tool';
 
 const TEST_ENV_KEYS = [
   'AI_MESSENGER_ENABLED',
@@ -396,4 +405,148 @@ test('offers selection options for trusted and similar products', () => {
       payload: 'PRODUCT_SELECT:d47e1d77-7ec2-4d0c-9f1b-d97d7ac640e4',
     },
   ]);
+});
+
+
+test('database FAQ matching stays paired with its source-language question and answer', () => {
+  const match = rankMessengerCmsFaq(
+    'How deep should I sow rose seeds?',
+    [{
+      id: 'mixed-language-row',
+      question_en: 'How deep should I sow rose seeds?',
+      answer_en: 'Sow the seeds about 0.5 cm deep.',
+      question: 'লাল গোলাপের বীজ থেকে চারা হতে কতদিন লাগে?',
+      answer: 'গোলাপের বীজ থেকে চারা হতে কয়েক সপ্তাহ লাগতে পারে।',
+    }],
+    'English',
+  );
+
+  assert.equal(match?.language, 'English');
+  assert.equal(match?.answer, 'Sow the seeds about 0.5 cm deep.');
+});
+
+test('database knowledge matching rejects unrelated text and ambiguous FAQ hits', () => {
+  assert.equal(
+    scoreMessengerKnowledgeText(
+      'What is the return policy?',
+      'Sweet-tasting seeds suitable for home gardening.',
+    ).confident,
+    false,
+  );
+
+  const ambiguous = rankMessengerCmsFaq(
+    'What is my account policy?',
+    [
+      { id: 'faq-a', question_en: 'What is my account policy?', answer_en: 'Answer A' },
+      { id: 'faq-b', question_en: 'What is my account policy?', answer_en: 'Answer B' },
+    ],
+    'English',
+  );
+  assert.equal(ambiguous, null);
+});
+
+test('database FAQ answer language is detected from content, not trusted solely from column name', () => {
+  const mislabeled = rankMessengerCmsFaq(
+    'What is the return policy?',
+    [{
+      id: 'legacy-mixed-language',
+      question: 'What is the return policy?',
+      answer: 'Returns are reviewed by our customer support team.',
+    }],
+    'English',
+  );
+
+  assert.equal(mislabeled?.answer, 'Returns are reviewed by our customer support team.');
+  assert.equal(mislabeled?.language, 'English');
+});
+
+
+function makeTestDeliveryPolicy(country: 'BD' | 'IN' = 'BD'): MessengerDeliveryPolicy {
+  const currency = country === 'IN' ? 'INR' : 'BDT';
+  const rules = country === 'IN'
+    ? [
+        { title: null, subtitle: null, min_order: 1000, max_order: null, charge: 0, currency, is_free: true, featured: true, display_order: 1 },
+        { title: null, subtitle: null, min_order: 600, max_order: 999, charge: 99, currency, is_free: false, featured: false, display_order: 2 },
+        { title: null, subtitle: null, min_order: 300, max_order: 599, charge: 149, currency, is_free: false, featured: false, display_order: 3 },
+        { title: null, subtitle: null, min_order: 0, max_order: 299, charge: 199, currency, is_free: false, featured: false, display_order: 4 },
+      ]
+    : [
+        { title: null, subtitle: null, min_order: 600, max_order: null, charge: 0, currency, is_free: true, featured: true, display_order: 1 },
+        { title: null, subtitle: null, min_order: 400, max_order: 599, charge: 50, currency, is_free: false, featured: false, display_order: 2 },
+        { title: null, subtitle: null, min_order: 200, max_order: 399, charge: 70, currency, is_free: false, featured: false, display_order: 3 },
+        { title: null, subtitle: null, min_order: 0, max_order: 199, charge: 120, currency, is_free: false, featured: false, display_order: 4 },
+      ];
+
+  return {
+    country_settings: [{
+      country_code: country,
+      country_name: country === 'IN' ? 'India' : 'Bangladesh',
+      currency,
+      hero_title: null,
+      hero_subtitle: null,
+      delivery_time_primary_label: null,
+      delivery_time_primary_value: '১ – ২ দিন',
+      delivery_time_secondary_label: null,
+      delivery_time_secondary_value: '২ – ৩ দিন',
+      notes: [],
+    }],
+    charge_rules: rules,
+    zones: country === 'IN'
+      ? [{
+          zone_name: 'India Standard Delivery',
+          charge: 90,
+          estimated_time: '4–7 business days',
+          cod_enabled: true,
+          display_order: 1,
+        }]
+      : [],
+  };
+}
+
+test('Messenger delivery-charge replies use the checkout order-value rules directly', () => {
+  const reply = formatMessengerDeliveryPolicyReply(
+    makeTestDeliveryPolicy('BD'),
+    'BD',
+    '500 taka delivery charge',
+    'Bengali',
+  );
+
+  assert.ok(reply);
+  assert.match(reply, /৳৫০/);
+  assert.match(reply, /৳৪০০–৳৫৯৯/);
+  assert.doesNotMatch(reply, /৳৭০/);
+});
+
+test('Messenger delivery times are localized and unknown coverage is not guessed', () => {
+  const policy = makeTestDeliveryPolicy('BD');
+  const reply = formatMessengerDeliveryPolicyReply(policy, 'BD', 'delivery time', 'English');
+
+  assert.ok(reply);
+  assert.match(reply, /Inside Dhaka: 1–2 days/);
+  assert.match(reply, /Outside Dhaka: 2–3 days/);
+  assert.equal(
+    formatMessengerDeliveryPolicyReply(policy, 'BD', 'Do you deliver to Kolkata?', 'English'),
+    null,
+  );
+  assert.equal(
+    formatMessengerDeliveryPolicyReply(policy, 'BD', 'Kolkata te delivery hobe?', 'English'),
+    null,
+  );
+});
+
+test('Messenger delivery intent recognizes Hindi and Romanized Bangla', () => {
+  assert.equal(isMessengerDeliveryPolicyQuestion('delivery charge koto?'), true);
+  assert.equal(isMessengerDeliveryPolicyQuestion('डिलीवरी शुल्क कितना है?'), true);
+});
+
+test('India COD replies explain the configured limit and checkout eligibility instead of overpromising', () => {
+  const reply = formatMessengerDeliveryPolicyReply(
+    makeTestDeliveryPolicy('IN'),
+    'IN',
+    'Is COD available?',
+    'English',
+  );
+
+  assert.match(reply || '', /configured India delivery options/i);
+  assert.match(reply || '', /checkout will confirm eligibility/i);
 });

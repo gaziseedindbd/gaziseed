@@ -734,3 +734,14 @@ test('formats Messenger customer profile and order history', () => {
   assert.match(history, /GS-BD-ABCDEFGH/);
   assert.match(history, /Tomato × 2/);
 });
+
+
+test('Messenger support fallback uses the verified contact for the active country', () => {
+  const india = getMessengerProviderFailureHandoffReply('English', 'IN');
+  assert.match(india, /https:\/\/wa\.me\/916002786881/);
+  assert.match(india, /\+91 6002786881/);
+
+  const bangladesh = getMessengerProviderFailureHandoffReply('Bengali', 'BD');
+  assert.match(bangladesh, /https:\/\/wa\.me\/8801811332293/);
+  assert.match(bangladesh, /01811332293/);
+});

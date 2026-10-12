@@ -1,0 +1,52 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { test } = require('node:test');
+
+const root = path.resolve(__dirname, '..');
+const route = fs.readFileSync(
+  path.join(root, 'app/api/webhooks/messenger/route.ts'),
+  'utf8',
+);
+const knowledgeTool = fs.readFileSync(
+  path.join(root, 'lib/ai/messenger-knowledge-tool.ts'),
+  'utf8',
+);
+const cmsTool = fs.readFileSync(
+  path.join(root, 'lib/ai/messenger-cms-knowledge-tool.ts'),
+  'utf8',
+);
+const supportTool = fs.readFileSync(
+  path.join(root, 'lib/ai/messenger-human-support.ts'),
+  'utf8',
+);
+
+test('verified website/product knowledge and published CMS lookup run before generative AI', () => {
+  const productLookup = route.indexOf('getMessengerWebsiteKnowledgeAnswer({');
+  const cmsLookup = route.indexOf('getMessengerPublishedContentAnswer({');
+  const aiCall = route.indexOf('const result = await messengerAIChat({');
+
+  assert.ok(productLookup > 0, 'product database lookup must exist');
+  assert.ok(cmsLookup > productLookup, 'published CMS lookup must follow the product knowledge lookup');
+  assert.ok(aiCall > cmsLookup, 'AI call must occur after database knowledge lookups');
+  assert.match(route, /ai_call_skipped:\s*true/);
+  assert.match(knowledgeTool, /\.from\('product_faqs'\)/);
+  assert.match(cmsTool, /\.from\('landing_faqs'\)/);
+  assert.match(cmsTool, /\.from\('pages'\)/);
+  assert.match(cmsTool, /\.from\('blogs'\)/);
+});
+
+test('database lookup errors never fall through to a speculative AI response', () => {
+  assert.match(route, /database_lookup_failed:\s*true/);
+  assert.match(route, /if \(cmsKnowledge\.lookupFailed && !cmsKnowledge\.handled\)/);
+  assert.match(route, /actionStatus:\s*'knowledge_lookup_failed'/);
+  assert.match(route, /actionStatus:\s*'database_lookup_failed'/);
+  assert.match(cmsTool, /return \{ handled: false, lookupFailed \}/);
+});
+
+test('support fallback routes customers to the matching country contact', () => {
+  assert.match(supportTool, /https:\/\/wa\.me\/916002786881/);
+  assert.match(supportTool, /https:\/\/wa\.me\/8801811332293/);
+  assert.match(supportTool, /directPhone: '\+91 6002786881'/);
+  assert.match(supportTool, /directPhone: '01811332293'/);
+});
