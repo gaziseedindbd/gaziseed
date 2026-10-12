@@ -1010,6 +1010,106 @@
       "tokens": 56,
       "chars": 614,
       "hasContent": true
+    },
+    {
+      "version": "20261003090000",
+      "name": "restrict_legacy_public_order_rpcs",
+      "filename": "20261003090000_restrict_legacy_public_order_rpcs.sql",
+      "path": "supabase/migrations/20261003090000_restrict_legacy_public_order_rpcs.sql",
+      "fnv64": "ce8889a7a89a9a50",
+      "tokens": 88,
+      "chars": 871,
+      "hasContent": true
+    },
+    {
+      "version": "20261003093000",
+      "name": "harden_public_order_rpc_context",
+      "filename": "20261003093000_harden_public_order_rpc_context.sql",
+      "path": "supabase/migrations/20261003093000_harden_public_order_rpc_context.sql",
+      "fnv64": "c62cf5540d1621ec",
+      "tokens": 164,
+      "chars": 4676,
+      "hasContent": true
+    },
+    {
+      "version": "20261003160000",
+      "name": "add_meta_capi_purchase_events",
+      "filename": "20261003160000_add_meta_capi_purchase_events.sql",
+      "path": "supabase/migrations/20261003160000_add_meta_capi_purchase_events.sql",
+      "fnv64": "dbda755fe1b1c00a",
+      "tokens": 212,
+      "chars": 1214,
+      "hasContent": true
+    },
+    {
+      "version": "20261004223000",
+      "name": "add_product_promotional_spotlight_hindi_and_language_images",
+      "filename": "20261004223000_add_product_promotional_spotlight_hindi_and_language_images.sql",
+      "path": "supabase/migrations/20261004223000_add_product_promotional_spotlight_hindi_and_language_images.sql",
+      "fnv64": "b4ccb29b1d81294e",
+      "tokens": 104,
+      "chars": 819,
+      "hasContent": true
+    },
+    {
+      "version": "20261006010000",
+      "name": "fix_bulk_pricing_country_visibility",
+      "filename": "20261006010000_fix_bulk_pricing_country_visibility.sql",
+      "path": "supabase/migrations/20261006010000_fix_bulk_pricing_country_visibility.sql",
+      "fnv64": "a4278a3e3f302390",
+      "tokens": 58,
+      "chars": 498,
+      "hasContent": true
+    },
+    {
+      "version": "20261006053000",
+      "name": "fix_public_banner_select",
+      "filename": "20261006053000_fix_public_banner_select.sql",
+      "path": "supabase/migrations/20261006053000_fix_public_banner_select.sql",
+      "fnv64": "e23d2184cade3625",
+      "tokens": 34,
+      "chars": 359,
+      "hasContent": true
+    },
+    {
+      "version": "20261006124815",
+      "name": "disable_missing_home_banner",
+      "filename": "20261006124815_disable_missing_home_banner.sql",
+      "path": "supabase/migrations/20261006124815_disable_missing_home_banner.sql",
+      "fnv64": "3831d90d4aa488bf",
+      "tokens": 94,
+      "chars": 601,
+      "hasContent": true
+    },
+    {
+      "version": "20261008123000",
+      "name": "add_sending_state_to_messenger_order_status_notifications",
+      "filename": "20261008123000_add_sending_state_to_messenger_order_status_notifications.sql",
+      "path": "supabase/migrations/20261008123000_add_sending_state_to_messenger_order_status_notifications.sql",
+      "fnv64": "b5a5237f5e0d6e0d",
+      "tokens": 46,
+      "chars": 355,
+      "hasContent": true
+    },
+    {
+      "version": "20261008153430",
+      "name": "grant_public_ads_order_rpc",
+      "filename": "20261008153430_grant_public_ads_order_rpc.sql",
+      "path": "supabase/migrations/20261008153430_grant_public_ads_order_rpc.sql",
+      "fnv64": "1071781f463555ab",
+      "tokens": 39,
+      "chars": 334,
+      "hasContent": true
+    },
+    {
+      "version": "20261008161145",
+      "name": "india_cashfree_campaign_payments",
+      "filename": "20261008161145_india_cashfree_campaign_payments.sql",
+      "path": "supabase/migrations/20261008161145_india_cashfree_campaign_payments.sql",
+      "fnv64": "1ae9603ff3bb9acd",
+      "tokens": 295,
+      "chars": 23127,
+      "hasContent": true
     }
   ]
 }
