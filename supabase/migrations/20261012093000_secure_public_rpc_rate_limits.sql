@@ -72,6 +72,11 @@ begin
     return;
   end if;
 
+  -- Do not throttle authenticated administrators using internal support tools.
+  IF auth.role() = 'authenticated' AND public.is_admin() THEN
+    RETURN;
+  END IF;
+
   if p_operation is null
      or p_operation !~ '^[a-z0-9_]+$'
      or p_minute_limit <= 0
@@ -179,7 +184,8 @@ security definer
 set search_path = public, pg_temp
 as $function$
 begin
-  if auth.role() in ('anon', 'authenticated') then
+  if auth.role() in ('anon', 'authenticated')
+     and not (auth.role() = 'authenticated' and public.is_admin()) then
     perform public.enforce_public_rpc_rate_limit(
       'order_create',
       new.customer_phone,
