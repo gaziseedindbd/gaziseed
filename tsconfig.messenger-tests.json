@@ -26,6 +26,7 @@
     "lib/ai/messenger-rate-limit.ts",
     "lib/ai/messenger-knowledge-tool.ts",
     "lib/ai/messenger-cms-knowledge-tool.ts",
-    "lib/ai/messenger-language.ts"
+    "lib/ai/messenger-language.ts",
+    "lib/ai/messenger-delivery-tool.ts"
   ]
 }
