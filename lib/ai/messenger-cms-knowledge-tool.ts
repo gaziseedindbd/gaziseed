@@ -167,7 +167,9 @@ export function rankMessengerCmsFaq(
         slug: null,
         answer: pair.answer,
         matchedQuestion: pair.question,
-        language: pair.language,
+        // The data can be stored in the wrong language column; detect the
+        // actual answer language so the customer is told when translation is missing.
+        language: detectMessengerReplyLanguage(pair.answer),
         score: match.score + (pair.language === requestedLanguage ? 0.75 : 0),
         matchedTokens: match.matchedTokens,
         identity: asText(row.id) || pair.question,
@@ -226,7 +228,7 @@ function makeDocumentCandidate(
     title: title || slug || 'GAZI SEED information',
     slug,
     answer: bestParagraph.paragraph,
-    language: null,
+    language: detectMessengerReplyLanguage(bestParagraph.paragraph),
     score: combined,
     matchedTokens: bestParagraph.match.matchedTokens,
     identity: slug || title || source,
