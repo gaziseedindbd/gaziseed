@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test:messenger": "rm -rf .tmp/messenger-tests && tsc -p tsconfig.messenger-tests.json && node .tmp/messenger-tests/tests/messenger-e2e.test.js && node .tmp/messenger-tests/tests/messenger-intents.test.js && rm -rf .tmp/messenger-tests"
+    "test:messenger": "rm -rf .tmp/messenger-tests && tsc -p tsconfig.messenger-tests.json && node .tmp/messenger-tests/tests/messenger-e2e.test.js && node .tmp/messenger-tests/tests/messenger-intents.test.js && node .tmp/messenger-tests/tests/messenger-order-tracking.test.js && rm -rf .tmp/messenger-tests",
+    "test:cashfree": "node tests/cashfree-amount-integrity.test.cjs && node tests/cashfree-payment-verify.test.cjs && node tests/cashfree-recovery.test.cjs && node tests/cashfree-webhook.test.cjs"
   },
   "dependencies": {
     "browser-image-compression": "^2.0.2",
