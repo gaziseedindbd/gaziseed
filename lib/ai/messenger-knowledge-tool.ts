@@ -421,11 +421,17 @@ async function getFullProduct(
   return data as Record<string, unknown> | null;
 }
 
+type ProductFaqMatch = {
+  question: string;
+  answer: string;
+  language: MessengerReplyLanguage;
+};
+
 async function findFaq(
   supabase: SupabaseClient,
   productId: string,
   text: string,
-): Promise<ProductFaq | null> {
+): Promise<ProductFaqMatch | null> {
   const { data, error } = await supabase
     .from('product_faqs')
     .select('id,question_bn,answer_bn,question_en,answer_en,display_order')
@@ -472,10 +478,8 @@ async function findFaq(
 
         return {
           ...row,
-          question_hi:
-            typeof values.question_hi === 'string' ? values.question_hi : null,
-          answer_hi:
-            typeof values.answer_hi === 'string' ? values.answer_hi : null,
+          question_hi: typeof values.question_hi === 'string' ? values.question_hi : null,
+          answer_hi: typeof values.answer_hi === 'string' ? values.answer_hi : null,
         };
       });
     } catch (error) {
@@ -486,35 +490,81 @@ async function findFaq(
     }
   }
 
+  const requestedLanguage = detectMessengerReplyLanguage(text);
   const queryTokens = tokenize(text);
-  let best: { row: ProductFaq; score: number } | null = null;
+  const candidates: Array<{
+    id: string;
+    question: string;
+    answer: string;
+    language: MessengerReplyLanguage;
+    score: number;
+  }> = [];
 
   for (const row of rows) {
-    const question = [row.question_bn, row.question_en, row.question_hi]
-      .filter(Boolean)
-      .join(' ');
-    const questionTokens = tokenize(question);
-    const overlap = queryTokens.filter((token) => questionTokens.includes(token));
+    const pairs: Array<{
+      language: MessengerReplyLanguage;
+      question: string | null | undefined;
+      answer: string | null | undefined;
+    }> = [
+      { language: 'Bengali', question: row.question_bn, answer: row.answer_bn },
+      { language: 'English', question: row.question_en, answer: row.answer_en },
+      { language: 'Hindi', question: row.question_hi, answer: row.answer_hi },
+    ];
 
-    let score = overlap.length;
+    for (const pair of pairs) {
+      const question = firstNonEmpty(pair.question);
+      const answer = firstNonEmpty(pair.answer);
+      if (!question || !answer) continue;
 
-    const normalizedText = normalizeText(text);
-    const normalizedQuestion = normalizeText(question);
-    if (
-      normalizedQuestion &&
-      normalizedText.length > 6 &&
-      (normalizedText.includes(normalizedQuestion) ||
-        normalizedQuestion.includes(normalizedText))
-    ) {
-      score += 6;
-    }
+      const questionTokens = new Set(tokenize(question));
+      const overlap = queryTokens.filter((token) => questionTokens.has(token));
+      const ratio = overlap.length / Math.max(1, queryTokens.length);
+      const normalizedText = normalizeText(text);
+      const normalizedQuestion = normalizeText(question);
+      const phraseMatch =
+        queryTokens.length >= 2 &&
+        normalizedText.length > 6 &&
+        normalizedQuestion.length > 6 &&
+        (normalizedText.includes(normalizedQuestion) ||
+          normalizedQuestion.includes(normalizedText));
+      const confident =
+        phraseMatch ||
+        (overlap.length >= 2 && ratio >= 0.45) ||
+        (overlap.length >= 3 && ratio >= 0.35);
 
-    if (!best || score > best.score) {
-      best = { row, score };
+      if (!confident) continue;
+
+      candidates.push({
+        id: row.id,
+        question,
+        answer,
+        language: pair.language,
+        score:
+          overlap.length * 2 +
+          (phraseMatch ? 6 : 0) +
+          (pair.language === requestedLanguage ? 0.75 : 0),
+      });
     }
   }
 
-  return best && best.score >= 2 ? best.row : null;
+  candidates.sort((a, b) => b.score - a.score);
+  const best = candidates[0];
+  const runnerUp = candidates[1];
+
+  // If two different FAQ records fit almost equally well, do not guess which
+  // fact the customer meant. A safe fallback is better than a confident error.
+  if (
+    best &&
+    runnerUp &&
+    best.id !== runnerUp.id &&
+    Math.abs(best.score - runnerUp.score) < 1
+  ) {
+    return null;
+  }
+
+  return best
+    ? { question: best.question, answer: best.answer, language: best.language }
+    : null;
 }
 
 function getMessengerFaqSourceHash(faq: Pick<ProductFaq, 'question_en' | 'answer_en'>): string {
@@ -564,137 +614,134 @@ export function selectMessengerFaqResponse(
 function buildFieldReply(
   product: Record<string, unknown>,
   text: string,
+  language: MessengerReplyLanguage,
 ): string | null {
-  const name = firstNonEmpty(product.name_bn, product.name_en, product.slug) || 'এই পণ্য';
+  const name = language === 'Bengali'
+    ? firstNonEmpty(product.name_bn, product.name_en, product.slug) || 'এই পণ্য'
+    : firstNonEmpty(product.name_en, product.name_bn, product.slug) || 'Product';
   const normalized = normalizeText(text);
+  const labels = language === 'English'
+    ? {
+        brand: 'Brand', origin: 'Origin', variety: 'Variety', seedType: 'Seed type',
+        season: 'Season', plantingSeason: 'Planting season', germinationTime: 'Germination time',
+        germinationRate: 'Germination rate', spacing: 'Plant spacing', depth: 'Sowing depth',
+        sunlight: 'Sunlight', water: 'Watering', soil: 'Soil type', packet: 'Packet/seed quantity',
+        yield: 'Yield/harvest', storage: 'Storage', cultivation: 'Cultivation instructions',
+        type: 'Type', sowingTime: 'Sowing time',
+      }
+    : language === 'Hindi'
+      ? {
+          brand: 'ब्रांड', origin: 'उत्पत्ति', variety: 'किस्म', seedType: 'बीज का प्रकार',
+          season: 'मौसम', plantingSeason: 'बुवाई का समय', germinationTime: 'अंकुरण का समय',
+          germinationRate: 'अंकुरण दर', spacing: 'पौधों के बीच दूरी', depth: 'बुवाई की गहराई',
+          sunlight: 'धूप', water: 'पानी/सिंचाई', soil: 'मिट्टी का प्रकार', packet: 'पैकेट/बीज की मात्रा',
+          yield: 'उपज/कटाई', storage: 'भंडारण', cultivation: 'खेती की जानकारी',
+          type: 'प्रकार', sowingTime: 'बुवाई का समय',
+        }
+      : {
+          brand: 'ব্র্যান্ড', origin: 'উৎপত্তি', variety: 'জাত/ভ্যারাইটি', seedType: 'বীজের ধরন',
+          season: 'মৌসুম', plantingSeason: 'রোপণ/বপনের সময়', germinationTime: 'অঙ্কুরোদগম সময়',
+          germinationRate: 'অঙ্কুরোদগম হার', spacing: 'গাছের দূরত্ব', depth: 'বপনের গভীরতা',
+          sunlight: 'সূর্যালোক', water: 'পানি/সেচ', soil: 'মাটির ধরন', packet: 'প্যাকেট/বীজের পরিমাণ',
+          yield: 'ফলন/হারভেস্ট', storage: 'সংরক্ষণ', cultivation: 'চাষ/পরিচর্যা নির্দেশনা',
+          type: 'ধরন', sowingTime: 'বপনের সময়',
+        };
+  const prefix = `🌱 ${name}`;
+  const line = (emoji: string, label: string, value: string) => `${emoji} ${label}: ${value}`;
 
-  if (/(ব্র্যান্ড|brand)/i.test(normalized)) {
+  if (/(ব্র্যান্ড|brand|ब्रांड)/i.test(normalized)) {
     const value = firstNonEmpty(product.brand);
-    return value ? `🌱 ${name}\n🏷️ ব্র্যান্ড: ${value}` : null;
+    return value ? `${prefix}\n${line('🏷️', labels.brand, value)}` : null;
   }
-
-  if (/(উৎপত্তি|origin|কোথাকার)/i.test(normalized)) {
+  if (/(উৎপত্তি|origin|কোথাকার|उत्पत्ति)/i.test(normalized)) {
     const value = firstNonEmpty(product.origin);
-    return value ? `🌱 ${name}\n🌍 উৎপত্তি: ${value}` : null;
+    return value ? `${prefix}\n${line('🌍', labels.origin, value)}` : null;
   }
-
-  if (/(জাত|variety)/i.test(normalized)) {
+  if (/(জাত|variety|किस्म)/i.test(normalized)) {
     const value = firstNonEmpty(product.variety);
-    return value ? `🌱 ${name}\n🧬 জাত/ভ্যারাইটি: ${value}` : null;
+    return value ? `${prefix}\n${line('🧬', labels.variety, value)}` : null;
   }
-
-  if (/(seed type|বীজের ধরন|বীজের টাইপ)/i.test(normalized)) {
+  if (/(seed type|বীজের ধরন|বীজের টাইপ|बीज का प्रकार)/i.test(normalized)) {
     const value = firstNonEmpty(product.seed_type);
-    return value ? `🌱 ${name}\n🌾 বীজের ধরন: ${value}` : null;
+    return value ? `${prefix}\n${line('🌾', labels.seedType, value)}` : null;
   }
-
-  if (/(season|মৌসুম|কোন সময়|কখন লাগাব|রোপণের সময়|বপনের সময়)/i.test(normalized)) {
+  if (/(season|মৌসুম|কোন সময়|কখন লাগাব|রোপণের সময়|বপনের সময়|मौसम|बुवाई का समय)/i.test(normalized)) {
     const season = firstNonEmpty(product.season);
     const plantingSeason = firstNonEmpty(product.planting_season);
     if (!season && !plantingSeason) return null;
-
     return [
-      `🌱 ${name}`,
-      season ? `🗓️ মৌসুম: ${season}` : '',
-      plantingSeason ? `📅 রোপণ/বপনের সময়: ${plantingSeason}` : '',
-    ]
-      .filter(Boolean)
-      .join('\n');
+      prefix,
+      season ? line('🗓️', labels.season, season) : '',
+      plantingSeason ? line('📅', labels.plantingSeason, plantingSeason) : '',
+    ].filter(Boolean).join('\n');
   }
-
-  if (/(অঙ্কুর|germination|গজাতে|চারা হতে)/i.test(normalized)) {
+  if (/(অঙ্কুর|germination|গজাতে|চারা হতে|अंकुरण)/i.test(normalized)) {
     const time = firstNonEmpty(product.germination_time);
     const rate = firstNonEmpty(product.germination_rate);
     if (!time && !rate) return null;
-
     return [
-      `🌱 ${name}`,
-      time ? `🌱 অঙ্কুরোদগম সময়: ${time}` : '',
-      rate ? `📈 অঙ্কুরোদগম হার: ${rate}` : '',
-    ]
-      .filter(Boolean)
-      .join('\n');
+      prefix,
+      time ? line('🌱', labels.germinationTime, time) : '',
+      rate ? line('📈', labels.germinationRate, rate) : '',
+    ].filter(Boolean).join('\n');
   }
-
-  if (/(দূরত্ব|spacing)/i.test(normalized)) {
+  if (/(দূরত্ব|spacing|दूरी)/i.test(normalized)) {
     const value = firstNonEmpty(product.plant_spacing);
-    return value ? `🌱 ${name}\n↔️ গাছের দূরত্ব: ${value}` : null;
+    return value ? `${prefix}\n${line('↔️', labels.spacing, value)}` : null;
   }
-
-  if (/(গভীরতা|depth|কত গভীরে)/i.test(normalized)) {
+  if (/(গভীরতা|depth|কত গভীরে|गहराई)/i.test(normalized)) {
     const value = firstNonEmpty(product.planting_depth);
-    return value ? `🌱 ${name}\n📏 বপনের গভীরতা: ${value}` : null;
+    return value ? `${prefix}\n${line('📏', labels.depth, value)}` : null;
   }
-
-  if (/(রোদ|সূর্যালোক|sunlight|আলো)/i.test(normalized)) {
+  if (/(রোদ|সূর্যালোক|sunlight|আলো|धूप)/i.test(normalized)) {
     const value = firstNonEmpty(product.sunlight);
-    return value ? `🌱 ${name}\n☀️ সূর্যালোক: ${value}` : null;
+    return value ? `${prefix}\n${line('☀️', labels.sunlight, value)}` : null;
   }
-
-  if (/(পানি|জল|water|সেচ|watering)/i.test(normalized)) {
+  if (/(পানি|জল|water|সেচ|watering|पानी)/i.test(normalized)) {
     const value = firstNonEmpty(product.water_requirement);
-    return value ? `🌱 ${name}\n💧 পানি/সেচ: ${value}` : null;
+    return value ? `${prefix}\n${line('💧', labels.water, value)}` : null;
   }
-
-  if (/(মাটি|soil)/i.test(normalized)) {
+  if (/(মাটি|soil|मिट्टी)/i.test(normalized)) {
     const value = firstNonEmpty(product.soil_type);
-    return value ? `🌱 ${name}\n🪴 মাটি: ${value}` : null;
+    return value ? `${prefix}\n${line('🪴', labels.soil, value)}` : null;
   }
-
-  if (/(প্যাকেট|packet|কতটি বীজ|কত বীজ|seed quantity)/i.test(normalized)) {
+  if (/(প্যাকেট|packet|কতটি বীজ|কত বীজ|seed quantity|पैकेट)/i.test(normalized)) {
     const value = firstNonEmpty(product.packet_weight, product.seed_quantity);
-    return value ? `🌱 ${name}\n📦 প্যাকেট/বীজের পরিমাণ: ${value}` : null;
+    return value ? `${prefix}\n${line('📦', labels.packet, value)}` : null;
   }
-
-  if (/(ফলন|yield|harvest)/i.test(normalized)) {
+  if (/(ফলন|yield|harvest|कटाई|उपज)/i.test(normalized)) {
     const value = firstNonEmpty(product.expected_yield, product.harvest_time);
-    return value
-      ? `🌱 ${name}\n🌾 ফলন/হারভেস্ট: ${value}`
-      : null;
+    return value ? `${prefix}\n${line('🌾', labels.yield, value)}` : null;
   }
-
-  if (/(সংরক্ষণ|storage)/i.test(normalized)) {
+  if (/(সংরক্ষণ|storage|भंडारण)/i.test(normalized)) {
     const value = firstNonEmpty(product.storage_instructions);
-    return value ? `🌱 ${name}\n📦 সংরক্ষণ:\n${value}` : null;
+    return value ? `${prefix}\n${line('📦', labels.storage, value)}\n${value}` : null;
   }
-
-  if (/(কীভাবে চাষ|চাষাবাদ|cultivation|কীভাবে লাগাব|কীভাবে লাগাতে|পরিচর্যা|care|কীভাবে বপন|কীভাবে রোপণ)/i.test(normalized)) {
+  if (/(কীভাবে চাষ|চাষাবাদ|cultivation|কীভাবে লাগাব|কীভাবে লাগাতে|পরিচর্যা|care|কীভাবে বপন|কীভাবে রোপণ|खेती|देखभाल)/i.test(normalized)) {
     const value = firstNonEmpty(product.cultivation_instructions);
-    return value ? `🌱 ${name}\n\n🌿 চাষ/পরিচর্যা নির্দেশনা:\n${value}` : null;
+    return value ? `${prefix}\n\n🌿 ${labels.cultivation}:\n${value}` : null;
   }
-
-  if (/(বিস্তারিত|তথ্য|বৈশিষ্ট্য|details|about|এই পণ্য)/i.test(normalized)) {
+  if (/(বিস্তারিত|তথ্য|বৈশিষ্ট্য|details|about|এই পণ্য|विवरण|जानकारी)/i.test(normalized)) {
     const description = firstNonEmpty(product.short_description, product.description);
+    const type = firstNonEmpty(product.seed_type);
+    const variety = firstNonEmpty(product.variety);
+    const brand = firstNonEmpty(product.brand);
+    const origin = firstNonEmpty(product.origin);
+    const season = firstNonEmpty(product.season);
+    const plantingSeason = firstNonEmpty(product.planting_season);
     const values = [
       description ? `📝 ${description}` : '',
-      firstNonEmpty(product.seed_type)
-        ? `🌾 ধরন: ${firstNonEmpty(product.seed_type)}`
-        : '',
-      firstNonEmpty(product.variety)
-        ? `🧬 জাত: ${firstNonEmpty(product.variety)}`
-        : '',
-      firstNonEmpty(product.brand)
-        ? `🏷️ ব্র্যান্ড: ${firstNonEmpty(product.brand)}`
-        : '',
-      firstNonEmpty(product.origin)
-        ? `🌍 উৎপত্তি: ${firstNonEmpty(product.origin)}`
-        : '',
-      firstNonEmpty(product.season)
-        ? `🗓️ মৌসুম: ${firstNonEmpty(product.season)}`
-        : '',
-      firstNonEmpty(product.planting_season)
-        ? `📅 বপনের সময়: ${firstNonEmpty(product.planting_season)}`
-        : '',
+      type ? line('🌾', labels.type, type) : '',
+      variety ? line('🧬', labels.variety, variety) : '',
+      brand ? line('🏷️', labels.brand, brand) : '',
+      origin ? line('🌍', labels.origin, origin) : '',
+      season ? line('🗓️', labels.season, season) : '',
+      plantingSeason ? line('📅', labels.sowingTime, plantingSeason) : '',
     ].filter(Boolean);
-
-    return values.length
-      ? `🌱 ${name}\n\n${values.join('\n')}`
-      : null;
+    return values.length ? `${prefix}\n\n${values.join('\n')}` : null;
   }
-
   return null;
 }
-
 export function isMessengerWebsiteKnowledgeRequest(text: string): boolean {
   return hasKnowledgeIntent(text);
 }
