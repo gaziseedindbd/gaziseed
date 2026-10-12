@@ -28,7 +28,7 @@
 - **Duplicate external-message index (`20260912050259`):** the stored statement drops `ai_messages_external_message_uq`, while one repository revision refers to `ai_messages_external_message_unique`. A later Production record does match the latter name; the currently live unique index is `ai_messages_external_message_id_uidx`. Reconcile in chronological order before editing history.
 - **Messenger order confirmation (`20261001052620`):** stored function includes a non-empty customer-phone guard that is absent in the current same-name repository migration version. Preserve the live guard; never reconstruct the trigger from the repository file without checking subsequent migrations.
 - **COD due settlement (`20260912051336`):** SQL token comparison indicates a substantive difference in the stored function body; requires manual review before any version/name correction.
-- One other same-name `SQL_DIFF` (`remove_multiple_permissive_rls_overlaps`) was normalized by tokenization and matches despite whitespace differences; see table status.
+- The first whitespace-only comparison flagged `remove_multiple_permissive_rls_overlaps` as different, but a SQL-token comparison confirmed the stored statement and repository file are equivalent despite formatting.
 
 ## Production-to-repository map
 
