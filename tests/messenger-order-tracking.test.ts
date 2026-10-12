@@ -45,8 +45,11 @@ function makeSupabase(options: MockOptions = {}) {
         then: (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) => {
           calls.push({ kind: 'orders:' + table, filters });
           orderReadCount += 1;
+          const matchedRows = (options.orders || []).filter((row) =>
+            filters.every(([field, value]) => row[field] === value),
+          );
           return Promise.resolve({
-            data: options.ordersError ? null : (options.orders || []),
+            data: options.ordersError ? null : matchedRows,
             error: options.ordersError ? { message: 'order read failed' } : null,
           }).then(resolve, reject);
         },
@@ -73,6 +76,7 @@ const validTrackingText = 'GS-BD-ABC12345 01712345678';
 const sampleOrder = {
   id: 'internal-order-id',
   order_number: 'GS-BD-ABC12345',
+  country_code: 'BD',
   order_status: 'shipped',
   payment_status: 'paid',
   final_amount: 500,
@@ -219,7 +223,7 @@ test('returns order status only when order number and supplied registered phone 
 
 test('accepts India phone with or without the +91 country prefix', async () => {
   const mock = makeSupabase({
-    orders: [{ ...sampleOrder, customer_phone: '+91 98765 43210' }],
+    orders: [{ ...sampleOrder, country_code: 'IN', order_number: 'GS-IN-ABC12345', customer_phone: '+91 98765 43210' }],
     gateRows: [
       { allowed: true, failed_attempts: 0, retry_after_seconds: 0 },
       { allowed: true, failed_attempts: 0, retry_after_seconds: 0 },
@@ -233,7 +237,7 @@ test('accepts India phone with or without the +91 country prefix', async () => {
     text: 'GS-IN-ABC12345 9876543210',
   });
   assert.equal(result.handled, true);
-  assert.match(result.reply, /GS-BD-ABC12345/);
+  assert.match(result.reply, /GS-IN-ABC12345/);
 });
 
 test('accepts Bangladesh phone with +880 or local 0 prefix', async () => {
