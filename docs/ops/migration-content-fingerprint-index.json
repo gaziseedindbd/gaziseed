@@ -500,6 +500,106 @@
       "tokens": 56,
       "chars": 843,
       "hasContent": true
+    },
+    {
+      "version": "20260824043000",
+      "name": "harden_last_master_admin_privilege",
+      "filename": "20260824043000_harden_last_master_admin_privilege.sql",
+      "path": "supabase/migrations/20260824043000_harden_last_master_admin_privilege.sql",
+      "fnv64": "b2e7798f843bdb70",
+      "tokens": 50,
+      "chars": 466,
+      "hasContent": true
+    },
+    {
+      "version": "20260824044500",
+      "name": "restrict_order_ownership_trigger",
+      "filename": "20260824044500_restrict_order_ownership_trigger.sql",
+      "path": "supabase/migrations/20260824044500_restrict_order_ownership_trigger.sql",
+      "fnv64": "0415a342079915a4",
+      "tokens": 50,
+      "chars": 461,
+      "hasContent": true
+    },
+    {
+      "version": "20260824050000",
+      "name": "harden_auto_confirm_user",
+      "filename": "20260824050000_harden_auto_confirm_user.sql",
+      "path": "supabase/migrations/20260824050000_harden_auto_confirm_user.sql",
+      "fnv64": "f695290fe15682a3",
+      "tokens": 62,
+      "chars": 510,
+      "hasContent": true
+    },
+    {
+      "version": "20260824052000",
+      "name": "harden_update_updated_at",
+      "filename": "20260824052000_harden_update_updated_at.sql",
+      "path": "supabase/migrations/20260824052000_harden_update_updated_at.sql",
+      "fnv64": "b1fafafaa1a4bd3e",
+      "tokens": 62,
+      "chars": 443,
+      "hasContent": true
+    },
+    {
+      "version": "20260824053500",
+      "name": "harden_set_order_number",
+      "filename": "20260824053500_harden_set_order_number.sql",
+      "path": "supabase/migrations/20260824053500_harden_set_order_number.sql",
+      "fnv64": "da1ce67d7919b0a4",
+      "tokens": 62,
+      "chars": 449,
+      "hasContent": true
+    },
+    {
+      "version": "20260824054500",
+      "name": "harden_calculate_delivery_charge",
+      "filename": "20260824054500_harden_calculate_delivery_charge.sql",
+      "path": "supabase/migrations/20260824054500_harden_calculate_delivery_charge.sql",
+      "fnv64": "4568294c9caeb4e5",
+      "tokens": 15,
+      "chars": 231,
+      "hasContent": true
+    },
+    {
+      "version": "20260824055500",
+      "name": "harden_is_admin_search_path",
+      "filename": "20260824055500_harden_is_admin_search_path.sql",
+      "path": "supabase/migrations/20260824055500_harden_is_admin_search_path.sql",
+      "fnv64": "fef4c0e3b499eef3",
+      "tokens": 12,
+      "chars": 197,
+      "hasContent": true
+    },
+    {
+      "version": "20260824061000",
+      "name": "harden_is_master_admin_search_path",
+      "filename": "20260824061000_harden_is_master_admin_search_path.sql",
+      "path": "supabase/migrations/20260824061000_harden_is_master_admin_search_path.sql",
+      "fnv64": "9b044e758faace36",
+      "tokens": 12,
+      "chars": 211,
+      "hasContent": true
+    },
+    {
+      "version": "20260824063000",
+      "name": "harden_public_order_user_identity",
+      "filename": "20260824063000_harden_public_order_user_identity.sql",
+      "path": "supabase/migrations/20260824063000_harden_public_order_user_identity.sql",
+      "fnv64": "8b6e70bb05b40ea6",
+      "tokens": 72,
+      "chars": 1067,
+      "hasContent": true
+    },
+    {
+      "version": "20260824065000",
+      "name": "fix_combo_order_item_line_total",
+      "filename": "20260824065000_fix_combo_order_item_line_total.sql",
+      "path": "supabase/migrations/20260824065000_fix_combo_order_item_line_total.sql",
+      "fnv64": "584b0626af38b304",
+      "tokens": 64,
+      "chars": 4494,
+      "hasContent": true
     }
   ]
 }
