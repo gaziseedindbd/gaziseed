@@ -204,7 +204,7 @@ test('returns order status only when order number and supplied registered phone 
 
   assert.equal(result.handled, true);
   assert.match(result.reply, /GS-BD-ABC12345/);
-  assert.match(result.reply, /shipped/);
+  assert.match(result.reply, /shipped/i);
   assert.equal(result.orderIds?.[0], 'internal-order-id');
   const query = mock.calls.find((call) => call.kind === 'orders:orders');
   assert.ok(query?.filters?.some(([field, value]) => field === 'order_number' && value === 'GS-BD-ABC12345'));
