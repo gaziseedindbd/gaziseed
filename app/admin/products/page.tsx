@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { PRODUCT_PUBLIC_COLUMNS } from '@/lib/supabase/public-columns';
 import { formatPrice } from '@/lib/data';
 import { adminPrice } from '@/lib/admin-order-display';
 import { Plus, Edit, Trash2, X, Search, Upload, Link as LinkIcon, Star, HelpCircle, ChevronDown } from 'lucide-react';
@@ -67,8 +68,36 @@ export default function AdminProductsPage() {
   };
 
   const loadProducts = async () => {
-    const { data } = await supabase.from('products').select('*').eq('is_ads_only', false).eq('country_code', adminBranch).order('created_at', { ascending: false });
-    setProducts(data || []);
+    const { data, error } = await supabase
+      .from('products')
+      .select(PRODUCT_PUBLIC_COLUMNS)
+      .eq('is_ads_only', false)
+      .eq('country_code', adminBranch)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Products admin list load failed:', error);
+      toast('প্রোডাক্ট লোড করা ব্যর্থ হয়েছে', 'error');
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data: costs, error: costError } = await supabase
+      .from('product_costs')
+      .select('product_id, cost_price')
+      .eq('country_code', adminBranch);
+
+    if (costError) {
+      console.error('Private product cost load failed:', costError);
+      toast('ক্রয় মূল্যের তথ্য লোড করা যায়নি; ডাটাবেস migration প্রয়োজন হতে পারে', 'error');
+    }
+
+    const costByProduct = new Map((costs || []).map((row) => [row.product_id, row.cost_price]));
+    setProducts((data || []).map((product) => ({
+      ...product,
+      cost_price: costByProduct.get(product.id) ?? null,
+    })));
     setLoading(false);
   };
 
@@ -94,15 +123,32 @@ export default function AdminProductsPage() {
 
   const handleSave = async (formData: any) => {
     let productId = editing?.id;
+    const { cost_price: costPrice, ...productPayload } = formData.payload;
+
     if (editing) {
-      const { error } = await supabase.from('products').update(formData.payload).eq('id', editing.id);
+      const { error } = await supabase.from('products').update(productPayload).eq('id', editing.id);
       if (error) { toast('আপডেট ব্যর্থ', 'error'); return; }
       toast('প্রোডাক্ট আপডেট হয়েছে');
     } else {
-      const { data: newProduct, error } = await supabase.from('products').insert({ ...formData.payload, is_ads_only: false }).select('id').single();
+      const { data: newProduct, error } = await supabase.from('products').insert({ ...productPayload, is_ads_only: false }).select('id').single();
       if (error) { toast('যোগ করা ব্যর্থ', 'error'); return; }
       productId = newProduct?.id;
       toast('প্রোডাক্ট যোগ করা হয়েছে');
+    }
+
+    if (productId) {
+      const { error: costError } = await supabase.from('product_costs').upsert({
+        product_id: productId,
+        country_code: adminBranch,
+        cost_price: costPrice === '' || costPrice == null ? null : Number(costPrice),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'product_id' });
+
+      if (costError) {
+        console.error('Private product cost save failed:', costError);
+        toast('প্রোডাক্ট সেভ হয়েছে, কিন্তু ক্রয় মূল্য সেভ হয়নি। migration ও admin permission যাচাই করুন।', 'error');
+        return;
+      }
     }
     if (productId && formData.faqs) {
       for (const f of formData.faqs) {
