@@ -11,6 +11,7 @@ export type MessengerCmsKnowledgeResult = {
   source?: MessengerCmsKnowledgeSource;
   sourceSlug?: string | null;
   confidence?: number;
+  lookupFailed?: boolean;
 };
 
 type KnowledgePair = {
@@ -262,7 +263,7 @@ export async function getMessengerPublishedContentAnswer(args: {
   const lookups = await Promise.allSettled([
     supabase
       .from('landing_faqs')
-      .select('question,answer,question_en,answer_en,question_hi,answer_hi,display_order,landing_pages!inner(status,country_code)')
+      .select('id,question,answer,question_en,answer_en,question_hi,answer_hi,display_order,landing_pages!inner(status,country_code)')
       .eq('country_code', country)
       .eq('landing_pages.country_code', country)
       .eq('landing_pages.status', 'active')
@@ -304,8 +305,13 @@ export async function getMessengerPublishedContentAnswer(args: {
     if (candidate) candidates.push(candidate);
   }
 
+  const lookupFailed = lookups.some((lookup) =>
+    lookup.status === 'rejected' ||
+    (lookup.status === 'fulfilled' && Boolean(lookup.value.error)),
+  );
+
   const best = selectUnambiguousCandidate(candidates);
-  if (!best) return { handled: false };
+  if (!best) return { handled: false, lookupFailed };
 
   const language = detectMessengerReplyLanguage(text);
   const missingTranslationNote =
