@@ -496,17 +496,17 @@ export default function AdminSettingsPage() {
           <div>
             <label className="mb-1 block text-sm font-medium">রিওয়ার্ড ভ্যালু {referralForm.reward_type === 'percentage' ? '(%)' : (adminCountry === 'IN' ? '(₹)' : '(৳)')}</label>
             <input type="number" min="0" step="0.01" value={referralForm.reward_value ?? 0} onChange={(e) => setReferralForm({ ...referralForm, reward_value: e.target.value })} className="input-bangla" />
-            <p className="mt-1 text-xs text-muted-foreground">{referralForm.reward_type === 'percentage' ? 'শতকরা হার (যেমন ১০ = ১০%)' : 'নির্দিষ্ট পরিমাণ {adminCountry === 'IN' ? '(₹)' : '(৳)'}'}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{referralForm.reward_type === 'percentage' ? 'শতকরা হার (যেমন ১০ = ১০%)' : `নির্দিষ্ট পরিমাণ (${adminCountry === 'IN' ? '₹' : '৳'})`}</p>
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">ন্যূনতম যোগ্য অর্ডার পরিমাণ (৳)</label>
+            <label className="mb-1 block text-sm font-medium">ন্যূনতম যোগ্য অর্ডার পরিমাণ {adminCountry === 'IN' ? '(₹)' : '(৳)'}</label>
             <input type="number" min="0" step="0.01" value={referralForm.min_order_amount ?? 0} onChange={(e) => setReferralForm({ ...referralForm, min_order_amount: e.target.value })} className="input-bangla" />
             <p className="mt-1 text-xs text-muted-foreground">রেফারেল রিওয়ার্ডের জন্য প্রয়োজনীয় ন্যূনতম অর্ডার মূল্য</p>
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">সর্বোচ্চ রিওয়ার্ড (৳) <span className="text-muted-foreground">(ঐচ্ছিক)</span></label>
+            <label className="mb-1 block text-sm font-medium">সর্বোচ্চ রিওয়ার্ড {adminCountry === 'IN' ? '(₹)' : '(৳)'} <span className="text-muted-foreground">(ঐচ্ছিক)</span></label>
             <input type="number" min="0" step="0.01" value={referralForm.max_reward_per_referral ?? ''} onChange={(e) => setReferralForm({ ...referralForm, max_reward_per_referral: e.target.value })} className="input-bangla" placeholder="সর্বোচ্চ সীমা নেই" />
             <p className="mt-1 text-xs text-muted-foreground">প্রতি রেফারেলে সর্বোচ্চ রিওয়ার্ড সীমা (ঐচ্ছিক)</p>
           </div>
