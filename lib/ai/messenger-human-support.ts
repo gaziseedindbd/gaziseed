@@ -92,5 +92,5 @@ export function getMessengerHumanSupportContactReply(
     `🌍 ${contact.countryName} customer support`,
     `📱 ${channelLabel}: ${contact.whatsappUrl}`,
     `📞 ${phoneLabel}: ${contact.directPhone}`,
-  ].join('\\n');
+  ].join('\n');
 }
