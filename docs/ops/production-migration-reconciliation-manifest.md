@@ -500,3 +500,26 @@ The sales-operations migration explicitly says product cost price must not be ex
 - Important differences needing business/security review: current referral-code prefix still says `GAZISEED-`; order-cancellation referral reversal may not be equivalent to the old trigger; and reward calculation/issuance is now a combined stateful function.
 - The master-admin account migration is data-sensitive; its exact effect remains intentionally unverified without an approved, privacy-preserving existence check.
 
+## Live-schema effect review — batch 4 (40 of 72 unmatched files)
+
+**Method:** review duplicate/repair-era files 31–40. The current catalog was checked for the bucket, helper-function security settings and the currently deployed referral reward/sign-up triggers. Account records were not read.
+
+| Repository migration | Current evidence | Result / follow-up |
+|---|---|---|
+| `20260815114950_create_product_images_bucket.sql` | Storage bucket `product-images` exists and is public; it has current authenticated upload/delete/update policies. | **Bucket effect present.** The later bucket file is idempotent. Do not rerun it as a migration-history fix. |
+| `20260817020243_create_master_admin_seedbari_account.sql` | Master-admin support, `is_master_admin()`, and last-master-admin guardrails exist. | **Account data intentionally unverified.** No auth-user or admin-user records were inspected; do not recreate an account merely because a migration filename has no matching history entry. |
+| `20260817020658_fix_admin_rpc_search_path.sql` | `is_admin()` and `is_master_admin()` are SECURITY DEFINER functions with `search_path=public`. | **Search-path hardening present.** |
+| `20260817044128_20260812212031_add_referral_reward_calculation.sql.sql.sql` | The old `calculate_referral_reward()` is absent; current reward calculation/issuance is done by `calculate_and_issue_referral_reward()`. | **Superseded by combined referral reward flow** (see batch 3). |
+| `20260817044137_20260812212843_add_referral_reward_issue_ledger.sql.sql.sql` | The old `issue_referral_reward_ledger()` is absent; current reward ledger and wallet transaction tables plus unique/referral-once indexes exist. | **Superseded by current ledger implementation** (see batch 3). |
+| `20260817044143_20260812212916_fix_reward_ledger_trigger_timing.sql.sql.sql` | Current trigger is `referrals.trg_calculate_and_issue_referral_reward` after status update, rather than the historical BEFORE-update ledger trigger. | **Legacy trigger timing no longer applies to the current function.** Validate transaction idempotency and cancellation behavior as one combined flow. |
+| `20260817044149_20260814204631_fix_referral_trigger_search_path.sql.sql` | `generate_referral_code()`, `ensure_referral_code(uuid)`, and `create_referral_code_on_signup()` all have `search_path=public`. | **Security intent present.** |
+| `20260817044158_20260815114254_create_fresh_master_admin_account.sql.sql` | General master-admin schema and guardrails exist. | **Account data intentionally unverified**, for the same privacy reason as the earlier account-creation file. |
+| `20260817044206_20260815114950_create_product_images_bucket.sql.sql` | `product-images` bucket is present with public access enabled. | **Effect present.** This duplicate/upsert-style bucket creation must not be used to repair migration history. |
+| `20260817044213_20260817020243_create_master_admin_seedbari_account.sql.sql` | General master-admin schema/guardrails exist. | **Account data intentionally unverified.** The SQL contains account-creation DML; no user row was examined or recreated. |
+
+### Batch 4 conclusions
+
+- The bucket, helper search paths and current referral reward infrastructure are present.
+- Several files repeat older referral/account/bucket work, but a file that creates an account is data-changing and remains unverified rather than assumed applied.
+- Do not replay any of these files on Production to resolve filename/history drift.
+
