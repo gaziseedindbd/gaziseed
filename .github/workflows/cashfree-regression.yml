@@ -1,0 +1,37 @@
+name: Cashfree Payment Regression
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/cashfree-*/**"
+      - "tests/cashfree-*.cjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/cashfree-regression.yml"
+  pull_request:
+    paths:
+      - "supabase/functions/cashfree-*/**"
+      - "tests/cashfree-*.cjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/cashfree-regression.yml"
+
+jobs:
+  cashfree-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Cashfree payment regression tests
+        run: npm run test:cashfree
