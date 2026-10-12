@@ -82,3 +82,12 @@ The earlier read-only catalog audit identified public-role column SELECT permiss
 ## Production change boundary
 
 This document is evidence from log/metadata queries only. No Production schema, data, Auth setting, environment variable, Storage policy, deployment alias, or migration history was changed. Historical migration files must not be replayed as a shortcut to fixing these symptoms.
+
+## Current CI and Preview blocker
+
+- Focused key fix: [Draft PR #248](https://github.com/gaziseedindbd/gaziseed/pull/248), commit `f2acd4b3030aa0467edec3f9fbf3f28b82d52009`. Latest GitHub Build Verification: **PASS**; ESLint: **PASS**.
+- A Vercel Preview deployment was requested for the same branch and commit. Vercel rejected creation with **HTTP 402**: `api-deployments-free-per-day`, retry after 24 hours (the account/team's daily API deployment quota was exhausted).
+- Therefore no Preview URL/smoke test is available yet. This is a platform quota blocker, not a build failure. No Production deployment was triggered, and the `main`/production alias still points to the existing READY deployment.
+- Do not mark the 401 issue resolved just because CI passed. After Preview quota is available, confirm requests to public products, `marketing_settings`, `pages`, and reviews using the preview environment, then check fresh Supabase edge logs.
+
+
