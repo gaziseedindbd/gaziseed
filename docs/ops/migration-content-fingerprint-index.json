@@ -400,6 +400,106 @@
       "tokens": 156,
       "chars": 940,
       "hasContent": true
+    },
+    {
+      "version": "20260817044220",
+      "name": "20260817020658_fix_admin_rpc_search_path",
+      "filename": "20260817044220_20260817020658_fix_admin_rpc_search_path.sql.sql",
+      "path": "supabase/migrations/20260817044220_20260817020658_fix_admin_rpc_search_path.sql.sql",
+      "fnv64": "07bb89eab0fff7e9",
+      "tokens": 78,
+      "chars": 677,
+      "hasContent": true
+    },
+    {
+      "version": "20260824012900",
+      "name": "secure_offer_order_dispatch",
+      "filename": "20260824012900_secure_offer_order_dispatch.sql",
+      "path": "supabase/migrations/20260824012900_secure_offer_order_dispatch.sql",
+      "fnv64": "dfb5855e59732205",
+      "tokens": 74,
+      "chars": 2283,
+      "hasContent": true
+    },
+    {
+      "version": "20260824015000",
+      "name": "remove_legacy_delivery_zone_order_rpc",
+      "filename": "20260824015000_remove_legacy_delivery_zone_order_rpc.sql",
+      "path": "supabase/migrations/20260824015000_remove_legacy_delivery_zone_order_rpc.sql",
+      "fnv64": "3644d7bc71686c5c",
+      "tokens": 37,
+      "chars": 434,
+      "hasContent": true
+    },
+    {
+      "version": "20260824020000",
+      "name": "enforce_single_master_admin",
+      "filename": "20260824020000_enforce_single_master_admin.sql",
+      "path": "supabase/migrations/20260824020000_enforce_single_master_admin.sql",
+      "fnv64": "f60e54373fc32fdb",
+      "tokens": 19,
+      "chars": 411,
+      "hasContent": true
+    },
+    {
+      "version": "20260824023000",
+      "name": "harden_last_master_admin_guard",
+      "filename": "20260824023000_harden_last_master_admin_guard.sql",
+      "path": "supabase/migrations/20260824023000_harden_last_master_admin_guard.sql",
+      "fnv64": "c59d0a3b821238df",
+      "tokens": 78,
+      "chars": 1845,
+      "hasContent": true
+    },
+    {
+      "version": "20260824024500",
+      "name": "restrict_admin_helper_rpc",
+      "filename": "20260824024500_restrict_admin_helper_rpc.sql",
+      "path": "supabase/migrations/20260824024500_restrict_admin_helper_rpc.sql",
+      "fnv64": "a0d27da54be9b1f5",
+      "tokens": 28,
+      "chars": 293,
+      "hasContent": true
+    },
+    {
+      "version": "20260824031000",
+      "name": "fix_addresses_rls",
+      "filename": "20260824031000_fix_addresses_rls.sql",
+      "path": "supabase/migrations/20260824031000_fix_addresses_rls.sql",
+      "fnv64": "11d9551cd042ff59",
+      "tokens": 43,
+      "chars": 431,
+      "hasContent": true
+    },
+    {
+      "version": "20260824033000",
+      "name": "harden_customers_rls",
+      "filename": "20260824033000_harden_customers_rls.sql",
+      "path": "supabase/migrations/20260824033000_harden_customers_rls.sql",
+      "fnv64": "9246d40a3e235bbc",
+      "tokens": 35,
+      "chars": 425,
+      "hasContent": true
+    },
+    {
+      "version": "20260824035000",
+      "name": "harden_legacy_delivery_rls",
+      "filename": "20260824035000_harden_legacy_delivery_rls.sql",
+      "path": "supabase/migrations/20260824035000_harden_legacy_delivery_rls.sql",
+      "fnv64": "e0d79464aafe07fa",
+      "tokens": 70,
+      "chars": 680,
+      "hasContent": true
+    },
+    {
+      "version": "20260824041000",
+      "name": "harden_order_user_ownership",
+      "filename": "20260824041000_harden_order_user_ownership.sql",
+      "path": "supabase/migrations/20260824041000_harden_order_user_ownership.sql",
+      "fnv64": "d640d4fbe59bddc8",
+      "tokens": 56,
+      "chars": 843,
+      "hasContent": true
     }
   ]
 }
