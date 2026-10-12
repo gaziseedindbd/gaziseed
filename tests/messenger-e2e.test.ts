@@ -33,6 +33,11 @@ import {
   rankMessengerCmsFaq,
   scoreMessengerKnowledgeText,
 } from '../lib/ai/messenger-cms-knowledge-tool';
+import {
+  formatMessengerDeliveryPolicyReply,
+  isMessengerDeliveryPolicyQuestion,
+  type MessengerDeliveryPolicy,
+} from '../lib/ai/messenger-delivery-tool';
 
 const TEST_ENV_KEYS = [
   'AI_MESSENGER_ENABLED',
@@ -453,4 +458,91 @@ test('database FAQ answer language is detected from content, not trusted solely 
 
   assert.equal(mislabeled?.answer, 'Returns are reviewed by our customer support team.');
   assert.equal(mislabeled?.language, 'English');
+});
+
+
+function makeTestDeliveryPolicy(country: 'BD' | 'IN' = 'BD'): MessengerDeliveryPolicy {
+  const currency = country === 'IN' ? 'INR' : 'BDT';
+  const rules = country === 'IN'
+    ? [
+        { title: null, subtitle: null, min_order: 1000, max_order: null, charge: 0, currency, is_free: true, featured: true, display_order: 1 },
+        { title: null, subtitle: null, min_order: 600, max_order: 999, charge: 99, currency, is_free: false, featured: false, display_order: 2 },
+        { title: null, subtitle: null, min_order: 300, max_order: 599, charge: 149, currency, is_free: false, featured: false, display_order: 3 },
+        { title: null, subtitle: null, min_order: 0, max_order: 299, charge: 199, currency, is_free: false, featured: false, display_order: 4 },
+      ]
+    : [
+        { title: null, subtitle: null, min_order: 600, max_order: null, charge: 0, currency, is_free: true, featured: true, display_order: 1 },
+        { title: null, subtitle: null, min_order: 400, max_order: 599, charge: 50, currency, is_free: false, featured: false, display_order: 2 },
+        { title: null, subtitle: null, min_order: 200, max_order: 399, charge: 70, currency, is_free: false, featured: false, display_order: 3 },
+        { title: null, subtitle: null, min_order: 0, max_order: 199, charge: 120, currency, is_free: false, featured: false, display_order: 4 },
+      ];
+
+  return {
+    country_settings: [{
+      country_code: country,
+      country_name: country === 'IN' ? 'India' : 'Bangladesh',
+      currency,
+      hero_title: null,
+      hero_subtitle: null,
+      delivery_time_primary_label: null,
+      delivery_time_primary_value: '১ – ২ দিন',
+      delivery_time_secondary_label: null,
+      delivery_time_secondary_value: '২ – ৩ দিন',
+      notes: [],
+    }],
+    charge_rules: rules,
+    zones: country === 'IN'
+      ? [{
+          zone_name: 'India Standard Delivery',
+          charge: 90,
+          estimated_time: '4–7 business days',
+          cod_enabled: true,
+          display_order: 1,
+        }]
+      : [],
+  };
+}
+
+test('Messenger delivery-charge replies use the checkout order-value rules directly', () => {
+  const reply = formatMessengerDeliveryPolicyReply(
+    makeTestDeliveryPolicy('BD'),
+    'BD',
+    '500 taka delivery charge',
+    'Bengali',
+  );
+
+  assert.ok(reply);
+  assert.match(reply, /৳৫০/);
+  assert.match(reply, /৪০০–৫৯৯/);
+  assert.doesNotMatch(reply, /৳৭০/);
+});
+
+test('Messenger delivery times are localized and unknown coverage is not guessed', () => {
+  const policy = makeTestDeliveryPolicy('BD');
+  const reply = formatMessengerDeliveryPolicyReply(policy, 'BD', 'delivery time', 'English');
+
+  assert.ok(reply);
+  assert.match(reply, /Inside Dhaka: 1–2 days/);
+  assert.match(reply, /Outside Dhaka: 2–3 days/);
+  assert.equal(
+    formatMessengerDeliveryPolicyReply(policy, 'BD', 'Do you deliver to Kolkata?', 'English'),
+    null,
+  );
+});
+
+test('Messenger delivery intent recognizes Hindi and Romanized Bangla', () => {
+  assert.equal(isMessengerDeliveryPolicyQuestion('delivery charge koto?'), true);
+  assert.equal(isMessengerDeliveryPolicyQuestion('डिलीवरी शुल्क कितना है?'), true);
+});
+
+test('India COD replies explain the configured limit and checkout eligibility instead of overpromising', () => {
+  const reply = formatMessengerDeliveryPolicyReply(
+    makeTestDeliveryPolicy('IN'),
+    'IN',
+    'Is COD available?',
+    'English',
+  );
+
+  assert.match(reply || '', /configured India delivery options/i);
+  assert.match(reply || '', /checkout will confirm eligibility/i);
 });
