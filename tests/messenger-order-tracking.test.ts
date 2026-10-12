@@ -77,6 +77,7 @@ const sampleOrder = {
   payment_status: 'paid',
   final_amount: 500,
   created_at: '2026-10-11T12:00:00.000Z',
+  order_source: 'website',
 };
 
 test('does not run profile or order lookups when order number is missing', async () => {
@@ -116,14 +117,14 @@ test('an existing Messenger profile cannot bypass the required order number', as
   assert.equal(result.reply.includes('shipped'), false);
 });
 
-test('uses a generic reply and counts a mismatch without revealing whether the order exists', async () => {
+test('uses a generic reply and counts a wrong registered phone without revealing whether the order exists', async () => {
   const mock = makeSupabase({
     profilePhone: '01812345678',
     gateRows: [
       { allowed: true, failed_attempts: 0, retry_after_seconds: 0 },
       { allowed: true, failed_attempts: 1, retry_after_seconds: 0 },
     ],
-    orders: [sampleOrder],
+    orders: [],
   });
   const result = await getMessengerOrderTrackingReply({
     ...baseArgs, supabase: mock.supabase, text: validTrackingText,
@@ -134,7 +135,8 @@ test('uses a generic reply and counts a mismatch without revealing whether the o
   assert.equal(result.reply.includes('shipped'), false);
   assert.equal(result.reply.includes('paid'), false);
   assert.equal(result.orderIds, undefined);
-  assert.equal(mock.orderReadCount, 0);
+  assert.equal(mock.orderReadCount, 1);
+  assert.equal(mock.profileReadCount, 0);
   assert.equal(mock.calls.filter((call) => call.kind === 'rpc:consume_messenger_tracking_verification').length, 2);
 });
 
@@ -207,6 +209,7 @@ test('returns order status only when order number and supplied registered phone 
   const query = mock.calls.find((call) => call.kind === 'orders:orders');
   assert.ok(query?.filters?.some(([field, value]) => field === 'order_number' && value === 'GS-BD-ABC12345'));
   assert.ok(query?.filters?.some(([field, value]) => field === 'customer_phone' && value === '01712345678'));
+  assert.equal(query?.filters?.some(([field]) => field === 'order_source'), false, 'web/ads orders with the exact verified pair should also be trackable');
   assert.deepEqual(
     mock.calls.filter((call) => call.kind === 'rpc:consume_messenger_tracking_verification')
       .map((call) => call.args?.p_action),
