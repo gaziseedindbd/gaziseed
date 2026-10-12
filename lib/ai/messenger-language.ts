@@ -1,3 +1,5 @@
+import { getMessengerSupportContactDetails, type MessengerSupportCountry } from './messenger-human-support';
+
 export type MessengerReplyLanguage = 'English' | 'Bengali' | 'Hindi';
 
 const HINDI_LATIN_HINTS = new Set([
@@ -56,14 +58,25 @@ export function detectMessengerReplyLanguage(text: string): MessengerReplyLangua
 
 export function getMessengerProviderFailureHandoffReply(
   language: MessengerReplyLanguage,
+  country: MessengerSupportCountry = 'BD',
 ): string {
-  if (language === 'English') {
-    return 'Sorry, automated assistance is temporarily unavailable. Your conversation has been sent to a human representative.';
-  }
+  const contact = getMessengerSupportContactDetails(country);
+  const intro = language === 'English'
+    ? 'Sorry, automated assistance is temporarily unavailable. Your conversation has been sent to a human representative.'
+    : language === 'Hindi'
+      ? 'माफ़ कीजिए, इस समय स्वचालित सहायता उपलब्ध नहीं है। आपकी बातचीत एक मानव प्रतिनिधि को भेज दी गई है।'
+      : 'দুঃখিত, এই মুহূর্তে স্বয়ংক্রিয় সহায়তা পাওয়া যাচ্ছে না। আপনার কথোপকথন একজন মানব প্রতিনিধি’র কাছে পাঠানো হয়েছে।';
+  const directCallLabel = language === 'Hindi'
+    ? 'सीधा कॉल'
+    : language === 'English'
+      ? 'Direct call'
+      : 'সরাসরি কল';
 
-  if (language === 'Hindi') {
-    return 'माफ़ कीजिए, इस समय स्वचालित सहायता उपलब्ध नहीं है। आपकी बातचीत एक मानव प्रतिनिधि को भेज दी गई है।';
-  }
-
-  return 'দুঃখিত, এই মুহূর্তে স্বয়ংক্রিয় সহায়তা পাওয়া যাচ্ছে না। আপনার কথোপকথন একজন মানব প্রতিনিধি’র কাছে পাঠানো হয়েছে।';
+  return [
+    intro,
+    '',
+    `🌍 ${contact.countryName} customer support`,
+    `📱 WhatsApp: ${contact.whatsappUrl}`,
+    `📞 ${directCallLabel}: ${contact.directPhone}`,
+  ].join('\\n');
 }
