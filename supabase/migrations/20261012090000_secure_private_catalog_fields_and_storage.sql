@@ -34,8 +34,9 @@ LANGUAGE plpgsql
 SET search_path = public
 AS $function$
 BEGIN
-  IF coalesce(auth.role(), '') <> 'service_role' THEN
-    NEW.cost_price := NULL;
+  IF coalesce(auth.role(), '') <> 'service_role'
+     AND NEW.cost_price IS DISTINCT FROM OLD.cost_price THEN
+    RAISE EXCEPTION 'Product cost must be saved through public.product_costs';
   END IF;
   RETURN NEW;
 END;
