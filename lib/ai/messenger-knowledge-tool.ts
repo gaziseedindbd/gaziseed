@@ -847,18 +847,9 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
   // Prefer an exact field-level answer first. This prevents a generic
   // FAQ containing overlapping words from hijacking questions such as
   // "ব্র্যান্ড কী?" or "মাটি কেমন?".
-  const fieldReply = buildFieldReply(fullProduct, text);
+  const replyLanguage = detectMessengerReplyLanguage(text);
+  const fieldReply = buildFieldReply(fullProduct, text, replyLanguage);
   if (fieldReply) {
-    const language = detectMessengerReplyLanguage(text);
-    if (language !== 'Bengali') {
-      return {
-        handled: false,
-        productId: candidate.id,
-        verifiedContext:
-          `Verified product data for ${firstNonEmpty(fullProduct.name_en, fullProduct.name_bn, fullProduct.slug) || 'Product'}:\n${fieldReply}`,
-      };
-    }
-
     return {
       handled: true,
       productId: candidate.id,
@@ -868,38 +859,32 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
 
   const faq = await findFaq(supabase, candidate.id, text);
   if (faq) {
-    const replyLanguage = detectMessengerReplyLanguage(text);
-    const localizedFaq = selectMessengerFaqResponse(faq, replyLanguage);
-    const answer = localizedFaq.answer;
-    if (answer) {
-      const name =
-        firstNonEmpty(
-          replyLanguage === 'Hindi' ? fullProduct.name_en : null,
-          fullProduct.name_bn,
-          fullProduct.name_en,
-          fullProduct.slug,
-        ) || 'এই পণ্য';
+    const name =
+      firstNonEmpty(
+        replyLanguage === 'Bengali' ? fullProduct.name_bn : fullProduct.name_en,
+        fullProduct.name_bn,
+        fullProduct.name_en,
+        fullProduct.slug,
+      ) || 'Product';
+    const translationNote =
+      faq.language !== replyLanguage
+        ? replyLanguage === 'Hindi'
+          ? 'इस उत्तर का हिन्दी अनुवाद डेटाबेस में उपलब्ध नहीं है; नीचे मूल सत्यापित उत्तर है।'
+          : replyLanguage === 'English'
+            ? 'A translation in your language is not available yet; the verified database answer is shown below.'
+            : 'এই উত্তরের বাংলা অনুবাদ database-এ নেই; নিচে database-এ থাকা যাচাইকৃত উত্তর দেওয়া হলো।'
+        : '';
 
-      const requestedLanguageAnswerMissing =
-        (replyLanguage === 'Hindi' && !faq.answer_hi) ||
-        (replyLanguage === 'English' && !faq.answer_en) ||
-        (replyLanguage === 'Bengali' && !faq.answer_bn);
-      if (requestedLanguageAnswerMissing) {
-        return {
-          handled: false,
-          productId: candidate.id,
-          verifiedContext:
-            `Product: ${name}\nVerified FAQ question: ${localizedFaq.question || 'FAQ'}\nVerified database answer: ${answer}`,
-        };
-      }
-
-      return {
-        handled: true,
-        productId: candidate.id,
-        reply:
-          `🌱 ${name}\n\n❓ ${localizedFaq.question || 'FAQ'}\n\n${answer}`,
-      };
-    }
+    return {
+      handled: true,
+      productId: candidate.id,
+      reply: [
+        `🌱 ${name}`,
+        `❓ ${faq.question || 'FAQ'}`,
+        translationNote,
+        faq.answer,
+      ].filter(Boolean).join('\\n\\n'),
+    };
   }
 
   return { handled: false, productId: candidate.id };
