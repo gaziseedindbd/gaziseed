@@ -100,6 +100,106 @@
       "tokens": 94,
       "chars": 8368,
       "hasContent": true
+    },
+    {
+      "version": "20260803014748",
+      "name": "add_admin_audit_log_and_master_admin",
+      "filename": "20260803014748_add_admin_audit_log_and_master_admin.sql",
+      "path": "supabase/migrations/20260803014748_add_admin_audit_log_and_master_admin.sql",
+      "fnv64": "b67747180a5326de",
+      "tokens": 240,
+      "chars": 3889,
+      "hasContent": true
+    },
+    {
+      "version": "20260803020458",
+      "name": "add_review_management_and_master_admin",
+      "filename": "20260803020458_add_review_management_and_master_admin.sql",
+      "path": "supabase/migrations/20260803020458_add_review_management_and_master_admin.sql",
+      "fnv64": "e7d4d20a3d2d43ef",
+      "tokens": 271,
+      "chars": 3218,
+      "hasContent": true
+    },
+    {
+      "version": "20260803021435",
+      "name": "fix_reviews_rls_and_contact_messages",
+      "filename": "20260803021435_fix_reviews_rls_and_contact_messages.sql",
+      "path": "supabase/migrations/20260803021435_fix_reviews_rls_and_contact_messages.sql",
+      "fnv64": "7b9bb61ef773a558",
+      "tokens": 183,
+      "chars": 2519,
+      "hasContent": true
+    },
+    {
+      "version": "20260804011846",
+      "name": "add_growth_features_tables",
+      "filename": "20260804011846_add_growth_features_tables.sql",
+      "path": "supabase/migrations/20260804011846_add_growth_features_tables.sql",
+      "fnv64": "ce7796a10a36b6e8",
+      "tokens": 1477,
+      "chars": 10851,
+      "hasContent": true
+    },
+    {
+      "version": "20260804013805",
+      "name": "add_sales_operations_upgrade",
+      "filename": "20260804013805_add_sales_operations_upgrade.sql",
+      "path": "supabase/migrations/20260804013805_add_sales_operations_upgrade.sql",
+      "fnv64": "0c0b0255dd48a289",
+      "tokens": 1602,
+      "chars": 10984,
+      "hasContent": true
+    },
+    {
+      "version": "20260809193316",
+      "name": "final_master_upgrade",
+      "filename": "20260809193316_final_master_upgrade.sql",
+      "path": "supabase/migrations/20260809193316_final_master_upgrade.sql",
+      "fnv64": "093dc0c86a3fa085",
+      "tokens": 371,
+      "chars": 3248,
+      "hasContent": true
+    },
+    {
+      "version": "20260809195055",
+      "name": "rebrand_to_seed_bari",
+      "filename": "20260809195055_rebrand_to_seed_bari.sql",
+      "path": "supabase/migrations/20260809195055_rebrand_to_seed_bari.sql",
+      "fnv64": "af87ccf48c044188",
+      "tokens": 21,
+      "chars": 528,
+      "hasContent": true
+    },
+    {
+      "version": "20260809202738",
+      "name": "add_ai_settings_foundation",
+      "filename": "20260809202738_add_ai_settings_foundation.sql",
+      "path": "supabase/migrations/20260809202738_add_ai_settings_foundation.sql",
+      "fnv64": "bc8e754729f3eb61",
+      "tokens": 337,
+      "chars": 3864,
+      "hasContent": true
+    },
+    {
+      "version": "20260809205944",
+      "name": "add_themes_popups_notifications",
+      "filename": "20260809205944_add_themes_popups_notifications.sql",
+      "path": "supabase/migrations/20260809205944_add_themes_popups_notifications.sql",
+      "fnv64": "d2a35d38cac8192b",
+      "tokens": 403,
+      "chars": 3517,
+      "hasContent": true
+    },
+    {
+      "version": "20260809212905",
+      "name": "clear_old_products_preserve_reviews_inventory",
+      "filename": "20260809212905_clear_old_products_preserve_reviews_inventory.sql",
+      "path": "supabase/migrations/20260809212905_clear_old_products_preserve_reviews_inventory.sql",
+      "fnv64": "6ec5fe4b5c9dc4c4",
+      "tokens": 124,
+      "chars": 1945,
+      "hasContent": true
     }
   ]
 }
