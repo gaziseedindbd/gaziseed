@@ -400,6 +400,30 @@ test('normalizes Bengali price and stock questions into precise product matches'
     'similar',
   );
 });
+
+test('matches a hyphenated English product exactly in a Hindi price and stock question', () => {
+  const query = normalizeMessengerProductQuery(
+    'Five-Color Chili Seeds की कीमत और स्टॉक कितना है?',
+  );
+
+  assert.equal(query, 'five color chili seeds');
+  assert.equal(
+    classifyMessengerProductMatch(query, {
+      name_bn: 'ফাইভ কালার মরিচের বীজ',
+      name_en: 'Five-Color Chili Seeds',
+      slug: 'five-color-chili-seeds',
+    }),
+    'exact',
+  );
+  assert.equal(
+    classifyMessengerProductMatch(query, {
+      name_bn: 'নাগা বোম্বাই মরিচের বীজ',
+      name_en: 'Naga Bombay Chili Seeds',
+      slug: 'naga-bombay-chili-seeds',
+    }),
+    'similar',
+  );
+});
 test('offers selection options for trusted and similar products', () => {
   const options = getMessengerProductSelectionQuickReplies([
     {
