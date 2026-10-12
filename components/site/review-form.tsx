@@ -55,9 +55,22 @@ export function ReviewForm({ productId, productName, user, isVerifiedPurchase, o
       if (photoReviewsEnabled && imageFile) {
         const ext = imageFile.name.split('.').pop();
         const fileName = `review-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-        const { error: uploadError } = await supabase.storage.from('review-images').upload(fileName, imageFile, { cacheControl: '3600', upsert: false });
+        let reviewImageBucket: 'review-images' | 'product-images' = 'review-images';
+        let { error: uploadError } = await supabase.storage
+          .from(reviewImageBucket)
+          .upload(fileName, imageFile, { cacheControl: '3600', upsert: false });
+
+        // Compatibility for a rolling deploy: use the existing public bucket only
+        // when the new review-images bucket has not been created yet.
+        if (uploadError && /bucket not found/i.test(uploadError.message || '')) {
+          reviewImageBucket = 'product-images';
+          ({ error: uploadError } = await supabase.storage
+            .from(reviewImageBucket)
+            .upload(fileName, imageFile, { cacheControl: '3600', upsert: false }));
+        }
+
         if (!uploadError) {
-          const { data: url } = supabase.storage.from('review-images').getPublicUrl(fileName);
+          const { data: url } = supabase.storage.from(reviewImageBucket).getPublicUrl(fileName);
           photoUrl = url.publicUrl;
         }
       }
