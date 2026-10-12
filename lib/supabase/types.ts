@@ -70,7 +70,8 @@ export type Product = {
   growing_type: string;
   growing_types: string[] | null;
   season_tags: string[];
-  cost_price: number | null;
+  // Optional because public product queries intentionally omit internal purchase cost.
+  cost_price?: number | null;
   show_low_stock: boolean;
   promotional_offer_enabled: boolean;
   promotional_offer_badge: string | null;
