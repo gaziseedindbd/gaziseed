@@ -277,12 +277,11 @@ export default function CheckoutPage() {
         .eq('is_active', true)
         .order('min_order', { ascending: false });
 
-      const freeDeliveryPromise = country === 'IN'
-        ? supabase
-            .from('products')
-            .select('id, free_delivery')
-            .in('id', productIds)
-        : Promise.resolve({ data: [] as Array<{ id: string; free_delivery: boolean }> });
+      const freeDeliveryPromise = supabase
+        .from('products')
+        .select('id, free_delivery')
+        .in('id', productIds)
+        .eq('country_code', country);
 
       const [{ data: rulesData }, { data: freeDeliveryData }] = await Promise.all([
         rulesPromise,
@@ -295,7 +294,7 @@ export default function CheckoutPage() {
       const freeDeliveryIds = new Set(
         freeDeliveryRows.filter((product) => product.free_delivery).map((product) => product.id),
       );
-      const hasFreeDeliveryProduct = country === 'IN' && freeDeliveryIds.size > 0;
+      const hasFreeDeliveryProduct = freeDeliveryIds.size > 0;
       setFreeDeliveryProductIds(freeDeliveryIds);
 
       const { data: chargeData, error: chargeError } = await supabase.rpc('calculate_delivery_charge', {
