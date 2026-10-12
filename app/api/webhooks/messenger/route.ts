@@ -2816,6 +2816,7 @@ async function processMessengerEvent(event: MessengerEvent) {
     await sendMessengerText(senderId, lookupFailureReply);
     return;
   }
+  }
 
   if (
     !verifiedWebsiteKnowledgeContext &&
