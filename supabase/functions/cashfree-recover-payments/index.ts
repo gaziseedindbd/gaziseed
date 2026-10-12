@@ -71,7 +71,7 @@ Deno.serve(async (req: Request) => {
     const now=new Date().toISOString();
     const {data:intents,error}=await admin.from("cashfree_payment_intents").select("*").eq("country_code","IN")
       .gte("created_at",settings.enabled_since).gte("created_at",new Date(Date.now()-7*86400000).toISOString())
-      .is("completed_order_id",null).in("status",["created","pending","failed","processing"])
+      .is("completed_order_id",null).in("status",["created","pending","failed","processing","paid"])
       .lte("updated_at",new Date(Date.now()-600000).toISOString())
       .or(`recovery_next_attempt_at.is.null,recovery_next_attempt_at.lte.${now}`)
       .order("recovery_next_attempt_at",{ascending:true,nullsFirst:true}).limit(10);

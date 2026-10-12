@@ -217,7 +217,7 @@ async function completePayment(body: Record<string, unknown>) {
       order_number: order?.order_number, amount: Number(intent.metadata?.quote_total || order?.final_amount || 0),
       advance_amount: Number(order?.payment_advance_amount || 0), due_amount: Number(order?.payment_due_amount || 0) });
   }
-  if (!intent.cashfree_order_id || !["created", "pending", "processing"].includes(intent.status)) {
+  if (!intent.cashfree_order_id || !["created", "pending", "processing", "paid"].includes(intent.status)) {
     return json({ ok: false, error: "Payment is not ready to verify" }, 409);
   }
 
@@ -252,7 +252,7 @@ async function completePayment(body: Record<string, unknown>) {
 
   const { data: claimed } = await admin.from("cashfree_payment_intents")
     .update({ status: "processing", updated_at: new Date().toISOString() })
-    .eq("id", intentId).in("status", ["created", "pending"]).is("completed_order_id", null)
+    .eq("id", intentId).in("status", ["created", "pending", "paid"]).is("completed_order_id", null)
     .select("id").maybeSingle();
   if (!claimed) {
     const { data: latest } = await admin.from("cashfree_payment_intents").select("status,completed_order_id").eq("id", intentId).maybeSingle();

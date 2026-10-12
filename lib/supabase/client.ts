@@ -4,7 +4,10 @@ const FALLBACK_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
 const FALLBACK_KEY = 'sb_publishable_vCaz5OGrHocUTgpOXmE9xg_QVsuUJc0';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || FALLBACK_KEY;
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  FALLBACK_KEY;
 
 export const getManualCountryOverride = (): 'BD' | 'IN' | null => {
   if (typeof window === 'undefined') return null;
