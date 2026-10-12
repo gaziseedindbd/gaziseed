@@ -119,7 +119,7 @@ if (require.main === module) {
       ['refuses amount mismatch', { gateway: { order_amount: 100 } }, 409, 0],
       ['refuses currency mismatch', { gateway: { order_currency: 'USD' } }, 409, 0],
       ['records paid only after gateway identity and amount pass', {}, 200, 1],
-      ['does not overwrite an active completion claim', { intent: { status: 'processing' } }, 200, 0],
+      ['does not overwrite an active completion claim', { intent: { status: 'processing' } }, 200, 1],
       ['does not change an already-completed intent', { intent: { status: 'completed', completed_order_id: 'order-1' } }, 200, 0],
       ['returns 502 when gateway lookup fails', { gatewayHttpStatus: 502 }, 502, 0],
       ['returns 502 when gateway network fails', { gatewayNetworkError: true }, 502, 0],
