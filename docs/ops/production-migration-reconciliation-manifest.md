@@ -523,3 +523,26 @@ The sales-operations migration explicitly says product cost price must not be ex
 - Several files repeat older referral/account/bucket work, but a file that creates an account is data-changing and remains unverified rather than assumed applied.
 - Do not replay any of these files on Production to resolve filename/history drift.
 
+## Live-schema effect review — batch 5 (50 of 72 unmatched files)
+
+**Method:** compare the next ten historical security/RPC migration files with current functions, function grants, indexes, triggers, and table RLS policies. No business rows were read or changed.
+
+| Repository migration | Current evidence | Result / follow-up |
+|---|---|---|
+| `20260817044220_20260817020658_fix_admin_rpc_search_path.sql.sql` | Both `is_admin()` and `is_master_admin()` use `search_path=public`; the public/anonymous EXECUTE grants are not effective in the current ACL check. | **Search-path and public EXECUTE restriction intent present.** The historical helper definition grants anon execute, but current effective `anon` EXECUTE is false. |
+| `20260824012900_secure_offer_order_dispatch.sql` | The current no-zone offer bridge `create_order(... p_items jsonb ... UTM arguments)` exists and delegates offer placement through `create_offer_order()`. The latter looks up product/offer prices from live database rows and applies country/stock checks. | **Core secure dispatch path present through current RPCs.** The historic wrapper body differs; verify current grants and request context against the live storefront before assigning exact equivalence. |
+| `20260824015000_remove_legacy_delivery_zone_order_rpc.sql` | The old Delivery-Zone-first `create_order(text,text,text,uuid,...)` signature is not among current `create_order` overloads. The current offer bridge and normal checkout RPCs remain. | **Legacy overload removal appears complete.** |
+| `20260824020000_enforce_single_master_admin.sql` | `admin_users_single_master_admin_idx` exists as a unique partial index on `role='master_admin'`. | **Single-master-admin uniqueness guard present.** |
+| `20260824023000_harden_last_master_admin_guard.sql` | `guard_last_master_admin()` exists as SECURITY DEFINER with `search_path=public`; `admin_users.guard_last_master_admin_before_change` is installed. Its effective EXECUTE is false for anon/authenticated and true for service_role. | **Last-active-master-admin guard present with restricted EXECUTE.** |
+| `20260824024500_restrict_admin_helper_rpc.sql` | Effective EXECUTE checks show `anon=false` for both `is_admin()` and `is_master_admin()`; authenticated callers retain EXECUTE. | **Restriction present.** |
+| `20260824031000_fix_addresses_rls.sql` | `addresses` has current self-scoped SELECT/INSERT/UPDATE policies and a consolidated DELETE policy. Predicates use `user_id = auth.uid()` or `can_access_country(country_code)`, consistent with later branch-aware admin access. | **Self-access intent present, evolved to branch access.** Confirm `can_access_country` strictly requires authorized admin context; do not restore the legacy policy blindly. |
+| `20260824033000_harden_customers_rls.sql` | The current `customers.customers_admin_all` policy is authenticated and gated by `can_access_country(country_code)`; no anonymous customers policy appeared in the current policy snapshot. | **Legacy public customers access removed; current branch-admin gate present.** |
+| `20260824035000_harden_legacy_delivery_rls.sql` | `delivery_settings` has authenticated branch-admin write policies and authenticated read only. `delivery_zones` has branch-admin write policies plus an anon SELECT policy limited to active rows for the visitor's country. | **Public write restriction present.** Public read remains only on active delivery-zone rows, as required for checkout; legacy delivery settings are not anonymously readable in this snapshot. |
+| `20260824041000_harden_order_user_ownership.sql` | Both `orders.trg_guard_order_user_ownership` (`guard_order_user_ownership()`) and `orders.trg_enforce_order_user_binding` (`enforce_order_user_binding()`) are installed; both functions use `search_path=public`. Their EXECUTE is not available to anon for the SECURITY DEFINER guard. | **Ownership guard present, with two overlapping enforcement triggers.** Review both function bodies together and exercise guest checkout, authenticated checkout and service-role payment recovery to rule out inconsistent behavior; trigger-name presence alone does not show which guards fire successfully for every path. |
+
+### Batch 5 conclusions
+
+- Current Production has the single-master uniqueness index, last-master guard, restricted admin-helper grants, customer/admin RLS, legacy delivery write restrictions, and user-ownership triggers.
+- There are two order-user binding triggers; this may be intentional defense-in-depth, but the current dual-trigger behavior should be tested rather than deduplicated without evidence.
+- This batch shows multiple security migrations whose effects exist under current renamed objects or narrowed policies. Their lack of a matching migration-history fingerprint is not grounds to reapply them.
+
