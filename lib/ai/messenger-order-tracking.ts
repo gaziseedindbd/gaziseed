@@ -137,21 +137,6 @@ export async function getMessengerOrderTrackingReply(args: {
     };
   }
 
-  // Clear accumulated failures before disclosing any order details. If the
-  // limiter store is unavailable, fail closed and disclose nothing.
-  const verified = await callVerificationGate('success');
-  if (!verified) return { handled: true, reply: fallbackReply };
-  if (!verified.allowed) {
-    const remainingMinutes = Math.max(1, Math.ceil(verified.retryAfterSeconds / 60));
-    return {
-      handled: true,
-      reply:
-        'নিরাপত্তার কারণে order verification সাময়িকভাবে বন্ধ আছে। অনুগ্রহ করে ' +
-        remainingMinutes +
-        ' মিনিট পরে আবার চেষ্টা করুন।',
-    };
-  }
-
   const order = rows[0];
   const storedPhone = typeof order.customer_phone === 'string'
     ? normalizeTrackingPhone(order.customer_phone, args.country)
@@ -175,6 +160,22 @@ export async function getMessengerOrderTrackingReply(args: {
         'Order Number ও registered mobile number যাচাই করা যায়নি। তথ্য দুটি মিলিয়ে আবার চেষ্টা করুন।',
     };
   }
+
+  // Reset failed attempts only after both identifiers have actually matched.
+  // If the limiter is unavailable, disclose no order details.
+  const verified = await callVerificationGate('success');
+  if (!verified) return { handled: true, reply: fallbackReply };
+  if (!verified.allowed) {
+    const remainingMinutes = Math.max(1, Math.ceil(verified.retryAfterSeconds / 60));
+    return {
+      handled: true,
+      reply:
+        'নিরাপত্তার কারণে order verification সাময়িকভাবে বন্ধ আছে। অনুগ্রহ করে ' +
+        remainingMinutes +
+        ' মিনিট পরে আবার চেষ্টা করুন।',
+    };
+  }
+
   const amount = Number(order.final_amount || 0);
   return {
     handled: true,
