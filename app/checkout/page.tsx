@@ -112,7 +112,7 @@ export default function CheckoutPage() {
           .eq('user_id', user.id)
           .eq('country_code', visitorCountry)
           .order('is_default', { ascending: false }),
-        supabase.rpc('get_my_referral_wallet_summary'),
+        supabase.rpc('get_my_referral_wallet_summary', { p_country_code: visitorCountry }),
       ]);
 
       setSavedAddresses((addrs || []) as CustomerAddress[]);
