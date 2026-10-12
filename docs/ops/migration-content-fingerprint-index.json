@@ -910,6 +910,106 @@
       "tokens": 87,
       "chars": 715,
       "hasContent": true
+    },
+    {
+      "version": "20261001163000",
+      "name": "sync_india_cashfree_delivery_rules",
+      "filename": "20261001163000_sync_india_cashfree_delivery_rules.sql",
+      "path": "supabase/migrations/20261001163000_sync_india_cashfree_delivery_rules.sql",
+      "fnv64": "13b333316aeb9609",
+      "tokens": 44,
+      "chars": 8658,
+      "hasContent": true
+    },
+    {
+      "version": "20261002150843",
+      "name": "allow_unknown_messenger_rate_limit_country",
+      "filename": "20261002150843_allow_unknown_messenger_rate_limit_country.sql",
+      "path": "supabase/migrations/20261002150843_allow_unknown_messenger_rate_limit_country.sql",
+      "fnv64": "6071a7cff7dac108",
+      "tokens": 125,
+      "chars": 7351,
+      "hasContent": true
+    },
+    {
+      "version": "20261002153000",
+      "name": "optimize_messenger_customer_profiles_rls",
+      "filename": "20261002153000_optimize_messenger_customer_profiles_rls.sql",
+      "path": "supabase/migrations/20261002153000_optimize_messenger_customer_profiles_rls.sql",
+      "fnv64": "c94aeb8653ae3b95",
+      "tokens": 110,
+      "chars": 713,
+      "hasContent": true
+    },
+    {
+      "version": "20261002154500",
+      "name": "remove_duplicate_ai_messages_external_index",
+      "filename": "20261002154500_remove_duplicate_ai_messages_external_index.sql",
+      "path": "supabase/migrations/20261002154500_remove_duplicate_ai_messages_external_index.sql",
+      "fnv64": "d856685c6c8a0103",
+      "tokens": 8,
+      "chars": 222,
+      "hasContent": true
+    },
+    {
+      "version": "20261002160000",
+      "name": "remove_multiple_permissive_rls_overlaps",
+      "filename": "20261002160000_remove_multiple_permissive_rls_overlaps.sql",
+      "path": "supabase/migrations/20261002160000_remove_multiple_permissive_rls_overlaps.sql",
+      "fnv64": "e294c67947709480",
+      "tokens": 43,
+      "chars": 15179,
+      "hasContent": true
+    },
+    {
+      "version": "20261002161500",
+      "name": "finish_multiple_permissive_rls_overlaps",
+      "filename": "20261002161500_finish_multiple_permissive_rls_overlaps.sql",
+      "path": "supabase/migrations/20261002161500_finish_multiple_permissive_rls_overlaps.sql",
+      "fnv64": "9c3c6e7fbe419645",
+      "tokens": 238,
+      "chars": 2624,
+      "hasContent": true
+    },
+    {
+      "version": "20261002163500",
+      "name": "remove_redundant_translation_cache_index",
+      "filename": "20261002163500_remove_redundant_translation_cache_index.sql",
+      "path": "supabase/migrations/20261002163500_remove_redundant_translation_cache_index.sql",
+      "fnv64": "23ac08c63cc29179",
+      "tokens": 8,
+      "chars": 271,
+      "hasContent": true
+    },
+    {
+      "version": "20261002164500",
+      "name": "secure_internal_service_role_only_tables",
+      "filename": "20261002164500_secure_internal_service_role_only_tables.sql",
+      "path": "supabase/migrations/20261002164500_secure_internal_service_role_only_tables.sql",
+      "fnv64": "2fef788f2b5446f4",
+      "tokens": 199,
+      "chars": 1809,
+      "hasContent": true
+    },
+    {
+      "version": "20261002170500",
+      "name": "harden_messenger_profile_trigger_search_path",
+      "filename": "20261002170500_harden_messenger_profile_trigger_search_path.sql",
+      "path": "supabase/migrations/20261002170500_harden_messenger_profile_trigger_search_path.sql",
+      "fnv64": "49d777c7ce4055be",
+      "tokens": 14,
+      "chars": 348,
+      "hasContent": true
+    },
+    {
+      "version": "20261003033000",
+      "name": "restrict_messenger_trigger_function_execute",
+      "filename": "20261003033000_restrict_messenger_trigger_function_execute.sql",
+      "path": "supabase/migrations/20261003033000_restrict_messenger_trigger_function_execute.sql",
+      "fnv64": "cda438980f34165e",
+      "tokens": 56,
+      "chars": 614,
+      "hasContent": true
     }
   ]
 }
