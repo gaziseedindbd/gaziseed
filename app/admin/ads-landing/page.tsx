@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { PRODUCT_PUBLIC_COLUMNS } from '@/lib/supabase/public-columns';
 import { adminPrice } from '@/lib/admin-order-display';
 import { Plus, Edit, Eye, Copy, Trash2, Power, CopyPlus, X, Search, Megaphone, Upload, Link as LinkIcon } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
@@ -194,7 +195,7 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
 
   useEffect(() => {
     if (mode === 'existing') {
-      supabase.from('products').select('*').eq('country_code', countryCode).eq('is_active', true).eq('is_ads_only', false).order('name_bn').then(({ data }) => setProducts(data || []));
+      supabase.from('products').select(PRODUCT_PUBLIC_COLUMNS).eq('country_code', countryCode).eq('is_active', true).eq('is_ads_only', false).order('name_bn').then(({ data }) => setProducts(data || []));
     }
   }, [mode, countryCode]);
 
