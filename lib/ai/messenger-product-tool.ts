@@ -101,32 +101,43 @@ export function normalizeMessengerSearchSlug(value: string): string {
   return normalizeSearchTerm(value).toLocaleLowerCase().replace(/\s+/g, '-');
 }
 
+function canonicalizeProductMatchText(value: string): string {
+  return normalizeSearchTerm(value)
+    .toLocaleLowerCase()
+    // Hyphenated catalogue names must match natural-language queries after
+    // transactional words are removed, e.g. "Five-Color Chili Seeds" versus
+    // "five color chili seeds".
+    .replace(/[-_/]+/g, ' ')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function classifyMessengerProductMatch(
   searchTerm: string,
   product: Pick<MessengerProduct, 'name_bn' | 'name_en' | 'slug'>,
 ): MessengerProductSearchMatchType {
-  const query = normalizeSearchTerm(searchTerm).toLocaleLowerCase();
-  const querySlug = normalizeMessengerSearchSlug(searchTerm);
+  const query = canonicalizeProductMatchText(searchTerm);
   if (!query) return 'similar';
 
-  const nameBn = (product.name_bn || '').toLocaleLowerCase();
-  const nameEn = (product.name_en || '').toLocaleLowerCase();
-  const slug = (product.slug || '').toLocaleLowerCase();
+  const nameBn = canonicalizeProductMatchText(product.name_bn || '');
+  const nameEn = canonicalizeProductMatchText(product.name_en || '');
+  const slug = canonicalizeProductMatchText(product.slug || '');
+  const querySlug = query.replace(/\s+/g, '-');
+  const canonicalSlug = slug.replace(/\s+/g, '-');
 
   if (
     nameBn === query ||
     nameEn === query ||
-    slug === query ||
-    slug === querySlug
+    canonicalSlug === querySlug
   ) {
     return 'exact';
   }
 
   if (
-    nameBn.includes(query) ||
-    nameEn.includes(query) ||
-    slug.includes(query) ||
-    slug.includes(querySlug)
+    (nameBn && nameBn.includes(query)) ||
+    (nameEn && nameEn.includes(query)) ||
+    (slug && (slug.includes(query) || canonicalSlug.includes(querySlug)))
   ) {
     return 'strong';
   }
