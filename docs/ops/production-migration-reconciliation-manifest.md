@@ -569,3 +569,32 @@ The sales-operations migration explicitly says product cost price must not be ex
 - Two trigger-only helpers (`update_updated_at()` and `set_order_number()`) still show effective anon/authenticated EXECUTE, whereas the historical migrations intended to revoke those privileges. Direct callability via PostgREST was not exercised; treat as a permissions-drift finding to validate, not as proof of exploitation.
 - `auto_confirm_user()` has no currently visible `auth.users` trigger; verify Auth confirmation configuration/flow rather than creating a new trigger based solely on this migration.
 
+## Live-schema effect review — batch 7 (70 of 72 unmatched files)
+
+**Method:** compare the next ten rate-limit, Storage, referral-wallet, feature-flag, product-growth and Vault migrations with live tables, function definitions and effective grants. No order/customer/wallet values or Vault secret values were read.
+
+| Repository migration | Current evidence | Result / follow-up |
+|---|---|---|
+| `20260824090000_add_feature_toggle_columns.sql` | Current `site_settings` includes the feature toggles for bundles, combos, free gifts, guides, photo reviews, online payment, courier, SMS, WhatsApp API and AdSense; other later flags also exist. | **Feature-toggle effect present, evolved.** |
+| `20260824104500_harden_rls_auth_initplan.sql` | Current self-owned row policies use init-plan-style `( SELECT auth.uid() AS uid)` in multiple places, though older policy names have since been consolidated. | **Performance hardening is visible in current policies.** Check each remaining policy independently; do not interpret the changed policy names as missing authorization. |
+| `20260824230000_complete_referral_program.sql` | The referral tables, current referral qualification/reward triggers, signup-code trigger, wallet ledger and current country-aware RLS exist. Several policy/function definitions differ from this historical version. | **Core referral program present in a later implementation.** Re-check referral code prefix and order-cancellation reward reversal noted in batch 3; avoid replaying this broad program migration. |
+| `20260825041143_harden_storage_object_policies.sql` | This migration intends to keep storefront assets readable while allowing only admins to mutate Storage. Current `storage.objects` has only authenticated upload/update/delete policies whose predicates check `bucket_id = 'product-images'`; they do **not** call `is_admin()`. No current `Storage admins can upload/update/delete` policy was found. | **Security hardening does not match current Storage policies. HIGH PRIORITY.** Any authenticated user appears eligible to mutate objects in the product-images bucket under these policies. Validate the effective Storage API path and prepare a reviewed policy-only forward fix; do not restore the entire historical policy set blindly. |
+| `20260825093000_fix_referral_wallet_balance_ledger_usage.sql` | Current wallet balance functions subtract available wallet usage from reward balances; the no-argument `get_referral_wallet_balance()` scopes to `auth.uid()`. Parameterized wallet helper functions are service-role-only in effective ACL checks. | **Ledger-balance intent present through current implementation.** The older parameterized function body differs, but the current user-scoped overload avoids client-supplied user-ID balance lookup. |
+| `20260929145000_messenger_rate_limit_abuse_protection.sql` | `messenger_rate_limits`, its blocked/last-seen indexes and `consume_messenger_rate_limit(...)` exist. Table access and RPC execution are denied to anon/authenticated and granted to service_role. | **Messenger rate-limit foundation present with service-only access.** |
+| `20261003100000_harden_public_rpc_rate_limits.sql` | `public.public_rpc_rate_limits`, `enforce_public_rpc_rate_limit(...)`, `guard_public_order_create_rate_limit()`, and the orders insert guard trigger are all absent. Current `track_order(text,text)` is executable by anon/authenticated, and its function body contains no public-RPC rate-limit check. | **Intended public order/track rate limiting is not visible in current Production. HIGH PRIORITY.** Order tracking still compares order number and normalized customer phone, but the current function itself has no rate-limiting logic. Verify if an edge/API layer applies an equivalent guard; otherwise prepare a separately reviewed forward migration. Do not replay the old migration without reconciling its trigger/RPC assumptions. |
+| `20261007120000_add_product_growing_types.sql` | `products.growing_types` exists as an array alongside legacy `growing_type`. | **Schema effect present.** The migration's one-time data backfill was not assessed by reading product rows. |
+| `20261008093000_fix_ai_settings_country_key.sql` | `ai_settings` has a composite `(id, country_code)` primary key and a country-code check for BD/IN. | **Branch-key fix present.** |
+| `20261008095500_move_ai_keys_to_vault.sql` | `api_key_secret_id`, the `api_key = ''` constraint, and Vault-backed `ai_get_api_key()` / `ai_store_api_key()` exist. Effective EXECUTE is false for anon/authenticated and true for service_role. | **Vault migration intent present.** No secret values were read. |
+
+## Additional high-priority access-control finding
+
+The live Storage policies do not match the “admins-only mutations” intent in `20260825041143_harden_storage_object_policies.sql`. This is separate from the previously documented possible column exposure of `products.cost_price` and `reviews.guest_phone`.
+
+The public-RPC rate-limit migration also appears absent as a whole: table, enforcement function, guard trigger, and `track_order` integration are all missing from the current catalog. These are **audit findings only**, not proof that attackers have exploited them. No Production changes were made.
+
+### Batch 7 conclusions
+
+- Feature flags, country-aware referral infrastructure, Messenger rate limiting, product growing types, and Vault-backed AI key helpers are present.
+- **Top remediation candidates at this point:** public Storage writes for any authenticated account, unthrottled public `track_order` RPC, plus the earlier cost-price/reviewer-phone column exposure.
+- Apply fixes only through small, reviewed forward migrations after verifying the application's actual read/write paths. Do not use historical migrations as repair scripts.
+
