@@ -584,6 +584,35 @@ function firstNonEmpty(...values: unknown[]): string | null {
   return null;
 }
 
+function formatMessengerProductFaqReply(
+  product: { name_bn?: unknown; name_en?: unknown; slug?: unknown },
+  faq: ProductFaqMatch,
+  replyLanguage: MessengerReplyLanguage,
+): string {
+  const name =
+    firstNonEmpty(
+      replyLanguage === 'Bengali' ? product.name_bn : product.name_en,
+      product.name_bn,
+      product.name_en,
+      product.slug,
+    ) || 'Product';
+  const translationNote =
+    faq.language !== replyLanguage
+      ? replyLanguage === 'Hindi'
+        ? 'इस उत्तर का हिन्दी अनुवाद डेटाबेस में उपलब्ध नहीं है; नीचे मूल सत्यापित उत्तर है।'
+        : replyLanguage === 'English'
+          ? 'A translation in your language is not available yet; the verified database answer is shown below.'
+          : 'এই উত্তরের বাংলা অনুবাদ database-এ নেই; নিচে database-এ থাকা যাচাইকৃত উত্তর দেওয়া হলো।'
+      : '';
+
+  return [
+    '🌱 ' + name,
+    '❓ ' + (faq.question || 'FAQ'),
+    translationNote,
+    faq.answer,
+  ].filter(Boolean).join('\n\n');
+}
+
 export function selectMessengerFaqResponse(
   faq: ProductFaq,
   language: MessengerReplyLanguage,
@@ -805,17 +834,40 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
   // An explicit product name in the current question must win over a stale
   // conversational product reference (for example, "chili seed ... this seed").
   const matches = await searchMessengerProducts(supabase, country, text, 8);
-  const explicitlyNamedProducts = matches.filter(
-    (match) =>
-      isTrustedMessengerProductMatch(match) &&
-      isMessengerExplicitProductKnowledgeQuery(text, match),
+  const explicitlyMentionedProducts = matches.filter((match) =>
+    isMessengerExplicitProductKnowledgeQuery(text, match),
+  );
+  const explicitlyNamedProducts = explicitlyMentionedProducts.filter(
+    isTrustedMessengerProductMatch,
   );
   if (explicitlyNamedProducts.length === 1) {
     candidate = explicitlyNamedProducts[0];
   }
 
+  // Product search may score a product as "similar" when a customer asks a
+  // general FAQ using only its distinctive name (e.g. "Zinnia sunlight").
+  // A confident FAQ match is safe to answer from that product's FAQ record,
+  // but a similar match must never authorize field facts, prices, or stock.
+  if (!candidate && explicitlyMentionedProducts.length === 1) {
+    const explicitlyMentionedProduct = explicitlyMentionedProducts[0];
+    const faq = await findFaq(supabase, explicitlyMentionedProduct.id, text);
+    if (faq) {
+      return {
+        handled: true,
+        productId: explicitlyMentionedProduct.id,
+        reply: formatMessengerProductFaqReply(
+          explicitlyMentionedProduct,
+          faq,
+          detectMessengerReplyLanguage(text),
+        ),
+      };
+    }
+  }
+
+  // Only reuse the previous product when the customer did not name another
+  // product in the current turn; stale context must not override a new noun.
   const verifiedProductId = getVerifiedProductId(metadata);
-  if (!candidate && verifiedProductId) {
+  if (!candidate && explicitlyMentionedProducts.length === 0 && verifiedProductId) {
     const verifiedProduct = await getProductById(supabase, country, verifiedProductId);
     if (
       verifiedProduct &&
@@ -861,31 +913,10 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
 
   const faq = await findFaq(supabase, candidate.id, text);
   if (faq) {
-    const name =
-      firstNonEmpty(
-        replyLanguage === 'Bengali' ? fullProduct.name_bn : fullProduct.name_en,
-        fullProduct.name_bn,
-        fullProduct.name_en,
-        fullProduct.slug,
-      ) || 'Product';
-    const translationNote =
-      faq.language !== replyLanguage
-        ? replyLanguage === 'Hindi'
-          ? 'इस उत्तर का हिन्दी अनुवाद डेटाबेस में उपलब्ध नहीं है; नीचे मूल सत्यापित उत्तर है।'
-          : replyLanguage === 'English'
-            ? 'A translation in your language is not available yet; the verified database answer is shown below.'
-            : 'এই উত্তরের বাংলা অনুবাদ database-এ নেই; নিচে database-এ থাকা যাচাইকৃত উত্তর দেওয়া হলো।'
-        : '';
-
     return {
       handled: true,
       productId: candidate.id,
-      reply: [
-        `🌱 ${name}`,
-        `❓ ${faq.question || 'FAQ'}`,
-        translationNote,
-        faq.answer,
-      ].filter(Boolean).join('\n\n'),
+      reply: formatMessengerProductFaqReply(fullProduct, faq, replyLanguage),
     };
   }
 
