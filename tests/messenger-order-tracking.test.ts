@@ -143,9 +143,14 @@ test('uses a generic reply and counts a wrong registered phone without revealing
   assert.equal(result.orderIds, undefined);
   assert.equal(mock.orderReadCount, 1);
   assert.equal(mock.profileReadCount, 0);
-  assert.equal(mock.calls.filter((call) => call.kind === 'rpc:consume_messenger_tracking_verification').length, 2);
+  assert.deepEqual(
+    mock.calls.filter((call) => call.kind === 'rpc:consume_messenger_tracking_verification')
+      .map((call) => call.args?.p_action),
+    ['check', 'fail'],
+    'a wrong phone must increment failures and must not clear the cooldown counter',
+  );
 });
-
+ 
 test('a failed exact order/phone match returns a generic response', async () => {
   const mock = makeSupabase({
     profilePhone: null,
