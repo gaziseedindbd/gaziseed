@@ -4,7 +4,7 @@ import { extractMessengerPhone, normalizeMessengerPhone } from './messenger-phon
 export type MessengerTrackingCountry = 'IN' | 'BD';
 
 const TRACKING_FIELDS =
-  'id,order_number,customer_name,customer_phone,status,order_status,payment_status,final_amount,country_code,created_at,updated_at';
+  'id,order_number,status,order_status,payment_status,final_amount,country_code,created_at,updated_at';
 
 function currency(country: MessengerTrackingCountry) {
   return country === 'IN' ? '₹' : '৳';
@@ -65,7 +65,6 @@ export async function getMessengerOrderTrackingReply(args: {
       if (!row || typeof row.allowed !== 'boolean') return null;
       return {
         allowed: row.allowed as boolean,
-        failedAttempts: Number(row.failed_attempts || 0),
         retryAfterSeconds: Math.max(0, Number(row.retry_after_seconds || 0)),
       };
     } catch {
@@ -74,9 +73,7 @@ export async function getMessengerOrderTrackingReply(args: {
   }
 
   const gate = await callVerificationGate('check');
-  if (!gate) {
-    return { handled: true, reply: fallbackReply };
-  }
+  if (!gate) return { handled: true, reply: fallbackReply };
   if (!gate.allowed) {
     const remainingMinutes = Math.max(1, Math.ceil(gate.retryAfterSeconds / 60));
     return {
@@ -88,8 +85,8 @@ export async function getMessengerOrderTrackingReply(args: {
     };
   }
 
-  // An existing Messenger profile must never replace the two-factor requirement:
-  // every tracking request must contain both the order number and its registered phone.
+  // Never infer authorization from the Messenger profile: each request must
+  // contain both the exact order number and the phone registered on that order.
   if (!requestedOrderNumber || !requestedPhone) {
     return {
       handled: true,
@@ -98,30 +95,24 @@ export async function getMessengerOrderTrackingReply(args: {
     };
   }
 
-  const { data: profile, error: profileError } = await args.supabase
-    .from('messenger_customer_profiles')
-    .select('phone')
-    .eq('page_id', args.pageId)
-    .eq('external_user_id', args.externalUserId)
+  const { data: orders, error: ordersError } = await args.supabase
+    .from('orders')
+    .select(TRACKING_FIELDS)
     .eq('country_code', args.country)
-    .maybeSingle();
+    .eq('customer_phone', requestedPhone)
+    .eq('order_number', requestedOrderNumber)
+    .limit(1);
 
-  if (profileError) {
-    return { handled: true, reply: fallbackReply };
-  }
+  if (ordersError) return { handled: true, reply: fallbackReply };
 
-  const profilePhone =
-    profile && typeof profile.phone === 'string'
-      ? normalizeMessengerPhone(profile.phone)
-      : '';
-
-  async function verificationFailed() {
+  const rows = (orders || []) as Array<Record<string, unknown>>;
+  if (!rows.length) {
     const failed = await callVerificationGate('fail');
-    if (!failed) return { handled: true as const, reply: fallbackReply };
+    if (!failed) return { handled: true, reply: fallbackReply };
     if (!failed.allowed) {
       const remainingMinutes = Math.max(1, Math.ceil(failed.retryAfterSeconds / 60));
       return {
-        handled: true as const,
+        handled: true,
         reply:
           'নিরাপত্তার কারণে order verification সাময়িকভাবে বন্ধ আছে। অনুগ্রহ করে ' +
           remainingMinutes +
@@ -129,41 +120,25 @@ export async function getMessengerOrderTrackingReply(args: {
       };
     }
     return {
-      handled: true as const,
+      handled: true,
       reply:
         'Order Number ও registered mobile number যাচাই করা যায়নি। তথ্য দুটি মিলিয়ে আবার চেষ্টা করুন।',
     };
   }
 
-  // A conflicting previously linked phone is a failed verification, not an
-  // opportunity to reveal whether an order exists.
-  if (profilePhone && profilePhone !== requestedPhone) {
-    return await verificationFailed();
-  }
-
-  const { data: orders, error: ordersError } = await args.supabase
-    .from('orders')
-    .select('id,order_number,status,order_status,payment_status,final_amount,country_code,created_at,updated_at')
-    .eq('country_code', args.country)
-    .eq('order_source', 'facebook_messenger_ai')
-    .eq('customer_phone', requestedPhone)
-    .eq('order_number', requestedOrderNumber)
-    .limit(1);
-
-  if (ordersError) {
-    return { handled: true, reply: fallbackReply };
-  }
-
-  const rows = (orders || []) as Array<Record<string, unknown>>;
-  if (!rows.length) {
-    return await verificationFailed();
-  }
-
   // Clear accumulated failures before disclosing any order details. If the
   // limiter store is unavailable, fail closed and disclose nothing.
   const verified = await callVerificationGate('success');
-  if (!verified) {
-    return { handled: true, reply: fallbackReply };
+  if (!verified) return { handled: true, reply: fallbackReply };
+  if (!verified.allowed) {
+    const remainingMinutes = Math.max(1, Math.ceil(verified.retryAfterSeconds / 60));
+    return {
+      handled: true,
+      reply:
+        'নিরাপত্তার কারণে order verification সাময়িকভাবে বন্ধ আছে। অনুগ্রহ করে ' +
+        remainingMinutes +
+        ' মিনিট পরে আবার চেষ্টা করুন।',
+    };
   }
 
   const order = rows[0];
