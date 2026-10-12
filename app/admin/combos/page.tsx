@@ -196,7 +196,7 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
     fetchProducts();
 
     if (combo?.id) {
-      supabase.from('combo_items').select('*, products(${PRODUCT_PUBLIC_COLUMNS})').eq('combo_id', combo.id).then(({ data }) => {
+      supabase.from('combo_items').select(`*, products(${PRODUCT_PUBLIC_COLUMNS})`).eq('combo_id', combo.id).then(({ data }) => {
         setItems((data || []).map((it: any) => ({
           product_id: it.product_id,
           quantity: it.quantity,
