@@ -513,7 +513,7 @@ test('Messenger delivery-charge replies use the checkout order-value rules direc
 
   assert.ok(reply);
   assert.match(reply, /৳৫০/);
-  assert.match(reply, /৪০০–৫৯৯/);
+  assert.match(reply, /৳৪০০–৳৫৯৯/);
   assert.doesNotMatch(reply, /৳৭০/);
 });
 
