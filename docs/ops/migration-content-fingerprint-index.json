@@ -1110,6 +1110,86 @@
       "tokens": 295,
       "chars": 23127,
       "hasContent": true
+    },
+    {
+      "version": "20261008190000",
+      "name": "fix_admin_branch_access_and_inventory",
+      "filename": "20261008190000_fix_admin_branch_access_and_inventory.sql",
+      "path": "supabase/migrations/20261008190000_fix_admin_branch_access_and_inventory.sql",
+      "fnv64": "709da8b9263463f1",
+      "tokens": 62,
+      "chars": 2150,
+      "hasContent": true
+    },
+    {
+      "version": "20261008201500",
+      "name": "allow_public_active_landing_pages",
+      "filename": "20261008201500_allow_public_active_landing_pages.sql",
+      "path": "supabase/migrations/20261008201500_allow_public_active_landing_pages.sql",
+      "fnv64": "803b56aab4e33ea5",
+      "tokens": 63,
+      "chars": 541,
+      "hasContent": true
+    },
+    {
+      "version": "20261009021411",
+      "name": "add_landing_faq_translations",
+      "filename": "20261009021411_add_landing_faq_translations.sql",
+      "path": "supabase/migrations/20261009021411_add_landing_faq_translations.sql",
+      "fnv64": "cca0420370c70d62",
+      "tokens": 37,
+      "chars": 329,
+      "hasContent": true
+    },
+    {
+      "version": "20261009025432",
+      "name": "public_read_active_animated_landings",
+      "filename": "20261009025432_public_read_active_animated_landings.sql",
+      "path": "supabase/migrations/20261009025432_public_read_active_animated_landings.sql",
+      "fnv64": "9afed754b8ee2d1b",
+      "tokens": 98,
+      "chars": 863,
+      "hasContent": true
+    },
+    {
+      "version": "20261010033111",
+      "name": "cashfree_future_payment_recovery",
+      "filename": "20261010033111_cashfree_future_payment_recovery.sql",
+      "path": "supabase/migrations/20261010033111_cashfree_future_payment_recovery.sql",
+      "fnv64": "1629af370f27ebe1",
+      "tokens": 272,
+      "chars": 7369,
+      "hasContent": true
+    },
+    {
+      "version": "20261010034249",
+      "name": "harden_cod_advance_and_due_integrity",
+      "filename": "20261010034249_harden_cod_advance_and_due_integrity.sql",
+      "path": "supabase/migrations/20261010034249_harden_cod_advance_and_due_integrity.sql",
+      "fnv64": "d9514e00e98a739a",
+      "tokens": 185,
+      "chars": 22489,
+      "hasContent": true
+    },
+    {
+      "version": "20261010035233",
+      "name": "payment_security_audit_log",
+      "filename": "20261010035233_payment_security_audit_log.sql",
+      "path": "supabase/migrations/20261010035233_payment_security_audit_log.sql",
+      "fnv64": "a3f5d8adbf073d62",
+      "tokens": 683,
+      "chars": 18769,
+      "hasContent": true
+    },
+    {
+      "version": "20261011045154",
+      "name": "add_product_faq_hindi",
+      "filename": "20261011045154_add_product_faq_hindi.sql",
+      "path": "supabase/migrations/20261011045154_add_product_faq_hindi.sql",
+      "fnv64": "77e29046d51fd898",
+      "tokens": 21,
+      "chars": 201,
+      "hasContent": true
     }
   ]
 }
