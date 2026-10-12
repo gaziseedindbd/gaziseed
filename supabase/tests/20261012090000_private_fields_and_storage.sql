@@ -30,6 +30,52 @@ BEGIN
     RAISE EXCEPTION 'FAIL: anon has table-level SELECT on product_costs';
   END IF;
 
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'product_costs'
+      AND policyname = 'product_costs_admin_branch_access'
+      AND position('is_admin' IN coalesce(qual, '') || coalesce(with_check, '')) > 0
+      AND position('can_access_country' IN coalesce(qual, '') || coalesce(with_check, '')) > 0
+  ) THEN
+    RAISE EXCEPTION 'FAIL: private product costs are not protected by branch-admin RLS';
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'product-images' AND public IS TRUE) THEN
+    RAISE EXCEPTION 'FAIL: product-images must remain publicly readable by public URL';
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'review-images' AND public IS TRUE) THEN
+    RAISE EXCEPTION 'FAIL: public review-images bucket is missing';
+  END IF;
+
+  IF (
+    SELECT count(*)
+    FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname IN (
+        'Storage admins can upload product images',
+        'Storage admins can update product images',
+        'Storage admins can delete product images'
+      )
+      AND position('is_admin' IN coalesce(qual, '') || coalesce(with_check, '')) > 0
+  ) <> 3 THEN
+    RAISE EXCEPTION 'FAIL: all product-image write policies must require admin access';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND cmd IN ('INSERT', 'UPDATE', 'DELETE', 'ALL')
+      AND ('anon' = ANY(roles) OR 'public' = ANY(roles))
+      AND (coalesce(qual, '') || coalesce(with_check, '')) LIKE '%product-images%'
+  ) THEN
+    RAISE EXCEPTION 'FAIL: anonymous/public write policy remains on product-images';
+  END IF;
+
   IF EXISTS (
     SELECT 1 FROM public.products WHERE cost_price IS NOT NULL
   ) THEN
