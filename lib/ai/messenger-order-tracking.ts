@@ -6,6 +6,18 @@ export type MessengerTrackingCountry = 'IN' | 'BD';
 const TRACKING_FIELDS =
   'id,order_number,status,order_status,payment_status,final_amount,country_code,created_at,updated_at';
 
+function normalizeTrackingPhone(value: string, country: MessengerTrackingCountry): string {
+  let digits = value.replace(/\D/g, '');
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (country === 'IN' && digits.startsWith('91') && digits.length === 12) {
+    return digits.slice(2);
+  }
+  if (country === 'BD' && digits.startsWith('880') && digits.length === 13) {
+    return '0' + digits.slice(3);
+  }
+  return digits;
+}
+
 function currency(country: MessengerTrackingCountry) {
   return country === 'IN' ? '₹' : '৳';
 }
@@ -44,7 +56,7 @@ export async function getMessengerOrderTrackingReply(args: {
 }): Promise<{ handled: boolean; reply: string; orderIds?: string[] }> {
   const requestedOrderNumber = parseOrderNumber(args.text);
   const requestedPhoneRaw = extractMessengerPhone(args.text) || '';
-  const requestedPhone = requestedPhoneRaw ? normalizeMessengerPhone(requestedPhoneRaw) : '';
+  const requestedPhone = requestedPhoneRaw ? normalizeTrackingPhone(requestedPhoneRaw, args.country) : '';
 
   const fallbackReply =
     'নিরাপত্তার কারণে এই মুহূর্তে order যাচাই করা যাচ্ছে না। অনুগ্রহ করে পরে আবার চেষ্টা করুন অথবা official WhatsApp support-এ যোগাযোগ করুন।';
@@ -97,9 +109,8 @@ export async function getMessengerOrderTrackingReply(args: {
 
   const { data: orders, error: ordersError } = await args.supabase
     .from('orders')
-    .select(TRACKING_FIELDS)
+    .select(TRACKING_FIELDS + ',customer_phone')
     .eq('country_code', args.country)
-    .eq('customer_phone', requestedPhone)
     .eq('order_number', requestedOrderNumber)
     .limit(1);
 
@@ -142,6 +153,28 @@ export async function getMessengerOrderTrackingReply(args: {
   }
 
   const order = rows[0];
+  const storedPhone = typeof order.customer_phone === 'string'
+    ? normalizeTrackingPhone(order.customer_phone, args.country)
+    : '';
+  if (!storedPhone || storedPhone !== requestedPhone) {
+    const failed = await callVerificationGate('fail');
+    if (!failed) return { handled: true, reply: fallbackReply };
+    if (!failed.allowed) {
+      const remainingMinutes = Math.max(1, Math.ceil(failed.retryAfterSeconds / 60));
+      return {
+        handled: true,
+        reply:
+          'নিরাপত্তার কারণে order verification সাময়িকভাবে বন্ধ আছে। অনুগ্রহ করে ' +
+          remainingMinutes +
+          ' মিনিট পরে আবার চেষ্টা করুন।',
+      };
+    }
+    return {
+      handled: true,
+      reply:
+        'Order Number ও registered mobile number যাচাই করা যায়নি। তথ্য দুটি মিলিয়ে আবার চেষ্টা করুন।',
+    };
+  }
   const amount = Number(order.final_amount || 0);
   return {
     handled: true,
