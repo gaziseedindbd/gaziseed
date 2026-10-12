@@ -190,9 +190,13 @@ export function formatMessengerDeliveryPolicyReply(
   const normalized = normalizeMessengerIntentText(text);
   const wantsCharge = isMessengerDeliveryChargeQuestion(text);
   const wantsTime = isMessengerDeliveryTimeQuestion(text);
-  const asksCodOnly = /(?:\bcod\b|cash on delivery|ক্যাশ অন ডেলিভারি|সিওডি|कैश ऑन डिलीवरी)/i.test(normalized)
+  const asksCodOnly = /(?:\\bcod\\b|cash on delivery|ক্যাশ অন ডেলিভারি|সিওডি|कैश ऑन डिलीवरी)/i.test(normalized)
     && !wantsCharge
     && !wantsTime;
+  const asksCoverage = /(?:do you deliver|delivery to|deliver to|delivery area|pincode|pin code|postcode|deliverable|ডেলিভারি হবে|ডেলিভারি করেন|কোন এলাকায়|কোন এলাকায়|পৌঁছাবে|পিন কোড|এলাকা|कहाँ डिलीवरी|डिलीवरी करते|पिन कोड|किस इलाके)/i.test(normalized);
+
+  // A list of general rates cannot verify whether a particular postal area is covered.
+  if (asksCoverage && !wantsCharge && !wantsTime && !asksCodOnly) return null;
 
   if (asksCodOnly) {
     if (country === 'BD') return null; // The existing BD payment-method handler gives the canonical COD-only answer.
