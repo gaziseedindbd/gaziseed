@@ -810,6 +810,106 @@
       "tokens": 57,
       "chars": 455,
       "hasContent": true
+    },
+    {
+      "version": "20260909150000",
+      "name": "fix_referral_code_brand_prefix",
+      "filename": "20260909150000_fix_referral_code_brand_prefix.sql",
+      "path": "supabase/migrations/20260909150000_fix_referral_code_brand_prefix.sql",
+      "fnv64": "814918240579f045",
+      "tokens": 34,
+      "chars": 924,
+      "hasContent": true
+    },
+    {
+      "version": "20260911041600",
+      "name": "add_cod_advance_payment_support",
+      "filename": "20260911041600_add_cod_advance_payment_support.sql",
+      "path": "supabase/migrations/20260911041600_add_cod_advance_payment_support.sql",
+      "fnv64": "ee4a20c435f933d9",
+      "tokens": 187,
+      "chars": 5187,
+      "hasContent": true
+    },
+    {
+      "version": "20260912105000",
+      "name": "add_admin_cod_due_settlement",
+      "filename": "20260912105000_add_admin_cod_due_settlement.sql",
+      "path": "supabase/migrations/20260912105000_add_admin_cod_due_settlement.sql",
+      "fnv64": "ec9d2ecdfdeed020",
+      "tokens": 187,
+      "chars": 7604,
+      "hasContent": true
+    },
+    {
+      "version": "20260925070940",
+      "name": "add_messenger_message_id_idempotency",
+      "filename": "20260925070940_add_messenger_message_id_idempotency.sql",
+      "path": "supabase/migrations/20260925070940_add_messenger_message_id_idempotency.sql",
+      "fnv64": "5936bcc9f94b8751",
+      "tokens": 20,
+      "chars": 154,
+      "hasContent": true
+    },
+    {
+      "version": "20261001104900",
+      "name": "messenger_order_confirmation_notifications",
+      "filename": "20261001104900_messenger_order_confirmation_notifications.sql",
+      "path": "supabase/migrations/20261001104900_messenger_order_confirmation_notifications.sql",
+      "fnv64": "3d4d4292fcd3a7b6",
+      "tokens": 245,
+      "chars": 2477,
+      "hasContent": true
+    },
+    {
+      "version": "20261001132000",
+      "name": "messenger_order_status_notifications",
+      "filename": "20261001132000_messenger_order_status_notifications.sql",
+      "path": "supabase/migrations/20261001132000_messenger_order_status_notifications.sql",
+      "fnv64": "807cf5dca1becc22",
+      "tokens": 249,
+      "chars": 2952,
+      "hasContent": true
+    },
+    {
+      "version": "20261001143000",
+      "name": "add_packed_order_status_notification",
+      "filename": "20261001143000_add_packed_order_status_notification.sql",
+      "path": "supabase/migrations/20261001143000_add_packed_order_status_notification.sql",
+      "fnv64": "3d2d51b174bacdc3",
+      "tokens": 22,
+      "chars": 1344,
+      "hasContent": true
+    },
+    {
+      "version": "20261001143000",
+      "name": "messenger_transliteration_search",
+      "filename": "20261001143000_messenger_transliteration_search.sql",
+      "path": "supabase/migrations/20261001143000_messenger_transliteration_search.sql",
+      "fnv64": "e2063663738704f3",
+      "tokens": 379,
+      "chars": 11793,
+      "hasContent": true
+    },
+    {
+      "version": "20261001144000",
+      "name": "fix_messenger_transliteration",
+      "filename": "20261001144000_fix_messenger_transliteration.sql",
+      "path": "supabase/migrations/20261001144000_fix_messenger_transliteration.sql",
+      "fnv64": "4b9e616a539da270",
+      "tokens": 165,
+      "chars": 4240,
+      "hasContent": true
+    },
+    {
+      "version": "20261001160000",
+      "name": "normalize_india_product_prices",
+      "filename": "20261001160000_normalize_india_product_prices.sql",
+      "path": "supabase/migrations/20261001160000_normalize_india_product_prices.sql",
+      "fnv64": "c9b3daeb30c66afd",
+      "tokens": 87,
+      "chars": 715,
+      "hasContent": true
     }
   ]
 }
