@@ -61,14 +61,14 @@
 | `20261004170452` | `add_product_promotional_spotlight_hindi_and_language_images` | `20261004223000` / `20261004223000_add_product_promotional_spotlight_hindi_and_language_images.sql` | no | MATCH_SQL_EXACT (normalized token comparison) |
 | `20261006035157` | `fix_bulk_pricing_country_visibility` | `20261006010000` / `20261006010000_fix_bulk_pricing_country_visibility.sql` | no | MATCH_SQL_EXACT (normalized token comparison) |
 | `20261006113634` | `fix_public_banner_select` | `20261006053000` / `20261006053000_fix_public_banner_select.sql` | no | MATCH_SQL_EXACT (normalized token comparison) |
-| `20261006124815` | `disable_missing_home_banner` | `20261006124815` / `20261006124815_disable_missing_home_banner.sql` | yes | PENDING_SQL_COMPARE |
+| `20261006124815` | `disable_missing_home_banner` | `20261006124815` / `20261006124815_disable_missing_home_banner.sql` | yes | MATCH_SQL_EXACT (normalized token comparison) |
 | `20261008121106` | `add_sending_state_to_messenger_order_status_notifications` | `20261008123000` / `20261008123000_add_sending_state_to_messenger_order_status_notifications.sql` | no | MATCH_SQL_EXACT (normalized token comparison) |
 | `20261008141346` | `fix_admin_branch_access_and_inventory` | `20261008190000` / `20261008190000_fix_admin_branch_access_and_inventory.sql` | no | MATCH_SQL_EXACT (normalized token comparison) |
 | `20261008150205` | `allow_public_active_landing_pages` | `20261008201500` / `20261008201500_allow_public_active_landing_pages.sql` | no | MATCH_SQL_EXACT (normalized token comparison) |
 | `20261008153249` | `grant_public_ads_order_rpc` | `20261008153430` / `20261008153430_grant_public_ads_order_rpc.sql` | no | MATCH_SQL_EXACT (normalized token comparison) |
 | `20261008165055` | `india_cashfree_campaign_payments` | `20261008161145` / `20261008161145_india_cashfree_campaign_payments.sql` | no | MATCH_SQL_EXACT (normalized token comparison) |
-| `20261009021411` | `add_landing_faq_translations` | `20261009021411` / `20261009021411_add_landing_faq_translations.sql` | yes | PENDING_SQL_COMPARE |
-| `20261009025432` | `public_read_active_animated_landings` | `20261009025432` / `20261009025432_public_read_active_animated_landings.sql` | yes | PENDING_SQL_COMPARE |
+| `20261009021411` | `add_landing_faq_translations` | `20261009021411` / `20261009021411_add_landing_faq_translations.sql` | yes | MATCH_SQL_EXACT (normalized token comparison) |
+| `20261009025432` | `public_read_active_animated_landings` | `20261009025432` / `20261009025432_public_read_active_animated_landings.sql` | yes | MATCH_SQL_EXACT (normalized token comparison) |
 | `20261010033247` | `cashfree_future_payment_recovery` | `20261010033111` / `20261010033111_cashfree_future_payment_recovery.sql` | no | SQL_DIFF (stored cron timeout 60000 ms; repo migration says 120000 ms) |
 | `20261010034929` | `harden_cod_advance_and_due_integrity` | `20261010034249` / `20261010034249_harden_cod_advance_and_due_integrity.sql` | no | MATCH_SQL_EXACT (normalized token comparison) |
 | `20261010041019` | `payment_security_audit_log` | `20261010035233` / `20261010035233_payment_security_audit_log.sql` | no | MATCH_SQL_EXACT (normalized token comparison) |
