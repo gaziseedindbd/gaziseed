@@ -120,7 +120,7 @@ function formatMoney(
 
 function formatTimeValue(value: string, language: MessengerReplyLanguage): string {
   const normalized = normalizeDigits(value);
-  const match = normalized.match(/(\\d+)\\s*[-–]\\s*(\\d+)\\s*(business\\s+days?|days?|দিন|দিনে)?/i);
+  const match = normalized.match(/(\d+)\s*[-–]\s*(\d+)\s*(business\s+days?|days?|দিন|দিনে)?/i);
   if (!match) return value;
 
   const range = `${localizeDigits(match[1], language)}–${localizeDigits(match[2], language)}`;
@@ -163,9 +163,9 @@ function formatDeliveryRuleRange(
 function findOrderValue(text: string): number | null {
   const normalized = normalizeDigits(text);
   const patterns = [
-    /(?:৳|₹|\\bBDT\\b|\\bINR\\b)\\s*([0-9][0-9,]*(?:\\.[0-9]+)?)/i,
-    /([0-9][0-9,]*(?:\\.[0-9]+)?)\\s*(?:৳|₹|\\bBDT\\b|\\bINR\\b|taka(?:r|e)?|tk\\b|rupees?|rs\\.?|টাকা(?:র|য়|য়)?|রুপি|रुपये|रुपए)/i,
-    /(?:order(?:\\s+(?:total|value|amount))?|অর্ডার(?:\\s+(?:মোট|মূল্য))?|ऑर्डर(?:\\s+(?:कुल|मूल्य))?)\\s*(?:of|is|=|হলো|এর)?\\s*([0-9][0-9,]*(?:\\.[0-9]+)?)/i,
+    /(?:৳|₹|\bBDT\b|\bINR\b)\s*([0-9][0-9,]*(?:\.[0-9]+)?)/i,
+    /([0-9][0-9,]*(?:\.[0-9]+)?)\s*(?:৳|₹|\bBDT\b|\bINR\b|taka(?:r|e)?|tk\b|rupees?|rs\.?|টাকা(?:র|য়|য়)?|রুপি|रुपये|रुपए)/i,
+    /(?:order(?:\s+(?:total|value|amount))?|অর্ডার(?:\s+(?:মোট|মূল্য))?|ऑर्डर(?:\s+(?:कुल|मूल्य))?)\s*(?:of|is|=|হলো|এর)?\s*([0-9][0-9,]*(?:\.[0-9]+)?)/i,
   ];
 
   for (const pattern of patterns) {
@@ -190,7 +190,7 @@ export function formatMessengerDeliveryPolicyReply(
   const normalized = normalizeMessengerIntentText(text);
   const wantsCharge = isMessengerDeliveryChargeQuestion(text);
   const wantsTime = isMessengerDeliveryTimeQuestion(text);
-  const asksCodOnly = /(?:\\bcod\\b|cash on delivery|ক্যাশ অন ডেলিভারি|সিওডি|कैश ऑन डिलीवरी)/i.test(normalized)
+  const asksCodOnly = /(?:\bcod\b|cash on delivery|ক্যাশ অন ডেলিভারি|সিওডি|कैश ऑन डिलीवरी)/i.test(normalized)
     && !wantsCharge
     && !wantsTime;
 
@@ -303,7 +303,7 @@ export function formatMessengerDeliveryPolicyReply(
   }
 
   if (!lines.length) return null;
-  return lines.join('\\n\\n');
+  return lines.join('\n\n');
 }
 
 export async function getMessengerDeliveryPolicy(
