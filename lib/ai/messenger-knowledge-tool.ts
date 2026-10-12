@@ -538,7 +538,9 @@ async function findFaq(
         id: row.id,
         question,
         answer,
-        language: pair.language,
+        // Some legacy FAQ records have English text in the Bengali columns.
+        // Record the actual answer language separately from the matched column.
+        language: detectMessengerReplyLanguage(answer),
         score:
           overlap.length * 2 +
           (phraseMatch ? 6 : 0) +
