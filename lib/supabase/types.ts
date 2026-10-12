@@ -326,7 +326,8 @@ export type Review = {
   is_featured: boolean;
   admin_reply: string | null;
   verified_purchase: boolean;
-  user_id: string | null;
+  // Optional because customer-facing review projections intentionally omit the private user identifier.
+  user_id?: string | null;
   status: string;
   created_at: string;
 };
