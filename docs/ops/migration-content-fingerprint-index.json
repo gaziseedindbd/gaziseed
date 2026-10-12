@@ -1,0 +1,105 @@
+{
+  "algorithm": "SQL lexical token sequence + FNV-1a 64-bit; whitespace and SQL comments ignored; quoted string tokens preserved",
+  "entries": [
+    {
+      "version": "20260801130143",
+      "name": "create_core_schema",
+      "filename": "20260801130143_create_core_schema.sql",
+      "path": "supabase/migrations/20260801130143_create_core_schema.sql",
+      "fnv64": "2a60bbef77d5372d",
+      "tokens": 2769,
+      "chars": 18489,
+      "hasContent": true
+    },
+    {
+      "version": "20260801130235",
+      "name": "create_rls_and_order_function",
+      "filename": "20260801130235_create_rls_and_order_function.sql",
+      "path": "supabase/migrations/20260801130235_create_rls_and_order_function.sql",
+      "fnv64": "a13971422096fe59",
+      "tokens": 1726,
+      "chars": 20349,
+      "hasContent": true
+    },
+    {
+      "version": "20260801134623",
+      "name": "add_ads_landing_system",
+      "filename": "20260801134623_add_ads_landing_system.sql",
+      "path": "supabase/migrations/20260801134623_add_ads_landing_system.sql",
+      "fnv64": "575135b88aadd9d7",
+      "tokens": 269,
+      "chars": 2894,
+      "hasContent": true
+    },
+    {
+      "version": "20260802023332",
+      "name": "add_landing_content_seo_fields",
+      "filename": "20260802023332_add_landing_content_seo_fields.sql",
+      "path": "supabase/migrations/20260802023332_add_landing_content_seo_fields.sql",
+      "fnv64": "dc2df8e5f478f3b3",
+      "tokens": 428,
+      "chars": 3459,
+      "hasContent": true
+    },
+    {
+      "version": "20260802023348",
+      "name": "add_storage_policies",
+      "filename": "20260802023348_add_storage_policies.sql",
+      "path": "supabase/migrations/20260802023348_add_storage_policies.sql",
+      "fnv64": "a7a8b2ab144367e3",
+      "tokens": 87,
+      "chars": 858,
+      "hasContent": true
+    },
+    {
+      "version": "20260802023552",
+      "name": "fix_create_order_bundle_stock",
+      "filename": "20260802023552_fix_create_order_bundle_stock.sql",
+      "path": "supabase/migrations/20260802023552_fix_create_order_bundle_stock.sql",
+      "fnv64": "6e26d8a9c38c46df",
+      "tokens": 94,
+      "chars": 7164,
+      "hasContent": true
+    },
+    {
+      "version": "20260802024630",
+      "name": "add_quantity_offers_table",
+      "filename": "20260802024630_add_quantity_offers_table.sql",
+      "path": "supabase/migrations/20260802024630_add_quantity_offers_table.sql",
+      "fnv64": "6263d86abf9aec92",
+      "tokens": 234,
+      "chars": 1894,
+      "hasContent": true
+    },
+    {
+      "version": "20260802024653",
+      "name": "update_create_order_quantity_offers",
+      "filename": "20260802024653_update_create_order_quantity_offers.sql",
+      "path": "supabase/migrations/20260802024653_update_create_order_quantity_offers.sql",
+      "fnv64": "22a2671a757cd206",
+      "tokens": 94,
+      "chars": 8989,
+      "hasContent": true
+    },
+    {
+      "version": "20260803004029",
+      "name": "fix_order_items_quantity_offer_and_address_fields",
+      "filename": "20260803004029_fix_order_items_quantity_offer_and_address_fields.sql",
+      "path": "supabase/migrations/20260803004029_fix_order_items_quantity_offer_and_address_fields.sql",
+      "fnv64": "1f6288247596bca1",
+      "tokens": 88,
+      "chars": 743,
+      "hasContent": true
+    },
+    {
+      "version": "20260803004049",
+      "name": "fix_create_order_quantity_offer_id",
+      "filename": "20260803004049_fix_create_order_quantity_offer_id.sql",
+      "path": "supabase/migrations/20260803004049_fix_create_order_quantity_offer_id.sql",
+      "fnv64": "cd03964272156d60",
+      "tokens": 94,
+      "chars": 8368,
+      "hasContent": true
+    }
+  ]
+}
