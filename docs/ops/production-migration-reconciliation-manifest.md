@@ -14,7 +14,7 @@
 - Two other repository files are comment-only no-op migrations (zero executable SQL tokens).
 - The remaining **72** files have no exact SQL-token fingerprint match in stored history; this does **not** prove their intended effects are absent from the live schema.
 - All **265** Production rows have non-empty stored SQL in `supabase_migrations.schema_migrations`; approximate stored SQL volume is **576,638 characters**.
-- Name-matched files are marked `MATCH_SQL_EXACT`, `SQL_DIFF`, or `PENDING_SQL_COMPARE` according to the completed comparisons. Additionally, the separate SQL fingerprint index covers all 119 repository migration files and records 7 exact content matches found within Production history.
+- Name-matched files are marked `MATCH_SQL_EXACT`, `SQL_DIFF`, or `PENDING_SQL_COMPARE` according to the completed comparisons. Additionally, the separate [SQL fingerprint index](migration-content-fingerprint-index.json) covers all 119 repository migration files and records 7 matching fingerprints found within Production history.
 
 ## Interpretation rules
 
@@ -77,21 +77,21 @@
 | `20261010041019` | `payment_security_audit_log` | `20261010035233` / `20261010035233_payment_security_audit_log.sql` | no | MATCH_SQL_EXACT (normalized token comparison) |
 | `20261011045154` | `add_product_faq_hindi` | `20261011045154` / `20261011045154_add_product_faq_hindi.sql` | yes | MATCH_SQL_EXACT (normalized token comparison) |
 
-## Exact SQL matches under different Production names/versions
+## SQL fingerprint matches under different Production names/versions
 
-The following repository files are listed as having no same-name Production record, but their SQL token fingerprints exactly match stored SQL from an existing Production migration-history row. Do not apply these again just to make the history names line up.
+The following repository files are listed as having no same-name Production record, but their SQL token fingerprints match stored SQL from an existing Production migration-history row. Do not apply these again just to make the history names line up.
 
 | Repository file | Matching Production version | Production record name | Result |
 |---|---|---|---|
-| `20260929140000_add_messenger_customer_profiles.sql` | `20260929132935` | `20260929140000_add_messenger_customer_profiles` | `EXACT_SQL_TOKEN_MATCH` |
-| `20260929170000_messenger_product_search_optimization.sql` | `20260929140411` | `20260929170000_messenger_product_search_optimization` | `EXACT_SQL_TOKEN_MATCH` |
-| `20261001173000_preserve_cashfree_order_source.sql` | `20261001171349` | `preserve_cashfree_order_source` | `EXACT_SQL_TOKEN_MATCH` |
-| `20261003210000_add_meta_ads_insights.sql` | `20261003163727` | `add_meta_ads_insights_daily` | `EXACT_SQL_TOKEN_MATCH` |
-| `20261007123000_add_bulk_offer_free_item_text.sql` | `20261007064522` | `add_bulk_pricing_free_item_text` | `EXACT_SQL_TOKEN_MATCH` |
-| `20261008160000_fix_ads_offer_order_totals.sql` | `20261008155002` | `fix_ads_package_item_totals` | `EXACT_SQL_TOKEN_MATCH` |
-| `20261008183000_add_messenger_order_notification_sending_state.sql` | `20261008115546` | `allow_messenger_notification_sending_state` | `EXACT_SQL_TOKEN_MATCH` |
+| `20260929140000_add_messenger_customer_profiles.sql` | `20260929132935` | `20260929140000_add_messenger_customer_profiles` | `SQL_FINGERPRINT_MATCH` |
+| `20260929170000_messenger_product_search_optimization.sql` | `20260929140411` | `20260929170000_messenger_product_search_optimization` | `SQL_FINGERPRINT_MATCH` |
+| `20261001173000_preserve_cashfree_order_source.sql` | `20261001171349` | `preserve_cashfree_order_source` | `SQL_FINGERPRINT_MATCH` |
+| `20261003210000_add_meta_ads_insights.sql` | `20261003163727` | `add_meta_ads_insights_daily` | `SQL_FINGERPRINT_MATCH` |
+| `20261007123000_add_bulk_offer_free_item_text.sql` | `20261007064522` | `add_bulk_pricing_free_item_text` | `SQL_FINGERPRINT_MATCH` |
+| `20261008160000_fix_ads_offer_order_totals.sql` | `20261008155002` | `fix_ads_package_item_totals` | `SQL_FINGERPRINT_MATCH` |
+| `20261008183000_add_messenger_order_notification_sending_state.sql` | `20261008115546` | `allow_messenger_notification_sending_state` | `SQL_FINGERPRINT_MATCH` |
 
-SQL fingerprints ignore comments/whitespace while preserving SQL tokens and quoted strings. These are strong source-equivalence matches, but the live object catalog should still be inspected before making any reconciliation decision.
+SQL fingerprints ignore comments/whitespace while preserving SQL tokens and quoted strings. A matching FNV-1a 64-bit fingerprint plus token count is strong evidence, not a collision-proof proof of identity; compare the full stored and repository token streams for these pairs before making any reconciliation decision.
 
 ## Production history without a same-name repository file
 
@@ -395,7 +395,7 @@ SQL fingerprints ignore comments/whitespace while preserving SQL tokens and quot
 | `20260824230000` | `20260824230000_complete_referral_program.sql` | `REPO_ONLY_OR_RENAMED_NOT_YET_MAPPED` |
 | `20260825041143` | `20260825041143_harden_storage_object_policies.sql` | `REPO_ONLY_OR_RENAMED_NOT_YET_MAPPED` |
 | `20260825093000` | `20260825093000_fix_referral_wallet_balance_ledger_usage.sql` | `REPO_ONLY_OR_RENAMED_NOT_YET_MAPPED` |
-| `20260929140000` | `20260929140000_add_messenger_customer_profiles.sql` | `EXACT_SQL_TOKEN_MATCH_AT_PROD_VERSION_20260929132935` |
+| `20260929140000` | `20260929140000_add_messenger_customer_profiles.sql` | `SQL_FINGERPRINT_MATCH_AT_PROD_VERSION_20260929132935` |
 | `20260929145000` | `20260929145000_messenger_rate_limit_abuse_protection.sql` | `REPO_ONLY_OR_RENAMED_NOT_YET_MAPPED` |
 | `20260929170000` | `20260929170000_messenger_product_search_optimization.sql` | `EXACT_SQL_TOKEN_MATCH_AT_PROD_VERSION_20260929140411` |
 | `20261001173000` | `20261001173000_preserve_cashfree_order_source.sql` | `EXACT_SQL_TOKEN_MATCH_AT_PROD_VERSION_20261001171349` |
