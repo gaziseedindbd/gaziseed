@@ -439,3 +439,18 @@ test('database knowledge matching rejects unrelated text and ambiguous FAQ hits'
   );
   assert.equal(ambiguous, null);
 });
+
+test('database FAQ answer language is detected from content, not trusted solely from column name', () => {
+  const mislabeled = rankMessengerCmsFaq(
+    'What is the return policy?',
+    [{
+      id: 'legacy-mixed-language',
+      question: 'What is the return policy?',
+      answer: 'Returns are reviewed by our customer support team.',
+    }],
+    'English',
+  );
+
+  assert.equal(mislabeled?.answer, 'Returns are reviewed by our customer support team.');
+  assert.equal(mislabeled?.language, 'English');
+});
