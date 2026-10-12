@@ -679,7 +679,13 @@
       "fnv64": "08ffa4d337beab98",
       "tokens": 342,
       "chars": 2384,
-      "hasContent": true
+      "hasContent": true,
+      "productionFingerprintMatch": {
+        "productionVersion": "20260929132935",
+        "productionName": "20260929140000_add_messenger_customer_profiles",
+        "matchType": "EXACT_SQL_TOKEN_FINGERPRINT",
+        "note": "same SQL token fingerprint; filename/version differs"
+      }
     },
     {
       "version": "20260929145000",
@@ -699,7 +705,13 @@
       "fnv64": "700f4b3b6c242f7a",
       "tokens": 481,
       "chars": 7449,
-      "hasContent": true
+      "hasContent": true,
+      "productionFingerprintMatch": {
+        "productionVersion": "20260929140411",
+        "productionName": "20260929170000_messenger_product_search_optimization",
+        "matchType": "EXACT_SQL_TOKEN_FINGERPRINT",
+        "note": "same SQL token fingerprint; filename/version differs"
+      }
     },
     {
       "version": "20261001173000",
@@ -709,7 +721,13 @@
       "fnv64": "eca218cea5b6b77e",
       "tokens": 129,
       "chars": 10329,
-      "hasContent": true
+      "hasContent": true,
+      "productionFingerprintMatch": {
+        "productionVersion": "20261001171349",
+        "productionName": "preserve_cashfree_order_source",
+        "matchType": "EXACT_SQL_TOKEN_FINGERPRINT",
+        "note": "same SQL token fingerprint; filename/version differs"
+      }
     },
     {
       "version": "20261003100000",
@@ -729,7 +747,13 @@
       "fnv64": "80d7862b65ad6351",
       "tokens": 305,
       "chars": 1731,
-      "hasContent": true
+      "hasContent": true,
+      "productionFingerprintMatch": {
+        "productionVersion": "20261003163727",
+        "productionName": "add_meta_ads_insights_daily",
+        "matchType": "EXACT_SQL_TOKEN_FINGERPRINT",
+        "note": "same SQL token fingerprint; filename/version differs"
+      }
     },
     {
       "version": "20261007120000",
@@ -749,7 +773,13 @@
       "fnv64": "fcfdcac17ccf13fa",
       "tokens": 13,
       "chars": 80,
-      "hasContent": true
+      "hasContent": true,
+      "productionFingerprintMatch": {
+        "productionVersion": "20261007064522",
+        "productionName": "add_bulk_pricing_free_item_text",
+        "matchType": "EXACT_SQL_TOKEN_FINGERPRINT",
+        "note": "same SQL token fingerprint; filename/version differs"
+      }
     },
     {
       "version": "20261008093000",
@@ -799,7 +829,13 @@
       "fnv64": "b4296bcfbbab15ac",
       "tokens": 136,
       "chars": 7133,
-      "hasContent": true
+      "hasContent": true,
+      "productionFingerprintMatch": {
+        "productionVersion": "20261008155002",
+        "productionName": "fix_ads_package_item_totals",
+        "matchType": "EXACT_SQL_TOKEN_FINGERPRINT",
+        "note": "same SQL token fingerprint; filename/version differs"
+      }
     },
     {
       "version": "20261008183000",
@@ -809,7 +845,13 @@
       "fnv64": "ffd03f658f1854d6",
       "tokens": 57,
       "chars": 455,
-      "hasContent": true
+      "hasContent": true,
+      "productionFingerprintMatch": {
+        "productionVersion": "20261008115546",
+        "productionName": "allow_messenger_notification_sending_state",
+        "matchType": "EXACT_SQL_TOKEN_FINGERPRINT",
+        "note": "same SQL token fingerprint; filename/version differs"
+      }
     },
     {
       "version": "20260909150000",
