@@ -449,7 +449,31 @@ $function$;
 
 REVOKE ALL ON FUNCTION private.get_my_referral_wallet_summary(text)
   FROM PUBLIC, anon, authenticated;
+GRANT USAGE ON SCHEMA private TO authenticated;
 GRANT EXECUTE ON FUNCTION private.get_my_referral_wallet_summary(text)
+  TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.get_my_referral_wallet_summary(p_country_code text)
+RETURNS TABLE (
+  balance numeric,
+  unlocked boolean,
+  max_usable numeric,
+  min_purchase_amount numeric,
+  usage_percent numeric,
+  enabled boolean
+)
+LANGUAGE sql
+STABLE
+SECURITY INVOKER
+SET search_path = ''
+AS $function$
+  SELECT *
+  FROM private.get_my_referral_wallet_summary(p_country_code);
+$function$;
+
+REVOKE ALL ON FUNCTION public.get_my_referral_wallet_summary(text)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_my_referral_wallet_summary(text)
   TO authenticated;
 
 -- Country-aware referral qualification means a delivery in one branch cannot unlock another branch's wallet.
