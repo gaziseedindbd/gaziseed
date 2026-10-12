@@ -598,3 +598,26 @@ The public-RPC rate-limit migration also appears absent as a whole: table, enfor
 - **Top remediation candidates at this point:** public Storage writes for any authenticated account, unthrottled public `track_order` RPC, plus the earlier cost-price/reviewer-phone column exposure.
 - Apply fixes only through small, reviewed forward migrations after verifying the application's actual read/write paths. Do not use historical migrations as repair scripts.
 
+## Live-schema effect review — batch 8 (72 of 72 unmatched files)
+
+**Method:** the final two unmatched files were checked against the current Production constraint, policy, and AI-settings state. For AI settings, only an aggregate count was queried; no configuration row values or secrets were inspected.
+
+| Repository migration | Current evidence | Result / follow-up |
+|---|---|---|
+| `20261008102000_scope_messenger_profiles_by_country.sql` | `messenger_customer_profiles_country_code_check` exists, and `messenger_customer_profiles_admin_country_all` exists for authenticated admins with `can_access_country(country_code)` in both USING and WITH CHECK. | **Effect present.** |
+| `20261008103500_disable_unconfigured_generic_ai.sql` | An aggregate read-only count found **one** `ai_settings` row with `is_enabled=true` and `api_key_secret_id IS NULL`. The migration's intended invariant is therefore not fully reflected in current state. | **Configuration drift confirmed (one row).** Do not inspect/display the row or key value in this audit. Confirm the intended Generic AI state for that branch and disable it through a reviewed, controlled change if it should remain off without a Vault key. This is not evidence that the live Messenger AI runtime is affected. |
+
+## Whole-audit summary and proposed order of remediation
+
+The 72-file catalog review is complete. It found that many historical SQL effects are implemented under newer schemas, policies, index names, triggers, or RPC signatures; several old data-sensitive migrations cannot be safely inferred from catalog metadata alone. The unmatched fingerprint count must not be used as a migration replay list.
+
+**Highest-priority findings for a separate, reviewed forward-fix PR:**
+
+1. **Private-column exposure candidate:** the effective Data API ACL allows `anon` SELECT on `products.cost_price` and `reviews.guest_phone`, while public table policies can admit rows from the storefront/current country. Validate the exact public API surface and move private fields behind column-safe views or separate private tables before any change. No values were queried.
+2. **Storage policy drift:** current authenticated policies for `storage.objects` allow upload/update/delete based only on the `product-images` bucket ID and do not require `is_admin()`. Review and replace with admin-scoped write policies while preserving legitimate storefront reads.
+3. **Order-tracking rate limit absent from current DB function:** `public_rpc_rate_limits`, its enforcement function and order-insert trigger were not found; `track_order(order_number, phone)` remains executable by anon/authenticated and has no rate-limit logic in its body. Confirm whether a deployed edge/API layer provides equivalent throttling, then close the gap with a tested forward migration if not.
+4. **AI settings invariant mismatch:** one row has `is_enabled=true` without a Vault secret reference, contrary to the purpose of `20261008103500_disable_unconfigured_generic_ai.sql`. Confirm configuration intent and correct it with a reviewed, narrowly scoped change.
+5. **Behavior/config review candidates:** `quantity_offers.custom_delivery_charge` is not consumed by current `create_offer_order`; product/landing SEO and FAQ/review read paths differ from historical schema; `contact_messages.admin_reply/replied_at` and some finance/order-item columns are absent; the SEED BARI name and referral-code prefix still show GAZI SEED-era values; reward reversal and direct EXECUTE grants on trigger helpers need follow-up.
+
+**Boundary:** This is a read-only Production catalog audit plus documentation on an open Draft PR. No Production schema, data, migration history, Storage policy, Auth account, wallet transaction, or Vault secret was changed or replayed. Before touching Production, each security finding should be confirmed with a targeted regression test and handled in a separate forward migration or application change—not by running the historical files again.
+
