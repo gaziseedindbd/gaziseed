@@ -82,6 +82,8 @@ BEGIN
     AND column_name NOT IN ('cost_price', 'search_vector', 'search_translit');
 
   EXECUTE 'REVOKE SELECT ON TABLE public.products FROM PUBLIC, anon, authenticated';
+  -- Table-level revokes do not remove separately granted column privileges.
+  EXECUTE 'REVOKE SELECT (cost_price, search_vector, search_translit) ON TABLE public.products FROM PUBLIC, anon, authenticated';
   EXECUTE format('GRANT SELECT (%s) ON TABLE public.products TO anon, authenticated', product_columns);
 
   SELECT string_agg(format('%I', column_name), ', ' ORDER BY ordinal_position)
@@ -92,7 +94,12 @@ BEGIN
     AND column_name NOT IN ('guest_phone', 'user_id');
 
   EXECUTE 'REVOKE SELECT ON TABLE public.reviews FROM PUBLIC, anon, authenticated';
+  -- Remove any old column-specific grants on PII even if a prior role had one.
+  EXECUTE 'REVOKE SELECT (guest_phone, user_id) ON TABLE public.reviews FROM PUBLIC, anon, authenticated';
   EXECUTE format('GRANT SELECT (%s) ON TABLE public.reviews TO anon, authenticated', review_columns);
+  -- These fields are only maintained through private product_costs now.
+  EXECUTE 'REVOKE UPDATE (cost_price) ON TABLE public.products FROM PUBLIC, anon, authenticated';
+  EXECUTE 'REVOKE INSERT (cost_price) ON TABLE public.products FROM PUBLIC, anon, authenticated';
 END
 $$;
 
