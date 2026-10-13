@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { detectExplicitMessengerCountry } from '../lib/ai/messenger-country';
 import { buildMessengerMonitoringSummary } from '../lib/ai/messenger-monitoring';
 import {
   addPendingMessengerOrderToCart,
@@ -752,4 +753,20 @@ test('Messenger support fallback uses the verified contact for the active countr
   const bangladesh = getMessengerProviderFailureHandoffReply('Bengali', 'BD');
   assert.match(bangladesh, /https:\/\/wa\.me\/8801811332293/);
   assert.match(bangladesh, /01811332293/);
+});
+
+
+test('detects explicit country in Bengali seed catalog requests', () => {
+  assert.equal(
+    detectExplicitMessengerCountry('বাংলাদেশে কী কী বীজ পাওয়া যাচ্ছে? পণ্যের নাম, বর্তমান দাম এবং স্টকসহ তালিকা দিন।'),
+    'BD',
+  );
+  assert.equal(
+    detectExplicitMessengerCountry('ভারতে কী কী বীজ পাওয়া যাচ্ছে? পণ্যের নাম, বর্তমান দাম এবং স্টকসহ তালিকা দিন।'),
+    'IN',
+  );
+  assert.equal(
+    detectExplicitMessengerCountry('বাংলাদেশে এবং ভারতে কী কী বীজ পাওয়া যাচ্ছে?'),
+    null,
+  );
 });
