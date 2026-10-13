@@ -29,6 +29,7 @@ test('verified website/product knowledge and published CMS lookup run before gen
   assert.ok(productLookup > 0, 'product database lookup must exist');
   assert.ok(cmsLookup > productLookup, 'published CMS lookup must follow the product knowledge lookup');
   assert.ok(aiCall > cmsLookup, 'AI call must occur after database knowledge lookups');
+  assert.equal(route.includes('isDeterministicAgricultureFaqRequest(normalizedActionText)'), false, 'a database miss must reach the AI fallback instead of a hard-coded agriculture answer');
   assert.match(route, /ai_call_skipped:\s*true/);
   assert.match(knowledgeTool, /\.from\('product_faqs'\)/);
   assert.match(knowledgeTool, /explicitlyMentionedProducts\.length === 1/);
