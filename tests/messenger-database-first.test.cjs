@@ -58,7 +58,7 @@ test('unmatched website questions go to branch support and never reach generativ
   assert.equal(route.includes('api.duckduckgo.com'), false, 'external web research must not be used as an answer source');
   assert.match(route, /generative_ai_disabled_for_unmatched_questions:\\s*true/);
   assert.match(route, /verified_answer_found:\\s*false/);
-  assert.match(route, /source_tables: \\['products', 'product_faqs', 'landing_faqs', 'pages', 'blogs'\\]/);
+  assert.ok(route.includes("source_tables: ['products', 'product_faqs', 'landing_faqs', 'pages', 'blogs']"));
 });
 
 test('database lookup errors never fall through to a speculative AI response', () => {
