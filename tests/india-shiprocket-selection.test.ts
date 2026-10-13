@@ -78,3 +78,27 @@ test("reject Bangladesh, failed/refunded payments and unauthorized full COD", ()
   assert.equal(resolveIndiaShippingMoney({ ...payment, payment_method: "cod",
     payment_status: "pending", payment_advance_amount: 0, payment_due_amount: 500 }, null), null);
 });
+
+import { buildIndiaShipmentPayload, findIndiaCourier } from "../lib/shiprocket/india-booking";
+test("courier quote normalization rejects missing total and selects valid lowest rate", () => {
+  const data = { data: { available_courier_companies: [
+    { courier_company_id: 1, courier_name: "A", freight_charge: 50, rate: 90, cod: 1, pickup_available: true },
+    { courier_company_id: 2, courier_name: "B", freight_charge: 50, rate: 70, cod: 1, pickup_available: true },
+    { courier_company_id: 3, courier_name: "C", freight_charge: 30, cod: 1, pickup_available: true },
+  ] } };
+  assert.equal(findIndiaCourier(data, {mode:"cod",total:500,collectOnDelivery:380,cashfreePaid:120})?.courier.courier_company_id, 2);
+  assert.equal(findIndiaCourier({data:{}}, {mode:"prepaid",total:500,collectOnDelivery:0,cashfreePaid:500}), null);
+});
+test("payload sends only remaining COD and refuses invalid destination", () => {
+  const options = {
+    orderNumber:"TEST", pickupLocation:"Primary",
+    parcel:{pickupPostcode:"783124",deliveryPostcode:"110001",weightKg:0.5,lengthCm:12,breadthCm:10,heightCm:5,codAmount:380,declaredValue:500},
+    money:{mode:"cod" as const,total:500,collectOnDelivery:380,cashfreePaid:120},
+    destination:{name:"Customer",phone:"9876543210",address:"Test Street",city:"Delhi",state:"Delhi",postcode:"110001"},
+    items:[{name:"Seeds",sku:"TEST-1",quantity:1,price:500}],
+    courierCompanyId:2, requestKey:"test-order-key-12345",
+  };
+  assert.equal(buildIndiaShipmentPayload(options).cod_amount,380);
+  assert.throws(()=>buildIndiaShipmentPayload({...options,destination:{...options.destination,postcode:"999999"}}));
+  assert.throws(()=>buildIndiaShipmentPayload({...options,parcel:{...options.parcel,codAmount:500}}));
+});
