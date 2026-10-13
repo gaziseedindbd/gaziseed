@@ -20,6 +20,16 @@ const BANGLISH_LATIN_HINTS = new Set([
   'korbo', 'korben', 'bolen', 'dekhan', 'dekhte', 'ropon', 'bopon',
 ]);
 
+// These tokens are strong Romanized-Bengali signals. In particular, "ki"
+// alone is ambiguous with Hindi, so a phrase like "ki ki product ase"
+// must be resolved using "ase" rather than counting each "ki" as Hindi.
+const DISTINCT_BANGLISH_HINTS = new Set([
+  'ase', 'ache', 'nai', 'naie', 'nei', 'ami', 'amake', 'amar', 'amader',
+  'apni', 'apnar', 'tomar', 'koto', 'koyta', 'dam', 'daam', 'dorkar',
+  'lagbe', 'pabo', 'paben', 'diben', 'kibhabe', 'kivabe', 'kothay',
+  'korbo', 'korben', 'bolen', 'dekhan', 'nibo', 'kinbo',
+]);
+
 const ENGLISH_LATIN_HINTS = new Set([
   'how', 'what', 'when', 'where', 'which', 'why', 'is', 'are', 'am',
   'the', 'this', 'that', 'these', 'those', 'price', 'grow', 'from',
@@ -42,6 +52,13 @@ export function detectMessengerReplyLanguage(text: string): MessengerReplyLangua
   // Native scripts are authoritative.
   if (/[\u0980-\u09FF]/.test(value)) return 'Bengali';
   if (/[\u0900-\u097F]/.test(value)) return 'Hindi';
+
+  // Latin-script Banglish often contains "ki" which is also a Hindi hint.
+  // Prefer distinctive Banglish vocabulary when present, e.g. "KI KI PRODUCT ASE".
+  const banglishTokens = value.toLocaleLowerCase().match(/[a-z]+/g) || [];
+  if (banglishTokens.some((token) => DISTINCT_BANGLISH_HINTS.has(token))) {
+    return 'Bengali';
+  }
 
   // Latin-script Hinglish/Roman-Hindi should remain Hindi even when the
   // message is short, e.g. "2 packet chahiye", "haan", or "mujhe chahiye".
@@ -78,5 +95,5 @@ export function getMessengerProviderFailureHandoffReply(
     `🌍 ${contact.countryName} customer support`,
     `📱 WhatsApp: ${contact.whatsappUrl}`,
     `📞 ${directCallLabel}: ${contact.directPhone}`,
-  ].join('\n');
+  ].join('\\n');
 }
