@@ -1704,9 +1704,30 @@ async function processMessengerEvent(event: MessengerEvent) {
       return;
     }
 
-    const livePrice =
+    const baseLivePrice =
       [liveProduct.offer_price, liveProduct.sale_price, liveProduct.price, liveProduct.regular_price]
         .find((value) => typeof value === 'number' && value > 0) ?? target.unit_price;
+
+    // Match the server's authoritative bulk-pricing rule: highest eligible min_quantity
+    // for this product/country, never a client-supplied price.
+    const { data: bulkTier, error: bulkTierError } = await sb
+      .from('bulk_pricing')
+      .select('min_quantity,unit_price')
+      .eq('product_id', target.product_id)
+      .is('variant_id', null)
+      .eq('country_code', activeCountry)
+      .eq('is_active', true)
+      .lte('min_quantity', quantity)
+      .gt('unit_price', 0)
+      .order('min_quantity', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (bulkTierError) throw bulkTierError;
+    const livePrice =
+      typeof bulkTier?.unit_price === 'number' && bulkTier.unit_price > 0
+        ? bulkTier.unit_price
+        : baseLivePrice;
 
     const nextItems = messengerCartItems.map((item) =>
       item.product_id === target.product_id
