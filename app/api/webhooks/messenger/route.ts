@@ -2857,6 +2857,31 @@ async function processMessengerEvent(event: MessengerEvent) {
   }
   }
 
+  // Strict website-only mode: after deterministic product/order/payment/delivery handlers
+  // and verified product/CMS lookups have had their chance, never generate an answer.
+  // Anything without a verified database answer is outside the supported knowledge base
+  // (or could not be matched confidently), so hand off to the branch-specific support team.
+  const unsupportedQuestionReply = getMessengerHumanSupportContactReply(
+    activeCountry,
+    detectMessengerReplyLanguage(normalizedActionText),
+    'unverified',
+  );
+  await saveMessage(sb, conversation.id, {
+    role: 'assistant',
+    content: unsupportedQuestionReply,
+    actionStatus: 'website_knowledge_unavailable',
+    countryCode: activeCountry,
+    sourceContext: {
+      database_first: true,
+      verified_answer_found: false,
+      ai_call_skipped: true,
+      generative_ai_disabled_for_unmatched_questions: true,
+      source_tables: ['products', 'product_faqs', 'landing_faqs', 'pages', 'blogs'],
+    },
+  });
+  await sendMessengerText(senderId, unsupportedQuestionReply);
+  return;
+
   if (
     !verifiedWebsiteKnowledgeContext &&
     isDeterministicAgricultureFaqRequest(normalizedActionText)
