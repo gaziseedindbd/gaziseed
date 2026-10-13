@@ -84,3 +84,8 @@ production settings change, or enabled automation** in this PR.
 
 - `lib/shiprocket/india-prepare.ts` now composes payment policy, cheapest eligible courier, and validated booking payload as a pure testable function; it deliberately performs no external side effects.
 - Booking endpoint and AWB persistence still require integrating the existing independent Cashfree verifier with authenticated server workflows, authoritative structured delivery address and packing measurements, secure credentials, and safe one-shot external order creation.
+
+## New payment preflight and provider persistence (draft)
+- `india-shipping-payment-preflight` validates India-admin JWT, India-only order, exactly one completed India Cashfree intent, Cashfree PAID amount and refund state. It is **read-only** and not deployed. Full-COD remains intentionally blocked.
+- `20261014033000_india_shipping_external_persistence.sql` adds one-way service-role-only state transitions for external provider order/shipment IDs and AWB; re-booking, overwriting AWB, or jumping straight to AWB is refused.
+- **Incomplete:** Provider calls are not wired into an authenticated booking worker, preflight evidence must not be trusted from a client or replayed without revalidation, structured source-of-truth destination/packing data is missing, and actual Shiprocket external order/AWB testing is blocked by account/secret readiness. No live order or pickup has been created.
