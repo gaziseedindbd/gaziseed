@@ -68,3 +68,9 @@ production settings change, or enabled automation** in this PR.
 - **Not wired to the admin interface or automatic order flow.** Do not call create-order directly until server-side Cashfree verification, shipment reservation/idempotency, address, measured packaging and partial-COD money handling are complete and tested.
 - Secret values are not present in this PR; no API user login or live booking test has occurred.
 - Webhooks, pickup and courier endpoints are not enabled in production.
+
+## Duplicate-shipment reservation (draft)
+- `20261014032000_india_shipping_creation_reservation.sql` enforces one reservation per India order under a row lock, and a single transition from `reserved` to `submitting`. A repeated attempt gets no reservation/claim.
+- If the provider call times out after `submitting`, do **not** reset the row or retry automatically. Reconcile external order by the immutable request key and account dashboard first; mark `reconcile_required` if outcome uncertain.
+- This is not authorization to book: orchestrator must perform server-side Cashfree order/amount/refund verification for prepaid and partial-COD, validate full-COD authorization and COD remainder, verify pickup and delivery PINs/weights, then reserve and claim.
+- Migration is in a draft PR and not yet applied. No live Shiprocket create-order/AWB calls have been made.
