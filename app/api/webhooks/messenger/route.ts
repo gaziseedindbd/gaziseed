@@ -2501,7 +2501,7 @@ async function processMessengerEvent(event: MessengerEvent) {
   // Prefer verified website/catalog knowledge before generic agriculture AI.
   // A fresh "other product" browse request must go directly to the catalog so
   // stale last_messenger_product context cannot answer for the previous item.
-    if (!freshProductBrowseIntent) {
+  if (!freshProductBrowseIntent) {
     try {
       const knowledgeResult = await getMessengerWebsiteKnowledgeAnswer({
       supabase: sb,
@@ -2676,7 +2676,7 @@ async function processMessengerEvent(event: MessengerEvent) {
     ? await listMessengerProducts(sb, activeCountry, 12).then(serializeMessengerProducts)
     : isProductCatalogRequest(normalizedActionText)
       ? await getProductContext(sb, activeCountry, normalizedActionText)
-      : await getProductContext(sb, activeCountry, normalizedActionText);
+      : [];
 
 
   if (
