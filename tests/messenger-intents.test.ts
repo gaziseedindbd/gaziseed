@@ -72,7 +72,6 @@ import {
   normalizeMessengerPhone,
 } from '../lib/ai/messenger-phone';
 import { shouldIncludeMessengerAIHistoryMessage } from '../lib/ai/messenger-history';
-import { detectExplicitMessengerCountry } from '../lib/ai/messenger-country';
 import {
   detectMessengerReplyLanguage,
   getMessengerProviderFailureHandoffReply,
