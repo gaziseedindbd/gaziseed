@@ -2038,7 +2038,10 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   // A new product/catalog request starts a new intent. Never let an older
   // quantity/name/address order step hijack a fresh product question.
-  const freshProductBrowseIntent = isOtherProductRequest(normalizedActionText);
+  // Catalog/list requests must bypass website/CMS knowledge lookups: those lookups can fail and prematurely return a support fallback before the live products query runs.
+  const freshProductBrowseIntent =
+    isOtherProductRequest(normalizedActionText) ||
+    isProductListRequest(normalizedActionText);
   const startsNewProductIntent = isProductCatalogRequest(normalizedActionText);
   const pendingOrderBeforeInterrupt = parsePendingMessengerOrder(
     conversation.metadata?.pending_messenger_order,
