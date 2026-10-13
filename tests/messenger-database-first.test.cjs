@@ -51,6 +51,18 @@ test('verified website/product knowledge and published CMS lookup run before gen
   assert.match(route, /ai_call_skipped: true/);
 });
 
+test('unmatched website questions go to branch support and never reach generative AI', () => {
+  const cmsLookup = route.indexOf('getMessengerPublishedContentAnswer({');
+  const supportFallback = route.indexOf("actionStatus: 'website_knowledge_unavailable'");
+  const aiCall = route.indexOf('const result = await messengerAIChat({');
+
+  assert.ok(supportFallback > cmsLookup, 'database/CMS lookups must run before the unmatched-question handoff');
+  assert.ok(supportFallback < aiCall, 'unmatched questions must be handed off before the AI call');
+  assert.match(route, /generative_ai_disabled_for_unmatched_questions:\\s*true/);
+  assert.match(route, /verified_answer_found:\\s*false/);
+  assert.match(route, /source_tables: \\['products', 'product_faqs', 'landing_faqs', 'pages', 'blogs'\\]/);
+});
+
 test('database lookup errors never fall through to a speculative AI response', () => {
   assert.match(route, /database_lookup_failed:\s*true/);
   assert.match(route, /if \(cmsKnowledge\.lookupFailed && !cmsKnowledge\.handled\)/);
