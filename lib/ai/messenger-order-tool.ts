@@ -722,19 +722,24 @@ export async function handleMessengerOrderFlow(args: {
         };
       }
 
-      if (quantity > pending.stock) {
+      const existingItem = cartItems.find((item) => item.product_id === pending.product_id);
+      const combinedQuantity = Math.min(99, (existingItem?.quantity ?? 0) + quantity);
+
+      if (combinedQuantity > pending.stock) {
         return {
           handled: true,
           reply:
             replyLanguage === 'Hindi'
-              ? `माफ़ कीजिए, अभी ${pending.stock} packet ही stock में हैं। कितने लेने हैं?`
+              ? `माफ़ कीजिए, अभी कुल ${pending.stock} packet ही stock में हैं। आपके cart में पहले से ${existingItem?.quantity ?? 0} packet हैं। कृपया कम quantity बताएं।`
               : replyLanguage === 'English'
-                ? `Sorry, only ${pending.stock} packets are currently in stock. How many would you like?`
-                : `দুঃখিত, বর্তমানে ${pending.stock}টি প্যাকেটের বেশি স্টক নেই। কতটি নিতে চান?`,
+                ? `Sorry, only ${pending.stock} packets are currently in stock. Your cart already has ${existingItem?.quantity ?? 0}. Please choose a lower quantity.`
+                : `দুঃখিত, বর্তমানে মোট ${pending.stock}টি প্যাকেট স্টকে আছে। আপনার কার্টে আগে থেকেই ${existingItem?.quantity ?? 0}টি আছে। অনুগ্রহ করে কম পরিমাণ দিন।`,
           pending,
         };
       }
 
+      // Bulk tiers apply to the final quantity for this product in the cart,
+      // because addPendingMessengerOrderToCart adds to an existing line item.
       const { data: bulkTier, error: bulkTierError } = await args.supabase
         .from('bulk_pricing')
         .select('min_quantity,unit_price')
@@ -742,7 +747,7 @@ export async function handleMessengerOrderFlow(args: {
         .is('variant_id', null)
         .eq('country_code', args.country)
         .eq('is_active', true)
-        .lte('min_quantity', quantity)
+        .lte('min_quantity', combinedQuantity)
         .gt('unit_price', 0)
         .order('min_quantity', { ascending: false })
         .limit(1)
