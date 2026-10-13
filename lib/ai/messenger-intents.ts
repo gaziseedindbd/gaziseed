@@ -89,12 +89,24 @@ export function isProductAvailabilityQuestion(text: string): boolean {
   );
 }
 
+function isEnglishSeedCatalogPhrase(normalized: string): boolean {
+  // Cover natural English catalog requests, not only the exact phrase
+  // "What seeds are available?". Keep instructional questions such as
+  // "How do I plant seeds?" out of catalog routing.
+  return /\b(?:what|which|any|all)\s+(?:(?:kind|type|variety|of)\s+)*(?:available\s+)?seeds?\b/i.test(normalized) ||
+    /\b(?:available\s+)?seeds?\s+(?:available|in stock|do you have|can i buy)\b/i.test(normalized) ||
+    /\b(?:show|list|display|browse)\b.{0,40}\b(?:all\s+)?(?:available\s+)?seeds?\b/i.test(normalized) ||
+    /\bdo you have\b.{0,40}\bseeds?\b/i.test(normalized) ||
+    /\bwhat do you have\b.{0,30}\bseeds?\b/i.test(normalized);
+}
+
 export function isProductCatalogRequest(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
 
   return (
     isOtherProductRequest(normalized) ||
     isProductAvailabilityQuestion(normalized) ||
+    isEnglishSeedCatalogPhrase(normalized) ||
     /(products?|product list|catalog|what seeds|which seeds|available seeds|seeds? available|seeds? in stock|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|বীজ.*(?:তালিকা|লিস্ট|পাওয়া যাচ্ছে|পাওয়া যাচ্ছে|উপলব্ধ)|(?:তালিকা|লিস্ট).*(?:বীজ|পণ্য|প্রোডাক্ট)|পণ্যের নাম.*(?:তালিকা|দিন|দেখান)|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে|দাম|price|স্টক|stock|available|উপলব্ধ|कीमत|मूल्य|दाम|स्टॉक|उपलब्ध|उत्पाद|प्रोडक्ट)/i.test(
       normalized,
     )
@@ -106,6 +118,7 @@ export function isProductListRequest(text: string): boolean {
   return (
     isOtherProductRequest(normalized) ||
     isProductAvailabilityQuestion(normalized) ||
+    isEnglishSeedCatalogPhrase(normalized) ||
     /(products?|product list|catalog|what seeds|which seeds|available seeds|seeds? available|seeds? in stock|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|বীজ.*(?:তালিকা|লিস্ট|পাওয়া যাচ্ছে|পাওয়া যাচ্ছে|উপলব্ধ)|(?:তালিকা|লিস্ট).*(?:বীজ|পণ্য|প্রোডাক্ট)|পণ্যের নাম.*(?:তালিকা|দিন|দেখান)|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে|उत्पादों?\s*(?:की\s*)?(?:सूची|लिस्ट)|प्रोडक्ट्स?\s*(?:की\s*)?(?:सूची|लिस्ट)|आपके पास.*(?:उत्पाद|प्रोडक्ट|बीज|বীজ)|कौन\s*से?\s*(?:बीज|বীজ))/i.test(
       normalized,
     )
