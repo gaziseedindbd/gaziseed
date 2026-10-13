@@ -56,8 +56,8 @@ test('unmatched website questions go to branch support and never reach generativ
   assert.ok(supportFallback > cmsLookup, 'database/CMS lookups must run before the unmatched-question handoff');
   assert.equal(route.includes('messengerAIChat({'), false, 'no generative AI call may remain in the Messenger webhook');
   assert.equal(route.includes('api.duckduckgo.com'), false, 'external web research must not be used as an answer source');
-  assert.match(route, /generative_ai_disabled_for_unmatched_questions:\\s*true/);
-  assert.match(route, /verified_answer_found:\\s*false/);
+  assert.ok(route.includes('generative_ai_disabled_for_unmatched_questions: true'));
+  assert.ok(route.includes('verified_answer_found: false'));
   assert.ok(route.includes("source_tables: ['products', 'product_faqs', 'landing_faqs', 'pages', 'blogs']"));
 });
 
