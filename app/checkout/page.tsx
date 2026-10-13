@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getCart, getValidatedCart, isCartAvailable } from '@/lib/cart';
+import { addToCart, getCart, getValidatedCart, isCartAvailable } from '@/lib/cart';
+import type { Product } from '@/lib/supabase/types';
 import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/data';
 import type { CustomerAddress } from '@/lib/supabase/types';
@@ -84,6 +85,10 @@ export default function CheckoutPage() {
   const [deliveryCharge, setDeliveryCharge] = useState(0);
   const [deliveryQuoteReady, setDeliveryQuoteReady] = useState(false);
   const [deliveryQuoteRetry, setDeliveryQuoteRetry] = useState(0);
+  const [showExtraProducts, setShowExtraProducts] = useState(false);
+  const [extraProducts, setExtraProducts] = useState<Product[]>([]);
+  const [extraProductLoading, setExtraProductLoading] = useState(false);
+  const [extraProductError, setExtraProductError] = useState(false);
 
   useEffect(() => {
     const visitorCountry = getVisitorCountry();
@@ -252,9 +257,31 @@ export default function CheckoutPage() {
     }
   };
 
-  const originalTotal = cart.reduce((sum, item) => sum + (item.regular_price || item.unit_price) * item.quantity, 0);
+  useEffect(() => {
+    if (country !== 'IN' || !showExtraProducts) return;
+    let cancelled = false;
+    const load = async () => {
+      setExtraProductLoading(true);
+      setExtraProductError(false);
+      const { data, error: loadError } = await supabase.from('products')
+        .select('*').eq('country_code', 'IN').eq('is_active', true)
+        .eq('is_ads_only', false).gt('stock', 0)
+        .order('is_featured', { ascending: false }).limit(24);
+      if (!cancelled) {
+        setExtraProducts((data || []) as Product[]);
+        setExtraProductError(Boolean(loadError));
+        setExtraProductLoading(false);
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [country, showExtraProducts]);
+
+    const originalTotal = cart.reduce((sum, item) => sum + (item.regular_price || item.unit_price) * item.quantity, 0);
   const subtotal = cart.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
   const savingsTotal = Math.max(0, originalTotal - subtotal);
+  const remainingForFreeDelivery = Math.max(0, 500 - subtotal);
+  const freeDeliveryProgress = Math.min(100, Math.max(0, subtotal / 500 * 100));
   const discountPercent = originalTotal > 0 ? Math.round((savingsTotal / originalTotal) * 100) : 0;
   useEffect(() => {
     let cancelled = false;
@@ -909,6 +936,7 @@ export default function CheckoutPage() {
                 )}
 
                 <div className="max-h-72 space-y-3 overflow-y-auto border-b border-border/60 p-5 sm:p-6">
+                  {country === 'IN' && <section className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 p-4" aria-label={t('ফ্রি ডেলিভারি অগ্রগতি', 'Free delivery progress', 'मुफ़्त डिलीवरी की प्रगति')}><div className="flex items-center gap-2"><Truck className="h-5 w-5 shrink-0 text-primary" /><p className="text-sm font-bold" role="status" aria-live="polite">{remainingForFreeDelivery > 0 ? t(`আর ₹${remainingForFreeDelivery.toLocaleString('en-IN')} টাকার পণ্য যোগ করুন, ফ্রি ডেলিভারি পান!`, `Add ₹${remainingForFreeDelivery.toLocaleString('en-IN')} more for FREE delivery!`, `मुफ़्त डिलीवरी के लिए ₹${remainingForFreeDelivery.toLocaleString('en-IN')} के और उत्पाद जोड़ें!`) : t('ফ্রি ডেলিভারি আনলক হয়েছে!', 'FREE delivery unlocked!', 'मुफ़्त डिलीवरी अनलॉक हो गई है!')}</p></div><div className="mt-3 h-2.5 overflow-hidden rounded-full bg-primary/10" role="progressbar" aria-valuemin={0} aria-valuemax={500} aria-valuenow={Math.min(500, subtotal)}><div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{width: `${freeDeliveryProgress}%`}} /></div><button type="button" className="mt-3 rounded-xl border border-primary/30 px-4 py-2 text-sm font-bold text-primary hover:bg-primary/10" onClick={() => setShowExtraProducts((current) => !current)}>{showExtraProducts ? t('পণ্য তালিকা বন্ধ করুন', 'Hide products', 'उत्पाद छिपाएँ') : t('+ আরও পণ্য যোগ করুন', '+ Add more products', '+ और उत्पाद जोड़ें')}</button>{showExtraProducts && <div className="mt-4 space-y-3">{extraProductLoading && <p className="text-sm">{t('পণ্য লোড হচ্ছে...', 'Loading products...', 'उत्पाद लोड हो रहे हैं...')}</p>}{extraProductError && <p role="alert" className="text-sm text-destructive">{t('পণ্য লোড করা যাচ্ছে না।', 'Unable to load products.', 'उत्पाद लोड नहीं हो सके।')}</p>}<div className="grid gap-2 sm:grid-cols-2">{extraProducts.filter((product) => !cart.some((item) => item.product_id === product.id)).map((product) => <div key={product.id} className="flex items-center gap-2 rounded-xl border bg-background p-2">{product.image && <img src={product.image} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />}<div className="min-w-0 flex-1"><p className="line-clamp-2 text-xs font-semibold">{t(product.name_bn, product.name_en)}</p><p className="text-xs text-primary">{formatPrice(product.sale_price && product.sale_price > 0 && product.sale_price < product.regular_price ? product.sale_price : product.regular_price)}</p></div><button type="button" className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground" onClick={() => { addToCart(product, Math.max(1, product.min_order_qty || 1)); setAppliedCoupon(null); setCouponCode(''); setCouponError(''); }}>{t('+ যোগ', '+ Add', '+ जोड़ें')}</button></div>)}</div><Link href="/all-products" className="inline-block text-sm font-bold text-primary underline">{t('সব পণ্য দেখুন', 'Browse all products', 'सभी उत्पाद देखें')}</Link></div>}</section>}
                   {cart.map((item) => (
                     <div key={`${item.product_id}-${item.variant_id || ''}-${item.bundle_id || ''}`} className="flex items-center gap-3">
                       <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-secondary/50">
