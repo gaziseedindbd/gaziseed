@@ -1131,7 +1131,10 @@ export async function handleMessengerOrderFlow(args: {
           const confirmedTotal = payment.finalAmount > 0
             ? (replyLanguage === 'Hindi' ? 'Grand total' : replyLanguage === 'English' ? 'Grand total' : 'সর্বমোট') + `: ${currency}${payment.finalAmount.toFixed(0)}`
             : '';
-          const authoritativeSummary = [cartSummary, confirmedSubtotal, `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}`, confirmedTotal].filter(Boolean).join('\n');
+          const pricedCartSummary = payment.subtotal > 0
+            ? cartSummary.replace(/(?:Estimated subtotal|আনুমানিক সাবটোটাল):.*$/m, (replyLanguage === 'Hindi' ? 'Subtotal' : replyLanguage === 'English' ? 'Subtotal' : 'সাবটোটাল') + `: ${currency}${payment.subtotal.toFixed(0)}`)
+            : cartSummary;
+          const authoritativeSummary = [pricedCartSummary, confirmedTotal, `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}`].filter(Boolean).join('\\n');
           return {
             handled: true,
             reply:
