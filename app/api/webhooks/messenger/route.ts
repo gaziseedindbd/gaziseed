@@ -610,6 +610,8 @@ async function sendMessengerText(
     imageUrl?: string;
     productId: string;
     productUrl?: string;
+    viewProductTitle?: string;
+    orderNowTitle?: string;
   }>,
 ) {
   if (!META_PAGE_ACCESS_TOKEN) {
@@ -710,11 +712,11 @@ async function sendMessengerText(
                   image_url: card.imageUrl,
                   buttons: [
                     ...(card.productUrl
-                      ? [{ type: 'web_url', title: 'View Product', url: card.productUrl }]
+                      ? [{ type: 'web_url', title: (card.viewProductTitle || 'View Product').slice(0, 20), url: card.productUrl }]
                       : []),
                     {
                       type: 'postback',
-                      title: 'Order Now',
+                      title: (card.orderNowTitle || 'Order Now').slice(0, 20),
                       payload: `PRODUCT_SELECT:${card.productId}`,
                     },
                   ].slice(0, 3),
@@ -2913,28 +2915,52 @@ async function processMessengerEvent(event: MessengerEvent) {
       },
     });
     const messengerCountry: CountryCode = activeCountry;
+    const catalogLanguage = detectMessengerReplyLanguage(normalizedActionText);
     const productCards = (products as Array<Record<string, unknown>>)
       .filter(
         (product) =>
           isTrustedMessengerProductMatch(product) &&
+          typeof product.stock === 'number' &&
+          product.stock > 0 &&
           typeof product.image === 'string' &&
-          product.image.trim(),
+          /^https?:\/\//i.test(product.image.trim()),
       )
-      .map((product) => ({
-        title: formatMessengerProductName(product),
-        subtitle:
-          (typeof product.effective_price === 'number'
-            ? formatMessengerCurrency(messengerCountry) + product.effective_price
-            : 'দাম জানা নেই') +
-          ' • Stock: ' +
-          (typeof product.stock === 'number' ? product.stock : 0),
-        imageUrl: String(product.image),
-        productId: String(product.id),
-        productUrl:
-          typeof product.slug === 'string' && product.slug
-            ? 'https://www.gaziseed.com/product/' + encodeURIComponent(product.slug)
-            : undefined,
-      }));
+      .map((product) => {
+        const cardName = catalogLanguage === 'English'
+          ? ((typeof product.name_en === 'string' && product.name_en) || formatMessengerProductName(product))
+          : catalogLanguage === 'Hindi'
+            ? ((typeof product.name_en === 'string' && product.name_en) || formatMessengerProductName(product))
+            : formatMessengerProductName(product);
+        const priceLabel = typeof product.effective_price === 'number'
+          ? formatMessengerCurrency(messengerCountry) + product.effective_price
+          : catalogLanguage === 'English'
+            ? 'Price unavailable'
+            : catalogLanguage === 'Hindi'
+              ? 'कीमत उपलब्ध नहीं'
+              : 'দাম জানা নেই';
+        const stockLabel = catalogLanguage === 'English'
+          ? 'Stock: '
+          : catalogLanguage === 'Hindi'
+            ? 'स्टॉक: '
+            : 'স্টক: ';
+        const packetLabel = catalogLanguage === 'English'
+          ? (product.stock === 1 ? ' packet' : ' packets')
+          : catalogLanguage === 'Hindi'
+            ? ' पैकेट'
+            : ' প্যাকেট';
+        return {
+          title: cardName,
+          subtitle: priceLabel + ' • ' + stockLabel + String(product.stock) + packetLabel,
+          imageUrl: String(product.image).trim(),
+          productId: String(product.id),
+          viewProductTitle: catalogLanguage === 'English' ? 'View Product' : catalogLanguage === 'Hindi' ? 'उत्पाद देखें' : 'পণ্য দেখুন',
+          orderNowTitle: catalogLanguage === 'English' ? 'Order Now' : catalogLanguage === 'Hindi' ? 'ऑर्डर करें' : 'অর্ডার করুন',
+          productUrl:
+            typeof product.slug === 'string' && product.slug
+              ? 'https://www.gaziseed.com/product/' + encodeURIComponent(product.slug)
+              : undefined,
+        };
+      });
 
     await sendMessengerText(senderId, catalogReply, productQuickReplies, undefined, productCards);
     return;
