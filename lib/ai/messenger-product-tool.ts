@@ -250,8 +250,19 @@ export async function listMessengerProducts(
   if (error) throw error;
 
   const rows = data as unknown as MessengerProduct[] | null;
+  // A "what is available?" catalog should show purchasable stock only.
+  // Keep obvious internal/test fixtures out of customer-facing listings without
+  // deleting or modifying any database records.
+  const customerFacingRows = (rows || []).filter((row) => {
+    if (typeof row.stock !== 'number' || row.stock <= 0) return false;
+    const identity = [row.name_bn, row.name_en, row.slug]
+      .filter((value): value is string => typeof value === 'string')
+      .join(' ')
+      .toLocaleLowerCase();
+    return !/(^|[^a-z])(test|dummy|demo)([^a-z]|$)/i.test(identity);
+  });
   return sortMessengerProducts(
-    (rows || []).map((row) => ({
+    customerFacingRows.map((row) => ({
       ...row,
       search_match_type: 'exact',
       search_match_score: 0,
