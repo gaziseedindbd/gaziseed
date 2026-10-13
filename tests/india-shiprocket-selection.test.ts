@@ -102,3 +102,9 @@ test("payload sends only remaining COD and refuses invalid destination", () => {
   assert.throws(()=>buildIndiaShipmentPayload({...options,destination:{...options.destination,postcode:"999999"}}));
   assert.throws(()=>buildIndiaShipmentPayload({...options,parcel:{...options.parcel,codAmount:500}}));
 });
+
+test("legacy prepaid with zero advance field still requires gateway paid final", () => {
+  const zero = { ...payment, payment_advance_amount: 0 };
+  assert.equal(resolveIndiaShippingMoney(zero, evidence)?.collectOnDelivery, 0);
+  assert.equal(resolveIndiaShippingMoney(zero, {...evidence, paidAmount:120}), null);
+});
