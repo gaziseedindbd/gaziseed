@@ -1,0 +1,23 @@
+name: India Shipping Safety
+on:
+  pull_request:
+    paths:
+      - 'lib/shiprocket/**'
+      - 'tests/india-shiprocket-selection.test.ts'
+      - 'tsconfig.india-shipping-tests.json'
+      - 'package.json'
+      - '.github/workflows/india-shipping-safety.yml'
+  workflow_dispatch:
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run test:india-shipping
