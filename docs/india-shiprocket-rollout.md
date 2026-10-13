@@ -74,3 +74,10 @@ production settings change, or enabled automation** in this PR.
 - If the provider call times out after `submitting`, do **not** reset the row or retry automatically. Reconcile external order by the immutable request key and account dashboard first; mark `reconcile_required` if outcome uncertain.
 - This is not authorization to book: orchestrator must perform server-side Cashfree order/amount/refund verification for prepaid and partial-COD, validate full-COD authorization and COD remainder, verify pickup and delivery PINs/weights, then reserve and claim.
 - Migration is in a draft PR and not yet applied. No live Shiprocket create-order/AWB calls have been made.
+
+## Payment, courier and booking payload foundation
+- `lib/shiprocket/india-payment-policy.ts` enforces a prepaid zero-COD rule and exact Cashfree-paid partial COD remainder; unpaid full COD is intentionally blocked pending a separate authorization policy.
+- `lib/shiprocket/india-booking.ts` normalizes provider serviceability quotes and constructs validated India-only payloads with exact COD due.
+- These helpers are **not** an automatic shipment booking endpoint. Their gateway evidence must only be produced by server-side Cashfree verification and refund checking; never accept verification evidence from a client request.
+- Existing India order rows have a freeform delivery_address without reliable structured ZIP/state/city and no verified package dimensions. Booking must fail closed until authoritative destination, pickup, package weight and line items are available.
+- Live Shiprocket creation/AWB test still needs approved KYC, funded wallet, API credentials stored as server secrets, a safe disposable test order and explicit authorization. No credentials or live API bookings have been performed in this PR.
