@@ -79,6 +79,16 @@ import {
 
 
 
+test('detects Messenger reply language across Bengali, Banglish, English, and Hindi', () => {
+  assert.equal(detectMessengerReplyLanguage('আপনাদের কী কী বীজ আছে?'), 'Bengali');
+  assert.equal(detectMessengerReplyLanguage('KI KI PRODUCT ASE'), 'Bengali');
+  assert.equal(detectMessengerReplyLanguage('ami amar order er status jante chai'), 'Bengali');
+  assert.equal(detectMessengerReplyLanguage('What products do you have?'), 'English');
+  assert.equal(detectMessengerReplyLanguage('Please show available seeds'), 'English');
+  assert.equal(detectMessengerReplyLanguage('आपके पास कौन से बीज उपलब्ध हैं?'), 'Hindi');
+  assert.equal(detectMessengerReplyLanguage('mujhe rose seed chahiye'), 'Hindi');
+});
+
 test('localizes all-provider-failure handoff replies without touching normal AI routing', () => {
   assert.match(getMessengerProviderFailureHandoffReply('English'), /automated assistance/i);
   assert.match(getMessengerProviderFailureHandoffReply('Hindi'), /स्वचालित सहायता/);
