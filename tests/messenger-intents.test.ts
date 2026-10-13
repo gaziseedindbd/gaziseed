@@ -169,7 +169,20 @@ test('recognizes catalog and list requests', () => {
   assert.equal(isProductCatalogRequest('What seeds are available?'), true);
   assert.equal(isProductListRequest('What seeds are available?'), true);
   assert.equal(isProductAvailabilityQuestion('What seeds are available?'), true);
+  for (const phrase of [
+    'What seeds do you have?',
+    'Show me all available seeds',
+    'List all available seeds',
+    'Which seeds can I buy?',
+    'Do you have seeds available?',
+    'Please show your seed catalog',
+    'What do you have in seeds?',
+  ]) {
+    assert.equal(isProductCatalogRequest(phrase), true, phrase + ' should be catalog intent');
+    assert.equal(isProductListRequest(phrase), true, phrase + ' should be list intent');
+  }
   assert.equal(isProductListRequest('product list'), true);
+  assert.equal(isProductListRequest('How do I plant seeds?'), false);
   assert.equal(
     isProductListRequest('বাংলাদেশে কী কী বীজ পাওয়া যাচ্ছে? পণ্যের নাম, বর্তমান দাম এবং স্টকসহ তালিকা দিন।'),
     true,
