@@ -61,3 +61,10 @@ production settings change, or enabled automation** in this PR.
 - It returns false on repeat claims and does not initiate a pickup request.
 - **Not a complete approval workflow**: a new authenticated India-admin endpoint must validate actor, record explicit approval and handle external pickup retries/reconciliation. Never allow clients to set approval columns.
 - Migration is not applied and must be reviewed with Supabase security/permissions before deployment.
+
+## Next integration increment (14 October 2026)
+- `lib/shiprocket/india-client.ts`: isolated server-side authentication, PIN-to-PIN serviceability lookup, order submission and explicit courier AWB request; does **not** expose pickup booking.
+- `supabase/functions/india-delivery-approval/index.ts`: validates logged-in India admin and packed India order, records first explicit approval only when shipment/AWB exists; does not book pickup.
+- **Not wired to the admin interface or automatic order flow.** Do not call create-order directly until server-side Cashfree verification, shipment reservation/idempotency, address, measured packaging and partial-COD money handling are complete and tested.
+- Secret values are not present in this PR; no API user login or live booking test has occurred.
+- Webhooks, pickup and courier endpoints are not enabled in production.
