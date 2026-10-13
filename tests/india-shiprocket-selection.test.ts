@@ -108,3 +108,29 @@ test("legacy prepaid with zero advance field still requires gateway paid final",
   assert.equal(resolveIndiaShippingMoney(zero, evidence)?.collectOnDelivery, 0);
   assert.equal(resolveIndiaShippingMoney(zero, {...evidence, paidAmount:120}), null);
 });
+
+import { prepareIndiaShipment } from "../lib/shiprocket/india-prepare";
+test("end-to-end pure preparation refuses unverified and selects cheapest eligible India courier", () => {
+  const base = {
+    order: { ...payment, payment_method: "cod", payment_status:"partially_paid",
+      payment_advance_amount:120, payment_due_amount:380 },
+    verifiedGateway: {...evidence, paidAmount:120},
+    sourceOrderNumber:"IND-EXAMPLE", immutableRequestKey:"india-example-order-12345",
+    pickupLocation:"Primary",
+    parcel:{pickupPostcode:"783124",deliveryPostcode:"110001",weightKg:0.5,
+      lengthCm:12,breadthCm:10,heightCm:5,codAmount:380,declaredValue:500},
+    destination:{name:"Customer",phone:"9876543210",address:"Test Street",
+      city:"Delhi",state:"Delhi",postcode:"110001"},
+    items:[{name:"Seeds",sku:"TEST-1",quantity:1,price:500}],
+    serviceabilityResponse:{data:{available_courier_companies:[
+      {courier_company_id:7,courier_name:"Expensive",rate:120,cod:1,pickup_available:1},
+      {courier_company_id:9,courier_name:"Cheaper",rate:65,cod:1,pickup_available:1},
+    ]}},
+  };
+  const ready = prepareIndiaShipment(base);
+  assert.equal(ready?.courierCompanyId,9);
+  assert.equal(ready?.bookingPayload.cod_amount,380);
+  assert.equal(prepareIndiaShipment({...base,verifiedGateway:null}),null);
+  assert.equal(prepareIndiaShipment({...base,order:{...base.order,country_code:"BD"}}),null);
+  assert.equal(prepareIndiaShipment({...base,parcel:{...base.parcel,codAmount:500}}),null);
+});
