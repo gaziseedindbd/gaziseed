@@ -24,7 +24,7 @@ export type ShippingMoney = {
   collectOnDelivery: number;
   cashfreePaid: number;
 };
-const paise = (n: number) => Number.isFinite(n) && n >= 0 && Math.round(n * 100) === n * 100;
+const paise = (n: number) => Number.isFinite(n) && n >= 0 && Math.abs(Math.round(n * 100) - n * 100) < 0.000001;
 const same = (a: number, b: number) => Math.abs(a - b) < 0.005;
 export function resolveIndiaShippingMoney(
   order: IndiaPaymentOrder,
