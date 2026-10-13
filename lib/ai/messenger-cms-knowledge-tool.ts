@@ -254,6 +254,26 @@ function selectUnambiguousCandidate(
   return best;
 }
 
+/**
+ * Identifies website-specific policy questions that must not be answered from
+ * general model knowledge when no verified, country-scoped CMS answer exists.
+ * Transaction/order status questions stay with their dedicated handlers.
+ */
+export function isMessengerWebsitePolicyQuestion(text: string): boolean {
+  const normalized = normalizeText(text);
+  if (normalized.length < 3) return false;
+
+  // Never intercept live order/payment status queries; those require their
+  // dedicated verified transaction handlers.
+  if (
+    /(?:\b(order|payment|transaction|refund)\s*(?:status|tracking|track)\b|(?:আমার অর্ডার|অর্ডারের অবস্থা|পেমেন্ট স্ট্যাটাস|ট্রানজেকশন স্ট্যাটাস|রিফান্ড স্ট্যাটাস)|(?:ऑर्डर स्टेटस|भुगतान की स्थिति|रिफंड स्टेटस))/i.test(normalized)
+  ) {
+    return false;
+  }
+
+  return /(?:\b(?:return policy|refund policy|refund|return|returns|exchange policy|exchange|replacement|cancellation policy|cancel(?:lation)?|warranty|guarantee|privacy policy|privacy|terms and conditions|terms of service|payment policy|payment method|shipping policy|delivery policy|cash on delivery policy|cod policy|company policy|store policy|policies)\b|(?:ফেরত|রিটার্ন|রিফান্ড|টাকা ফেরত|পণ্য বদল|বদলানো|বাতিল|রদ|ওয়ারেন্টি|ওয়্যারেন্টি|গোপনীয়তা|গোপনীয়তা|শর্তাবলি|নীতিমালা|পেমেন্ট পদ্ধতি|পেমেন্ট নীতি|ক্যাশ অন ডেলিভারি নীতি|রিটার্ন পলিসি|রিফান্ড পলিসি)|(?:वापसी|रिफंड|धनवापसी|बदलना|बदलाव|रद्दीकरण|रद्द करना|वारंटी|गारंटी|गोपनीयता|नियम और शर्तें|भुगतान नीति|भुगतान का तरीका|वापसी नीति)|(?:\\b(?:ferot|phire pabo|taka ferot|refund pabo|return korte|return korbo|bodol|batil|niyom|shortaboli|privacy policy|payment method)\\b)/i.test(normalized);
+}
+
 export async function getMessengerPublishedContentAnswer(args: {
   supabase: SupabaseClient;
   country: MessengerCmsKnowledgeCountry;
