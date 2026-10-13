@@ -263,7 +263,7 @@ export function isMessengerWebsitePolicyQuestion(text: string): boolean {
   const normalized = stripMarkup(text)
     .toLocaleLowerCase()
     .replace(/[’']/g, '')
-    .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
+    .replace(/[^\p{L}\p{M}\p{N}\s-]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   if (normalized.length < 3) return false;
