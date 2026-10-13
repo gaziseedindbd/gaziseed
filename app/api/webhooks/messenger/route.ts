@@ -248,7 +248,7 @@ function formatMessengerCatalogReply(
 
   if (!products.length) {
     if (english) return 'Sorry, no matching active product was found in this country.';
-    if (hindi) return 'माफ़ कीजिए, इस देश में कोई matching active product नहीं मिला।';
+    if (hindi) return 'माफ़ कीजिए, इस देश में कोई उपलब्ध उत्पाद नहीं मिला।';
     return 'দুঃখিত, এই country-তে matching কোনো active product পাওয়া যায়নি।';
   }
 
@@ -266,7 +266,7 @@ function formatMessengerCatalogReply(
       return english
         ? prefix + ' ' + name + '\n\nPlease enter the exact product name to verify the current price and stock before ordering.'
         : hindi
-          ? prefix + ' ' + name + '\n\nOrder करने से पहले exact product name लिखें ताकि current price और stock verify किया जा सके।'
+          ? prefix + ' ' + name + '\n\nऑर्डर से पहले सही उत्पाद का नाम लिखें, ताकि मौजूदा कीमत और स्टॉक की पुष्टि हो सके।'
           : prefix + ' ' + name + '\n\nঅর্ডার বা বর্তমান দাম/স্টক জানতে সঠিক product name লিখুন।';
     }
 
@@ -330,7 +330,7 @@ function formatMessengerCatalogReply(
     return english
       ? '• ' + name + ' — potential similar match; price/stock not verified'
       : hindi
-        ? '• ' + name + ' — संभावित similar match; कीमत/स्टॉक verify नहीं है'
+        ? '• ' + name + ' — संभावित मिलता-जुलता उत्पाद; कीमत और स्टॉक की पुष्टि नहीं हुई है'
         : '• ' + name + ' — সম্ভাব্য similar match; দাম/স্টক যাচাই করা হয়নি';
   };
 
@@ -344,7 +344,7 @@ function formatMessengerCatalogReply(
       (english
         ? '🔎 Potential similar products:'
         : hindi
-          ? '🔎 संभावित similar products:'
+          ? '🔎 संभावित मिलते-जुलते उत्पाद:'
           : '🔎 সম্ভাব্য similar products:') +
       '\n' +
       similarProducts.slice(0, 6).map(formatSimilarLine).join('\n'),
@@ -363,11 +363,11 @@ function formatMessengerCatalogReply(
 
   if (hindi) {
     return (
-      '🌱 GAZI SEED के matching products:\n\n' +
+      '🌱 GAZI SEED के उपलब्ध उत्पाद:\n\n' +
       sections.join('\n\n') +
       (products.length
-        ? '\n\nनीचे से product चुनें; कीमत और स्टॉक चुनने के बाद verify होंगे।'
-        : '\n\nकीमत, स्टॉक या ऑर्डर की जानकारी के लिए exact product name लिखें।')
+        ? '\n\nनीचे दिए गए विकल्पों में से उत्पाद चुनें। उसके बाद मौजूदा कीमत और स्टॉक की पुष्टि होगी।'
+        : '\n\nकीमत, स्टॉक या ऑर्डर की जानकारी के लिए उत्पाद का सही नाम लिखें।')
     );
   }
 
@@ -610,6 +610,8 @@ async function sendMessengerText(
     imageUrl?: string;
     productId: string;
     productUrl?: string;
+    viewProductTitle?: string;
+    orderNowTitle?: string;
   }>,
 ) {
   if (!META_PAGE_ACCESS_TOKEN) {
@@ -710,11 +712,11 @@ async function sendMessengerText(
                   image_url: card.imageUrl,
                   buttons: [
                     ...(card.productUrl
-                      ? [{ type: 'web_url', title: 'View Product', url: card.productUrl }]
+                      ? [{ type: 'web_url', title: (card.viewProductTitle || 'View Product').slice(0, 20), url: card.productUrl }]
                       : []),
                     {
                       type: 'postback',
-                      title: 'Order Now',
+                      title: (card.orderNowTitle || 'Order Now').slice(0, 20),
                       payload: `PRODUCT_SELECT:${card.productId}`,
                     },
                   ].slice(0, 3),
@@ -2036,7 +2038,10 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   // A new product/catalog request starts a new intent. Never let an older
   // quantity/name/address order step hijack a fresh product question.
-  const freshProductBrowseIntent = isOtherProductRequest(normalizedActionText);
+  // Catalog/list requests must bypass website/CMS knowledge lookups: those lookups can fail and prematurely return a support fallback before the live products query runs.
+  const freshProductBrowseIntent =
+    isOtherProductRequest(normalizedActionText) ||
+    isProductListRequest(normalizedActionText);
   const startsNewProductIntent = isProductCatalogRequest(normalizedActionText);
   const pendingOrderBeforeInterrupt = parsePendingMessengerOrder(
     conversation.metadata?.pending_messenger_order,
@@ -2913,28 +2918,52 @@ async function processMessengerEvent(event: MessengerEvent) {
       },
     });
     const messengerCountry: CountryCode = activeCountry;
+    const catalogLanguage = detectMessengerReplyLanguage(normalizedActionText);
     const productCards = (products as Array<Record<string, unknown>>)
       .filter(
         (product) =>
           isTrustedMessengerProductMatch(product) &&
+          typeof product.stock === 'number' &&
+          product.stock > 0 &&
           typeof product.image === 'string' &&
-          product.image.trim(),
+          /^https?:\/\//i.test(product.image.trim()),
       )
-      .map((product) => ({
-        title: formatMessengerProductName(product),
-        subtitle:
-          (typeof product.effective_price === 'number'
-            ? formatMessengerCurrency(messengerCountry) + product.effective_price
-            : 'দাম জানা নেই') +
-          ' • Stock: ' +
-          (typeof product.stock === 'number' ? product.stock : 0),
-        imageUrl: String(product.image),
-        productId: String(product.id),
-        productUrl:
-          typeof product.slug === 'string' && product.slug
-            ? 'https://www.gaziseed.com/product/' + encodeURIComponent(product.slug)
-            : undefined,
-      }));
+      .map((product) => {
+        const cardName = catalogLanguage === 'English'
+          ? ((typeof product.name_en === 'string' && product.name_en) || formatMessengerProductName(product))
+          : catalogLanguage === 'Hindi'
+            ? ((typeof product.name_en === 'string' && product.name_en) || formatMessengerProductName(product))
+            : formatMessengerProductName(product);
+        const priceLabel = typeof product.effective_price === 'number'
+          ? formatMessengerCurrency(messengerCountry) + product.effective_price
+          : catalogLanguage === 'English'
+            ? 'Price unavailable'
+            : catalogLanguage === 'Hindi'
+              ? 'कीमत उपलब्ध नहीं'
+              : 'দাম জানা নেই';
+        const stockLabel = catalogLanguage === 'English'
+          ? 'Stock: '
+          : catalogLanguage === 'Hindi'
+            ? 'स्टॉक: '
+            : 'স্টক: ';
+        const packetLabel = catalogLanguage === 'English'
+          ? (product.stock === 1 ? ' packet' : ' packets')
+          : catalogLanguage === 'Hindi'
+            ? ' पैकेट'
+            : ' প্যাকেট';
+        return {
+          title: cardName,
+          subtitle: priceLabel + ' • ' + stockLabel + String(product.stock) + packetLabel,
+          imageUrl: String(product.image).trim(),
+          productId: String(product.id),
+          viewProductTitle: catalogLanguage === 'English' ? 'View Product' : catalogLanguage === 'Hindi' ? 'उत्पाद देखें' : 'পণ্য দেখুন',
+          orderNowTitle: catalogLanguage === 'English' ? 'Order Now' : catalogLanguage === 'Hindi' ? 'ऑर्डर करें' : 'অর্ডার করুন',
+          productUrl:
+            typeof product.slug === 'string' && product.slug
+              ? 'https://www.gaziseed.com/product/' + encodeURIComponent(product.slug)
+              : undefined,
+        };
+      });
 
     await sendMessengerText(senderId, catalogReply, productQuickReplies, undefined, productCards);
     return;

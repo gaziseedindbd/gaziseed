@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { detectExplicitMessengerCountry } from '../lib/ai/messenger-country';
 import { buildMessengerMonitoringSummary } from '../lib/ai/messenger-monitoring';
 import {
   addPendingMessengerOrderToCart,
@@ -31,6 +32,7 @@ import {
   isMessengerHumanSupportIntent,
   isMessengerSeedKnowledgeQuestion,
   isOtherProductRequest,
+  isProductAvailabilityQuestion,
   isProductCatalogRequest,
   isProductListRequest,
   normalizeMessengerIntentText,
@@ -71,13 +73,22 @@ import {
   normalizeMessengerPhone,
 } from '../lib/ai/messenger-phone';
 import { shouldIncludeMessengerAIHistoryMessage } from '../lib/ai/messenger-history';
-import { detectExplicitMessengerCountry } from '../lib/ai/messenger-country';
 import {
   detectMessengerReplyLanguage,
   getMessengerProviderFailureHandoffReply,
 } from '../lib/ai/messenger-language';
 
 
+
+test('detects Messenger reply language across Bengali, Banglish, English, and Hindi', () => {
+  assert.equal(detectMessengerReplyLanguage('আপনাদের কী কী বীজ আছে?'), 'Bengali');
+  assert.equal(detectMessengerReplyLanguage('KI KI PRODUCT ASE'), 'Bengali');
+  assert.equal(detectMessengerReplyLanguage('ami amar order er status jante chai'), 'Bengali');
+  assert.equal(detectMessengerReplyLanguage('What products do you have?'), 'English');
+  assert.equal(detectMessengerReplyLanguage('Please show available seeds'), 'English');
+  assert.equal(detectMessengerReplyLanguage('आपके पास कौन से बीज उपलब्ध हैं?'), 'Hindi');
+  assert.equal(detectMessengerReplyLanguage('mujhe rose seed chahiye'), 'Hindi');
+});
 
 test('localizes all-provider-failure handoff replies without touching normal AI routing', () => {
   assert.match(getMessengerProviderFailureHandoffReply('English'), /automated assistance/i);
@@ -155,7 +166,32 @@ test('does not classify ordinary order details as catalog intent', () => {
 
 test('recognizes catalog and list requests', () => {
   assert.equal(isProductCatalogRequest('what products do you have'), true);
+  assert.equal(isProductCatalogRequest('What seeds are available?'), true);
+  assert.equal(isProductListRequest('What seeds are available?'), true);
+  assert.equal(isProductAvailabilityQuestion('What seeds are available?'), true);
+  for (const phrase of [
+    'What seeds do you have?',
+    'Show me all available seeds',
+    'List all available seeds',
+    'Which seeds can I buy?',
+    'Do you have seeds available?',
+    'Please show your seed catalog',
+    'What do you have in seeds?',
+  ]) {
+    assert.equal(isProductCatalogRequest(phrase), true, phrase + ' should be catalog intent');
+    assert.equal(isProductListRequest(phrase), true, phrase + ' should be list intent');
+    assert.equal(isMessengerOrderInterruptRequest(phrase), true, phrase + ' should interrupt a pending order step');
+  }
   assert.equal(isProductListRequest('product list'), true);
+  assert.equal(isProductListRequest('How do I plant seeds?'), false);
+  assert.equal(
+    isProductListRequest('বাংলাদেশে কী কী বীজ পাওয়া যাচ্ছে? পণ্যের নাম, বর্তমান দাম এবং স্টকসহ তালিকা দিন।'),
+    true,
+  );
+  assert.equal(
+    isProductCatalogRequest('বাংলাদেশে কী কী বীজ পাওয়া যাচ্ছে? পণ্যের নাম, বর্তমান দাম এবং স্টকসহ তালিকা দিন।'),
+    true,
+  );
 });
 
 
@@ -744,4 +780,20 @@ test('Messenger support fallback uses the verified contact for the active countr
   const bangladesh = getMessengerProviderFailureHandoffReply('Bengali', 'BD');
   assert.match(bangladesh, /https:\/\/wa\.me\/8801811332293/);
   assert.match(bangladesh, /01811332293/);
+});
+
+
+test('detects explicit country in Bengali seed catalog requests', () => {
+  assert.equal(
+    detectExplicitMessengerCountry('বাংলাদেশে কী কী বীজ পাওয়া যাচ্ছে? পণ্যের নাম, বর্তমান দাম এবং স্টকসহ তালিকা দিন।'),
+    'BD',
+  );
+  assert.equal(
+    detectExplicitMessengerCountry('ভারতে কী কী বীজ পাওয়া যাচ্ছে? পণ্যের নাম, বর্তমান দাম এবং স্টকসহ তালিকা দিন।'),
+    'IN',
+  );
+  assert.equal(
+    detectExplicitMessengerCountry('বাংলাদেশে এবং ভারতে কী কী বীজ পাওয়া যাচ্ছে?'),
+    null,
+  );
 });
