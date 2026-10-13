@@ -180,6 +180,7 @@ test('recognizes catalog and list requests', () => {
   ]) {
     assert.equal(isProductCatalogRequest(phrase), true, phrase + ' should be catalog intent');
     assert.equal(isProductListRequest(phrase), true, phrase + ' should be list intent');
+    assert.equal(isMessengerOrderInterruptRequest(phrase), true, phrase + ' should interrupt a pending order step');
   }
   assert.equal(isProductListRequest('product list'), true);
   assert.equal(isProductListRequest('How do I plant seeds?'), false);
