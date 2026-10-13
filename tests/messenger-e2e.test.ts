@@ -31,6 +31,7 @@ import {
   selectMessengerFaqResponse,
 } from '../lib/ai/messenger-knowledge-tool';
 import {
+  isMessengerWebsitePolicyQuestion,
   rankMessengerCmsFaq,
   scoreMessengerKnowledgeText,
 } from '../lib/ai/messenger-cms-knowledge-tool';
@@ -472,6 +473,30 @@ test('database FAQ matching stays paired with its source-language question and a
 
   assert.equal(match?.language, 'English');
   assert.equal(match?.answer, 'Sow the seeds about 0.5 cm deep.');
+});
+
+test('requires verified CMS answers for website-specific policy questions', () => {
+  for (const query of [
+    'What is your return policy?',
+    'Can I get a refund?',
+    'পণ্য ফেরত দেওয়ার নিয়ম কী?',
+    'taka ferot pabo kivabe?',
+    'मेरी वापसी की नीति क्या है?',
+    'What are your terms and conditions?',
+    'What payment methods do you accept?',
+  ]) {
+    assert.equal(isMessengerWebsitePolicyQuestion(query), true, query);
+  }
+
+  // Dedicated transactional status questions must continue through their
+  // verified order/payment handlers rather than the generic policy fallback.
+  assert.equal(isMessengerWebsitePolicyQuestion('What is my order status?'), false);
+  assert.equal(isMessengerWebsitePolicyQuestion('What is my payment status?'), false);
+
+  // Ordinary agriculture and product questions must remain eligible for the
+  // existing verified product-knowledge / general-advice flow.
+  assert.equal(isMessengerWebsitePolicyQuestion('How do I grow tomato seeds?'), false);
+  assert.equal(isMessengerWebsitePolicyQuestion('What is the price and stock?'), false);
 });
 
 test('database knowledge matching rejects unrelated text and ambiguous FAQ hits', () => {

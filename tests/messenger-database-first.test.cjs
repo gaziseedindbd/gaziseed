@@ -40,6 +40,15 @@ test('verified website/product knowledge and published CMS lookup run before gen
   assert.match(cmsTool, /\.from\('landing_faqs'\)/);
   assert.match(cmsTool, /\.from\('pages'\)/);
   assert.match(cmsTool, /\.from\('blogs'\)/);
+  assert.match(cmsTool, /export function isMessengerWebsitePolicyQuestion/);
+  assert.match(cmsTool, /!isLikelyKnowledgeQuestion\(text\) && !isMessengerWebsitePolicyQuestion\(text\)/);
+
+  const policyGuard = route.indexOf('if (isMessengerWebsitePolicyQuestion(normalizedActionText))');
+  assert.ok(policyGuard > cmsLookup, 'policy fallback must follow verified CMS lookup');
+  assert.ok(policyGuard < aiCall, 'policy fallback must run before generative AI');
+  assert.match(route, /actionStatus: 'website_policy_unverified'/);
+  assert.match(route, /verified_cms_answer_found: false/);
+  assert.match(route, /ai_call_skipped: true/);
 });
 
 test('database lookup errors never fall through to a speculative AI response', () => {
