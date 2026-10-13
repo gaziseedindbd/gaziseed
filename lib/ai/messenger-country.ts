@@ -45,6 +45,8 @@ function hasBanglaCountryIntent(
     normalized.includes(postposition + ' ডেলিভারি') ||
     normalized.includes(postposition + ' শিপিং') ||
     normalized.includes(postposition + ' অর্ডার') ||
+    // An explicit country followed by a seed/catalog request selects that branch too.
+    new RegExp(postposition + '.{0,80}(?:বীজ|পণ্য|প্রোডাক্ট|তালিকা|লিস্ট|দাম|স্টক)', 'i').test(normalized) ||
     // Allow an amount or order subtotal between the country phrase and the
     // delivery/order keyword, e.g. "বাংলাদেশে ৳৫০০ টাকার অর্ডারে ডেলিভারি...".
     new RegExp(postposition + '.{0,48}(?:অর্ডার|ডেলিভারি|শিপিং)', 'i').test(normalized) ||
