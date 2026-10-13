@@ -248,7 +248,7 @@ function formatMessengerCatalogReply(
 
   if (!products.length) {
     if (english) return 'Sorry, no matching active product was found in this country.';
-    if (hindi) return 'माफ़ कीजिए, इस देश में कोई matching active product नहीं मिला।';
+    if (hindi) return 'माफ़ कीजिए, इस देश में कोई उपलब्ध उत्पाद नहीं मिला।';
     return 'দুঃখিত, এই country-তে matching কোনো active product পাওয়া যায়নি।';
   }
 
@@ -266,7 +266,7 @@ function formatMessengerCatalogReply(
       return english
         ? prefix + ' ' + name + '\n\nPlease enter the exact product name to verify the current price and stock before ordering.'
         : hindi
-          ? prefix + ' ' + name + '\n\nOrder करने से पहले exact product name लिखें ताकि current price और stock verify किया जा सके।'
+          ? prefix + ' ' + name + '\n\nऑर्डर से पहले सही उत्पाद का नाम लिखें, ताकि मौजूदा कीमत और स्टॉक की पुष्टि हो सके।'
           : prefix + ' ' + name + '\n\nঅর্ডার বা বর্তমান দাম/স্টক জানতে সঠিক product name লিখুন।';
     }
 
@@ -330,7 +330,7 @@ function formatMessengerCatalogReply(
     return english
       ? '• ' + name + ' — potential similar match; price/stock not verified'
       : hindi
-        ? '• ' + name + ' — संभावित similar match; कीमत/स्टॉक verify नहीं है'
+        ? '• ' + name + ' — संभावित मिलता-जुलता उत्पाद; कीमत और स्टॉक की पुष्टि नहीं हुई है'
         : '• ' + name + ' — সম্ভাব্য similar match; দাম/স্টক যাচাই করা হয়নি';
   };
 
@@ -344,7 +344,7 @@ function formatMessengerCatalogReply(
       (english
         ? '🔎 Potential similar products:'
         : hindi
-          ? '🔎 संभावित similar products:'
+          ? '🔎 संभावित मिलते-जुलते उत्पाद:'
           : '🔎 সম্ভাব্য similar products:') +
       '\n' +
       similarProducts.slice(0, 6).map(formatSimilarLine).join('\n'),
@@ -363,11 +363,11 @@ function formatMessengerCatalogReply(
 
   if (hindi) {
     return (
-      '🌱 GAZI SEED के matching products:\n\n' +
+      '🌱 GAZI SEED के उपलब्ध उत्पाद:\n\n' +
       sections.join('\n\n') +
       (products.length
-        ? '\n\nनीचे से product चुनें; कीमत और स्टॉक चुनने के बाद verify होंगे।'
-        : '\n\nकीमत, स्टॉक या ऑर्डर की जानकारी के लिए exact product name लिखें।')
+        ? '\n\nनीचे दिए गए विकल्पों में से उत्पाद चुनें। उसके बाद मौजूदा कीमत और स्टॉक की पुष्टि होगी।'
+        : '\n\nकीमत, स्टॉक या ऑर्डर की जानकारी के लिए उत्पाद का सही नाम लिखें।')
     );
   }
 
