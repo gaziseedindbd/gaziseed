@@ -32,3 +32,19 @@ test("COD advance eligibility still requires verified payment", () => {
   assert.equal(isShipmentEligible({ ...allowed, paymentMode: "cod", amountDueOnDelivery: 300 }), true);
   assert.equal(isShipmentEligible({ ...allowed, paymentMode: "cod", amountDueOnDelivery: 300, paymentVerifiedServerSide: false }), false);
 });
+
+import { validateIndiaParcel } from "../lib/shiprocket/india-client";
+test("shipping parcel validates India PIN and dimensions before provider calls", () => {
+  const valid = {
+    pickupPostcode: "783124", deliveryPostcode: "110001",
+    weightKg: 0.5, lengthCm: 15, breadthCm: 10, heightCm: 4,
+    codAmount: 0, declaredValue: 250,
+  };
+  assert.equal(validateIndiaParcel(valid), true);
+  assert.equal(validateIndiaParcel({ ...valid, pickupPostcode: "000000" }), false);
+  assert.equal(validateIndiaParcel({ ...valid, deliveryPostcode: "123" }), false);
+  assert.equal(validateIndiaParcel({ ...valid, weightKg: 0 }), false);
+  assert.equal(validateIndiaParcel({ ...valid, lengthCm: -1 }), false);
+  assert.equal(validateIndiaParcel({ ...valid, codAmount: -5 }), false);
+  assert.equal(validateIndiaParcel({ ...valid, declaredValue: Infinity }), false);
+});
