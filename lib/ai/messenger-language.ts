@@ -67,6 +67,9 @@ export function detectMessengerReplyLanguage(text: string): MessengerReplyLangua
   const englishScore = tokenScore(value, ENGLISH_LATIN_HINTS);
 
   if (banglishScore > 0 && banglishScore >= hindiScore) return 'Bengali';
+  // English phrases can contain ambiguous tokens such as "do", which is
+  // also a Roman-Hindi hint. Prefer English when its clear-language score wins.
+  if (englishScore > hindiScore && englishScore > 0) return 'English';
   if (hindiScore > 0) return 'Hindi';
   if (englishScore > 0) return 'English';
 
