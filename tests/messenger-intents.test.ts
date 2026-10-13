@@ -32,6 +32,7 @@ import {
   isMessengerHumanSupportIntent,
   isMessengerSeedKnowledgeQuestion,
   isOtherProductRequest,
+  isProductAvailabilityQuestion,
   isProductCatalogRequest,
   isProductListRequest,
   normalizeMessengerIntentText,
