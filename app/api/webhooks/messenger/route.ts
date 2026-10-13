@@ -349,39 +349,6 @@ function formatMessengerCatalogReply(
   );
 }
 
-ZI SEED seed agriculture ' + text).slice(0, 300));
-    const response = await fetch(
-      'https://api.duckduckgo.com/?q=' + query + '&format=json&no_html=1&skip_disambig=1',
-      { cache: 'no-store', signal: AbortSignal.timeout(3500) },
-    );
-    if (!response.ok) return '';
-
-    const data = (await response.json()) as {
-      AbstractText?: unknown;
-      AbstractURL?: unknown;
-      RelatedTopics?: Array<{ Text?: unknown; FirstURL?: unknown }>;
-    };
-
-    const snippets: string[] = [];
-    if (typeof data.AbstractText === 'string' && data.AbstractText.trim()) {
-      snippets.push(data.AbstractText.trim());
-    }
-    for (const item of data.RelatedTopics || []) {
-      if (snippets.length >= 4) break;
-      if (typeof item?.Text === 'string' && item.Text.trim()) snippets.push(item.Text.trim());
-    }
-
-    if (!snippets.length) return '';
-    return JSON.stringify({
-      source: 'DuckDuckGo web search',
-      url: typeof data.AbstractURL === 'string' ? data.AbstractURL : null,
-      snippets: snippets.map((value) => value.slice(0, 700)),
-    });
-  } catch {
-    return '';
-  }
-}
-
 function getCountryQuestion() {
   return (
     'আপনাকে সঠিক পণ্য, দাম, স্টক ও ডেলিভারি তথ্য দিতে আগে জানাবেন—' +
@@ -2714,8 +2681,7 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   if (
     isProductCatalogRequest(normalizedActionText) &&
-    !isMessengerDeliveryPolicyQuestion(normalizedActionText) &&
-    !isGeneralSeedAdviceRequest(normalizedActionText)
+    !isMessengerDeliveryPolicyQuestion(normalizedActionText)
   ) {
     const catalogReply = formatMessengerCatalogReply(
       normalizedActionText,
