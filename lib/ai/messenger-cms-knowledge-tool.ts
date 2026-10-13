@@ -63,7 +63,7 @@ function asText(value: unknown): string {
 function normalizeText(value: string): string {
   return normalizeMessengerIntentText(stripMarkup(value))
     .replace(/[’']/g, '')
-    .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
+    .replace(/[^\p{L}\p{M}\p{N}\s-]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
