@@ -43,3 +43,14 @@ an authorized India admin explicitly approves a packed shipment.**
 Only the pure rate-selection and fail-closed eligibility helpers exist.
 There is **no shipment creation, AWB API call, pickup request, DB migration,
 production settings change, or enabled automation** in this PR.
+
+
+## Webhook and database foundation (14 October 2026)
+- Draft migration: `supabase/migrations/20261014030000_india_shipping_webhook_foundation.sql`.
+- Creates India-only shipment-to-order mapping and a deduplicated webhook event log.
+- The trigger rejects linking non-India orders; tables have RLS enabled and no anon/authenticated access.
+- Migration has NOT been applied to the database and must be checked against deployed orders schema before applying.
+- Webhook receiver upload is **not complete**; do not enter a webhook URL/token or enable Shiprocket webhooks.
+- Production prerequisites: authenticated POST receiver with secret header verification, event payload contract testing, event replay/out-of-order handling, and a country-scoped lookup that never changes Cashfree payment status.
+- Explicit admin permission remains mandatory for any pickup API call.
+- Shiprocket Domestic KYC is under review; wallet currently shown as ₹0.
