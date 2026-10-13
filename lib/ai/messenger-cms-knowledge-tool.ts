@@ -280,7 +280,9 @@ export async function getMessengerPublishedContentAnswer(args: {
   text: string;
 }): Promise<MessengerCmsKnowledgeResult> {
   const { supabase, country, text } = args;
-  if (!isLikelyKnowledgeQuestion(text)) return { handled: false };
+  if (!isLikelyKnowledgeQuestion(text) && !isMessengerWebsitePolicyQuestion(text)) {
+    return { handled: false };
+  }
 
   const lookups = await Promise.allSettled([
     supabase
