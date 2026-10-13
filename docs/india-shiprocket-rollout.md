@@ -89,3 +89,9 @@ production settings change, or enabled automation** in this PR.
 - `india-shipping-payment-preflight` validates India-admin JWT, India-only order, exactly one completed India Cashfree intent, Cashfree PAID amount and refund state. It is **read-only** and not deployed. Full-COD remains intentionally blocked.
 - `20261014033000_india_shipping_external_persistence.sql` adds one-way service-role-only state transitions for external provider order/shipment IDs and AWB; re-booking, overwriting AWB, or jumping straight to AWB is refused.
 - **Incomplete:** Provider calls are not wired into an authenticated booking worker, preflight evidence must not be trusted from a client or replayed without revalidation, structured source-of-truth destination/packing data is missing, and actual Shiprocket external order/AWB testing is blocked by account/secret readiness. No live order or pickup has been created.
+
+## Credential connection test while KYC is under review
+- `supabase/functions/india-shipping-connection-check/index.ts` is a standalone POST-only authenticated India-admin API. It reads `SHIPROCKET_API_EMAIL` and `SHIPROCKET_API_PASSWORD` from server secrets and tests only Shiprocket `/auth/login`. The token is never returned or logged.
+- No booking, label, AWB, wallet charges, pickup or KYC operations are performed.
+- Credentials exist in Supabase Secrets according to dashboard inspection, but actual login remains **untested** because this edge function is only committed to draft PR, not deployed to live Supabase.
+- KYC is **Under Review**, as confirmed by account owner. Wallet remains **₹0**; do not perform live booking yet.
