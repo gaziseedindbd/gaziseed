@@ -3085,7 +3085,11 @@ async function processMessengerEvent(event: MessengerEvent) {
       );
 
     const finalReply = unsafeGeneralAgricultureReply
-      ? getSafeGeneralAgricultureReply()
+      ? getMessengerHumanSupportContactReply(
+          activeCountry,
+          replyLanguage,
+          'unverified',
+        )
       : isKnowledgeFallbackResponse(result.content) && !isGeneralAgricultureMessage
         ? getMessengerHumanSupportContactReply(
             activeCountry,
