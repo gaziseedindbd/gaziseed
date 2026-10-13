@@ -95,7 +95,7 @@ export function isProductCatalogRequest(text: string): boolean {
   return (
     isOtherProductRequest(normalized) ||
     isProductAvailabilityQuestion(normalized) ||
-    /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে|দাম|price|স্টক|stock|available|উপলব্ধ|कीमत|मूल्य|दाम|स्टॉक|उपलब्ध|उत्पाद|प्रोडक्ट)/i.test(
+    /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|বীজ.*(?:তালিকা|লিস্ট|পাওয়া যাচ্ছে|পাওয়া যাচ্ছে|উপলব্ধ)|(?:তালিকা|লিস্ট).*(?:বীজ|পণ্য|প্রোডাক্ট)|পণ্যের নাম.*(?:তালিকা|দিন|দেখান)|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে|দাম|price|স্টক|stock|available|উপলব্ধ|कीमत|मूल्य|दाम|स्टॉक|उपलब्ध|उत्पाद|प्रोडक्ट)/i.test(
       normalized,
     )
   );
@@ -106,7 +106,7 @@ export function isProductListRequest(text: string): boolean {
   return (
     isOtherProductRequest(normalized) ||
     isProductAvailabilityQuestion(normalized) ||
-    /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে|उत्पादों?\s*(?:की\s*)?(?:सूची|लिस्ट)|प्रोडक्ट्स?\s*(?:की\s*)?(?:सूची|लिस्ट)|आपके पास.*(?:उत्पाद|प्रोडक्ट|बीज|বীজ)|कौन\s*से?\s*(?:बीज|বীজ))/i.test(
+    /(products?|product list|catalog|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|বীজ.*(?:তালিকা|লিস্ট|পাওয়া যাচ্ছে|পাওয়া যাচ্ছে|উপলব্ধ)|(?:তালিকা|লিস্ট).*(?:বীজ|পণ্য|প্রোডাক্ট)|পণ্যের নাম.*(?:তালিকা|দিন|দেখান)|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে|उत्पादों?\s*(?:की\s*)?(?:सूची|लिस्ट)|प्रोडक्ट्स?\s*(?:की\s*)?(?:सूची|लिस्ट)|आपके पास.*(?:उत्पाद|प्रोडक्ट|बीज|বীজ)|कौन\s*से?\s*(?:बीज|বীজ))/i.test(
       normalized,
     )
   );
