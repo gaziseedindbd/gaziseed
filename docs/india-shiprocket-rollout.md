@@ -81,3 +81,6 @@ production settings change, or enabled automation** in this PR.
 - These helpers are **not** an automatic shipment booking endpoint. Their gateway evidence must only be produced by server-side Cashfree verification and refund checking; never accept verification evidence from a client request.
 - Existing India order rows have a freeform delivery_address without reliable structured ZIP/state/city and no verified package dimensions. Booking must fail closed until authoritative destination, pickup, package weight and line items are available.
 - Live Shiprocket creation/AWB test still needs approved KYC, funded wallet, API credentials stored as server secrets, a safe disposable test order and explicit authorization. No credentials or live API bookings have been performed in this PR.
+
+- `lib/shiprocket/india-prepare.ts` now composes payment policy, cheapest eligible courier, and validated booking payload as a pure testable function; it deliberately performs no external side effects.
+- Booking endpoint and AWB persistence still require integrating the existing independent Cashfree verifier with authenticated server workflows, authoritative structured delivery address and packing measurements, secure credentials, and safe one-shot external order creation.
