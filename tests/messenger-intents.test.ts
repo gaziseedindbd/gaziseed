@@ -156,6 +156,14 @@ test('does not classify ordinary order details as catalog intent', () => {
 test('recognizes catalog and list requests', () => {
   assert.equal(isProductCatalogRequest('what products do you have'), true);
   assert.equal(isProductListRequest('product list'), true);
+  assert.equal(
+    isProductListRequest('বাংলাদেশে কী কী বীজ পাওয়া যাচ্ছে? পণ্যের নাম, বর্তমান দাম এবং স্টকসহ তালিকা দিন।'),
+    true,
+  );
+  assert.equal(
+    isProductCatalogRequest('বাংলাদেশে কী কী বীজ পাওয়া যাচ্ছে? পণ্যের নাম, বর্তমান দাম এবং স্টকসহ তালিকা দিন।'),
+    true,
+  );
 });
 
 
