@@ -48,3 +48,33 @@ test("shipping parcel validates India PIN and dimensions before provider calls",
   assert.equal(validateIndiaParcel({ ...valid, codAmount: -5 }), false);
   assert.equal(validateIndiaParcel({ ...valid, declaredValue: Infinity }), false);
 });
+
+import { resolveIndiaShippingMoney } from "../lib/shiprocket/india-payment-policy";
+const payment = {
+  country_code: "IN", payment_method: "online", payment_status: "paid",
+  final_amount: 500, payment_advance_amount: 500, payment_due_amount: 0,
+};
+const evidence = {
+  verified: true as const, gatewayOrderStatus: "PAID" as const, currency: "INR" as const,
+  paidAmount: 500, refundClear: true as const, completedIntentCount: 1 as const,
+};
+test("prepaid collect-on-delivery must be zero after gateway verification", () => {
+  assert.deepEqual(resolveIndiaShippingMoney(payment, evidence), {
+    mode: "prepaid", total: 500, collectOnDelivery: 0, cashfreePaid: 500,
+  });
+});
+test("partial COD charges ONLY remaining due; refuses unpaid advance", () => {
+  const partial = { ...payment, payment_method: "cod", payment_status: "partially_paid",
+    payment_advance_amount: 120, payment_due_amount: 380 };
+  assert.equal(resolveIndiaShippingMoney(partial, { ...evidence, paidAmount: 120 })?.collectOnDelivery, 380);
+  assert.equal(resolveIndiaShippingMoney(partial, null), null);
+  assert.equal(resolveIndiaShippingMoney(partial, evidence), null);
+  assert.equal(resolveIndiaShippingMoney({ ...partial, payment_due_amount: 500 }, { ...evidence, paidAmount: 120 }), null);
+});
+test("reject Bangladesh, failed/refunded payments and unauthorized full COD", () => {
+  assert.equal(resolveIndiaShippingMoney({ ...payment, country_code: "BD" }, evidence), null);
+  assert.equal(resolveIndiaShippingMoney(payment, { ...evidence, refundClear: false }), null);
+  assert.equal(resolveIndiaShippingMoney(payment, null), null);
+  assert.equal(resolveIndiaShippingMoney({ ...payment, payment_method: "cod",
+    payment_status: "pending", payment_advance_amount: 0, payment_due_amount: 500 }, null), null);
+});
