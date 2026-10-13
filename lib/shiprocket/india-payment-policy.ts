@@ -11,12 +11,12 @@ export type IndiaPaymentOrder = {
   payment_due_amount: number | null;
 };
 export type VerifiedGatewayEvidence = {
-  verified: true;
-  gatewayOrderStatus: "PAID";
-  currency: "INR";
+  verified: boolean;
+  gatewayOrderStatus: string;
+  currency: string;
   paidAmount: number;
-  refundClear: true;
-  completedIntentCount: 1;
+  refundClear: boolean;
+  completedIntentCount: number;
 };
 export type ShippingMoney = {
   mode: "prepaid" | "cod";
