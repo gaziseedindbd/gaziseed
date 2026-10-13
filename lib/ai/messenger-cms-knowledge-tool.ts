@@ -260,7 +260,12 @@ function selectUnambiguousCandidate(
  * Transaction/order status questions stay with their dedicated handlers.
  */
 export function isMessengerWebsitePolicyQuestion(text: string): boolean {
-  const normalized = normalizeText(text);
+  const normalized = stripMarkup(text)
+    .toLocaleLowerCase()
+    .replace(/[’']/g, '')
+    .replace(/[^\\p{L}\\p{N}\\s-]/gu, ' ')
+    .replace(/\\s+/g, ' ')
+    .trim();
   if (normalized.length < 3) return false;
 
   // Never intercept live order/payment status queries; those require their
