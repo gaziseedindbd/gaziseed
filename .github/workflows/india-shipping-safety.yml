@@ -21,7 +21,7 @@ jobs:
           unexpected=0
           while IFS= read -r path; do
             case "$path" in
-              lib/shiprocket/*|tests/india-shiprocket-*|tsconfig.india-shipping-tests.json|package.json|supabase/functions/india-delivery-events/*|supabase/migrations/*india_shipping*|docs/india-shiprocket-*|.github/workflows/india-shipping-safety.yml)
+              lib/shiprocket/*|tests/india-shiprocket-*|tsconfig.india-shipping-tests.json|package.json|supabase/functions/india-delivery-events/*|supabase/functions/india-delivery-approval/*|supabase/migrations/*india_shipping*|docs/india-shiprocket-*|.github/workflows/india-shipping-safety.yml)
                 echo "Allowed: $path" ;;
               *)
                 echo "::error file=$path::Outside India shipping scope; review required"
