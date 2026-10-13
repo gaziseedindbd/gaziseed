@@ -165,6 +165,9 @@ test('does not classify ordinary order details as catalog intent', () => {
 
 test('recognizes catalog and list requests', () => {
   assert.equal(isProductCatalogRequest('what products do you have'), true);
+  assert.equal(isProductCatalogRequest('What seeds are available?'), true);
+  assert.equal(isProductListRequest('What seeds are available?'), true);
+  assert.equal(isProductAvailabilityQuestion('What seeds are available?'), true);
   assert.equal(isProductListRequest('product list'), true);
   assert.equal(
     isProductListRequest('বাংলাদেশে কী কী বীজ পাওয়া যাচ্ছে? পণ্যের নাম, বর্তমান দাম এবং স্টকসহ তালিকা দিন।'),
