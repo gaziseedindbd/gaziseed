@@ -54,3 +54,10 @@ production settings change, or enabled automation** in this PR.
 - Production prerequisites: authenticated POST receiver with secret header verification, event payload contract testing, event replay/out-of-order handling, and a country-scoped lookup that never changes Cashfree payment status.
 - Explicit admin permission remains mandatory for any pickup API call.
 - Shiprocket Domestic KYC is under review; wallet currently shown as ₹0.
+
+## Pickup claim foundation (draft)
+- `20261014031000_india_pickup_claim_guard.sql` introduces pickup state and a one-time atomic claim.
+- Claim is restricted to service-role, India orders currently marked `packed`, with AWB + shipment ID and recorded admin approval.
+- It returns false on repeat claims and does not initiate a pickup request.
+- **Not a complete approval workflow**: a new authenticated India-admin endpoint must validate actor, record explicit approval and handle external pickup retries/reconciliation. Never allow clients to set approval columns.
+- Migration is not applied and must be reviewed with Supabase security/permissions before deployment.
