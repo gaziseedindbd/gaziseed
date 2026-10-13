@@ -1215,10 +1215,10 @@ export async function handleMessengerOrderFlow(args: {
         handled: true,
         reply:
           replyLanguage === 'Hindi'
-            ? `✅ आपका order सफलतापूर्वक बन गया है।\n\nOrder number: ${result.order_number || 'Not available'}\n${cartSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nOrder GAZI SEED order system में जोड़ दिया गया है।`
+            ? `✅ आपका order सफलतापूर्वक बन गया है।\n\nOrder number: ${result.order_number || 'Not available'}\n${authoritativeSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nOrder GAZI SEED order system में जोड़ दिया गया है।`
             : replyLanguage === 'English'
-              ? `✅ Your order has been created successfully.\n\nOrder number: ${result.order_number || 'Not available'}\n${cartSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nThe order has been added to the GAZI SEED order system.`
-              : `✅ আপনার অর্ডার সফলভাবে তৈরি হয়েছে।\n\nঅর্ডার নম্বর: ${result.order_number || 'পাওয়া যায়নি'}\n${cartSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nঅর্ডারটি GAZI SEED order system-এ যুক্ত হয়েছে।`,
+              ? `✅ Your order has been created successfully.\n\nOrder number: ${result.order_number || 'Not available'}\n${authoritativeSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nThe order has been added to the GAZI SEED order system.`
+              : `✅ আপনার অর্ডার সফলভাবে তৈরি হয়েছে।\n\nঅর্ডার নম্বর: ${result.order_number || 'পাওয়া যায়নি'}\n${authoritativeSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nঅর্ডারটি GAZI SEED order system-এ যুক্ত হয়েছে।`,
         pending: null,
       };
     }
