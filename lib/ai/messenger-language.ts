@@ -95,5 +95,5 @@ export function getMessengerProviderFailureHandoffReply(
     `🌍 ${contact.countryName} customer support`,
     `📱 WhatsApp: ${contact.whatsappUrl}`,
     `📞 ${directCallLabel}: ${contact.directPhone}`,
-  ].join('\\n');
+  ].join('\n');
 }
