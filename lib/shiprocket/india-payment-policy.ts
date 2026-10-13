@@ -33,22 +33,27 @@ export function resolveIndiaShippingMoney(
   if (order.country_code !== "IN" || !paise(order.final_amount) || order.final_amount <= 0) return null;
   const advance = Number(order.payment_advance_amount ?? 0);
   const due = Number(order.payment_due_amount ?? 0);
-  if (!paise(advance) || !paise(due) || !same(advance + due, order.final_amount)) return null;
+  if (!paise(advance) || !paise(due)) return null;
   const method = String(order.payment_method ?? "").toLowerCase();
   const status = String(order.payment_status ?? "").toLowerCase();
   const paidEvidence = gateway?.verified === true && gateway.gatewayOrderStatus === "PAID" &&
-    gateway.currency === "INR" && gateway.refundClear === true &&
-    gateway.completedIntentCount === 1 && same(gateway.paidAmount, advance > 0 ? advance : order.final_amount);
-  if (advance > 0 && !paidEvidence) return null;
+    gateway.currency === "INR" && gateway.refundClear === true && gateway.completedIntentCount === 1;
   if (due === 0) {
-    if (!paidEvidence || !["paid", "completed", "success"].includes(status)) return null;
+    // Existing prepaid orders may leave the advance column at zero.
+    if (!same(advance, 0) && !same(advance, order.final_amount)) return null;
+    if (!paidEvidence || !same(gateway.paidAmount, order.final_amount) ||
+        !["paid", "completed", "success"].includes(status) ||
+        !["online", "cashfree", "prepaid", "upi", "card"].includes(method))
+      return null;
     return { mode: "prepaid", total: order.final_amount, collectOnDelivery: 0, cashfreePaid: order.final_amount };
   }
+  if (!same(advance + due, order.final_amount)) return null;
   if (advance > 0) {
-    if (!["cod", "cash_on_delivery"].includes(method) || !["partially_paid", "partial_paid"].includes(status)) return null;
+    if (!paidEvidence || !same(gateway.paidAmount, advance) ||
+        !["cod", "cash_on_delivery"].includes(method) ||
+        !["partially_paid", "partial_paid"].includes(status)) return null;
     return { mode: "cod", total: order.final_amount, collectOnDelivery: due, cashfreePaid: advance };
   }
   // Unpaid full COD requires separate admin-authorized order verification.
-  // Neither an existing "paid" status nor a client flag may authorize it.
   return null;
 }
