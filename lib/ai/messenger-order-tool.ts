@@ -439,18 +439,15 @@ function formatMessengerOrderCartSummary(
         : '🛒 কার্টে এখনো কোনো পণ্য নেই।';
   }
 
-  const lines = items.map(
-    (item) =>
-      `• ${item.product_name} × ${item.quantity} = ${currency}${(
-        item.unit_price * item.quantity
-      ).toFixed(0)}`,
-  );
+  // Pending cart prices are estimates; the order/payment backend is authoritative.
+  // Avoid presenting potentially stale local unit prices as confirmed line totals.
+  const lines = items.map((item) => `• ${item.product_name} × ${item.quantity}`);
   const subtotal = items.reduce(
     (sum, item) => sum + item.unit_price * item.quantity,
     0,
   );
   const subtotalLabel =
-    language === 'Hindi' ? 'Subtotal' : language === 'English' ? 'Subtotal' : 'সাবটোটাল';
+    language === 'Hindi' ? 'Estimated subtotal' : language === 'English' ? 'Estimated subtotal' : 'আনুমানিক সাবটোটাল';
   const cartLabel =
     language === 'Hindi' || language === 'English' ? '🛒 Cart:' : '🛒 কার্ট:';
 
@@ -653,6 +650,7 @@ export async function createMessengerIndiaCodPayment(args: {
   return {
     paymentUrl: siteUrl + '/messenger-payment?order_id=' + encodeURIComponent(data.order_id as string),
     advanceAmount: Number(data.quote?.advance_amount || data.order_amount || 0),
+    subtotal: Number(data.quote?.subtotal || 0),
     finalAmount: Number(data.quote?.final_amount || 0),
     deliveryCharge: Number(data.quote?.delivery_charge || 0),
     dueAmount: Math.max(0, Number(data.quote?.final_amount || 0) - Number(data.quote?.advance_amount || data.order_amount || 0)),
@@ -1127,29 +1125,33 @@ export async function handleMessengerOrderFlow(args: {
             items: orderItems,
           });
           const cartSummary = formatMessengerOrderCartSummary(orderItems, currency, replyLanguage);
+          const confirmedSubtotal = payment.subtotal > 0
+            ? (replyLanguage === 'Hindi' ? 'Subtotal' : replyLanguage === 'English' ? 'Subtotal' : 'সাবটোটাল') + `: ${currency}${payment.subtotal.toFixed(0)}`
+            : '';
+          const confirmedTotal = payment.finalAmount > 0
+            ? (replyLanguage === 'Hindi' ? 'Grand total' : replyLanguage === 'English' ? 'Grand total' : 'সর্বমোট') + `: ${currency}${payment.finalAmount.toFixed(0)}`
+            : '';
+          const authoritativeSummary = [cartSummary, confirmedSubtotal, `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}`, confirmedTotal].filter(Boolean).join('\n');
           return {
             handled: true,
             reply:
               replyLanguage === 'Hindi'
-                ? '🇮🇳 आपका India COD payment step तैयार है।\n\n' + cartSummary + '\n' +
-                  `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}\n` +
+                ? '🇮🇳 आपका India COD payment step तैयार है।\n\n' + authoritativeSummary + '\n' +
                   `COD advance: ${currency}${payment.advanceAmount.toFixed(0)}\n` +
                   `Delivery पर बाकी: ${currency}${payment.dueAmount.toFixed(0)}\n\n` +
                   '🔐 पहले COD advance payment पूरा करें। Payment successful होने के बाद आपका COD order automatically confirm होगा।\n\n' +
                   '🔐 Payment button नीचे दिया गया है।'
                 : replyLanguage === 'English'
-                  ? '🇮🇳 Your India COD payment step is ready.\n\n' + cartSummary + '\n' +
-                    `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}\n` +
+                  ? '🇮🇳 Your India COD payment step is ready.\n\n' + authoritativeSummary + '\n' +
                     `COD advance: ${currency}${payment.advanceAmount.toFixed(0)}\n` +
                     `Remaining on delivery: ${currency}${payment.dueAmount.toFixed(0)}\n\n` +
                     '🔐 Complete the COD advance payment first. Your COD order will be confirmed automatically after successful payment.\n\n' +
                     '🔐 The payment button is below.'
-                  : '🇮🇳 আপনার India COD order-এর payment step প্রস্তুত।\n\n' + cartSummary + '\n' +
-                    `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}\n` +
+                  : '🇮🇳 আপনার India COD order-এর payment step প্রস্তুত।\n\n' + authoritativeSummary + '\n' +
                     `COD advance এখন: ${currency}${payment.advanceAmount.toFixed(0)}\n` +
                     `Delivery-এর সময় বাকি: ${currency}${payment.dueAmount.toFixed(0)}\n\n` +
                     '🔐 আগে COD advance payment সম্পন্ন করুন। Payment সফল হলে আপনার COD order automatically confirm হবে।\n\n' +
-                    '🔐 Payment button নিচে দেওয়া হলো।',
+                    '🔐 Payment button নিচে দেওয়া হলো.',
             paymentButton: {
               title:
                 replyLanguage === 'Hindi'
@@ -1204,6 +1206,10 @@ export async function handleMessengerOrderFlow(args: {
       }
 
       const cartSummary = formatMessengerOrderCartSummary(orderItems, currency, replyLanguage);
+      const confirmedSubtotal = Number(result.subtotal || 0);
+      const authoritativeSummary = confirmedSubtotal > 0
+        ? cartSummary.replace(/(?:Estimated subtotal|আনুমানিক সাবটোটাল):.*$/m, (replyLanguage === 'Hindi' ? 'Subtotal' : replyLanguage === 'English' ? 'Subtotal' : 'সাবটোটাল') + `: ${currency}${confirmedSubtotal.toFixed(0)}`)
+        : cartSummary;
 
       return {
         handled: true,
