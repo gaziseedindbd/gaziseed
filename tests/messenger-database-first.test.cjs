@@ -21,14 +21,13 @@ const supportTool = fs.readFileSync(
   'utf8',
 );
 
-test('verified website/product knowledge and published CMS lookup run before generative AI', () => {
+test('verified website/product knowledge and published CMS lookup run before support fallback', () => {
   const productLookup = route.indexOf('getMessengerWebsiteKnowledgeAnswer({');
   const cmsLookup = route.indexOf('getMessengerPublishedContentAnswer({');
-  const aiCall = route.indexOf('const result = await messengerAIChat({');
 
   assert.ok(productLookup > 0, 'product database lookup must exist');
   assert.ok(cmsLookup > productLookup, 'published CMS lookup must follow the product knowledge lookup');
-  assert.ok(aiCall > cmsLookup, 'AI call must occur after database knowledge lookups');
+  assert.equal(route.includes('messengerAIChat({'), false, 'Messenger webhook must not call generative AI');
   assert.match(route, /ai_call_skipped:\s*true/);
   assert.match(knowledgeTool, /\.from\('product_faqs'\)/);
   assert.match(knowledgeTool, /explicitlyMentionedProducts\.length === 1/);
@@ -45,7 +44,7 @@ test('verified website/product knowledge and published CMS lookup run before gen
 
   const policyGuard = route.indexOf('if (isMessengerWebsitePolicyQuestion(normalizedActionText))');
   assert.ok(policyGuard > cmsLookup, 'policy fallback must follow verified CMS lookup');
-  assert.ok(policyGuard < aiCall, 'policy fallback must run before generative AI');
+  assert.ok(policyGuard > 0, 'policy fallback must run after CMS lookup');
   assert.match(route, /actionStatus: 'website_policy_unverified'/);
   assert.match(route, /verified_cms_answer_found: false/);
   assert.match(route, /ai_call_skipped: true/);
@@ -54,10 +53,9 @@ test('verified website/product knowledge and published CMS lookup run before gen
 test('unmatched website questions go to branch support and never reach generative AI', () => {
   const cmsLookup = route.indexOf('getMessengerPublishedContentAnswer({');
   const supportFallback = route.indexOf("actionStatus: 'website_knowledge_unavailable'");
-  const aiCall = route.indexOf('const result = await messengerAIChat({');
-
   assert.ok(supportFallback > cmsLookup, 'database/CMS lookups must run before the unmatched-question handoff');
-  assert.ok(supportFallback < aiCall, 'unmatched questions must be handed off before the AI call');
+  assert.equal(route.includes('messengerAIChat({'), false, 'no generative AI call may remain in the Messenger webhook');
+  assert.equal(route.includes('api.duckduckgo.com'), false, 'external web research must not be used as an answer source');
   assert.match(route, /generative_ai_disabled_for_unmatched_questions:\\s*true/);
   assert.match(route, /verified_answer_found:\\s*false/);
   assert.match(route, /source_tables: \\['products', 'product_faqs', 'landing_faqs', 'pages', 'blogs'\\]/);
