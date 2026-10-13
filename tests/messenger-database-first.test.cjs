@@ -41,6 +41,7 @@ test('verified website/product knowledge and published CMS lookup run before gen
   assert.match(cmsTool, /\.from\('pages'\)/);
   assert.match(cmsTool, /\.from\('blogs'\)/);
   assert.match(cmsTool, /export function isMessengerWebsitePolicyQuestion/);
+  assert.match(cmsTool, /!isLikelyKnowledgeQuestion\(text\) && !isMessengerWebsitePolicyQuestion\(text\)/);
 
   const policyGuard = route.indexOf('if (isMessengerWebsitePolicyQuestion(normalizedActionText))');
   assert.ok(policyGuard > cmsLookup, 'policy fallback must follow verified CMS lookup');
