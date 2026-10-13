@@ -68,7 +68,10 @@ import {
   isBangladeshPaymentMethodQuestion,
   isMessengerProductSpecificKnowledgeQuery,
 } from '@/lib/ai/messenger-knowledge-tool';
-import { getMessengerPublishedContentAnswer } from '@/lib/ai/messenger-cms-knowledge-tool';
+import {
+  getMessengerPublishedContentAnswer,
+  isMessengerWebsitePolicyQuestion,
+} from '@/lib/ai/messenger-cms-knowledge-tool';
 import { getMessengerCustomerRecommendations } from '@/lib/ai/messenger-recommendation-tool';
 import { extractMessengerPhone } from '@/lib/ai/messenger-phone';
 import { subscribeMessengerRestockNotification } from '@/lib/ai/messenger-restock-tool';
@@ -2803,6 +2806,30 @@ async function processMessengerEvent(event: MessengerEvent) {
       }, activeCountry);
 
       await sendMessengerText(senderId, cmsKnowledge.reply);
+      return;
+    }
+
+    // Website policies must come from verified, country-scoped CMS content.
+    // If no matching published answer exists, do not let generative AI guess.
+    if (isMessengerWebsitePolicyQuestion(normalizedActionText)) {
+      const policySupportReply = getMessengerHumanSupportContactReply(
+        activeCountry,
+        detectMessengerReplyLanguage(normalizedActionText),
+        'unverified',
+      );
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: policySupportReply,
+        actionStatus: 'website_policy_unverified',
+        countryCode: activeCountry,
+        sourceContext: {
+          database_first: true,
+          verified_cms_answer_found: false,
+          ai_call_skipped: true,
+          source_tables: ['landing_faqs', 'pages', 'blogs'],
+        },
+      });
+      await sendMessengerText(senderId, policySupportReply);
       return;
     }
   } catch (error) {
