@@ -735,10 +735,30 @@ export async function handleMessengerOrderFlow(args: {
         };
       }
 
+      const { data: bulkTier, error: bulkTierError } = await args.supabase
+        .from('bulk_pricing')
+        .select('min_quantity,unit_price')
+        .eq('product_id', pending.product_id)
+        .is('variant_id', null)
+        .eq('country_code', args.country)
+        .eq('is_active', true)
+        .lte('min_quantity', quantity)
+        .gt('unit_price', 0)
+        .order('min_quantity', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (bulkTierError) throw bulkTierError;
+      const quantityUnitPrice =
+        typeof bulkTier?.unit_price === 'number' && bulkTier.unit_price > 0
+          ? bulkTier.unit_price
+          : pending.unit_price;
+
       const next = applyMessengerCustomerProfileToPending(
         {
           ...pending,
           quantity,
+          unit_price: quantityUnitPrice,
           step: 'name',
         },
         args.customerProfile,
