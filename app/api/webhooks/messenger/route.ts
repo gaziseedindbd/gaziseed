@@ -442,39 +442,6 @@ function hasUnsafeGeneralAgricultureSpecifics(text: string): boolean {
   return numericMeasurement || agricultureNumberContext;
 }
 
-function getSafeGeneralAgricultureReply(): string {
-  return [
-    '🌱 বীজ বপন:',
-    'লাউয়ের বীজ উর্বর ও পানি নিষ্কাশনযুক্ত মাটিতে হালকা গভীরে বপন করুন।',
-    '',
-    '💧 পানি ও যত্ন:',
-    'পর্যাপ্ত জায়গা রাখুন, বপনের পর মাটি আর্দ্র রাখুন কিন্তু জলাবদ্ধ করবেন না।',
-    '',
-    '☀️ আলো ও মাচা:',
-    'ভালো রোদ এবং গাছ ওঠার জন্য উপযুক্ত মাচা বা সহায়তার ব্যবস্থা রাখুন।',
-    '',
-    '📌 গুরুত্বপূর্ণ:',
-    'সঠিক বীজের গভীরতা, দূরত্ব, সার ও সেচের পরিমাণ জাত, মাটি ও স্থানীয় আবহাওয়ার ওপর নির্ভর করতে পারে। তাই বীজের প্যাকেটের নির্দেশনা বা স্থানীয় কৃষি বিশেষজ্ঞের পরামর্শ অনুসরণ করুন।',
-  ].join('\n\n');
-}
-
-function isDeterministicAgricultureFaqRequest(text: string): boolean {
-  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
-
-  const isLauQuestion = /(লাউ|bottle\s*gourd|lau)/i.test(normalized);
-  const isSeedSowingQuestion =
-    isSeedKnowledgeRequest(text) &&
-    /(কীভাবে|কিভাবে|কী ভাবে|কি ভাবে|কী করে|কি করে|বপন|রোপণ|sow|sowing|plant|planting)/i.test(
-      normalized,
-    );
-  const isTransactionalQuestion =
-    /(দাম|price|স্টক|stock|অর্ডার|order|delivery|ডেলিভারি|available|উপলব্ধ)/i.test(
-      normalized,
-    );
-
-  return isLauQuestion && isSeedSowingQuestion && !isTransactionalQuestion;
-}
-
 function getCountryQuestion() {
   return (
     'আপনাকে সঠিক পণ্য, দাম, স্টক ও ডেলিভারি তথ্য দিতে আগে জানাবেন—' +
@@ -2855,27 +2822,6 @@ async function processMessengerEvent(event: MessengerEvent) {
     await sendMessengerText(senderId, lookupFailureReply);
     return;
   }
-  }
-
-  if (
-    !verifiedWebsiteKnowledgeContext &&
-    isDeterministicAgricultureFaqRequest(normalizedActionText)
-  ) {
-    const agricultureReply = getSafeGeneralAgricultureReply();
-
-    await saveMessage(sb, conversation.id, {
-      role: 'assistant',
-      content: agricultureReply,
-      actionStatus: 'general_agriculture_faq',
-      countryCode: activeCountry,
-      sourceContext: {
-        deterministic_agriculture_faq: true,
-        ai_call_skipped: true,
-      },
-    });
-
-    await sendMessengerText(senderId, agricultureReply);
-    return;
   }
 
   const [recentMessages, products, deliveryPolicy, webSeedContext] = await Promise.all([
