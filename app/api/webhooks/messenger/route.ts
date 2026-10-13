@@ -238,13 +238,29 @@ function formatMessengerCatalogReply(
   const english = language === 'English';
   const hindi = language === 'Hindi';
 
-  const displayName = (product: Record<string, unknown>) =>
-    english || hindi
+  const displayName = (product: Record<string, unknown>) => {
+    const translations = product.translations && typeof product.translations === 'object'
+      ? product.translations as Record<string, Record<string, string>>
+      : {};
+    const hindiName = typeof translations.hi?.name === 'string'
+      ? translations.hi.name.trim()
+      : '';
+
+    if (hindi) {
+      return hindiName ||
+        (typeof product.name_en === 'string' && product.name_en) ||
+        (typeof product.name_bn === 'string' && product.name_bn) ||
+        (typeof product.slug === 'string' && product.slug) ||
+        'उत्पाद';
+    }
+
+    return english
       ? ((typeof product.name_en === 'string' && product.name_en) ||
           (typeof product.name_bn === 'string' && product.name_bn) ||
           (typeof product.slug === 'string' && product.slug) ||
-          (hindi ? 'उत्पाद' : 'Product'))
+          'Product')
       : formatMessengerProductName(product);
+  };
 
   if (!products.length) {
     if (english) return 'Sorry, no matching active product was found in this country.';
