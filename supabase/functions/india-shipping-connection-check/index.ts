@@ -3,10 +3,12 @@ import { createClient } from "npm:@supabase/supabase-js@2.112.3";
 
 // India-admin-only read-only connectivity probe. NEVER books orders, AWBs or pickups.
 // Do not expose provider token, API credentials or raw provider error messages.
+const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "authorization, apikey, x-client-info, content-type, x-gazi-country", "Access-Control-Max-Age": "600" };
 Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   const reply = (status: number, body: Record<string, unknown>) =>
     new Response(JSON.stringify(body), {
-      status, headers: { "content-type": "application/json", "cache-control": "no-store" },
+      status, headers: { ...cors, "content-type": "application/json", "cache-control": "no-store" },
     });
   if (req.method !== "POST") return reply(405, { ok: false });
   const auth = req.headers.get("authorization") ?? "";
