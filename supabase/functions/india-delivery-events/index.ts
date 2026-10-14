@@ -38,13 +38,17 @@ Deno.serve(async (request: Request) => {
   const admin = createClient(endpoint, JSON.parse(secrets).default, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const lookup = admin.from("india_shipping_shipments").select("id,awb");
-  const { data: shipment, error: lookupError } = await (
-    reference !== undefined && reference !== null
-      ? lookup.eq("external_shipment_id", String(reference))
-      : lookup.eq("awb", String(awb))
-  ).maybeSingle();
-  if (lookupError) return reply(503, { ok: false });
+  const byReference = reference !== undefined && reference !== null
+    ? await admin.from("india_shipping_shipments").select("id,awb").eq("external_shipment_id", String(reference)).maybeSingle()
+    : { data: null, error: null };
+  if (byReference.error) return reply(503, { ok: false });
+  // Shiprocket may send its own shipment reference alongside the AWB. Resolve
+  // by AWB only if the primary reference is not in our India-only mapping.
+  const byAwb = !byReference.data && awb !== undefined && awb !== null
+    ? await admin.from("india_shipping_shipments").select("id,awb").eq("awb", String(awb)).maybeSingle()
+    : { data: null, error: null };
+  if (byAwb.error) return reply(503, { ok: false });
+  const shipment = byReference.data ?? byAwb.data;
   if (!shipment) return reply(200, { ok: true, ignored: true });
   if (awb !== undefined && shipment.awb && String(shipment.awb) !== String(awb))
     return reply(409, { ok: false });
