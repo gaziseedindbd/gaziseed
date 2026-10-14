@@ -13,6 +13,9 @@ export default function IndiaShippingDashboard(){
  const [selected,setSelected]=useState(''),[search,setSearch]=useState(''),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const [pin,setPin]=useState(''),[weight,setWeight]=useState(''),[length,setLength]=useState(''),[breadth,setBreadth]=useState(''),[height,setHeight]=useState(''),[notes,setNotes]=useState('');
  const [saving,setSaving]=useState(false),[saveMessage,setSaveMessage]=useState('');
+ const [mobileDetails,setMobileDetails]=useState(false);
+ function chooseOrder(id:string){setSelected(id);setMobileDetails(true);window.scrollTo({top:0,behavior:'smooth'});}
+ function backToOrders(){setMobileDetails(false);window.scrollTo({top:0,behavior:'smooth'});}
  useEffect(()=>{let alive=true;(async()=>{try{
  const {data:session}=await supabase.auth.getSession();
  if(!session.session?.access_token)throw new Error('India Admin login required');
@@ -52,17 +55,17 @@ export default function IndiaShippingDashboard(){
   {loading&&<p role="status">Loading India orders…</p>}
   {error&&<p role="alert" className="text-red-700">{error}</p>}
   {!loading&&!error&&<div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-   <section className="space-y-3"><h2 className="text-lg font-semibold">Select India Order</h2>
+   <section className={`${mobileDetails ? "hidden lg:block" : "block"} space-y-3 min-w-0`}><h2 className="text-lg font-semibold">Select India Order</h2>
     <input aria-label="Search India orders" placeholder="Search order number or customer" value={search} onChange={e=>setSearch(e.target.value)} className="w-full rounded-lg border p-3" />
     <p className="text-xs text-gray-500">Most recent 60 India orders, read-only</p>
-    <div className="max-h-[550px] space-y-2 overflow-auto">{filtered.map(o=><button type="button" key={o.id} onClick={()=>setSelected(o.id)}
+    <div className="max-h-[550px] space-y-2 overflow-auto">{filtered.map(o=><button type="button" key={o.id} onClick={()=>chooseOrder(o.id)}
      className={`w-full rounded-lg border p-3 text-left ${selected===o.id?'border-emerald-700 bg-emerald-50':''}`}>
       <span className="block font-semibold">{o.order_number||o.id.slice(0,8)} · {o.customer_name||'Customer'}</span>
       <span className="text-sm text-gray-600">{o.status||'Status unavailable'} · ₹{Number(o.grand_total??0).toFixed(2)} · {formatDate(o.created_at)}</span>
      </button>)}
      {filtered.length===0&&<p className="text-sm">No matching India orders found.</p>}</div>
    </section>
-   <section className="space-y-4"><h2 className="text-lg font-semibold">Shipment Details & Tracking</h2>
+   <section className={`${mobileDetails ? "block" : "hidden lg:block"} min-w-0 space-y-4`}><button type="button" onClick={backToOrders} className="rounded-lg border px-4 py-3 text-sm font-semibold lg:hidden">← Back to Orders</button><h2 className="text-lg font-semibold">Shipment Details & Tracking</h2>
     {!order?<p className="rounded-lg border p-5 text-sm">Choose an India order to view shipping details.</p>:<>
      <div className="space-y-2 rounded-lg border p-4 text-sm">
       <p><strong>Order:</strong> {order.order_number||order.id}</p>
