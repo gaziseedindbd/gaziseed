@@ -27,7 +27,8 @@ Deno.serve(async (request: Request) => {
   const reference = data.shipment_id;
   const awb = data.awb;
   const status = data.current_status ?? data.status;
-  if ((typeof reference !== "string" && typeof reference !== "number") ||
+  if (((typeof reference !== "string" && typeof reference !== "number") &&
+       (typeof awb !== "string" && typeof awb !== "number")) ||
       typeof status !== "string" || status.length > 100 || !status ||
       (awb !== undefined && typeof awb !== "string" && typeof awb !== "number"))
     return reply(400, { ok: false });
@@ -37,14 +38,18 @@ Deno.serve(async (request: Request) => {
   const admin = createClient(endpoint, JSON.parse(secrets).default, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data: shipment, error: lookupError } = await admin.from("india_shipping_shipments")
-    .select("id,awb").eq("external_shipment_id", String(reference)).maybeSingle();
+  const lookup = admin.from("india_shipping_shipments").select("id,awb");
+  const { data: shipment, error: lookupError } = await (
+    reference !== undefined && reference !== null
+      ? lookup.eq("external_shipment_id", String(reference))
+      : lookup.eq("awb", String(awb))
+  ).maybeSingle();
   if (lookupError) return reply(503, { ok: false });
   if (!shipment) return reply(200, { ok: true, ignored: true });
   if (awb !== undefined && shipment.awb && String(shipment.awb) !== String(awb))
     return reply(409, { ok: false });
   const eventId = data.event_id;
-  const time = data.updated_time;
+  const time = data.current_timestamp ?? data.updated_time;
   const eventKey = JSON.stringify([
     typeof eventId === "string" || typeof eventId === "number" ? String(eventId).slice(0, 100) : "",
     status,
