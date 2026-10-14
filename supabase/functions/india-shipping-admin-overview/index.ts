@@ -24,6 +24,8 @@ Deno.serve(async req=>{
   const shipmentIds=(shipments??[]).map(x=>x.id);
   const {data:events,error:eventError}=shipmentIds.length?await db.from("india_shipping_webhook_events").select("shipment_id,event_status,received_at,event_occurred_at").in("shipment_id",shipmentIds).order("received_at",{ascending:false}).limit(180):{data:[],error:null};
   if(eventError)return reply(503,{ok:false,code:"events_unavailable"});
-  return reply(200,{ok:true,orders:orders??[],shipments:shipments??[],events:events??[],readOnly:true});
+  const {data:preparations,error:prepError}=ids.length?await db.from("india_shipping_preparations").select("order_id,delivery_pin,weight_kg,length_cm,breadth_cm,height_cm,packing_notes,updated_at").in("order_id",ids):{data:[],error:null};
+  if(prepError)return reply(503,{ok:false,code:"preparations_unavailable"});
+  return reply(200,{ok:true,orders:orders??[],shipments:shipments??[],events:events??[],preparations:preparations??[],readOnly:true});
  }catch{return reply(503,{ok:false});}
 });
