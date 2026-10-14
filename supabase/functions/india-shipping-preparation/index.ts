@@ -18,10 +18,10 @@ Deno.serve(async req=>{
   const body:unknown=await req.json();
   if(!body||typeof body!=="object"||Array.isArray(body))return reply(400,{ok:false});
   const data=body as Record<string,unknown>;
-  if(typeof data.order_id!=="string"||!/^[a-f0-9-]{36}$/i.test(data.order_id))return reply(400,{ok:false});
+  if(typeof data.order_id!=="string"||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(data.order_id))return reply(400,{ok:false});
   if(typeof data.delivery_pin!=="string"||!/^[1-9][0-9]{5}$/.test(data.delivery_pin))return reply(400,{ok:false,code:"invalid_pin"});
   for(const [key,max] of [["weight_kg",100],["length_cm",200],["breadth_cm",200],["height_cm",200]] as const){
-   if(typeof data[key]!=="number"||!Number.isFinite(data[key])||data[key]<=0||data[key]>max)return reply(400,{ok:false,code:"invalid_dimensions"});
+   if(typeof data[key]!=="number"||!Number.isFinite(data[key])||data[key]<(key==="weight_kg"?0.001:0.01)||data[key]>max)return reply(400,{ok:false,code:"invalid_dimensions"});
   }
   if(typeof data.packing_notes!=="string"||data.packing_notes.length>500)return reply(400,{ok:false,code:"invalid_notes"});
   const db=createClient(url,JSON.parse(secrets).default,{auth:{persistSession:false,autoRefreshToken:false}});
@@ -36,7 +36,7 @@ Deno.serve(async req=>{
    weight_kg:data.weight_kg,length_cm:data.length_cm,breadth_cm:data.breadth_cm,height_cm:data.height_cm,
    packing_notes:data.packing_notes,updated_by:user.data.user.id,updated_at:new Date().toISOString()
   },{onConflict:"order_id"});
-  if(saveError)return reply(503,{ok:false,code:"draft_save_failed"});
+  if(saveError){console.error("India shipping draft save failed",saveError.code);return reply(503,{ok:false,code:"draft_save_failed"});}
   return reply(200,{ok:true,saved:true,bookingCreated:false});
  }catch{return reply(503,{ok:false});}
 });
