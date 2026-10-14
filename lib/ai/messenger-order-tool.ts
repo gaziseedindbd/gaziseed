@@ -439,18 +439,15 @@ function formatMessengerOrderCartSummary(
         : '🛒 কার্টে এখনো কোনো পণ্য নেই।';
   }
 
-  const lines = items.map(
-    (item) =>
-      `• ${item.product_name} × ${item.quantity} = ${currency}${(
-        item.unit_price * item.quantity
-      ).toFixed(0)}`,
-  );
+  // Pending cart prices are estimates; the order/payment backend is authoritative.
+  // Avoid presenting potentially stale local unit prices as confirmed line totals.
+  const lines = items.map((item) => `• ${item.product_name} × ${item.quantity}`);
   const subtotal = items.reduce(
     (sum, item) => sum + item.unit_price * item.quantity,
     0,
   );
   const subtotalLabel =
-    language === 'Hindi' ? 'Subtotal' : language === 'English' ? 'Subtotal' : 'সাবটোটাল';
+    language === 'Hindi' ? 'Estimated subtotal' : language === 'English' ? 'Estimated subtotal' : 'আনুমানিক সাবটোটাল';
   const cartLabel =
     language === 'Hindi' || language === 'English' ? '🛒 Cart:' : '🛒 কার্ট:';
 
@@ -653,6 +650,7 @@ export async function createMessengerIndiaCodPayment(args: {
   return {
     paymentUrl: siteUrl + '/messenger-payment?order_id=' + encodeURIComponent(data.order_id as string),
     advanceAmount: Number(data.quote?.advance_amount || data.order_amount || 0),
+    subtotal: Number(data.quote?.subtotal || 0),
     finalAmount: Number(data.quote?.final_amount || 0),
     deliveryCharge: Number(data.quote?.delivery_charge || 0),
     dueAmount: Math.max(0, Number(data.quote?.final_amount || 0) - Number(data.quote?.advance_amount || data.order_amount || 0)),
@@ -722,23 +720,48 @@ export async function handleMessengerOrderFlow(args: {
         };
       }
 
-      if (quantity > pending.stock) {
+      const existingItem = cartItems.find((item) => item.product_id === pending.product_id);
+      const combinedQuantity = Math.min(99, (existingItem?.quantity ?? 0) + quantity);
+
+      if (combinedQuantity > pending.stock) {
         return {
           handled: true,
           reply:
             replyLanguage === 'Hindi'
-              ? `माफ़ कीजिए, अभी ${pending.stock} packet ही stock में हैं। कितने लेने हैं?`
+              ? `माफ़ कीजिए, अभी कुल ${pending.stock} packet ही stock में हैं। आपके cart में पहले से ${existingItem?.quantity ?? 0} packet हैं। कृपया कम quantity बताएं।`
               : replyLanguage === 'English'
-                ? `Sorry, only ${pending.stock} packets are currently in stock. How many would you like?`
-                : `দুঃখিত, বর্তমানে ${pending.stock}টি প্যাকেটের বেশি স্টক নেই। কতটি নিতে চান?`,
+                ? `Sorry, only ${pending.stock} packets are currently in stock. Your cart already has ${existingItem?.quantity ?? 0}. Please choose a lower quantity.`
+                : `দুঃখিত, বর্তমানে মোট ${pending.stock}টি প্যাকেট স্টকে আছে। আপনার কার্টে আগে থেকেই ${existingItem?.quantity ?? 0}টি আছে। অনুগ্রহ করে কম পরিমাণ দিন।`,
           pending,
         };
       }
+
+      // Bulk tiers apply to the final quantity for this product in the cart,
+      // because addPendingMessengerOrderToCart adds to an existing line item.
+      const { data: bulkTier, error: bulkTierError } = await args.supabase
+        .from('bulk_pricing')
+        .select('min_quantity,unit_price')
+        .eq('product_id', pending.product_id)
+        .is('variant_id', null)
+        .eq('country_code', args.country)
+        .eq('is_active', true)
+        .lte('min_quantity', combinedQuantity)
+        .gt('unit_price', 0)
+        .order('min_quantity', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (bulkTierError) throw bulkTierError;
+      const quantityUnitPrice =
+        typeof bulkTier?.unit_price === 'number' && bulkTier.unit_price > 0
+          ? bulkTier.unit_price
+          : pending.unit_price;
 
       const next = applyMessengerCustomerProfileToPending(
         {
           ...pending,
           quantity,
+          unit_price: quantityUnitPrice,
           step: 'name',
         },
         args.customerProfile,
@@ -1102,29 +1125,36 @@ export async function handleMessengerOrderFlow(args: {
             items: orderItems,
           });
           const cartSummary = formatMessengerOrderCartSummary(orderItems, currency, replyLanguage);
+          const confirmedSubtotal = payment.subtotal > 0
+            ? (replyLanguage === 'Hindi' ? 'Subtotal' : replyLanguage === 'English' ? 'Subtotal' : 'সাবটোটাল') + `: ${currency}${payment.subtotal.toFixed(0)}`
+            : '';
+          const confirmedTotal = payment.finalAmount > 0
+            ? (replyLanguage === 'Hindi' ? 'Grand total' : replyLanguage === 'English' ? 'Grand total' : 'সর্বমোট') + `: ${currency}${payment.finalAmount.toFixed(0)}`
+            : '';
+          const pricedCartSummary = payment.subtotal > 0
+            ? cartSummary.replace(/(?:Estimated subtotal|আনুমানিক সাবটোটাল):.*$/m, (replyLanguage === 'Hindi' ? 'Subtotal' : replyLanguage === 'English' ? 'Subtotal' : 'সাবটোটাল') + `: ${currency}${payment.subtotal.toFixed(0)}`)
+            : cartSummary;
+          const authoritativeSummary = [pricedCartSummary, confirmedTotal, `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}`].filter(Boolean).join('\\n');
           return {
             handled: true,
             reply:
               replyLanguage === 'Hindi'
-                ? '🇮🇳 आपका India COD payment step तैयार है।\n\n' + cartSummary + '\n' +
-                  `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}\n` +
+                ? '🇮🇳 आपका India COD payment step तैयार है।\n\n' + authoritativeSummary + '\n' +
                   `COD advance: ${currency}${payment.advanceAmount.toFixed(0)}\n` +
                   `Delivery पर बाकी: ${currency}${payment.dueAmount.toFixed(0)}\n\n` +
                   '🔐 पहले COD advance payment पूरा करें। Payment successful होने के बाद आपका COD order automatically confirm होगा।\n\n' +
                   '🔐 Payment button नीचे दिया गया है।'
                 : replyLanguage === 'English'
-                  ? '🇮🇳 Your India COD payment step is ready.\n\n' + cartSummary + '\n' +
-                    `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}\n` +
+                  ? '🇮🇳 Your India COD payment step is ready.\n\n' + authoritativeSummary + '\n' +
                     `COD advance: ${currency}${payment.advanceAmount.toFixed(0)}\n` +
                     `Remaining on delivery: ${currency}${payment.dueAmount.toFixed(0)}\n\n` +
                     '🔐 Complete the COD advance payment first. Your COD order will be confirmed automatically after successful payment.\n\n' +
                     '🔐 The payment button is below.'
-                  : '🇮🇳 আপনার India COD order-এর payment step প্রস্তুত।\n\n' + cartSummary + '\n' +
-                    `Delivery charge: ${currency}${payment.deliveryCharge.toFixed(0)}\n` +
+                  : '🇮🇳 আপনার India COD order-এর payment step প্রস্তুত।\n\n' + authoritativeSummary + '\n' +
                     `COD advance এখন: ${currency}${payment.advanceAmount.toFixed(0)}\n` +
                     `Delivery-এর সময় বাকি: ${currency}${payment.dueAmount.toFixed(0)}\n\n` +
                     '🔐 আগে COD advance payment সম্পন্ন করুন। Payment সফল হলে আপনার COD order automatically confirm হবে।\n\n' +
-                    '🔐 Payment button নিচে দেওয়া হলো।',
+                    '🔐 Payment button নিচে দেওয়া হলো.',
             paymentButton: {
               title:
                 replyLanguage === 'Hindi'
@@ -1179,15 +1209,19 @@ export async function handleMessengerOrderFlow(args: {
       }
 
       const cartSummary = formatMessengerOrderCartSummary(orderItems, currency, replyLanguage);
+      const confirmedSubtotal = Number(result.subtotal || 0);
+      const authoritativeSummary = confirmedSubtotal > 0
+        ? cartSummary.replace(/(?:Estimated subtotal|আনুমানিক সাবটোটাল):.*$/m, (replyLanguage === 'Hindi' ? 'Subtotal' : replyLanguage === 'English' ? 'Subtotal' : 'সাবটোটাল') + `: ${currency}${confirmedSubtotal.toFixed(0)}`)
+        : cartSummary;
 
       return {
         handled: true,
         reply:
           replyLanguage === 'Hindi'
-            ? `✅ आपका order सफलतापूर्वक बन गया है।\n\nOrder number: ${result.order_number || 'Not available'}\n${cartSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nOrder GAZI SEED order system में जोड़ दिया गया है।`
+            ? `✅ आपका order सफलतापूर्वक बन गया है।\n\nOrder number: ${result.order_number || 'Not available'}\n${authoritativeSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nOrder GAZI SEED order system में जोड़ दिया गया है।`
             : replyLanguage === 'English'
-              ? `✅ Your order has been created successfully.\n\nOrder number: ${result.order_number || 'Not available'}\n${cartSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nThe order has been added to the GAZI SEED order system.`
-              : `✅ আপনার অর্ডার সফলভাবে তৈরি হয়েছে।\n\nঅর্ডার নম্বর: ${result.order_number || 'পাওয়া যায়নি'}\n${cartSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nঅর্ডারটি GAZI SEED order system-এ যুক্ত হয়েছে।`,
+              ? `✅ Your order has been created successfully.\n\nOrder number: ${result.order_number || 'Not available'}\n${authoritativeSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nThe order has been added to the GAZI SEED order system.`
+              : `✅ আপনার অর্ডার সফলভাবে তৈরি হয়েছে।\n\nঅর্ডার নম্বর: ${result.order_number || 'পাওয়া যায়নি'}\n${authoritativeSummary}\nDelivery charge: ${currency}${Number(result.delivery_charge || 0).toFixed(0)}\nGrand total: ${currency}${Number(result.grand_total || result.final_amount || 0).toFixed(0)}\n\nঅর্ডারটি GAZI SEED order system-এ যুক্ত হয়েছে।`,
         pending: null,
       };
     }
