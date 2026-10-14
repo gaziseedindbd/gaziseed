@@ -14,7 +14,7 @@ export default function IndiaShippingDashboard(){
  const [pin,setPin]=useState(''),[weight,setWeight]=useState(''),[length,setLength]=useState(''),[breadth,setBreadth]=useState(''),[height,setHeight]=useState(''),[notes,setNotes]=useState('');
  const [saving,setSaving]=useState(false),[saveMessage,setSaveMessage]=useState('');
  const [mobileDetails,setMobileDetails]=useState(false);
- function chooseOrder(id:string){setSelected(id);setMobileDetails(true);window.scrollTo({top:0,behavior:'smooth'});}
+ function chooseOrder(id:string){setSelected(id);setSaveMessage('');setMobileDetails(true);window.scrollTo({top:0,behavior:'smooth'});}
  function backToOrders(){setMobileDetails(false);window.scrollTo({top:0,behavior:'smooth'});}
  useEffect(()=>{let alive=true;(async()=>{try{
  const {data:session}=await supabase.auth.getSession();
@@ -25,20 +25,31 @@ export default function IndiaShippingDashboard(){
  if(alive){setOrders(data.orders);setShipments(data.shipments??[]);setEvents(data.events??[]);setPreparations(data.preparations??[]);}
  }catch(e){if(alive)setError(e instanceof Error?e.message:'Unable to load shipping data');}
  finally{if(alive)setLoading(false);}})();return()=>{alive=false};},[]);
- useEffect(()=>{const saved=preparations.find(p=>p.order_id===selected);setPin(saved?.delivery_pin??'');setWeight(saved?String(saved.weight_kg):'');setLength(saved?String(saved.length_cm):'');setBreadth(saved?String(saved.breadth_cm):'');setHeight(saved?String(saved.height_cm):'');setNotes(saved?.packing_notes??'');setSaveMessage('');},[selected,preparations]);
+ useEffect(()=>{const saved=preparations.find(p=>p.order_id===selected);setPin(saved?.delivery_pin??'');setWeight(saved?String(saved.weight_kg):'');setLength(saved?String(saved.length_cm):'');setBreadth(saved?String(saved.breadth_cm):'');setHeight(saved?String(saved.height_cm):'');setNotes(saved?.packing_notes??'');},[selected,preparations]);
  async function savePreparation(){
   setSaving(true);setSaveMessage('');
   try{
    if(!selected||!/^[1-9][0-9]{5}$/.test(pin))throw new Error('Enter a valid 6-digit delivery PIN');
    const dimensions=[weight,length,breadth,height].map(Number);
-   if(dimensions.some((n,i)=>!Number.isFinite(n)||n<=0||n>(i===0?100:200)))throw new Error('Enter valid positive parcel measurements');
+   if(dimensions.some((n,i)=>!Number.isFinite(n)||n<(i===0?0.001:0.01)||n>(i===0?100:200)))throw new Error('Enter valid weight (0.001–100 kg) and dimensions (0.01–200 cm)');
    if(notes.length>500)throw new Error('Packing notes cannot exceed 500 characters');
    const {data:session}=await supabase.auth.getSession();
    if(!session.session?.access_token)throw new Error('India Admin login required');
    const {data,error:saveError}=await supabase.functions.invoke('india-shipping-preparation',{method:'POST',
     body:{order_id:selected,delivery_pin:pin,weight_kg:dimensions[0],length_cm:dimensions[1],breadth_cm:dimensions[2],height_cm:dimensions[3],packing_notes:notes},
     headers:{Authorization:'Bearer '+session.session.access_token,'x-gazi-country':'IN'}});
-   if(saveError||data?.ok!==true)throw new Error('Could not save preparation. Verify India Admin access and shipment state.');
+   if(saveError||data?.ok!==true){
+    let code:unknown=data?.code;
+    if(saveError?.context instanceof Response){try{const body=await saveError.context.json();code=body?.code;}catch{/* Network or invalid response */}}
+    const messages:Record<string,string>={
+     invalid_pin:'Delivery PIN must contain six digits.',
+     invalid_dimensions:'Check parcel weight and dimensions.',
+     invalid_notes:'Packing notes are too long.',
+     shipment_already_created:'This order already has a shipment. Editing is disabled.',
+     draft_save_failed:'Database could not save the draft. Please retry or ask admin to check logs.',
+    };
+    throw new Error(typeof code==='string'&&messages[code]?messages[code]:'Save failed. Please confirm India Admin access and retry.');
+   }
    setPreparations(old=>[...old.filter(p=>p.order_id!==selected),{order_id:selected,delivery_pin:pin,weight_kg:dimensions[0],length_cm:dimensions[1],breadth_cm:dimensions[2],height_cm:dimensions[3],packing_notes:notes,updated_at:new Date().toISOString()}]);
    setSaveMessage('Draft saved securely. No shipment or AWB was created.');
   }catch(e){setSaveMessage(e instanceof Error?e.message:'Unable to save');}finally{setSaving(false);}
@@ -86,7 +97,7 @@ export default function IndiaShippingDashboard(){
       </div>
       <label className="flex flex-col gap-1 text-sm">Packing notes (optional)<textarea className="rounded-lg border p-3" maxLength={500} rows={2} value={notes} onChange={e=>setNotes(e.target.value)} /></label>
       <button type="button" onClick={savePreparation} disabled={saving||Boolean(shipment?.awb||shipment?.external_shipment_id)} className="rounded-lg bg-emerald-700 px-5 py-3 font-semibold text-white disabled:opacity-50">{saving?"Saving…":"Save Preparation Draft"}</button>
-      {saveMessage&&<p role="status" className="text-sm">{saveMessage}</p>}
+      {saveMessage&&<p role="status" aria-live="polite" className="rounded-lg border p-3 text-sm">{saveMessage}</p>}
       {preparations.some(p=>p.order_id===selected)&&<p className="text-xs text-emerald-700">Saved draft available for this India order.</p>}
      </div>
      <div className="rounded-lg border p-4"><h3 className="font-semibold">Courier Selection</h3>
