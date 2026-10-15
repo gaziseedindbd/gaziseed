@@ -63,7 +63,7 @@ export default function OfferLandingPage() {
       ? (selectedTier.offer_price || selectedTier.price || 0)
       : (selectedBundle?.bundle_price || landing?.offer_price || product?.sale_price || product?.regular_price || 0)
   );
-  const isFreeDelivery = !!(selectedTier?.free_delivery || selectedTier?.is_free_delivery || selectedBundle?.free_delivery);
+  const isFreeDelivery = !!(product?.free_delivery || selectedTier?.free_delivery || selectedTier?.is_free_delivery || selectedBundle?.free_delivery);
   const indiaDelivery = isFreeDelivery ? 0 : Number(deliveryCharge || 0);
   const indiaGrandTotal = offerPrice + indiaDelivery;
   const indiaCodAdvance = indiaDelivery > 0 ? indiaDelivery : 120;
