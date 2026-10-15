@@ -129,8 +129,9 @@ export default function CheckoutPage() {
     // Render the locally stored cart immediately; validate product activity/country in the background.
     const localCart = getCart();
     setCart(localCart as CartItemWithDiscount[]);
-    void getValidatedCart(visitorCountry).then((validCart) => setCart(validCart as CartItemWithDiscount[]));
-    const handler = () => void getValidatedCart(getVisitorCountry()).then((validCart) => setCart(validCart as CartItemWithDiscount[]));
+    void getValidatedCart(visitorCountry).then(() => setCart(getCart() as CartItemWithDiscount[]));
+    // Reflect +/- changes immediately; order submission still validates stock and product activity.
+    const handler = () => setCart(getCart() as CartItemWithDiscount[]);
     window.addEventListener('cart-updated', handler);
 
     supabase.auth.getSession().then(async ({ data }) => {
