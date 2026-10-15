@@ -31,7 +31,7 @@ export default function IndiaShippingDashboard(){
   try{
    if(!selected||!/^[1-9][0-9]{5}$/.test(pin))throw new Error('Enter a valid 6-digit delivery PIN');
    const dimensions=[weight,length,breadth,height].map(Number);
-   if(dimensions.some((n,i)=>!Number.isFinite(n)||n<(i===0?0.001:0.01)||n>(i===0?100:200)))throw new Error('Enter valid weight (0.001–100 kg) and dimensions (0.01–200 cm)');
+   if(dimensions.some((n,i)=>!Number.isFinite(n)||n<(i===0?0.01:1)||n>(i===0?100:200)))throw new Error('Enter valid weight (0.01–100 kg) and dimensions (1–200 cm)');
    if(notes.length>500)throw new Error('Packing notes cannot exceed 500 characters');
    const {data:session}=await supabase.auth.getSession();
    if(!session.session?.access_token)throw new Error('India Admin login required');
@@ -91,7 +91,7 @@ export default function IndiaShippingDashboard(){
       <p><strong>Pickup approval:</strong> {shipment?.pickup_approved_at?'Recorded':'Not approved'}</p>
      </div>
      <div className="space-y-3 rounded-lg border p-4"><h3 className="font-semibold">Shipping Preparation · Save Draft</h3>
-      <p className="text-xs text-gray-600">Check the customer address before entering the PIN. Draft measurements do not confirm payment or authorize dispatch.</p>
+      <p className="text-xs text-gray-600">Check the customer address before entering the PIN. Minimum parcel weight 0.01 kg and each dimension 1 cm. Draft measurements do not confirm payment or authorize dispatch.</p>
       <div className="grid gap-3 sm:grid-cols-2">
        {([["Delivery PIN",pin,setPin,"700016"],["Weight (kg)",weight,setWeight,"0.5"],["Length (cm)",length,setLength,"15"],["Breadth (cm)",breadth,setBreadth,"10"],["Height (cm)",height,setHeight,"5"]] as const).map(([title,value,setter,placeholder])=><label key={title} className="flex flex-col gap-1 text-sm">{title}<input className="w-full rounded-lg border p-3" value={value} onChange={e=>setter(e.target.value)} placeholder={placeholder} inputMode={title==="Delivery PIN"?"numeric":"decimal"}/></label>)}
       </div>
@@ -99,6 +99,7 @@ export default function IndiaShippingDashboard(){
       <button type="button" onClick={savePreparation} disabled={saving||Boolean(shipment?.awb||shipment?.external_shipment_id)} className="rounded-lg bg-emerald-700 px-5 py-3 font-semibold text-white disabled:opacity-50">{saving?"Saving…":"Save Preparation Draft"}</button>
       {saveMessage&&<p role="status" aria-live="polite" className="rounded-lg border p-3 text-sm">{saveMessage}</p>}
       {preparations.some(p=>p.order_id===selected)&&<p className="text-xs text-emerald-700">Saved draft available for this India order.</p>}
+      {preparations.some(p=>p.order_id===selected&&(Number(p.weight_kg)<0.01||Number(p.length_cm)<1||Number(p.breadth_cm)<1||Number(p.height_cm)<1))&&<p role="alert" className="text-sm font-medium text-amber-700">Previously saved measurements are too small for a practical parcel. Correct and save them before any future shipment.</p>}
      </div>
      <div className="rounded-lg border p-4"><h3 className="font-semibold">Courier Selection</h3>
       <p className="mt-2 text-sm">Use the rate-check page to compare eligible couriers. Selection/booking is disabled until KYC approval, verified payment, shipping data and duplicate safeguards are operational.</p>
