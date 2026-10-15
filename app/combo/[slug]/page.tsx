@@ -170,9 +170,8 @@ export default function ComboLandingPage() {
   const currentTierFreeValue = currentTier?.freeDelivery ?? currentTier?.free_delivery;
   const freeDelivery = typeof currentTierFreeValue === 'boolean'
     ? currentTierFreeValue
-    : combo?.free_delivery === true || (country === 'BD' && offer >= 600);
-  const fallbackDelivery = freeDelivery ? 0 : country === 'IN' ? (offer >= 499 ? 60 : 90) : offer >= 400 ? 50 : offer >= 200 ? 70 : 120;
-  const delivery = country === 'IN' && indiaDeliveryQuote !== null ? indiaDeliveryQuote : fallbackDelivery;
+    : combo?.free_delivery === true;
+  const delivery = indiaDeliveryQuote ?? 0;
   const total = offer + delivery;
   const codAdvance = delivery > 0 ? delivery : 120;
   const codDue = Math.max(0, total - codAdvance);
@@ -180,7 +179,7 @@ export default function ComboLandingPage() {
   useEffect(() => {
     let active = true;
     const loadQuote = async () => {
-      if (country !== 'IN' || offer <= 0) {
+      if (offer <= 0) {
         setIndiaDeliveryQuote(null);
         setIndiaDeliveryQuoteLoading(false);
         return;
@@ -448,7 +447,7 @@ export default function ComboLandingPage() {
                   const tierFreeValue = tier?.freeDelivery ?? tier?.free_delivery;
                   const tierFree = typeof tierFreeValue === 'boolean'
                     ? tierFreeValue
-                    : combo?.free_delivery === true || (country === 'BD' && tierOffer >= 600);
+                    : combo?.free_delivery === true;
                   const selected = qty === selectedQty;
                   return (
                     <button key={qty} type="button" onClick={() => setSelectedQty(qty)} className={`group w-full rounded-[26px] border-2 p-4 text-left transition-all ${selected ? 'border-emerald-600 bg-emerald-50 shadow-[0_14px_35px_rgba(5,150,105,.14)]' : 'border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/40'}`}>
