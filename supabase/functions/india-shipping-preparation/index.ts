@@ -21,7 +21,7 @@ Deno.serve(async req=>{
   if(typeof data.order_id!=="string"||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(data.order_id))return reply(400,{ok:false});
   if(typeof data.delivery_pin!=="string"||!/^[1-9][0-9]{5}$/.test(data.delivery_pin))return reply(400,{ok:false,code:"invalid_pin"});
   for(const [key,max] of [["weight_kg",100],["length_cm",200],["breadth_cm",200],["height_cm",200]] as const){
-   if(typeof data[key]!=="number"||!Number.isFinite(data[key])||data[key]<(key==="weight_kg"?0.001:0.01)||data[key]>max)return reply(400,{ok:false,code:"invalid_dimensions"});
+   if(typeof data[key]!=="number"||!Number.isFinite(data[key])||data[key]<(key==="weight_kg"?0.01:1)||data[key]>max)return reply(400,{ok:false,code:"invalid_dimensions"});
   }
   if(typeof data.packing_notes!=="string"||data.packing_notes.length>500)return reply(400,{ok:false,code:"invalid_notes"});
   const db=createClient(url,JSON.parse(secrets).default,{auth:{persistSession:false,autoRefreshToken:false}});
