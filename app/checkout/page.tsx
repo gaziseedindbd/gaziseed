@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getCart, getValidatedCart, isCartAvailable } from '@/lib/cart';
+import { getCart, getValidatedCart, isCartAvailable, updateCartQuantity, addToCart } from '@/lib/cart';
 import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/data';
-import type { CustomerAddress } from '@/lib/supabase/types';
+import type { CustomerAddress, Product } from '@/lib/supabase/types';
 import { AddressSelector, formatAddressToString, type AddressValue } from '@/components/site/address-selector';
 import { getMarketingCartFingerprint, trackMarketingEvent } from '@/lib/marketing';
 import { useLang } from '@/components/site/language-provider';
@@ -18,6 +18,8 @@ import {
   Lock,
   MapPin,
   PackageCheck,
+  Plus,
+  Minus,
   Phone,
   ShieldCheck,
   ShoppingBag,
@@ -84,6 +86,41 @@ export default function CheckoutPage() {
   const [deliveryCharge, setDeliveryCharge] = useState(0);
   const [deliveryQuoteReady, setDeliveryQuoteReady] = useState(false);
   const [deliveryQuoteRetry, setDeliveryQuoteRetry] = useState(0);
+
+  const [showMoreProducts, setShowMoreProducts] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
+  const [moreProductsLoading, setMoreProductsLoading] = useState(false);
+  const [moreProductsError, setMoreProductsError] = useState('');
+  useEffect(() => {
+    if (!showMoreProducts || cart.length === 0) return;
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      setMoreProductsLoading(true);
+      setMoreProductsError('');
+      const term = productSearch.trim().replace(/[%_,]/g, ' ').slice(0, 55);
+      let query = supabase.from('products').select('*').eq('country_code', country).eq('is_active', true).gt('stock', 0).order('created_at', { ascending: false }).limit(12);
+      if (term) query = query.or(`name_en.ilike.%${term}%,name_bn.ilike.%${term}%`);
+      const { data, error: productError } = await query;
+      if (!active) return;
+      setMoreProductsLoading(false);
+      if (productError) { setMoreProductsError('Unable to load products. Please try again.'); return; }
+      const inCart = new Set(cart.map((item) => item.product_id));
+      setRecommendedProducts(((data || []) as Product[]).filter((product) => !inCart.has(product.id) && Number(product.stock) > 0));
+    }, 300);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [showMoreProducts, productSearch, country, cart.length]);
+  const changeCheckoutQuantity = (item: CartItemWithDiscount, delta: number) => {
+    const next = item.quantity + delta;
+    if (next > 99) return;
+    updateCartQuantity(item.product_id, next, item.variant_id, item.bundle_id);
+  };
+  const addCheckoutProduct = (product: Product) => {
+    addToCart(product, Math.max(1, Number(product.min_order_qty) || 1));
+    setShowMoreProducts(false);
+    setProductSearch('');
+  };
+
 
   useEffect(() => {
     const visitorCountry = getVisitorCountry();
@@ -338,6 +375,17 @@ export default function CheckoutPage() {
   const codAdvance = country === 'IN' ? (deliveryCharge > 0 ? deliveryCharge : 120) : 0;
   const codAvailable = country !== 'IN' || deliveryCharge > 0 || payableTotal >= 120;
   const codDue = country === 'IN' && paymentMethod === 'cod' ? Math.max(0, payableTotal - codAdvance) : 0;
+
+  const freeDeliveryThreshold = useMemo(() => {
+    const candidates = deliveryRules.filter((rule) => rule.is_free && rule.min_order > 0)
+      .sort((a, b) => a.min_order - b.min_order);
+    return candidates.find((rule) => rule.min_order > subtotal)?.min_order ??
+      candidates[candidates.length - 1]?.min_order ?? null;
+  }, [deliveryRules, subtotal]);
+  const freeDeliveryUnlocked = deliveryQuoteReady && (deliveryCharge === 0 || freeDeliveryProductIds.size > 0);
+  const freeDeliveryRemaining = freeDeliveryThreshold == null ? null : Math.max(0, freeDeliveryThreshold - subtotal);
+  const freeDeliveryPercent = freeDeliveryUnlocked ? 100 : freeDeliveryThreshold
+    ? Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100)) : 0;
 
   const deliveryMessage = useMemo(() => {
     if (freeDeliveryProductIds.size > 0 || deliveryCharge === 0) {
@@ -923,18 +971,58 @@ export default function CheckoutPage() {
                             }
                           }}
                         />
-                        <span className="absolute right-1 top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[9px] font-black text-background">{item.quantity}</span>
+
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="line-clamp-2 text-xs font-black leading-5 text-foreground">{item.name}</p>
                         {item.variant_name && <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{item.variant_name}</p>}
+                        <div className="mt-2 inline-flex items-center gap-1 rounded-xl border border-border/70 bg-background p-1" aria-label={`Quantity for ${item.name}`}>
+                          <button type="button" aria-label={`Decrease quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, -1)} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary"><Minus className="h-4 w-4" /></button>
+                          <span aria-live="polite" className="min-w-7 text-center text-sm font-black tabular-nums">{item.quantity}</span>
+                          <button type="button" aria-label={`Increase quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, 1)} disabled={item.quantity >= 99} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary"><Plus className="h-4 w-4" /></button>
+                        </div>
                       </div>
                       <span className="shrink-0 text-xs font-black text-foreground">{formatPrice(item.unit_price * item.quantity)}</span>
                     </div>
                   ))}
+                  <button type="button" onClick={() => setShowMoreProducts((value) => !value)} aria-expanded={showMoreProducts}
+                    className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/60 px-3 py-2 text-sm font-bold text-primary hover:bg-primary/5">
+                    <Plus className="h-4 w-4" /> {t('আরও পণ্য যোগ করুন', 'Add another product', 'और उत्पाद जोड़ें')}
+                  </button>
+                  {showMoreProducts && <div className="space-y-3 rounded-2xl border border-border/70 bg-background p-3">
+                    <label className="block text-xs font-bold" htmlFor="checkout-add-product-search">{t('পণ্য খুঁজুন', 'Search products', 'उत्पाद खोजें')}</label>
+                    <input id="checkout-add-product-search" type="search" value={productSearch} onChange={(event) => setProductSearch(event.target.value)}
+                      placeholder={t('পণ্যের নাম লিখুন', 'Type a product name', 'उत्पाद का नाम लिखें')}
+                      className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" />
+                    {moreProductsLoading && <p className="text-xs text-muted-foreground">Loading products…</p>}
+                    {moreProductsError && <p role="alert" className="text-xs text-rose-600">{moreProductsError}</p>}
+                    {!moreProductsLoading && !moreProductsError && recommendedProducts.length === 0 && <p className="text-xs text-muted-foreground">No additional products found.</p>}
+                    <div className="max-h-72 space-y-2 overflow-y-auto">
+                      {!moreProductsLoading && recommendedProducts.map((product) => <div key={product.id} className="flex items-center gap-2 rounded-xl border border-border/60 p-2">
+                        <img src={product.image || '/placeholder.svg'} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
+                        <span className="min-w-0 flex-1"><span className="block line-clamp-2 text-xs font-bold">{product.name_en || product.name_bn}</span>
+                          <span className="text-xs text-muted-foreground">{formatPrice(product.sale_price && product.sale_price > 0 && product.sale_price < product.regular_price ? product.sale_price : product.regular_price)}</span></span>
+                        <button type="button" onClick={() => addCheckoutProduct(product)} className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">{t('যোগ করুন', 'Add', 'जोड़ें')}</button>
+                      </div>)}
+                    </div>
+                  </div>}
                 </div>
 
                 <div className="space-y-3 p-5 sm:p-6">
+                  {(freeDeliveryThreshold !== null || freeDeliveryUnlocked) && <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/[0.04] p-3.5" role="status" aria-live="polite">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-extrabold">
+                      <span>{!deliveryQuoteReady ? t('ডেলিভারি যাচাই হচ্ছে', 'Checking delivery', 'डिलीवरी की जाँच हो रही है') : freeDeliveryUnlocked
+                        ? t('ফ্রি ডেলিভারি আনলক হয়েছে!', 'Free delivery unlocked!', 'मुफ्त डिलीवरी मिल गई!')
+                        : freeDeliveryRemaining !== null
+                          ? t(`আর ${formatPrice(freeDeliveryRemaining)} যোগ করুন ফ্রি ডেলিভারির জন্য`, `Add ${formatPrice(freeDeliveryRemaining)} more for free delivery`, `मुफ्त डिलीवरी के लिए ${formatPrice(freeDeliveryRemaining)} और जोड़ें`)
+                          : t('ডেলিভারি চার্জ প্রযোজ্য', 'Delivery charge applies', 'डिलीवरी शुल्क लागू है')}</span>
+                      {freeDeliveryThreshold !== null && <span className="tabular-nums text-primary">{formatPrice(subtotal)} / {formatPrice(freeDeliveryThreshold)}</span>}
+                    </div>
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-primary/15" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={freeDeliveryPercent} aria-label="Free delivery progress">
+                      <div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${freeDeliveryPercent}%` }} />
+                    </div>
+                  </div>}
+
                   <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('সাবটোটাল', 'Subtotal')}</span><span className="font-bold">{formatPrice(subtotal)}</span></div>
                   {savingsTotal > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t(`আপনার সাশ্রয়${discountPercent ? ` (${discountPercent}%)` : ''}`, `You save${discountPercent ? ` (${discountPercent}%)` : ''}`)}</span><span className="font-bold">-{formatPrice(savingsTotal)}</span></div>}
                   {couponDiscount > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('কুপন ডিসকাউন্ট', 'Coupon discount')}</span><span className="font-bold">-{formatPrice(couponDiscount)}</span></div>}
