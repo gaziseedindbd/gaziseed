@@ -234,12 +234,7 @@ export default function AnimatedLandingPage() {
   const offerPrice = Number(selectedPackage?.offer_price || 0);
   const comparePrice = Number(selectedPackage?.compare_price || 0);
   const savings = Math.max(0, comparePrice - offerPrice);
-  const fallbackDeliveryCharge = selectedPackage?.free_delivery
-    ? 0
-    : selectedPackage?.custom_delivery_charge != null
-      ? Number(selectedPackage.custom_delivery_charge)
-      : offerPrice >= 600 ? 0 : offerPrice >= 400 ? 50 : offerPrice >= 200 ? 70 : 120;
-  const deliveryCharge = country === 'IN' && indiaDeliveryQuote !== null ? indiaDeliveryQuote : fallbackDeliveryCharge;
+  const deliveryCharge = indiaDeliveryQuote ?? 0;
   const grandTotal = offerPrice + deliveryCharge;
   const codAdvance = deliveryCharge > 0 ? deliveryCharge : 120;
   const codDue = Math.max(0, grandTotal - codAdvance);
@@ -247,18 +242,13 @@ export default function AnimatedLandingPage() {
   useEffect(() => {
     let active = true;
     const loadIndiaDeliveryQuote = async () => {
-      if (country !== 'IN' || !selectedPackage || offerPrice <= 0) {
+      if (!selectedPackage || offerPrice <= 0) {
         setIndiaDeliveryQuote(null);
         setIndiaDeliveryQuoteLoading(false);
         return;
       }
-      if (selectedPackage.free_delivery) {
+      if (selectedPackage.free_delivery || product?.free_delivery === true) {
         setIndiaDeliveryQuote(0);
-        setIndiaDeliveryQuoteLoading(false);
-        return;
-      }
-      if (selectedPackage.custom_delivery_charge !== null && selectedPackage.custom_delivery_charge !== undefined) {
-        setIndiaDeliveryQuote(Math.max(0, Number(selectedPackage.custom_delivery_charge)));
         setIndiaDeliveryQuoteLoading(false);
         return;
       }
@@ -280,7 +270,7 @@ export default function AnimatedLandingPage() {
     };
     void loadIndiaDeliveryQuote();
     return () => { active = false; };
-  }, [country, selectedPackage, offerPrice, t]);
+  }, [country, selectedPackage, offerPrice, product?.free_delivery, t]);
 
   const pageTranslation = page?.translations?.[lang] || {};
   const productTranslation = product?.translations?.[lang] || {};
@@ -357,7 +347,7 @@ export default function AnimatedLandingPage() {
       return;
     }
     if (!address.division || !address.district || !address.thana || !address.detail) { setError(t('সম্পূর্ণ ঠিকানা দিন', 'Enter your complete address', 'पूरा पता दर्ज करें')); return; }
-    if (country === 'IN' && (indiaDeliveryQuoteLoading || indiaDeliveryQuote === null)) { setError(t('ডেলিভারি চার্জ যাচাই করা হচ্ছে। একটু পরে চেষ্টা করুন।', 'Delivery charge is being checked. Please try again shortly.', 'डिलीवरी शुल्क जाँचा जा रहा है। थोड़ी देर बाद फिर कोशिश करें।')); return; }
+    if (indiaDeliveryQuoteLoading || indiaDeliveryQuote === null) { setError(t('ডেলিভারি চার্জ যাচাই করা হচ্ছে। একটু পরে চেষ্টা করুন।', 'Delivery charge is being checked. Please try again shortly.', 'डिलीवरी शुल्क जाँचा जा रहा है। थोड़ी देर बाद फिर कोशिश करें।')); return; }
 
     setSubmitting(true);
     try {
