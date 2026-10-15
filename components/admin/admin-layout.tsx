@@ -7,7 +7,7 @@ import { Loader2, LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Tag
 import Link from 'next/link';
 import { NotificationCenter } from './notification-center';
 
-type NavGroup = { label: string; items: { href: string; label: string; icon: any; masterOnly?: boolean }[] };
+type NavGroup = { label: string; items: { href: string; label: string; icon: any; masterOnly?: boolean; indiaOnly?: boolean }[] };
 type Branch = 'BD' | 'IN';
 
 const navGroups: NavGroup[] = [
@@ -16,6 +16,11 @@ const navGroups: NavGroup[] = [
     { href: '/admin/orders', label: 'সকল অর্ডার', icon: ShoppingCart },
     { href: '/admin/orders?source=website', label: 'ওয়েবসাইট অর্ডার', icon: ShoppingCart },
     { href: '/admin/orders?source=ads', label: 'Ads অর্ডার', icon: Megaphone },
+  ] },
+  { label: 'Courier Management', items: [
+    { href: '/admin/india-shipping', label: 'Shipping Dashboard', icon: LayoutDashboard, indiaOnly: true },
+    { href: '/admin/india-shipping/rates', label: 'Courier Rates', icon: Truck, indiaOnly: true },
+    { href: '/admin/india-shipping/connection', label: 'Shiprocket Connection', icon: Settings, indiaOnly: true },
   ] },
   { label: 'ক্যাটালগ', items: [
     { href: '/admin/products', label: 'প্রোডাক্ট', icon: Package },
@@ -209,7 +214,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               )}
             </div>
           </div>
-          <nav className="flex-1 overflow-y-auto p-3">{navGroups.map((group, gidx) => { const items = group.items.filter((item) => !item.masterOnly || isMasterAdmin); if (items.length === 0) return null; return <div key={gidx} className="mb-4">{group.label && <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">{group.label}</p>}{items.map((item) => <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)} aria-current={isActive(item.href) ? 'page' : undefined} className={`mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive(item.href) ? 'bg-primary text-primary-foreground' : 'text-foreground/70 hover:bg-secondary'}`}><item.icon className="h-4 w-4" />{item.label}</Link>)}</div>; })}</nav>
+          <nav className="flex-1 overflow-y-auto p-3">{navGroups.map((group, gidx) => { const items = group.items.filter((item) => (!item.masterOnly || isMasterAdmin) && (!item.indiaOnly || selectedBranch === 'IN')); if (items.length === 0) return null; return <div key={gidx} className="mb-4">{group.label && <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">{group.label}</p>}{items.map((item) => <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)} aria-current={isActive(item.href) ? 'page' : undefined} className={`mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive(item.href) ? 'bg-primary text-primary-foreground' : 'text-foreground/70 hover:bg-secondary'}`}><item.icon className="h-4 w-4" />{item.label}</Link>)}</div>; })}</nav>
           <div className="border-t border-border p-3"><button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10"><LogOut className="h-4 w-4" /> লগআউট</button></div>
         </div>
       </aside>
