@@ -170,7 +170,7 @@ export default function ComboLandingPage() {
   const currentTierFreeValue = currentTier?.freeDelivery ?? currentTier?.free_delivery;
   const freeDelivery = typeof currentTierFreeValue === 'boolean'
     ? currentTierFreeValue
-    : combo?.free_delivery === true;
+    : combo?.free_delivery === true || items.some((item) => item.products?.free_delivery === true);
   const delivery = indiaDeliveryQuote ?? 0;
   const total = offer + delivery;
   const codAdvance = delivery > 0 ? delivery : 120;
