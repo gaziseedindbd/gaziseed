@@ -247,7 +247,7 @@ export default function AnimatedLandingPage() {
         setIndiaDeliveryQuoteLoading(false);
         return;
       }
-      if (selectedPackage.free_delivery) {
+      if (selectedPackage.free_delivery || product?.free_delivery === true) {
         setIndiaDeliveryQuote(0);
         setIndiaDeliveryQuoteLoading(false);
         return;
@@ -270,7 +270,7 @@ export default function AnimatedLandingPage() {
     };
     void loadIndiaDeliveryQuote();
     return () => { active = false; };
-  }, [country, selectedPackage, offerPrice, t]);
+  }, [country, selectedPackage, offerPrice, product?.free_delivery, t]);
 
   const pageTranslation = page?.translations?.[lang] || {};
   const productTranslation = product?.translations?.[lang] || {};
