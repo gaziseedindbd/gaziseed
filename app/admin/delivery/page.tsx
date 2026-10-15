@@ -86,8 +86,11 @@ export default function AdminDeliveryPage() {
     const active = loadedRules.filter((rule) => rule.is_active);
     const free = active.filter((rule) => rule.is_free).sort((a,b) => Number(a.min_order ?? 0)-Number(b.min_order ?? 0))[0];
     const paid = active.filter((rule) => !rule.is_free).sort((a,b) => Number(b.max_order ?? -1)-Number(a.max_order ?? -1))[0];
-    setSimpleThreshold(free ? String(Math.max(0, Number(free.min_order ?? 0) - 0.01)) : paid?.max_order != null ? String(paid.max_order) : '500');
-    setSimpleCharge(paid ? String(paid.charge) : '100');
+    const simpleMode = active.length === 2 && !!free && !!paid &&
+      Number(paid.min_order ?? 0) === 0 &&
+      paid.max_order != null && Number(free.min_order) === Number(paid.max_order) + 0.01;
+    setSimpleThreshold(simpleMode ? String(paid.max_order) : '500');
+    setSimpleCharge(simpleMode ? String(paid.charge) : '100');
     setSettings((s.data as CountrySettings | null) || null);
     setZones(z.data || []);
     setLoading(false);
@@ -195,7 +198,7 @@ export default function AdminDeliveryPage() {
         <div className="space-y-5">
           <section className="rounded-3xl border border-primary/25 bg-card p-5 shadow-sm sm:p-7">
             <h2 className="text-lg font-extrabold">{countryLabel} — Quick Delivery Policy</h2>
-            <p className="mt-1 text-sm text-muted-foreground">এই সেটিং সেভ করলে এই Branch-এর পুরোনো active delivery slabs বন্ধ হয়ে একটি standard charge এবং একটি free-delivery slab তৈরি হবে। Admin-এ Free Delivery tick দেওয়া পণ্য সবসময় FREE থাকবে।</p>
+            <p className="mt-1 text-sm text-muted-foreground">এখানে প্রস্তাবিত 500/100 policy দেখানো হচ্ছে; Save না করলে বর্তমান active slabs অপরিবর্তিত থাকবে। Save করলে এই Branch-এর পুরোনো active delivery slabs বন্ধ হয়ে একটি standard charge এবং একটি free-delivery slab তৈরি হবে। Admin-এ Free Delivery tick দেওয়া পণ্য সবসময় FREE থাকবে।</p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <Field label={`Free delivery above (${currency})`}><input type="number" min="0" max="1000000" step="0.01" className="input-bangla" value={simpleThreshold} onChange={e => setSimpleThreshold(e.target.value)} /></Field>
               <Field label={`Delivery charge up to threshold (${currency})`}><input type="number" min="0" max="100000" step="0.01" className="input-bangla" value={simpleCharge} onChange={e => setSimpleCharge(e.target.value)} /></Field>
