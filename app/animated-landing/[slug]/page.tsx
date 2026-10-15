@@ -234,12 +234,7 @@ export default function AnimatedLandingPage() {
   const offerPrice = Number(selectedPackage?.offer_price || 0);
   const comparePrice = Number(selectedPackage?.compare_price || 0);
   const savings = Math.max(0, comparePrice - offerPrice);
-  const fallbackDeliveryCharge = selectedPackage?.free_delivery
-    ? 0
-    : selectedPackage?.custom_delivery_charge != null
-      ? Number(selectedPackage.custom_delivery_charge)
-      : offerPrice >= 600 ? 0 : offerPrice >= 400 ? 50 : offerPrice >= 200 ? 70 : 120;
-  const deliveryCharge = country === 'IN' && indiaDeliveryQuote !== null ? indiaDeliveryQuote : fallbackDeliveryCharge;
+  const deliveryCharge = indiaDeliveryQuote ?? 0;
   const grandTotal = offerPrice + deliveryCharge;
   const codAdvance = deliveryCharge > 0 ? deliveryCharge : 120;
   const codDue = Math.max(0, grandTotal - codAdvance);
@@ -247,18 +242,13 @@ export default function AnimatedLandingPage() {
   useEffect(() => {
     let active = true;
     const loadIndiaDeliveryQuote = async () => {
-      if (country !== 'IN' || !selectedPackage || offerPrice <= 0) {
+      if (!selectedPackage || offerPrice <= 0) {
         setIndiaDeliveryQuote(null);
         setIndiaDeliveryQuoteLoading(false);
         return;
       }
       if (selectedPackage.free_delivery) {
         setIndiaDeliveryQuote(0);
-        setIndiaDeliveryQuoteLoading(false);
-        return;
-      }
-      if (selectedPackage.custom_delivery_charge !== null && selectedPackage.custom_delivery_charge !== undefined) {
-        setIndiaDeliveryQuote(Math.max(0, Number(selectedPackage.custom_delivery_charge)));
         setIndiaDeliveryQuoteLoading(false);
         return;
       }
