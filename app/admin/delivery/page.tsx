@@ -54,6 +54,9 @@ export default function AdminDeliveryPage() {
   const [editingRule, setEditingRule] = useState<Partial<ChargeRule> | null>(null);
   const [editingZone, setEditingZone] = useState<any>(null);
   const [showZoneForm, setShowZoneForm] = useState(false);
+  const [simpleThreshold, setSimpleThreshold] = useState('500');
+  const [simpleCharge, setSimpleCharge] = useState('100');
+  const [savingSimple, setSavingSimple] = useState(false);
 
   useEffect(() => {
     const sync = async () => {
@@ -78,10 +81,36 @@ export default function AdminDeliveryPage() {
       supabase.from('delivery_country_settings').select('*').eq('country_code', country).maybeSingle(),
       supabase.from('delivery_zones').select('*').eq('country_code', country).order('display_order', { ascending: true }),
     ]);
-    setRules((r.data as ChargeRule[]) || []);
+    const loadedRules = (r.data as ChargeRule[]) || [];
+    setRules(loadedRules);
+    const active = loadedRules.filter((rule) => rule.is_active);
+    const free = active.filter((rule) => rule.is_free).sort((a,b) => Number(a.min_order ?? 0)-Number(b.min_order ?? 0))[0];
+    const paid = active.filter((rule) => !rule.is_free).sort((a,b) => Number(b.max_order ?? -1)-Number(a.max_order ?? -1))[0];
+    setSimpleThreshold(free ? String(Math.max(0, Number(free.min_order ?? 0) - 0.01)) : paid?.max_order != null ? String(paid.max_order) : '500');
+    setSimpleCharge(paid ? String(paid.charge) : '100');
     setSettings((s.data as CountrySettings | null) || null);
     setZones(z.data || []);
     setLoading(false);
+  };
+
+  const saveSimplePolicy = async () => {
+    const threshold = Number(simpleThreshold), charge = Number(simpleCharge);
+    if (!Number.isFinite(threshold) || threshold < 0 || threshold > 1000000 ||
+        !Number.isFinite(charge) || charge < 0 || charge > 100000 ||
+        Math.round(threshold * 100) !== threshold * 100 ||
+        Math.round(charge * 100) !== charge * 100) {
+      toast('Minimum amount ও delivery charge সঠিকভাবে দিন (সর্বোচ্চ ২ দশমিক)', 'error');
+      return;
+    }
+    if (!confirm(`${country} branch: ${currency}${threshold} পর্যন্ত delivery ${currency}${charge}; এর বেশি FREE। পুরোনো active slabs বন্ধ হবে। চালু করবেন?`)) return;
+    setSavingSimple(true);
+    const { error } = await supabase.rpc('admin_set_simple_delivery_policy', {
+      p_country: country, p_threshold: threshold, p_charge: charge,
+    });
+    setSavingSimple(false);
+    if (error) { toast('Policy update হয়নি। Branch permission ও deployment যাচাই করুন।', 'error'); return; }
+    toast('Delivery policy সেভ হয়েছে');
+    await loadData();
   };
 
   const saveRule = async () => {
@@ -163,13 +192,25 @@ export default function AdminDeliveryPage() {
       <div className="flex flex-wrap gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm"><button onClick={() => setTab('charges')} className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold ${tab === 'charges' ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}><Truck className="h-4 w-4" /> Charge Rules</button><button onClick={() => setTab('zones')} className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold ${tab === 'zones' ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}><Globe2 className="h-4 w-4" /> Delivery Zones</button></div>
 
       {loading ? <div className="h-72 animate-pulse rounded-3xl bg-secondary/60" /> : tab === 'charges' ? (
-        <div className="grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
+        <div className="space-y-5">
+          <section className="rounded-3xl border border-primary/25 bg-card p-5 shadow-sm sm:p-7">
+            <h2 className="text-lg font-extrabold">{countryLabel} — Quick Delivery Policy</h2>
+            <p className="mt-1 text-sm text-muted-foreground">এই সেটিং সেভ করলে এই Branch-এর পুরোনো active delivery slabs বন্ধ হয়ে একটি standard charge এবং একটি free-delivery slab তৈরি হবে। Admin-এ Free Delivery tick দেওয়া পণ্য সবসময় FREE থাকবে।</p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <Field label={`Free delivery above (${currency})`}><input type="number" min="0" max="1000000" step="0.01" className="input-bangla" value={simpleThreshold} onChange={e => setSimpleThreshold(e.target.value)} /></Field>
+              <Field label={`Delivery charge up to threshold (${currency})`}><input type="number" min="0" max="100000" step="0.01" className="input-bangla" value={simpleCharge} onChange={e => setSimpleCharge(e.target.value)} /></Field>
+            </div>
+            <p className="mt-3 text-xs font-semibold text-muted-foreground">Order ≤ {currency}{simpleThreshold || '0'}: {currency}{simpleCharge || '0'} delivery · Above: FREE · Product Free Delivery ✅: FREE</p>
+            <button type="button" disabled={savingSimple} onClick={saveSimplePolicy} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 py-2 font-bold text-primary-foreground disabled:opacity-50"><Save className="h-4 w-4" /> {savingSimple ? 'Saving…' : 'Save Delivery Policy'}</button>
+          </section>
+          <div className="grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
           <section className="rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-7">
             <div className="mb-5 flex items-center justify-between gap-4"><div><h2 className="text-xl font-extrabold">{countryLabel} — Charge Rules</h2><p className="mt-1 text-sm text-muted-foreground">Order value অনুযায়ী charge, free delivery ও display order control করুন।</p></div><button onClick={() => setEditingRule(emptyRule(country))} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground"><Plus className="h-4 w-4" /> নতুন Rule</button></div>
             <div className="space-y-3">{rules.length === 0 ? <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">কোনো charge rule নেই</div> : rules.map((rule) => <div key={rule.id} className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-background/60 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-bold">{rule.title}</p>{rule.featured && <span className="rounded-full bg-primary px-2 py-1 text-[10px] font-bold text-primary-foreground">FEATURED</span>}{!rule.is_active && <span className="rounded-full bg-destructive/10 px-2 py-1 text-[10px] font-bold text-destructive">OFF</span>}</div><p className="mt-1 text-sm text-muted-foreground">{rule.subtitle}</p><p className="mt-2 text-xs text-muted-foreground">Order: {rule.min_order ?? 0}{rule.max_order !== null ? ` – ${rule.max_order}` : '+'} • Charge: <span className="font-bold text-foreground">{rule.is_free ? 'FREE' : `${currency}${Number(rule.charge).toLocaleString(country === 'IN' ? 'en-IN' : 'en-US')}`}</span></p></div><div className="flex shrink-0 gap-2"><button onClick={() => setEditingRule(rule)} className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-semibold hover:bg-secondary"><Edit className="h-4 w-4" /> Edit</button><button onClick={() => deleteRule(rule.id)} className="rounded-xl border border-destructive/20 p-2 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></button></div></div>)}</div>
           </section>
 
           <section className="rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-7"><div className="mb-5 flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Clock3 className="h-5 w-5" /></div><div><h2 className="text-xl font-extrabold">Country Settings</h2><p className="text-sm text-muted-foreground">Public charges page-এর content</p></div></div>{settings ? <div className="space-y-4"><Field label="Country Name"><input className="input-bangla" value={settings.country_name} onChange={(e) => setSettings({ ...settings, country_name: e.target.value })} /></Field><Field label="Hero Title"><input className="input-bangla" value={settings.hero_title} onChange={(e) => setSettings({ ...settings, hero_title: e.target.value })} /></Field><Field label="Hero Subtitle"><textarea className="input-bangla min-h-24" value={settings.hero_subtitle} onChange={(e) => setSettings({ ...settings, hero_subtitle: e.target.value })} /></Field><div className="grid gap-3 sm:grid-cols-2"><Field label="Time 1 Label"><input className="input-bangla" value={settings.delivery_time_primary_label} onChange={(e) => setSettings({ ...settings, delivery_time_primary_label: e.target.value })} /></Field><Field label="Time 1 Value"><input className="input-bangla" value={settings.delivery_time_primary_value} onChange={(e) => setSettings({ ...settings, delivery_time_primary_value: e.target.value })} /></Field><Field label="Time 2 Label"><input className="input-bangla" value={settings.delivery_time_secondary_label} onChange={(e) => setSettings({ ...settings, delivery_time_secondary_label: e.target.value })} /></Field><Field label="Time 2 Value"><input className="input-bangla" value={settings.delivery_time_secondary_value} onChange={(e) => setSettings({ ...settings, delivery_time_secondary_value: e.target.value })} /></Field></div><Field label="WhatsApp Number"><input className="input-bangla" value={settings.whatsapp_number || ''} onChange={(e) => setSettings({ ...settings, whatsapp_number: e.target.value })} placeholder="8801..." /></Field><div className="flex items-center justify-between rounded-2xl bg-secondary/60 p-3"><div><p className="font-semibold">Public display</p><p className="text-xs text-muted-foreground">এই country-এর charges page active থাকবে</p></div><input type="checkbox" checked={settings.is_active} onChange={(e) => setSettings({ ...settings, is_active: e.target.checked })} className="h-5 w-5 accent-primary" /></div><button onClick={saveSettings} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-bold text-primary-foreground"><Save className="h-4 w-4" /> Country Settings Save</button></div> : <div className="text-sm text-muted-foreground">Settings পাওয়া যায়নি।</div>}</section>
+          </div>
         </div>
       ) : (
         <section className="rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-7"><div className="mb-5 flex items-center justify-between"><div><h2 className="text-xl font-extrabold">{countryLabel} — Delivery Zones</h2><p className="mt-1 text-sm text-muted-foreground">Country অনুযায়ী zone charge ও COD manage করুন।</p></div><button onClick={() => { setEditingZone(null); setShowZoneForm(true); }} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground"><Plus className="h-4 w-4" /> নতুন Zone</button></div><div className="overflow-x-auto rounded-2xl border border-border"><table className="w-full text-sm"><thead><tr className="border-b border-border bg-secondary/30 text-left"><th className="p-3">Zone</th><th className="p-3">Charge</th><th className="p-3">Time</th><th className="p-3">COD</th><th className="p-3">Status</th><th className="p-3"></th></tr></thead><tbody>{zones.map((z) => <tr key={z.id} className="border-b border-border/50"><td className="p-3 font-semibold">{z.zone_name}</td><td className="p-3 font-bold">{currency}{Number(z.charge).toLocaleString(country === 'IN' ? 'en-IN' : 'en-US')}</td><td className="p-3 text-muted-foreground">{z.estimated_time}</td><td className="p-3">{z.cod_enabled ? 'হ্যাঁ' : 'না'}</td><td className="p-3">{z.is_active ? 'সক্রিয়' : 'বন্ধ'}</td><td className="p-3"><div className="flex gap-2"><button onClick={() => { setEditingZone(z); setShowZoneForm(true); }} className="rounded-lg border border-border p-2"><Edit className="h-4 w-4" /></button><button onClick={() => deleteZone(z.id)} className="rounded-lg border border-destructive/20 p-2 text-destructive"><Trash2 className="h-4 w-4" /></button></div></td></tr>)}</tbody></table>{zones.length === 0 && <p className="p-8 text-center text-muted-foreground">কোনো zone নেই</p>}</div></section>
