@@ -1,3 +1,4 @@
+import { validateIndiaShippingAddress } from "../_shared/india-address-validation.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -99,6 +100,9 @@ async function createSession(request: Request, body: Record<string, unknown>) {
   if (!name || !address || !/^[6-9][0-9]{9}$/.test(phone)) {
     return json({ ok: false, error: "Enter a valid name, Indian mobile number and address" }, 400);
   }
+
+  const shippingCheck = await validateIndiaShippingAddress(address);
+  if (!shippingCheck.valid) return json({ ok: false, error: shippingCheck.error || "Invalid Indian shipping address" }, 400);
 
   const admin = adminClient();
   const { error: rateLimitError } = await admin.rpc("consume_cashfree_campaign_payment_rate_limit", { p_phone: phone });
