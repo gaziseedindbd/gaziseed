@@ -7,6 +7,7 @@ export default function IndiaShippingRatesPage() {
  const [weight,setWeight]=useState('0.5'); const [length,setLength]=useState('15');
  const [breadth,setBreadth]=useState('10'); const [height,setHeight]=useState('5');
  const [mode,setMode]=useState<'prepaid'|'cod'>('prepaid');
+ const [shipmentValue,setShipmentValue]=useState('500'); const [codAmount,setCodAmount]=useState('500');
  const [rates,setRates]=useState<Quote[]>([]); const [recommended,setRecommended]=useState<Quote|null>(null); const [loading,setLoading]=useState(false);
  const [message,setMessage]=useState('');
  async function check() {
@@ -15,6 +16,10 @@ export default function IndiaShippingRatesPage() {
    if(!/^[1-9][0-9]{5}$/.test(pin)||!/^[1-9][0-9]{5}$/.test(pickup))
     throw new Error('Enter valid 6-digit India PIN codes');
    const dims=[weight,length,breadth,height].map(Number);
+   const declared=Number(shipmentValue),collection=mode==='prepaid'?0:Number(codAmount);
+   if(!Number.isFinite(declared)||declared<=0||declared>10000000||!Number.isFinite(collection)||collection<0||collection>declared||
+     (mode==='cod'&&collection===0)||!Number.isInteger(declared*100)||!Number.isInteger(collection*100))
+    throw new Error('Enter valid shipment value and COD balance. COD balance cannot exceed shipment value.');
    if(dims.some(n=>!Number.isFinite(n)||n<=0||n>100))throw new Error('Enter valid positive parcel measurements');
    const {data:session}=await supabase.auth.getSession();
    if(!session.session?.access_token)throw new Error('India Admin login required');
@@ -23,7 +28,7 @@ export default function IndiaShippingRatesPage() {
     throw new Error('Only India Admin can check shipping rates');
    const {data,error}=await supabase.functions.invoke('india-shipping-rates',{
      body:{pickupPostcode:pickup,deliveryPostcode:pin,weightKg:dims[0],
-      lengthCm:dims[1],breadthCm:dims[2],heightCm:dims[3],paymentMode:mode},
+      lengthCm:dims[1],breadthCm:dims[2],heightCm:dims[3],paymentMode:mode,shipmentValue:declared,codCollectionAmount:collection},
      headers:{Authorization:'Bearer '+session.session.access_token,'x-gazi-country':'IN'}});
    if(error||data?.ok!==true) {
     let payload: { code?: string; diagnostic?: { stage?: string; upstreamStatus?: number; returnedCouriers?: number; rejectedCouriers?: number; topLevelKeys?: string[]; dataKeys?: string[]; dataKind?: string; apiStatus?: number | null } } | null = data;
@@ -63,11 +68,12 @@ export default function IndiaShippingRatesPage() {
     </select>
    </label>
   </section>
+  <p className="text-xs text-amber-800">For partial advance + COD, enter full shipment value and only the unpaid delivery balance under Collect at delivery. This quotation endpoint cannot guarantee COD fees for that exact balance; final charges and COD amount must be reverified at booking.</p>
   <button onClick={check} disabled={loading} className="rounded-lg bg-emerald-700 px-5 py-3 font-semibold text-white disabled:opacity-60">
    {loading?'Checking couriers…':'Check Courier Availability & Charges'}
   </button>
   {message&&<p role="status" className="text-sm">{message}</p>}
-  {recommended&&<section role="status" className="rounded-lg border-2 border-emerald-700 bg-emerald-50 p-4 text-sm text-emerald-950"><p className="font-bold">Automatically recommended: lowest eligible courier quote</p><p>{recommended.name} · ₹{recommended.estimatedCost.toFixed(2)}</p><p className="mt-2 text-xs">Read-only recommendation for these parcel details. No courier booking, assignment, shipment, AWB, or pickup is performed. Recheck at booking time.</p></section>}
+  {recommended&&<section role="status" className="rounded-lg border-2 border-emerald-700 bg-emerald-50 p-4 text-sm text-emerald-950"><p className="font-bold">Automatically recommended: lowest eligible courier quote</p><p>{recommended.name} · ₹{recommended.estimatedCost.toFixed(2)}</p><p className="mt-2 text-xs">Read-only estimate: Shiprocket is given shipment value, while COD balance is shown for reference only. Exact balance-based COD fees are not guaranteed until booking. No courier booking, assignment, shipment, AWB, or pickup is performed. Recheck at booking time.</p></section>}
   {rates.length>0&&<div className="space-y-2">{rates.map((r,i)=>
    <div key={r.courierId} className="flex justify-between rounded-lg border p-3">
     <span>{r.name}{recommended?.courierId===r.courierId?' — Auto-recommended':''}</span><strong>₹{r.estimatedCost.toFixed(2)}</strong>
