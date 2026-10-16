@@ -63,7 +63,7 @@ Deno.serve(async req=>{
     hasCourierArray:Array.isArray(raw)
    }});
   }
-  if(raw.length===0)return reply(200,{ok:true,couriers:[],quoteOnly:true,code:"no_serviceable_couriers"});
+  if(raw.length===0)return reply(200,{ok:true,couriers:[],recommendedCourier:null,selectionMode:"lowest_eligible_quote",quoteOnly:true,code:"no_serviceable_couriers"});
   let rejected=0;
   const results=raw.flatMap((c:unknown)=>{
    if(!c||typeof c!=="object")return [];
@@ -81,8 +81,8 @@ Deno.serve(async req=>{
      (p.paymentMode==="prepaid"||x.cod===1||x.cod===true||x.cod==="1");
    if(!eligible){rejected++;return [];}
    return [{courierId:id,name:(x.courier_name as string).slice(0,80),estimatedCost:fullCost}];
-  }).sort((a:{estimatedCost:number},b:{estimatedCost:number})=>a.estimatedCost-b.estimatedCost).slice(0,20);
+  }).sort((a:{estimatedCost:number;courierId:number},b:{estimatedCost:number;courierId:number})=>a.estimatedCost-b.estimatedCost||a.courierId-b.courierId).slice(0,20);
   if(results.length===0)return reply(502,{ok:false,code:"courier_quotes_unparseable",diagnostic:{stage:"courier_filtering",returnedCouriers:raw.length,rejectedCouriers:rejected}});
-  return reply(200,{ok:true,couriers:results,quoteOnly:true});
+  return reply(200,{ok:true,couriers:results,recommendedCourier:results[0],selectionMode:"lowest_eligible_quote",quoteOnly:true});
  }catch{return reply(503,{ok:false,code:"quote_unavailable",diagnostic:{stage:"unexpected_exception"}});}
 });
