@@ -258,7 +258,7 @@ export default function OfferLandingPage() {
     e.preventDefault();
     setError('');
     if (!form.name || !form.phone) { setError(tr('সব প্রয়োজনীয় তথ্য পূরণ করুন', 'Please complete all required fields', 'कृपया सभी ज़रूरी जानकारी भरें')); return; }
-    if (!addrValue.division || !addrValue.district || !addrValue.thana || !addrValue.detail) { setError(tr('সম্পূর্ণ ঠিকানা নির্বাচন ও প্রদান করুন', 'Please select and enter your full address', 'कृपया पूरा पता चुनें और भरें')); return; }
+    if (!addrValue.division || !addrValue.district || (countryCode === 'BD' && !addrValue.thana) || !addrValue.detail || (countryCode === 'IN' && !/^[1-9]\d{5}$/.test(addrValue.postalCode || ''))) { setError(tr('সম্পূর্ণ ঠিকানা নির্বাচন ও প্রদান করুন', 'Please select and enter your full address', 'कृपया पूरा पता चुनें और भरें')); return; }
     if (!selectedTier && !selectedBundle) { setError(tr('একটি অফার প্যাকেজ নির্বাচন করুন', 'Please select an offer package', 'कृपया एक ऑफ़र पैकेज चुनें')); return; }
     if (!isFreeDelivery && (deliveryQuoteLoading || deliveryCharge === null || deliveryQuoteError)) { setError(tr('ডেলিভারি চার্জ যাচাই করা যায়নি। আবার চেষ্টা করুন।', 'Could not verify the delivery charge. Please try again.', 'डिलीवरी शुल्क की पुष्टि नहीं हो सकी। कृपया फिर कोशिश करें।')); return; }
     const phone = form.phone.replace(/[^0-9]/g, '');
