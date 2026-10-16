@@ -62,6 +62,8 @@ export default function IndiaShippingRatesPage() {
    {field('Length (cm)',length,setLength,'15')}
    {field('Breadth (cm)',breadth,setBreadth,'10')}
    {field('Height (cm)',height,setHeight,'5')}
+   {field("Shipment value (₹)",shipmentValue,setShipmentValue,"500")}
+   {mode==="cod"&&field("Collect at delivery (₹)",codAmount,setCodAmount,"380")}
    <label className="flex flex-col gap-1 text-sm font-medium">Payment type
     <select className="rounded-lg border p-3" value={mode} onChange={e=>setMode(e.target.value as 'prepaid'|'cod')}>
      <option value="prepaid">Prepaid</option><option value="cod">COD (courier capability only)</option>
