@@ -25,7 +25,16 @@ export default function IndiaShippingRatesPage() {
      body:{pickupPostcode:pickup,deliveryPostcode:pin,weightKg:dims[0],
       lengthCm:dims[1],breadthCm:dims[2],heightCm:dims[3],paymentMode:mode},
      headers:{Authorization:'Bearer '+session.session.access_token,'x-gazi-country':'IN'}});
-   if(error||data?.ok!==true)throw new Error('Courier rate lookup unavailable. Check Shiprocket account readiness.');
+   if(error||data?.ok!==true) {
+    let payload: { code?: string; diagnostic?: { stage?: string; upstreamStatus?: number; returnedCouriers?: number; rejectedCouriers?: number } } | null = data;
+    if(error && 'context' in error && error.context instanceof Response) {
+      try { payload = await error.context.clone().json(); } catch { /* Unreadable error body */ }
+    }
+    const code = typeof payload?.code === 'string' ? payload.code : 'request_failed';
+    const stage = typeof payload?.diagnostic?.stage === 'string' ? payload.diagnostic.stage : (error ? 'network_or_cors' : 'unknown');
+    const upstream = typeof payload?.diagnostic?.upstreamStatus === 'number' ? ' / Shiprocket HTTP '+payload.diagnostic.upstreamStatus : '';
+    throw new Error('Courier rate check failed: '+code+' ('+stage+upstream+'). No shipment created.');
+   }
    setRates(Array.isArray(data.couriers)?data.couriers:[]);
    setMessage(data.couriers?.length?'Available courier estimates (not a booking)':'No eligible couriers for these details');
   }catch(e){setMessage(e instanceof Error?e.message:'Unable to check rates');}
@@ -36,7 +45,7 @@ export default function IndiaShippingRatesPage() {
    placeholder={placeholder} className="rounded-lg border p-3 text-base" /></label>;
  return <main className="mx-auto max-w-3xl space-y-5 p-6">
   <h1 className="text-2xl font-bold">India Shipping Management — Rate Check</h1>
-  <p className="text-sm text-gray-600">Estimate courier rates without creating orders, AWBs or pickups. KYC is under review. Quoted cost is charged by the courier, independent of your customer delivery-fee policy.</p>
+  <p className="text-sm text-gray-600">Estimate courier rates without creating orders, AWBs or pickups. Shiprocket KYC is verified; courier coverage must be checked per route. Quoted cost is charged by the courier, independent of your customer delivery-fee policy.</p>
   <section className="grid gap-4 sm:grid-cols-2">
    {field('Verified pickup PIN',pickup,setPickup,'783124')}
    {field('Delivery PIN (6 digits)',pin,setPin,'110001')}
