@@ -35,22 +35,22 @@ Deno.serve(async req=>{
   const login=await fetch("https://apiv2.shiprocket.in/v1/external/auth/login",{
     method:"POST",headers:{"content-type":"application/json"},
     body:JSON.stringify({email,password}),signal:AbortSignal.timeout(12000)});
-  if(!login.ok)return reply(502,{ok:false,code:"shipping_login_failed"});
+  if(!login.ok)return reply(502,{ok:false,code:"shipping_login_failed",diagnostic:{stage:"auth_http",upstreamStatus:login.status}});
   const access:unknown=await login.json();
   const token=access&&typeof access==="object"&&"token" in access?access.token:null;
-  if(typeof token!=="string"||!token)return reply(502,{ok:false,code:"shipping_login_failed"});
+  if(typeof token!=="string"||!token)return reply(502,{ok:false,code:"shipping_login_failed",diagnostic:{stage:"auth_payload"}});
   const qs=new URLSearchParams({pickup_postcode:p.pickupPostcode as string,
    delivery_postcode:p.deliveryPostcode as string,cod:p.paymentMode==="cod"?"1":"0",
    weight:String(p.weightKg),length:String(p.lengthCm),breadth:String(p.breadthCm),
    height:String(p.heightCm),is_return:"0"});
   const response=await fetch("https://apiv2.shiprocket.in/v1/external/courier/serviceability/?"+qs,{
     headers:{Authorization:"Bearer "+token},signal:AbortSignal.timeout(15000)});
-  if(!response.ok)return reply(502,{ok:false,code:"courier_rates_unavailable"});
+  if(!response.ok)return reply(502,{ok:false,code:"courier_rates_unavailable",diagnostic:{stage:"serviceability_http",upstreamStatus:response.status}});
   const json:unknown=await response.json();
   const data=json&&typeof json==="object"&&"data" in json?json.data:null;
   const raw=data&&typeof data==="object"&&"available_courier_companies" in data?
     data.available_courier_companies:null;
-  if(!Array.isArray(raw))return reply(502,{ok:false,code:"courier_response_invalid"});
+  if(!Array.isArray(raw))return reply(502,{ok:false,code:"courier_response_invalid",diagnostic:{stage:"serviceability_payload",hasData:!!data}});
   if(raw.length===0)return reply(200,{ok:true,couriers:[],quoteOnly:true,code:"no_serviceable_couriers"});
   let rejected=0;
   const results=raw.flatMap((c:unknown)=>{
@@ -70,7 +70,7 @@ Deno.serve(async req=>{
    if(!eligible){rejected++;return [];}
    return [{courierId:id,name:(x.courier_name as string).slice(0,80),estimatedCost:fullCost}];
   }).sort((a:{estimatedCost:number},b:{estimatedCost:number})=>a.estimatedCost-b.estimatedCost).slice(0,20);
-  if(results.length===0)return reply(502,{ok:false,code:"courier_quotes_unparseable",diagnostic:{returnedCouriers:raw.length,rejectedCouriers:rejected}});
+  if(results.length===0)return reply(502,{ok:false,code:"courier_quotes_unparseable",diagnostic:{stage:"courier_filtering",returnedCouriers:raw.length,rejectedCouriers:rejected}});
   return reply(200,{ok:true,couriers:results,quoteOnly:true});
- }catch{return reply(503,{ok:false,code:"quote_unavailable"});}
+ }catch{return reply(503,{ok:false,code:"quote_unavailable",diagnostic:{stage:"unexpected_exception"}});}
 });
