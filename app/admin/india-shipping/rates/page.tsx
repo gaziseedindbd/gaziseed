@@ -26,14 +26,15 @@ export default function IndiaShippingRatesPage() {
       lengthCm:dims[1],breadthCm:dims[2],heightCm:dims[3],paymentMode:mode},
      headers:{Authorization:'Bearer '+session.session.access_token,'x-gazi-country':'IN'}});
    if(error||data?.ok!==true) {
-    let payload: { code?: string; diagnostic?: { stage?: string; upstreamStatus?: number; returnedCouriers?: number; rejectedCouriers?: number } } | null = data;
+    let payload: { code?: string; diagnostic?: { stage?: string; upstreamStatus?: number; returnedCouriers?: number; rejectedCouriers?: number; topLevelKeys?: string[]; dataKeys?: string[]; dataKind?: string; apiStatus?: number | null } } | null = data;
     if(error && 'context' in error && error.context instanceof Response) {
       try { payload = await error.context.clone().json(); } catch { /* Unreadable error body */ }
     }
     const code = typeof payload?.code === 'string' ? payload.code : 'request_failed';
     const stage = typeof payload?.diagnostic?.stage === 'string' ? payload.diagnostic.stage : (error ? 'network_or_cors' : 'unknown');
     const upstream = typeof payload?.diagnostic?.upstreamStatus === 'number' ? ' / Shiprocket HTTP '+payload.diagnostic.upstreamStatus : '';
-    throw new Error('Courier rate check failed: '+code+' ('+stage+upstream+'). No shipment created.');
+    const shape = code === 'courier_response_invalid' ? ' / response keys: '+(payload?.diagnostic?.topLevelKeys?.join(',') || 'none')+' / data: '+(payload?.diagnostic?.dataKind || 'unknown')+' ['+(payload?.diagnostic?.dataKeys?.join(',') || 'none')+']' : '';
+    throw new Error('Courier rate check failed: '+code+' ('+stage+upstream+shape+'). No shipment created.');
    }
    setRates(Array.isArray(data.couriers)?data.couriers:[]);
    setMessage(data.couriers?.length?'Available courier estimates (not a booking)':'No eligible couriers for these details');
