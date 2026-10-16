@@ -42,7 +42,7 @@ Deno.serve(async req=>{
   const qs=new URLSearchParams({pickup_postcode:p.pickupPostcode as string,
    delivery_postcode:p.deliveryPostcode as string,cod:p.paymentMode==="cod"?"1":"0",
    weight:String(p.weightKg),length:String(p.lengthCm),breadth:String(p.breadthCm),
-   height:String(p.heightCm),is_return:"0"});
+   height:String(p.heightCm)});
   const response=await fetch("https://apiv2.shiprocket.in/v1/external/courier/serviceability/?"+qs,{
     headers:{Authorization:"Bearer "+token},signal:AbortSignal.timeout(15000)});
   if(!response.ok)return reply(502,{ok:false,code:"courier_rates_unavailable",diagnostic:{stage:"serviceability_http",upstreamStatus:response.status}});
