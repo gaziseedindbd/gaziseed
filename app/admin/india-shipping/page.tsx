@@ -15,8 +15,10 @@ export default function IndiaShippingDashboard(){
  const [saving,setSaving]=useState(false),[saveMessage,setSaveMessage]=useState('');
  const [mobileDetails,setMobileDetails]=useState(false);
  const [preflightLoading,setPreflightLoading]=useState(false),[preflightResult,setPreflightResult]=useState('');
- function chooseOrder(id:string){if(saving||preflightLoading)return;setSelected(id);setPreflightResult('');setSaveMessage('');setMobileDetails(true);window.scrollTo({top:0,behavior:'smooth'});}
- function backToOrders(){if(saving||preflightLoading)return;setMobileDetails(false);window.scrollTo({top:0,behavior:'smooth'});}
+ const [quoteLoading,setQuoteLoading]=useState(false),[quoteMessage,setQuoteMessage]=useState(''),[quote,setQuote]=useState<{name:string;estimatedCost:number;courierId:number}|null>(null);
+ const [pickupPin,setPickupPin]=useState('783124');
+ function chooseOrder(id:string){if(saving||preflightLoading||quoteLoading)return;setSelected(id);setQuote(null);setQuoteMessage('');setPreflightResult('');setSaveMessage('');setMobileDetails(true);window.scrollTo({top:0,behavior:'smooth'});}
+ function backToOrders(){if(saving||preflightLoading||quoteLoading)return;setMobileDetails(false);window.scrollTo({top:0,behavior:'smooth'});}
  useEffect(()=>{let alive=true;(async()=>{try{
  const {data:session}=await supabase.auth.getSession();
  if(!session.session?.access_token)throw new Error('India Admin login required');
@@ -43,6 +45,41 @@ export default function IndiaShippingDashboard(){
    setPreflightResult('Cashfree gateway verified for this check. Type: '+String(data.payment_type)+'; balance at delivery ₹'+Number(data.due_amount??0).toFixed(2)+'. Booking and dispatch remain disabled; verify again at booking.');
   }catch(e){setPreflightResult('Not verified: '+(e instanceof Error?e.message:'Unknown payment verification error'));}
   finally{setPreflightLoading(false);}
+ }
+ async function quoteSelectedOrder(){
+  if(!selected||quoteLoading)return;
+  const orderId=selected;
+  setQuoteLoading(true);setQuote(null);setQuoteMessage('');
+  try{
+   const selectedOrder=orders.find(x=>x.id===orderId);
+   const parcel=preparations.find(x=>x.order_id===orderId);
+   if(!selectedOrder||!parcel)throw new Error('Select an order with saved parcel preparation');
+   if(!/^[1-9][0-9]{5}$/.test(pickupPin)||!/^[1-9][0-9]{5}$/.test(parcel.delivery_pin))throw new Error('Valid pickup and delivery PINs required');
+   const dims=[Number(parcel.weight_kg),Number(parcel.length_cm),Number(parcel.breadth_cm),Number(parcel.height_cm)];
+   if(dims.some((n,i)=>!Number.isFinite(n)||n<(i===0?0.01:1)||n>(i===0?100:200)))throw new Error('Saved parcel measurements are invalid');
+   const total=Number(selectedOrder.grand_total);
+   const isCod=selectedOrder.payment_method?.toLowerCase()==='cod';
+   const advance=Number(selectedOrder.payment_advance_amount??0);
+   const due=Number(selectedOrder.payment_due_amount);
+   const fullCod=isCod&&selectedOrder.payment_status==='unpaid'&&advance===0;
+   const collect=isCod?(fullCod?total:due):0;
+   if(!Number.isFinite(total)||total<=0||!Number.isFinite(collect)||collect<0||collect>total||
+     (isCod&&collect<=0)||(isCod&&!fullCod&&Math.abs(advance+due-total)>0.01)||
+     (!isCod&&selectedOrder.payment_method!=='cashfree'))throw new Error('Payment collection figures require manual reconciliation before quoting');
+   const {data:session}=await supabase.auth.getSession();
+   if(!session.session?.access_token)throw new Error('India Admin login required');
+   const {data,error:invokeError}=await supabase.functions.invoke('india-shipping-rates',{
+    body:{pickupPostcode:pickupPin,deliveryPostcode:parcel.delivery_pin,
+     weightKg:dims[0],lengthCm:dims[1],breadthCm:dims[2],heightCm:dims[3],
+     paymentMode:isCod?'cod':'prepaid',shipmentValue:total,codCollectionAmount:collect},
+    headers:{Authorization:'Bearer '+session.session.access_token,'x-gazi-country':'IN'}});
+   if(invokeError||data?.ok!==true)throw new Error('Courier quotation unavailable. Do not book or retry a shipment.');
+   const q=data.recommendedCourier;
+   if(!q||!Number.isSafeInteger(q.courierId)||!Number.isFinite(q.estimatedCost)||q.estimatedCost<0)
+    throw new Error('No eligible courier for these order details');
+   if(orderId===selected){setQuote(q);setQuoteMessage('Read-only quote; requires live payment verification and booking-time price check.'+(fullCod?' Full COD balance is calculated from order total; stored due requires correction before booking.':''));}
+  }catch(e){if(orderId===selected)setQuoteMessage(e instanceof Error?e.message:'Unable to quote order');}
+  finally{setQuoteLoading(false);}
  }
  async function savePreparation(){
   if(saving)return;
@@ -163,7 +200,11 @@ export default function IndiaShippingDashboard(){
       {preparations.some(p=>p.order_id===selected&&(Number(p.weight_kg)<0.01||Number(p.length_cm)<1||Number(p.breadth_cm)<1||Number(p.height_cm)<1))&&<p role="alert" className="text-sm font-medium text-amber-700">Previously saved measurements are too small for a practical parcel. Correct and save them before any future shipment.</p>}
      </div>
      <div className="rounded-lg border p-4"><h3 className="font-semibold">Courier Selection</h3>
-      <p className="mt-2 text-sm">Use the rate-check page to compare eligible couriers. Selection/booking is disabled until KYC approval, verified payment, shipping data and duplicate safeguards are operational.</p>
+      <p className="mt-2 text-sm">Quote the selected India order using saved parcel measurements and server-stored payment amounts. Courier booking remains disabled.</p>
+      <label className="mt-3 flex flex-col gap-1 text-sm">Verified pickup PIN<input inputMode="numeric" className="rounded-lg border p-3" value={pickupPin} onChange={e=>setPickupPin(e.target.value)} /></label>
+      <button type="button" className="mt-3 rounded-lg border border-emerald-700 px-4 py-3 text-sm font-semibold disabled:opacity-50" onClick={quoteSelectedOrder} disabled={quoteLoading||saving||!preparationReady}>{quoteLoading?'Checking eligible couriers…':'Find Cheapest Courier for This Order (quote only)'}</button>
+      {quote&&<p role="status" className="mt-3 font-semibold">Auto-recommended: {quote.name} · ₹{quote.estimatedCost.toFixed(2)}</p>}
+      {quoteMessage&&<p role="status" className="mt-2 text-xs">{quoteMessage}</p>}
       <Link href="/admin/india-shipping/rates" className="mt-3 inline-block rounded-lg border px-4 py-2 text-sm">Compare Rates</Link>
      </div>
      <div className="rounded-lg border p-4"><h3 className="font-semibold">Tracking History</h3>
