@@ -287,6 +287,25 @@ export default function CheckoutPage() {
     const addr = savedAddresses.find((a) => a.id === id);
     if (addr) {
       setForm((current) => ({ ...current, name: addr.name, phone: addr.phone }));
+      // India saved addresses use the existing structured columns. Always re-verify
+      // the PIN from the postal directory rather than trusting an old State value.
+      if (country === 'IN') {
+        const pin = String(addr.postal_code || '').trim();
+        const detail = String(addr.address || '').trim();
+        setAddrValue({
+          division: '',
+          district: String(addr.district || '').trim(),
+          thana: '',
+          detail,
+          postalCode: /^[1-9]\\d{5}$/.test(pin) ? pin : '',
+          landmark: '',
+        });
+        if (!/^[1-9]\\d{5}$/.test(pin)) {
+          setError(t('পুরোনো ঠিকানায় সঠিক PIN নেই। PIN দিন এবং ঠিকানা যাচাই করুন।', 'Saved address needs a valid PIN. Enter a PIN and review the address.'));
+        } else {
+          setError('');
+        }
+      }
     }
   };
 
