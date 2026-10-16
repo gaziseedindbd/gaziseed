@@ -1,10 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.112.3";
+const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"POST, OPTIONS","Access-Control-Allow-Headers":"authorization, apikey, x-client-info, content-type, x-gazi-country, x-supabase-api-version, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version"};
 const respond=(status:number,data:Record<string,unknown>)=>new Response(JSON.stringify(data),{
- status,headers:{"content-type":"application/json","cache-control":"no-store"}});
+ status,headers:{...cors,"content-type":"application/json","cache-control":"no-store"}});
 const matches=(a:number,b:number)=>Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)<=0.01;
 // Read-only, authenticated payment gate. NOT a shipment booking endpoint.
-Deno.serve(async req=>{\n if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
+Deno.serve(async req=>{
+ if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
  if(req.method!=="POST")return respond(405,{ok:false});
  const bearer=req.headers.get("authorization")??"";
  if(!bearer.startsWith("Bearer "))return respond(401,{ok:false});
