@@ -757,6 +757,9 @@ export default function AccountPage() {
 }
 
 function AddressForm({ address, countryCode, onSave, onClose }: { address: CustomerAddress | null; countryCode: 'BD' | 'IN'; onSave: (data: any) => void; onClose: () => void }) {
+  const { lang } = useLang();
+  const tr = (bn: string, en: string, hi: string) => countryCode !== 'IN' || lang === 'bn' ? bn : lang === 'hi' ? hi : en;
+  const indiaError = tr('সঠিক ১০ সংখ্যার মোবাইল, যাচাইকৃত PIN, State, City ও ঠিকানা দিন', 'Enter a valid 10-digit mobile, verified PIN, State, City and address', 'सही 10 अंकों का मोबाइल, सत्यापित पिन, राज्य, शहर और पता दर्ज करें');
   const [label, setLabel] = useState(address?.label || 'Home');
   const [name, setName] = useState(address?.name || '');
   const [phone, setPhone] = useState(address?.phone || '');
@@ -797,7 +800,7 @@ function AddressForm({ address, countryCode, onSave, onClose }: { address: Custo
     const validPin = /^[1-9][0-9]{5}$/.test(addrValue.postalCode || '');
     if (!name.trim() || !phone.trim() || !addrValue.division.trim() || !addrValue.district.trim() ||
         !addrValue.detail.trim() || (india ? !validPin || !/^[0-9]{10}$/.test(phone.trim()) : !addrValue.thana.trim())) {
-      toast(india ? 'সঠিক ১০ সংখ্যার মোবাইল, যাচাইকৃত PIN, State, City ও ঠিকানা দিন' : 'সব প্রয়োজনীয় তথ্য পূরণ করুন', 'error');
+      toast(india ? indiaError : 'সব প্রয়োজনীয় তথ্য পূরণ করুন', 'error');
       return;
     }
     onSave({
@@ -815,24 +818,24 @@ function AddressForm({ address, countryCode, onSave, onClose }: { address: Custo
   return (
     <div className="mt-4 rounded-2xl border-2 border-primary/20 bg-secondary/20 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-bold text-sm">{address ? 'ঠিকানা এডিট করুন' : 'নতুন ঠিকানা যোগ করুন'}</h3>
+        <h3 className="font-bold text-sm">{address ? tr('ঠিকানা এডিট করুন', 'Edit Address', 'पता संपादित करें') : tr('নতুন ঠিকানা যোগ করুন', 'Add New Address', 'नया पता जोड़ें')}</h3>
         <button type="button" onClick={onClose}><X className="h-5 w-5" /></button>
       </div>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">লেবেল</label>
+          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">{tr('লেবেল', 'Label', 'लेबल')}</label>
             <select value={label} onChange={(e) => setLabel(e.target.value)} className="input-bangla">
-              <option value="Home">Home</option><option value="Office">Office</option><option value="Other">Other</option>
+              <option value="Home">{tr("বাড়ি", "Home", "घर")}</option><option value="Office">{tr("অফিস", "Office", "कार्यालय")}</option><option value="Other">{tr("অন্যান্য", "Other", "अन्य")}</option>
             </select>
           </div>
-          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">নাম *</label><input value={name} onChange={(e) => setName(e.target.value)} className="input-bangla" required /></div>
-          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">ফোন *</label><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-bangla" required /></div>
+          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">{tr('নাম', 'Full Name', 'पूरा नाम')} *</label><input value={name} onChange={(e) => setName(e.target.value)} className="input-bangla" required /></div>
+          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">{tr('ফোন', 'Mobile Number', 'मोबाइल नंबर')} *</label><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-bangla" required /></div>
         </div>
         <AddressSelector value={addrValue} onChange={setAddrValue} countryCode={countryCode} />
-        <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer"><input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} className="accent-primary" /> ডিফল্ট ঠিকানা হিসেবে সেট করুন</label>
+        <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer"><input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} className="accent-primary" /> {tr('ডিফল্ট ঠিকানা হিসেবে সেট করুন', 'Set as default address', 'डिफ़ॉल्ट पता सेट करें')}</label>
         <div className="flex gap-2">
-          <button type="submit" className="flex-1 rounded-xl bg-primary py-3 text-xs font-bold text-primary-foreground hover:opacity-90 transition cursor-pointer">সেভ করুন</button>
-          <button type="button" onClick={onClose} className="rounded-xl border border-border px-6 py-3 text-xs font-bold hover:bg-secondary transition cursor-pointer">বাতিল</button>
+          <button type="submit" className="flex-1 rounded-xl bg-primary py-3 text-xs font-bold text-primary-foreground hover:opacity-90 transition cursor-pointer">{tr('সেভ করুন', 'Save Address', 'पता सहेजें')}</button>
+          <button type="button" onClick={onClose} className="rounded-xl border border-border px-6 py-3 text-xs font-bold hover:bg-secondary transition cursor-pointer">{tr('বাতিল', 'Cancel', 'रद्द करें')}</button>
         </div>
       </form>
     </div>
