@@ -783,7 +783,7 @@ function AddressForm({ address, countryCode, onSave, onClose }: { address: Custo
     if (parts.length && matches(parts[parts.length - 1], pin)) parts.pop();
     if (parts.length && matches(parts[parts.length - 1], division)) parts.pop();
     if (parts.length && matches(parts[parts.length - 1], district)) parts.pop();
-    if (parts.length && matches(parts[parts.length - 1], thana)) parts.pop();
+    // Keep legacy locality/thana text in the India street address; no Thana field exists in the new form.
     return {
       division: '', // Don't trust an unverified saved State.
       district,
