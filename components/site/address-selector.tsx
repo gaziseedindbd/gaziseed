@@ -1,7 +1,7 @@
 'use client';
 
 import { useLang } from './language-provider';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { bangladeshLocations, getDistricts, getThanas } from '@/lib/bangladesh-locations';
 
 export type AddressValue = {
@@ -25,6 +25,8 @@ export function AddressSelector({ value, onChange, lang: preferredLang, countryC
   const lang = preferredLang || selectedLang;
   const tr = (bn: string, en: string, hi: string) => lang === 'bn' ? bn : lang === 'hi' ? hi : en;
   const { division, district, thana, detail, postalCode = '', landmark = '' } = value;
+  const latest = useRef({ value, onChange });
+  latest.current = { value, onChange };
   const [pinVerified, setPinVerified] = useState('');
   const [pinStatus, setPinStatus] = useState('');
   const [pinLoading, setPinLoading] = useState(false);
@@ -33,7 +35,7 @@ export function AddressSelector({ value, onChange, lang: preferredLang, countryC
       setPinVerified(''); setPinStatus(''); setPinLoading(false);
       return;
     }
-    if (pinVerified === postalCode && division) return;
+    // Only PIN changes should trigger a new lookup; other address edits must not restart it.
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       setPinLoading(true);
@@ -42,20 +44,23 @@ export function AddressSelector({ value, onChange, lang: preferredLang, countryC
         const result = await response.json();
         if (!response.ok || !result.state) throw new Error(result.error || 'PIN verification failed');
         if (!controller.signal.aborted) {
-          onChange({ ...value, division: result.state, district: result.district || '', thana: '' });
+          const { value: current, onChange: apply } = latest.current;
+          if (current.postalCode !== postalCode) return;
+          apply({ ...current, division: result.state, district: current.district || result.district || '', thana: current.thana });
           setPinVerified(postalCode); setPinStatus('');
         }
       } catch (error) {
         if (!controller.signal.aborted) {
           setPinVerified(''); setPinStatus(error instanceof Error ? error.message : 'PIN verification failed');
-          onChange({ ...value, division: '', district: '', thana: '' });
+          const { value: current, onChange: apply } = latest.current;
+          if (current.postalCode === postalCode) apply({ ...current, division: '' });
         }
       } finally {
         if (!controller.signal.aborted) setPinLoading(false);
       }
     }, 350);
     return () => { clearTimeout(timer); controller.abort(); };
-  }, [postalCode, countryCode, pinVerified, division]);
+  }, [postalCode, countryCode]);
   const update = (patch: Partial<AddressValue>) => onChange({ ...value, ...patch });
   const setDivision = (division: string) => update({ division, district: '', thana: '' });
   const setDistrict = (district: string) => update({ district, thana: '' });
