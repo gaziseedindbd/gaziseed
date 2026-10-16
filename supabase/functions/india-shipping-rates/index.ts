@@ -34,10 +34,11 @@ Deno.serve(async req=>{
     return reply(400,{ok:false,code:"invalid_parcel"});
   // Quote-only values; collection amount is not a documented serviceability API parameter.
   const money=(v:unknown)=>typeof v==="number"&&Number.isFinite(v)&&v>=0&&v<=10000000&&Math.round(v*100)===v*100;
-  if(!money(p.shipmentValue)||!money(p.codCollectionAmount)||
+  const hasAmounts=p.shipmentValue!==undefined||p.codCollectionAmount!==undefined;
+  if(hasAmounts&&(!money(p.shipmentValue)||!money(p.codCollectionAmount)||
    (p.paymentMode==="prepaid"&&p.codCollectionAmount!==0)||
    (p.paymentMode==="cod"&&(p.codCollectionAmount as number)<=0)||
-   (p.codCollectionAmount as number)>(p.shipmentValue as number))
+   (p.codCollectionAmount as number)>(p.shipmentValue as number)))
     return reply(400,{ok:false,code:"invalid_collection_amount"});
   const login=await fetch("https://apiv2.shiprocket.in/v1/external/auth/login",{
     method:"POST",headers:{"content-type":"application/json"},
@@ -49,7 +50,8 @@ Deno.serve(async req=>{
   const qs=new URLSearchParams({pickup_postcode:p.pickupPostcode as string,
    delivery_postcode:p.deliveryPostcode as string,cod:p.paymentMode==="cod"?"1":"0",
    weight:String(p.weightKg),length:String(p.lengthCm),breadth:String(p.breadthCm),
-   height:String(p.heightCm),declared_value:String(Math.ceil(p.shipmentValue as number))});
+   height:String(p.heightCm)});
+  if(hasAmounts)qs.set("declared_value",String(Math.ceil(p.shipmentValue as number)));
   const response=await fetch("https://apiv2.shiprocket.in/v1/external/courier/serviceability/?"+qs,{
     headers:{Authorization:"Bearer "+token},signal:AbortSignal.timeout(15000)});
   if(!response.ok)return reply(502,{ok:false,code:"courier_rates_unavailable",diagnostic:{stage:"serviceability_http",upstreamStatus:response.status}});
