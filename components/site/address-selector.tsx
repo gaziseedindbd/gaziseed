@@ -78,7 +78,7 @@ export function AddressSelector({ value, onChange, lang: preferredLang, countryC
           <label className="mb-1 block text-sm font-medium">{tr('PIN কোড', 'PIN Code', 'पिन कोड')} *</label>
           <input type="text" inputMode="numeric" autoComplete="postal-code" pattern="[1-9][0-9]{5}" maxLength={6}
             aria-label="PIN Code" value={postalCode}
-            onChange={(e) => { setPinVerified(''); setPinStatus(''); onChange({ ...value, postalCode: e.target.value.replace(/\\D/g, '').slice(0, 6), division: '', district: '', thana: '' }); }}
+            onChange={(e) => { setPinVerified(''); setPinStatus(''); onChange({ ...value, postalCode: e.target.value.replace(/\D/g, '').slice(0, 6), division: '', district: '', thana: '' }); }}
             className="input-bangla" placeholder="700001" required />
           {pinLoading && <p role="status" className="mt-1 text-xs">{tr('PIN যাচাই হচ্ছে...', 'Checking PIN...', 'पिन जाँच रहे हैं...')}</p>}
           {pinStatus && <p role="alert" className="mt-1 text-xs text-red-600">{pinStatus}</p>}
