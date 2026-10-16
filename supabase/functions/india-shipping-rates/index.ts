@@ -32,6 +32,14 @@ Deno.serve(async req=>{
    !n(p.weightKg)||!n(p.lengthCm)||!n(p.breadthCm)||!n(p.heightCm)||
    p.paymentMode!=="prepaid"&&p.paymentMode!=="cod")
     return reply(400,{ok:false,code:"invalid_parcel"});
+  // Quote-only values; collection amount is not a documented serviceability API parameter.
+  const money=(v:unknown)=>typeof v==="number"&&Number.isFinite(v)&&v>=0&&v<=10000000&&Math.round(v*100)===v*100;
+  const hasAmounts=p.shipmentValue!==undefined||p.codCollectionAmount!==undefined;
+  if(hasAmounts&&(!money(p.shipmentValue)||!money(p.codCollectionAmount)||
+   (p.paymentMode==="prepaid"&&p.codCollectionAmount!==0)||
+   (p.paymentMode==="cod"&&(p.codCollectionAmount as number)<=0)||
+   (p.codCollectionAmount as number)>(p.shipmentValue as number)))
+    return reply(400,{ok:false,code:"invalid_collection_amount"});
   const login=await fetch("https://apiv2.shiprocket.in/v1/external/auth/login",{
     method:"POST",headers:{"content-type":"application/json"},
     body:JSON.stringify({email,password}),signal:AbortSignal.timeout(12000)});
@@ -43,6 +51,7 @@ Deno.serve(async req=>{
    delivery_postcode:p.deliveryPostcode as string,cod:p.paymentMode==="cod"?"1":"0",
    weight:String(p.weightKg),length:String(p.lengthCm),breadth:String(p.breadthCm),
    height:String(p.heightCm)});
+  if(hasAmounts)qs.set("declared_value",String(Math.ceil(p.shipmentValue as number)));
   const response=await fetch("https://apiv2.shiprocket.in/v1/external/courier/serviceability/?"+qs,{
     headers:{Authorization:"Bearer "+token},signal:AbortSignal.timeout(15000)});
   if(!response.ok)return reply(502,{ok:false,code:"courier_rates_unavailable",diagnostic:{stage:"serviceability_http",upstreamStatus:response.status}});
@@ -63,7 +72,7 @@ Deno.serve(async req=>{
     hasCourierArray:Array.isArray(raw)
    }});
   }
-  if(raw.length===0)return reply(200,{ok:true,couriers:[],quoteOnly:true,code:"no_serviceable_couriers"});
+  if(raw.length===0)return reply(200,{ok:true,couriers:[],recommendedCourier:null,selectionMode:"lowest_eligible_quote",quoteOnly:true,shipmentValue:p.shipmentValue,codCollectionAmount:p.codCollectionAmount,code:"no_serviceable_couriers"});
   let rejected=0;
   const results=raw.flatMap((c:unknown)=>{
    if(!c||typeof c!=="object")return [];
@@ -81,8 +90,8 @@ Deno.serve(async req=>{
      (p.paymentMode==="prepaid"||x.cod===1||x.cod===true||x.cod==="1");
    if(!eligible){rejected++;return [];}
    return [{courierId:id,name:(x.courier_name as string).slice(0,80),estimatedCost:fullCost}];
-  }).sort((a:{estimatedCost:number},b:{estimatedCost:number})=>a.estimatedCost-b.estimatedCost).slice(0,20);
+  }).sort((a:{estimatedCost:number;courierId:number},b:{estimatedCost:number;courierId:number})=>a.estimatedCost-b.estimatedCost||a.courierId-b.courierId).slice(0,20);
   if(results.length===0)return reply(502,{ok:false,code:"courier_quotes_unparseable",diagnostic:{stage:"courier_filtering",returnedCouriers:raw.length,rejectedCouriers:rejected}});
-  return reply(200,{ok:true,couriers:results,quoteOnly:true});
+  return reply(200,{ok:true,couriers:results,recommendedCourier:results[0],selectionMode:"lowest_eligible_quote",quoteOnly:true,shipmentValue:p.shipmentValue,codCollectionAmount:p.codCollectionAmount,codFeeEstimateOnly:p.paymentMode==="cod"});
  }catch{return reply(503,{ok:false,code:"quote_unavailable",diagnostic:{stage:"unexpected_exception"}});}
 });
