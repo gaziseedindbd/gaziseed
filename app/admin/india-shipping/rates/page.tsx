@@ -7,10 +7,10 @@ export default function IndiaShippingRatesPage() {
  const [weight,setWeight]=useState('0.5'); const [length,setLength]=useState('15');
  const [breadth,setBreadth]=useState('10'); const [height,setHeight]=useState('5');
  const [mode,setMode]=useState<'prepaid'|'cod'>('prepaid');
- const [rates,setRates]=useState<Quote[]>([]); const [loading,setLoading]=useState(false);
+ const [rates,setRates]=useState<Quote[]>([]); const [recommended,setRecommended]=useState<Quote|null>(null); const [loading,setLoading]=useState(false);
  const [message,setMessage]=useState('');
  async function check() {
-  setLoading(true);setMessage('');setRates([]);
+  setLoading(true);setMessage('');setRates([]);setRecommended(null);
   try {
    if(!/^[1-9][0-9]{5}$/.test(pin)||!/^[1-9][0-9]{5}$/.test(pickup))
     throw new Error('Enter valid 6-digit India PIN codes');
@@ -36,7 +36,10 @@ export default function IndiaShippingRatesPage() {
     const shape = code === 'courier_response_invalid' ? ' / response keys: '+(payload?.diagnostic?.topLevelKeys?.join(',') || 'none')+' / data: '+(payload?.diagnostic?.dataKind || 'unknown')+' ['+(payload?.diagnostic?.dataKeys?.join(',') || 'none')+']' : '';
     throw new Error('Courier rate check failed: '+code+' ('+stage+upstream+shape+'). No shipment created.');
    }
-   setRates(Array.isArray(data.couriers)?data.couriers:[]);
+   const quotes:Quote[]=Array.isArray(data.couriers)?data.couriers:[];
+   setRates(quotes);
+   const best=quotes.filter(q=>Number.isSafeInteger(q.courierId)&&q.courierId>0&&Number.isFinite(q.estimatedCost)&&q.estimatedCost>=0).sort((a,b)=>a.estimatedCost-b.estimatedCost||a.courierId-b.courierId)[0]??null;
+   setRecommended(best);
    setMessage(data.couriers?.length?'Available courier estimates (not a booking)':'No eligible couriers for these details');
   }catch(e){setMessage(e instanceof Error?e.message:'Unable to check rates');}
   finally{setLoading(false);}
@@ -64,9 +67,10 @@ export default function IndiaShippingRatesPage() {
    {loading?'Checking couriers…':'Check Courier Availability & Charges'}
   </button>
   {message&&<p role="status" className="text-sm">{message}</p>}
+  {recommended&&<section role="status" className="rounded-lg border-2 border-emerald-700 bg-emerald-50 p-4 text-sm text-emerald-950"><p className="font-bold">Automatically recommended: lowest eligible courier quote</p><p>{recommended.name} · ₹{recommended.estimatedCost.toFixed(2)}</p><p className="mt-2 text-xs">Read-only recommendation for these parcel details. No courier booking, assignment, shipment, AWB, or pickup is performed. Recheck at booking time.</p></section>}
   {rates.length>0&&<div className="space-y-2">{rates.map((r,i)=>
    <div key={r.courierId} className="flex justify-between rounded-lg border p-3">
-    <span>{r.name}{i===0?' — Lowest estimate':''}</span><strong>₹{r.estimatedCost.toFixed(2)}</strong>
+    <span>{r.name}{recommended?.courierId===r.courierId?' — Auto-recommended':''}</span><strong>₹{r.estimatedCost.toFixed(2)}</strong>
    </div>)}</div>}
   <p className="text-xs text-gray-600">Manual PINs and dimensions are for quotations only. Actual booking requires verified order address, Cashfree checks, package measurements, and KYC approval.</p>
  </main>;
