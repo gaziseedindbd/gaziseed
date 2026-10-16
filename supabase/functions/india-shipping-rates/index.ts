@@ -50,19 +50,27 @@ Deno.serve(async req=>{
   const data=json&&typeof json==="object"&&"data" in json?json.data:null;
   const raw=data&&typeof data==="object"&&"available_courier_companies" in data?
     data.available_courier_companies:null;
-  if(!Array.isArray(raw))return reply(200,{ok:true,couriers:[]});
+  if(!Array.isArray(raw))return reply(502,{ok:false,code:"courier_response_invalid"});
+  if(raw.length===0)return reply(200,{ok:true,couriers:[],quoteOnly:true,code:"no_serviceable_couriers"});
+  let rejected=0;
   const results=raw.flatMap((c:unknown)=>{
    if(!c||typeof c!=="object")return [];
    const x=c as Record<string,unknown>;
-   const id=Number(x.courier_company_id),rate=Number(x.rate);
-   const freight=Number(x.freight_charge),codCharge=Number(x.cod_charges),extra=Number(x.other_charges);
+   const id=Number(x.courier_company_id);
+   const amount=(v:unknown)=>v===null||v===undefined||v===""?NaN:Number(v);
+   const optionalCharge=(v:unknown)=>v===null||v===undefined||v===""?0:Number(v);
+   const rate=amount(x.rate),freight=amount(x.freight_charge);
+   const codCharge=optionalCharge(x.cod_charges),extra=optionalCharge(x.other_charges);
    const fullCost=Number.isFinite(rate)&&rate>=0?rate:
-     [freight,codCharge,extra].every(z=>Number.isFinite(z)&&z>=0)?freight+codCharge+extra:NaN;
+     Number.isFinite(freight)&&freight>=0&&Number.isFinite(codCharge)&&codCharge>=0&&
+     Number.isFinite(extra)&&extra>=0?freight+codCharge+extra:NaN;
    const eligible=Number.isSafeInteger(id)&&id>0&&Number.isFinite(fullCost)&&fullCost>=0&&
      typeof x.courier_name==="string"&&x.courier_name.length>0&&
      (p.paymentMode==="prepaid"||x.cod===1||x.cod===true||x.cod==="1");
-   return eligible?[{courierId:id,name:(x.courier_name as string).slice(0,80),estimatedCost:fullCost}]:[];
+   if(!eligible){rejected++;return [];}
+   return [{courierId:id,name:(x.courier_name as string).slice(0,80),estimatedCost:fullCost}];
   }).sort((a:{estimatedCost:number},b:{estimatedCost:number})=>a.estimatedCost-b.estimatedCost).slice(0,20);
+  if(results.length===0)return reply(502,{ok:false,code:"courier_quotes_unparseable",diagnostic:{returnedCouriers:raw.length,rejectedCouriers:rejected}});
   return reply(200,{ok:true,couriers:results,quoteOnly:true});
  }catch{return reply(503,{ok:false,code:"quote_unavailable"});}
 });
