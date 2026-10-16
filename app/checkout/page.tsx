@@ -399,10 +399,10 @@ export default function CheckoutPage() {
 
     if (nextFreeRule) {
       const sign = country === 'IN' ? '₹' : '৳';
-      const formatted = nextFreeRule.min_order.toLocaleString(country === 'IN' ? 'en-IN' : 'bn-BD');
+      const formatted = (country === 'IN' ? Math.round((nextFreeRule.min_order - 0.01) * 100) / 100 : nextFreeRule.min_order).toLocaleString(country === 'IN' ? 'en-IN' : 'bn-BD');
       return t(
-        `${sign}${formatted}+ অর্ডারে ফ্রি ডেলিভারি`,
-        `Free delivery on ${sign}${formatted}+`,
+        country === 'IN' ? `₹${formatted}-এর বেশি অর্ডারে ফ্রি ডেলিভারি` : `${sign}${formatted}+ অর্ডারে ফ্রি ডেলিভারি`,
+        country === 'IN' ? `Free delivery on orders above ₹${formatted}` : `Free delivery on ${sign}${formatted}+`,
       );
     }
 
