@@ -2,6 +2,11 @@
 // The checkout's City/District/Town field must identify a location reported for the PIN.
 type PostalOffice = { State?: string; District?: string; Name?: string; Block?: string; Division?: string };
 const normalize = (s: string) => s.normalize("NFKC").trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+// Accept common postal-office suffix variations, but never approximate/fuzzy-match
+// arbitrary place names (which could conceal a genuine PIN/city mismatch).
+const normalizePostalPlace = (s: string) => normalize(s)
+  .replace(/\\b(?:head post office|sub post office|branch post office|post office|h o|s o|b o|g p o|gpo|ho|so|bo)\\b$/g, "")
+  .trim();
 
 export async function validateIndiaShippingAddress(fullAddress: string): Promise<{ valid: boolean; error?: string }> {
   const parts = fullAddress.split(",").map((part) => part.trim()).filter(Boolean);
@@ -24,7 +29,7 @@ export async function validateIndiaShippingAddress(fullAddress: string): Promise
     const record = Array.isArray(payload) ? payload[0] : null;
     const offices: PostalOffice[] = record?.Status === "Success" && Array.isArray(record?.PostOffice)
       ? record.PostOffice : [];
-    const normalizedState = normalize(state), normalizedCity = normalize(city);
+    const normalizedState = normalize(state), normalizedCity = normalizePostalPlace(city);
     if (!normalizedState || !normalizedCity || !offices.length)
       return { valid: false, error: "PIN not found or postal information incomplete" };
 
@@ -33,7 +38,7 @@ export async function validateIndiaShippingAddress(fullAddress: string): Promise
 
     const cityMatches = matchingOffices.some((office) =>
       [office.District, office.Name, office.Block, office.Division]
-        .some((location) => typeof location === "string" && normalize(location) === normalizedCity)
+        .some((location) => typeof location === "string" && normalizePostalPlace(location) === normalizedCity)
     );
     if (!cityMatches) return { valid: false, error: "City/District/Town does not match this PIN. Enter the postal district or post office name." };
     return { valid: true };
