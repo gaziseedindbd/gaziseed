@@ -33,14 +33,14 @@ export default function IndiaShippingDashboard(){
   try{
    const {data:session}=await supabase.auth.getSession();
    if(!session.session?.access_token)throw new Error('India Admin login required');
-   const {data,error:invokeError}=await supabase.functions.invoke('india-shipping-payment-preflight',{
-    method:'POST',body:{orderId:selected},headers:{Authorization:'Bearer '+session.session.access_token,'x-gazi-country':'IN'}});
+   const {data,error:invokeError}=await supabase.functions.invoke('cashfree-verify-dispatch',{
+    method:'POST',body:{orderId:selected,status:'verify_only'},headers:{Authorization:'Bearer '+session.session.access_token,'x-gazi-country':'IN'}});
    if(invokeError||data?.ok!==true||data?.verified!==true){
-    let reason=typeof data?.reason==='string'?data.reason:'Cashfree preflight unavailable or order not eligible';
-    if(invokeError?.context instanceof Response){try{const errorBody=await invokeError.context.clone().json();if(typeof errorBody?.reason==='string')reason=errorBody.reason;}catch{/* Preserve generic failure */}}
+    let reason=typeof data?.error==='string'?data.error:'Cashfree verification unavailable or order not eligible';
+    if(invokeError?.context instanceof Response){try{const errorBody=await invokeError.context.clone().json();if(typeof errorBody?.error==='string')reason=errorBody.error;}catch{/* Preserve generic failure */}}
     throw new Error(reason);
    }
-   setPreflightResult('Cashfree gateway verified for this check. Mode: '+String(data.mode)+'; balance at delivery ₹'+Number(data.collectOnDelivery??0).toFixed(2)+'. Booking and dispatch remain disabled; verify again at booking.');
+   setPreflightResult('Cashfree gateway verified for this check. Type: '+String(data.payment_type)+'; balance at delivery ₹'+Number(data.due_amount??0).toFixed(2)+'. Booking and dispatch remain disabled; verify again at booking.');
   }catch(e){setPreflightResult('Not verified: '+(e instanceof Error?e.message:'Unknown payment verification error'));}
   finally{setPreflightLoading(false);}
  }
