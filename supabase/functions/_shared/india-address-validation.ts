@@ -5,7 +5,7 @@ const normalize = (s: string) => s.normalize("NFKC").trim().toLowerCase().replac
 // Accept common postal-office suffix variations, but never approximate/fuzzy-match
 // arbitrary place names (which could conceal a genuine PIN/city mismatch).
 const normalizePostalPlace = (s: string) => normalize(s)
-  .replace(/\\b(?:head post office|sub post office|branch post office|post office|h o|s o|b o|g p o|gpo|ho|so|bo)\\b$/g, "")
+  .replace(/\b(?:head post office|sub post office|branch post office|post office|h o|s o|b o|g p o|gpo|ho|so|bo)\b$/g, "")
   .trim();
 
 export async function validateIndiaShippingAddress(fullAddress: string): Promise<{ valid: boolean; error?: string }> {
