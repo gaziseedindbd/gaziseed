@@ -769,7 +769,7 @@ function AddressForm({ address, countryCode, onSave, onClose }: { address: Custo
     const district = String(address.district || '').trim();
     const division = String(address.division || '').trim();
     const thana = String(address.thana || '').trim();
-    const savedDetail = String(address.detail || '').trim();
+    const savedDetail = String((address as CustomerAddress & { detail?: string }).detail || '').trim();
     if (countryCode === 'BD') {
       return { division, district, thana, detail: savedDetail || String(address.address || ''), postalCode: pin };
     }
