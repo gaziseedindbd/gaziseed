@@ -291,10 +291,20 @@ export default function CheckoutPage() {
       // the PIN from the postal directory rather than trusting an old State value.
       if (country === 'IN') {
         const pin = String(addr.postal_code || '').trim();
-        const detail = String(addr.address || '').trim();
+        // Saved addresses may already contain district/state/PIN in the legacy free-text field.
+        // Strip only matching trailing structured suffixes to avoid duplicated address parts.
+        const savedDistrict = String(addr.district || '').trim();
+        const savedState = String(addr.division || '').trim();
+        let detail = String(addr.address || '').trim();
+        const suffixParts = detail.split(',').map((part) => part.trim()).filter(Boolean);
+        const same = (a: string, b: string) => Boolean(b) && a.toLowerCase() === b.toLowerCase();
+        if (suffixParts.length && same(suffixParts[suffixParts.length - 1], pin)) suffixParts.pop();
+        if (suffixParts.length && same(suffixParts[suffixParts.length - 1], savedState)) suffixParts.pop();
+        if (suffixParts.length && same(suffixParts[suffixParts.length - 1], savedDistrict)) suffixParts.pop();
+        detail = suffixParts.join(', ');
         setAddrValue({
           division: '',
-          district: String(addr.district || '').trim(),
+          district: savedDistrict,
           thana: '',
           detail,
           postalCode: /^[1-9]\d{5}$/.test(pin) ? pin : '',
