@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.112.3";
 // Read-only India courier rate quotation; no order, AWB, wallet or pickup writes.
 const cors = { "Access-Control-Allow-Origin":"*", "Access-Control-Allow-Methods":"POST, OPTIONS",
- "Access-Control-Allow-Headers":"authorization, apikey, x-client-info, content-type, x-gazi-country" };
+ "Access-Control-Allow-Headers":"authorization, apikey, x-client-info, content-type, x-gazi-country, x-supabase-api-version, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version" };
 const reply=(status:number,data:object)=>new Response(JSON.stringify(data),{status,headers:{...cors,"content-type":"application/json","cache-control":"no-store"}});
 const numeric=(v:unknown)=>typeof v==="number"&&Number.isFinite(v)?v:null;
 Deno.serve(async req=>{
