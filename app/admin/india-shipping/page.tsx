@@ -2,7 +2,7 @@
 import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {supabase} from '@/lib/supabase/client';
-type Order={id:string;order_number:string|null;customer_name:string|null;delivery_address:string|null;status:string|null;payment_status:string|null;grand_total:number|null;created_at:string};
+type Order={id:string;order_number:string|null;customer_name:string|null;delivery_address:string|null;status:string|null;payment_status:string|null;payment_method:string|null;payment_advance_amount:number|null;payment_due_amount:number|null;cashfree_dispatch_verified_at:string|null;grand_total:number|null;created_at:string};
 type Shipment={id:string;order_id:string;external_shipment_id:string|null;awb:string|null;courier_company_id:number|null;tracking_status:string|null;pickup_approved_at:string|null};
 type Preparation={order_id:string;delivery_pin:string;weight_kg:number;length_cm:number;breadth_cm:number;height_cm:number;packing_notes:string;updated_at:string};
 type Event={shipment_id:string;event_status:string|null;received_at:string;event_occurred_at:string|null};
@@ -70,6 +70,23 @@ export default function IndiaShippingDashboard(){
  const order=orders.find(x=>x.id===selected)??null;
  const shipment=shipments.find(x=>x.order_id===selected);
  const history=events.filter(x=>x.shipment_id===shipment?.id);
+ const preparation=preparations.find(x=>x.order_id===selected);
+ const isCod=order?.payment_method?.toLowerCase()==='cod';
+ const due=Number(order?.payment_due_amount);
+ const advance=Number(order?.payment_advance_amount??0);
+ const paymentNeedsVerification=Boolean(order&&(order.payment_method==='cashfree'||(isCod&&advance>0)));
+ const dispatchVerified=Boolean(order?.cashfree_dispatch_verified_at);
+ const preparationReady=Boolean(preparation&&/^[1-9][0-9]{5}$/.test(preparation.delivery_pin)&&
+  [Number(preparation.weight_kg),Number(preparation.length_cm),Number(preparation.breadth_cm),Number(preparation.height_cm)].every((n,i)=>Number.isFinite(n)&&n>=(i===0?0.01:1)));
+ const preflightBlocks=order?[
+  ...(!order.delivery_address?.trim()?['Customer address missing']:[]),
+  ...(!preparationReady?['Save valid parcel preparation measurements']:[]),
+  ...(shipment?.awb||shipment?.external_shipment_id?['External shipment already exists — duplicate booking prohibited']:[]),
+  ...(paymentNeedsVerification&&!dispatchVerified?['Server-side Cashfree verification required for collected payments']:[]),
+  ...(isCod&&(!Number.isFinite(due)||due<0)?['COD collection balance requires verification']:[]),
+  ...(!isCod&&order.payment_method!=='cashfree'?['Unsupported payment method — manual review']:[]),
+ ]:[];
+
  return <main className="mx-auto max-w-6xl space-y-5 p-5 sm:p-7">
   <div className="space-y-2"><h1 className="text-2xl font-bold">India Shipping Management</h1>
    <p className="text-sm text-gray-600">India-only order preparation drafts. Shiprocket KYC verified. No shipment booking, AWB generation, courier assignment or pickup is enabled.</p></div>
@@ -101,6 +118,13 @@ export default function IndiaShippingDashboard(){
       <p><strong>Courier ID:</strong> {shipment?.courier_company_id??'Not selected'}</p>
       <p><strong>Tracking status:</strong> {shipment?.tracking_status||'No tracking yet'}</p>
       <p><strong>Pickup approval:</strong> {shipment?.pickup_approved_at?'Recorded':'Not approved'}</p>
+     </div>
+     <div className="space-y-3 rounded-lg border p-4" role="region" aria-label="Phase 4 dispatch safety preflight">
+      <h3 className="font-semibold">Phase 4 · Dispatch Safety Preflight</h3>
+      <p className="text-sm">Payment mode: <strong>{order.payment_method||'Unknown'}</strong> · Advance recorded: ₹{advance.toFixed(2)} · COD due recorded: ₹{Number.isFinite(due)?due.toFixed(2):'Unknown'}</p>
+      <p className="text-sm">Server-side Cashfree dispatch verification: <strong>{dispatchVerified?'Recorded (recheck at booking)':'Not recorded'}</strong></p>
+      {preflightBlocks.length>0?<ul className="list-disc space-y-1 pl-5 text-sm text-amber-800">{preflightBlocks.map(reason=><li key={reason}>{reason}</li>)}</ul>:<p className="text-sm text-emerald-800">Preliminary data checks pass; live payment re-verification, courier quote, duplicate lock and admin consent still required.</p>}
+      <p className="text-xs font-medium text-red-700">Booking, AWB and pickup remain disabled. This preflight uses read-only order data and does not authorize dispatch.</p>
      </div>
      <div className="space-y-3 rounded-lg border p-4"><h3 className="font-semibold">Shipping Preparation · Save Draft</h3>
       <p className="text-xs text-gray-600">Check the customer address before entering the PIN. Minimum parcel weight 0.01 kg and each dimension 1 cm. Draft measurements do not confirm payment or authorize dispatch.</p>
