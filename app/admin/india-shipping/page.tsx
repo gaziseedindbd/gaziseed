@@ -14,8 +14,8 @@ export default function IndiaShippingDashboard(){
  const [pin,setPin]=useState(''),[weight,setWeight]=useState(''),[length,setLength]=useState(''),[breadth,setBreadth]=useState(''),[height,setHeight]=useState(''),[notes,setNotes]=useState('');
  const [saving,setSaving]=useState(false),[saveMessage,setSaveMessage]=useState('');
  const [mobileDetails,setMobileDetails]=useState(false);
- function chooseOrder(id:string){setSelected(id);setSaveMessage('');setMobileDetails(true);window.scrollTo({top:0,behavior:'smooth'});}
- function backToOrders(){setMobileDetails(false);window.scrollTo({top:0,behavior:'smooth'});}
+ function chooseOrder(id:string){if(saving)return;setSelected(id);setSaveMessage('');setMobileDetails(true);window.scrollTo({top:0,behavior:'smooth'});}
+ function backToOrders(){if(saving)return;setMobileDetails(false);window.scrollTo({top:0,behavior:'smooth'});}
  useEffect(()=>{let alive=true;(async()=>{try{
  const {data:session}=await supabase.auth.getSession();
  if(!session.session?.access_token)throw new Error('India Admin login required');
@@ -27,6 +27,8 @@ export default function IndiaShippingDashboard(){
  finally{if(alive)setLoading(false);}})();return()=>{alive=false};},[]);
  useEffect(()=>{const saved=preparations.find(p=>p.order_id===selected);setPin(saved?.delivery_pin??'');setWeight(saved?String(saved.weight_kg):'');setLength(saved?String(saved.length_cm):'');setBreadth(saved?String(saved.breadth_cm):'');setHeight(saved?String(saved.height_cm):'');setNotes(saved?.packing_notes??'');},[selected,preparations]);
  async function savePreparation(){
+  if(saving)return;
+  const draftOrderId=selected;
   setSaving(true);setSaveMessage('');
   try{
    if(!selected||!/^[1-9][0-9]{5}$/.test(pin))throw new Error('Enter a valid 6-digit delivery PIN');
@@ -36,7 +38,7 @@ export default function IndiaShippingDashboard(){
    const {data:session}=await supabase.auth.getSession();
    if(!session.session?.access_token)throw new Error('India Admin login required');
    const {data,error:saveError}=await supabase.functions.invoke('india-shipping-preparation',{method:'POST',
-    body:{order_id:selected,delivery_pin:pin,weight_kg:dimensions[0],length_cm:dimensions[1],breadth_cm:dimensions[2],height_cm:dimensions[3],packing_notes:notes},
+    body:{order_id:draftOrderId,delivery_pin:pin,weight_kg:dimensions[0],length_cm:dimensions[1],breadth_cm:dimensions[2],height_cm:dimensions[3],packing_notes:notes},
     headers:{Authorization:'Bearer '+session.session.access_token,'x-gazi-country':'IN'}});
    if(saveError||data?.ok!==true){
     let code:unknown=data?.code;
@@ -50,8 +52,18 @@ export default function IndiaShippingDashboard(){
     };
     throw new Error(typeof code==='string'&&messages[code]?messages[code]:'Save failed. Please confirm India Admin access and retry.');
    }
-   setPreparations(old=>[...old.filter(p=>p.order_id!==selected),{order_id:selected,delivery_pin:pin,weight_kg:dimensions[0],length_cm:dimensions[1],breadth_cm:dimensions[2],height_cm:dimensions[3],packing_notes:notes,updated_at:new Date().toISOString()}]);
-   setSaveMessage('Draft saved securely. No shipment or AWB was created.');
+   const {data:confirmed,error:refreshError}=await supabase.functions.invoke('india-shipping-admin-overview',{
+    method:'POST',body:{},headers:{Authorization:'Bearer '+session.session.access_token,'x-gazi-country':'IN'}});
+   if(refreshError||confirmed?.ok!==true||!Array.isArray(confirmed.preparations)){
+    throw new Error('Save response received, but draft could not be rechecked. Refresh the page before making further changes.');
+   }
+   setPreparations(confirmed.preparations);
+   const saved=confirmed.preparations.find((p:Preparation)=>p.order_id===draftOrderId);
+   const isPersisted=saved&&saved.delivery_pin===pin&&Number(saved.weight_kg)===dimensions[0]&&
+    Number(saved.length_cm)===dimensions[1]&&Number(saved.breadth_cm)===dimensions[2]&&Number(saved.height_cm)===dimensions[3]&&
+    saved.packing_notes===notes;
+   if(!isPersisted)throw new Error('Draft not confirmed in database. Refresh and check the saved values.');
+   setSaveMessage('Draft saved and verified from database. No shipment or AWB was created.');
   }catch(e){setSaveMessage(e instanceof Error?e.message:'Unable to save');}finally{setSaving(false);}
  }
  const filtered=orders.filter(x=>([x.order_number,x.customer_name,x.id].join(' ').toLowerCase().includes(search.toLowerCase())));
@@ -60,7 +72,7 @@ export default function IndiaShippingDashboard(){
  const history=events.filter(x=>x.shipment_id===shipment?.id);
  return <main className="mx-auto max-w-6xl space-y-5 p-5 sm:p-7">
   <div className="space-y-2"><h1 className="text-2xl font-bold">India Shipping Management</h1>
-   <p className="text-sm text-gray-600">India-only order preparation drafts. Shiprocket KYC is under review. No shipment booking, AWB generation, courier assignment or pickup is enabled.</p></div>
+   <p className="text-sm text-gray-600">India-only order preparation drafts. Shiprocket KYC verified. No shipment booking, AWB generation, courier assignment or pickup is enabled.</p></div>
   <div className="flex flex-wrap gap-3"><Link className="rounded-lg bg-emerald-700 px-4 py-3 text-white" href="/admin/india-shipping/rates">Check Courier Rates</Link>
    <Link className="rounded-lg border px-4 py-3" href="/admin/india-shipping/connection">Test API Connection</Link></div>
   {loading&&<p role="status">Loading India orders…</p>}
@@ -69,14 +81,14 @@ export default function IndiaShippingDashboard(){
    <section className={`${mobileDetails ? "hidden lg:block" : "block"} space-y-3 min-w-0`}><h2 className="text-lg font-semibold">Select India Order</h2>
     <input aria-label="Search India orders" placeholder="Search order number or customer" value={search} onChange={e=>setSearch(e.target.value)} className="w-full rounded-lg border p-3" />
     <p className="text-xs text-gray-500">Most recent 60 India orders, read-only</p>
-    <div className="max-h-[550px] space-y-2 overflow-auto">{filtered.map(o=><button type="button" key={o.id} onClick={()=>chooseOrder(o.id)}
+    <div className="max-h-[550px] space-y-2 overflow-auto">{filtered.map(o=><button type="button" key={o.id} onClick={()=>chooseOrder(o.id)} disabled={saving}
      className={`w-full rounded-lg border p-3 text-left ${selected===o.id?'border-emerald-700 bg-emerald-50':''}`}>
       <span className="block font-semibold">{o.order_number||o.id.slice(0,8)} · {o.customer_name||'Customer'}</span>
       <span className="text-sm text-gray-600">{o.status||'Status unavailable'} · ₹{Number(o.grand_total??0).toFixed(2)} · {formatDate(o.created_at)}</span>
      </button>)}
      {filtered.length===0&&<p className="text-sm">No matching India orders found.</p>}</div>
    </section>
-   <section className={`${mobileDetails ? "block" : "hidden lg:block"} min-w-0 space-y-4`}><button type="button" onClick={backToOrders} className="rounded-lg border px-4 py-3 text-sm font-semibold lg:hidden">← Back to Orders</button><h2 className="text-lg font-semibold">Shipment Details & Tracking</h2>
+   <section id="shipping-order-details" className={`${mobileDetails ? "block" : "hidden lg:block"} min-w-0 space-y-4 break-words`}><button type="button" onClick={backToOrders} disabled={saving} className="rounded-lg border px-4 py-3 text-sm font-semibold lg:hidden">← Back to Orders</button><h2 className="text-lg font-semibold">Shipment Details & Tracking</h2>
     {!order?<p className="rounded-lg border p-5 text-sm">Choose an India order to view shipping details.</p>:<>
      <div className="space-y-2 rounded-lg border p-4 text-sm">
       <p><strong>Order:</strong> {order.order_number||order.id}</p>
@@ -96,7 +108,7 @@ export default function IndiaShippingDashboard(){
        {([["Delivery PIN",pin,setPin,"700016"],["Weight (kg)",weight,setWeight,"0.5"],["Length (cm)",length,setLength,"15"],["Breadth (cm)",breadth,setBreadth,"10"],["Height (cm)",height,setHeight,"5"]] as const).map(([title,value,setter,placeholder])=><label key={title} className="flex flex-col gap-1 text-sm">{title}<input className="w-full rounded-lg border p-3" value={value} onChange={e=>setter(e.target.value)} placeholder={placeholder} inputMode={title==="Delivery PIN"?"numeric":"decimal"}/></label>)}
       </div>
       <label className="flex flex-col gap-1 text-sm">Packing notes (optional)<textarea className="rounded-lg border p-3" maxLength={500} rows={2} value={notes} onChange={e=>setNotes(e.target.value)} /></label>
-      <button type="button" onClick={savePreparation} disabled={saving||Boolean(shipment?.awb||shipment?.external_shipment_id)} className="rounded-lg bg-emerald-700 px-5 py-3 font-semibold text-white disabled:opacity-50">{saving?"Saving…":"Save Preparation Draft"}</button>
+      <button type="button" onClick={savePreparation} disabled={saving||!selected||Boolean(shipment?.awb||shipment?.external_shipment_id)} className="rounded-lg bg-emerald-700 px-5 py-3 font-semibold text-white disabled:opacity-50">{saving?"Saving…":"Save Preparation Draft"}</button>
       {saveMessage&&<p role="status" aria-live="polite" className="rounded-lg border p-3 text-sm">{saveMessage}</p>}
       {preparations.some(p=>p.order_id===selected)&&<p className="text-xs text-emerald-700">Saved draft available for this India order.</p>}
       {preparations.some(p=>p.order_id===selected&&(Number(p.weight_kg)<0.01||Number(p.length_cm)<1||Number(p.breadth_cm)<1||Number(p.height_cm)<1))&&<p role="alert" className="text-sm font-medium text-amber-700">Previously saved measurements are too small for a practical parcel. Correct and save them before any future shipment.</p>}
