@@ -14,8 +14,9 @@ export default function IndiaShippingDashboard(){
  const [pin,setPin]=useState(''),[weight,setWeight]=useState(''),[length,setLength]=useState(''),[breadth,setBreadth]=useState(''),[height,setHeight]=useState(''),[notes,setNotes]=useState('');
  const [saving,setSaving]=useState(false),[saveMessage,setSaveMessage]=useState('');
  const [mobileDetails,setMobileDetails]=useState(false);
- function chooseOrder(id:string){if(saving)return;setSelected(id);setSaveMessage('');setMobileDetails(true);window.scrollTo({top:0,behavior:'smooth'});}
- function backToOrders(){if(saving)return;setMobileDetails(false);window.scrollTo({top:0,behavior:'smooth'});}
+ const [preflightLoading,setPreflightLoading]=useState(false),[preflightResult,setPreflightResult]=useState('');
+ function chooseOrder(id:string){if(saving||preflightLoading)return;setSelected(id);setPreflightResult('');setSaveMessage('');setMobileDetails(true);window.scrollTo({top:0,behavior:'smooth'});}
+ function backToOrders(){if(saving||preflightLoading)return;setMobileDetails(false);window.scrollTo({top:0,behavior:'smooth'});}
  useEffect(()=>{let alive=true;(async()=>{try{
  const {data:session}=await supabase.auth.getSession();
  if(!session.session?.access_token)throw new Error('India Admin login required');
@@ -26,6 +27,23 @@ export default function IndiaShippingDashboard(){
  }catch(e){if(alive)setError(e instanceof Error?e.message:'Unable to load shipping data');}
  finally{if(alive)setLoading(false);}})();return()=>{alive=false};},[]);
  useEffect(()=>{const saved=preparations.find(p=>p.order_id===selected);setPin(saved?.delivery_pin??'');setWeight(saved?String(saved.weight_kg):'');setLength(saved?String(saved.length_cm):'');setBreadth(saved?String(saved.breadth_cm):'');setHeight(saved?String(saved.height_cm):'');setNotes(saved?.packing_notes??'');},[selected,preparations]);
+ async function checkPaymentPreflight(){
+  if(!selected||preflightLoading)return;
+  setPreflightLoading(true);setPreflightResult('');
+  try{
+   const {data:session}=await supabase.auth.getSession();
+   if(!session.session?.access_token)throw new Error('India Admin login required');
+   const {data,error:invokeError}=await supabase.functions.invoke('india-shipping-payment-preflight',{
+    method:'POST',body:{orderId:selected},headers:{Authorization:'Bearer '+session.session.access_token,'x-gazi-country':'IN'}});
+   if(invokeError||data?.ok!==true||data?.verified!==true){
+    let reason=typeof data?.reason==='string'?data.reason:'Cashfree preflight unavailable or order not eligible';
+    if(invokeError?.context instanceof Response){try{const errorBody=await invokeError.context.clone().json();if(typeof errorBody?.reason==='string')reason=errorBody.reason;}catch{/* Preserve generic failure */}}
+    throw new Error(reason);
+   }
+   setPreflightResult('Cashfree gateway verified for this check. Mode: '+String(data.mode)+'; balance at delivery ₹'+Number(data.collectOnDelivery??0).toFixed(2)+'. Booking and dispatch remain disabled; verify again at booking.');
+  }catch(e){setPreflightResult('Not verified: '+(e instanceof Error?e.message:'Unknown payment verification error'));}
+  finally{setPreflightLoading(false);}
+ }
  async function savePreparation(){
   if(saving)return;
   const draftOrderId=selected;
@@ -124,6 +142,8 @@ export default function IndiaShippingDashboard(){
       <p className="text-sm">Payment mode: <strong>{order.payment_method||'Unknown'}</strong> · Advance recorded: ₹{advance.toFixed(2)} · COD due recorded: ₹{Number.isFinite(due)?due.toFixed(2):'Unknown'}</p>
       <p className="text-sm">Server-side Cashfree dispatch verification: <strong>{dispatchVerified?'Recorded (recheck at booking)':'Not recorded'}</strong></p>
       {preflightBlocks.length>0?<ul className="list-disc space-y-1 pl-5 text-sm text-amber-800">{preflightBlocks.map(reason=><li key={reason}>{reason}</li>)}</ul>:<p className="text-sm text-emerald-800">Preliminary data checks pass; live payment re-verification, courier quote, duplicate lock and admin consent still required.</p>}
+      <button type="button" onClick={checkPaymentPreflight} disabled={preflightLoading||saving||!(order.payment_method==='cashfree'||(isCod&&advance>0))} className="rounded-lg border border-emerald-700 px-4 py-3 text-sm font-semibold disabled:opacity-50">{preflightLoading?'Checking Cashfree…':'Verify Cashfree Payment (read only)'}</button>
+      {preflightResult&&<p role="status" aria-live="polite" className="rounded-lg border p-3 text-sm">{preflightResult}</p>}
       <p className="text-xs font-medium text-red-700">Booking, AWB and pickup remain disabled. This preflight uses read-only order data and does not authorize dispatch.</p>
      </div>
      <div className="space-y-3 rounded-lg border p-4"><h3 className="font-semibold">Shipping Preparation · Save Draft</h3>
