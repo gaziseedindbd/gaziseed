@@ -788,7 +788,7 @@ function AddressForm({ address, countryCode, onSave, onClose }: { address: Custo
       division: '', // Don't trust an unverified saved State.
       district,
       thana: '',
-      detail: savedDetail || parts.join(', '),
+      detail: parts.join(', ').length > savedDetail.length ? parts.join(', ') : (savedDetail || parts.join(', ')),
       postalCode: /^[1-9][0-9]{5}$/.test(pin) ? pin : '',
       landmark: '',
     };
