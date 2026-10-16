@@ -50,7 +50,19 @@ Deno.serve(async req=>{
   const data=json&&typeof json==="object"&&"data" in json?json.data:null;
   const raw=data&&typeof data==="object"&&"available_courier_companies" in data?
     data.available_courier_companies:null;
-  if(!Array.isArray(raw))return reply(502,{ok:false,code:"courier_response_invalid",diagnostic:{stage:"serviceability_payload",hasData:!!data}});
+  if(!Array.isArray(raw)){
+   const objectKeys=(v:unknown)=>v&&typeof v==="object"&&!Array.isArray(v)?Object.keys(v as Record<string,unknown>).filter(k=>/^[a-zA-Z_]{1,40}$/.test(k)).slice(0,15):[];
+   const top=json&&typeof json==="object"&&!Array.isArray(json)?json as Record<string,unknown>:{};
+   const nested=data&&typeof data==="object"&&!Array.isArray(data)?data as Record<string,unknown>:{};
+   const safeStatus=(v:unknown)=>typeof v==="number"&&Number.isInteger(v)&&v>=100&&v<=599?v:null;
+   return reply(502,{ok:false,code:"courier_response_invalid",diagnostic:{
+    stage:"serviceability_payload",upstreamStatus:response.status,
+    payloadKind:Array.isArray(json)?"array":typeof json,
+    topLevelKeys:objectKeys(json),dataKind:Array.isArray(data)?"array":typeof data,
+    dataKeys:objectKeys(data),apiStatus:safeStatus(top.status)??safeStatus(nested.status),
+    hasCourierArray:Array.isArray(raw)
+   }});
+  }
   if(raw.length===0)return reply(200,{ok:true,couriers:[],quoteOnly:true,code:"no_serviceable_couriers"});
   let rejected=0;
   const results=raw.flatMap((c:unknown)=>{
