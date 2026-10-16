@@ -33,7 +33,7 @@ export function AddressSelector({ value, onChange, lang: preferredLang, countryC
       setPinVerified(''); setPinStatus(''); setPinLoading(false);
       return;
     }
-    if (pinVerified === postalCode) return;
+    if (pinVerified === postalCode && division) return;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       setPinLoading(true);
@@ -55,7 +55,7 @@ export function AddressSelector({ value, onChange, lang: preferredLang, countryC
       }
     }, 350);
     return () => { clearTimeout(timer); controller.abort(); };
-  }, [postalCode, countryCode, pinVerified]);
+  }, [postalCode, countryCode, pinVerified, division]);
   const update = (patch: Partial<AddressValue>) => onChange({ ...value, ...patch });
   const setDivision = (division: string) => update({ division, district: '', thana: '' });
   const setDistrict = (district: string) => update({ district, thana: '' });
