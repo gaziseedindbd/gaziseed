@@ -297,10 +297,10 @@ export default function CheckoutPage() {
           district: String(addr.district || '').trim(),
           thana: '',
           detail,
-          postalCode: /^[1-9]\\d{5}$/.test(pin) ? pin : '',
+          postalCode: /^[1-9]\d{5}$/.test(pin) ? pin : '',
           landmark: '',
         });
-        if (!/^[1-9]\\d{5}$/.test(pin)) {
+        if (!/^[1-9]\d{5}$/.test(pin)) {
           setError(t('পুরোনো ঠিকানায় সঠিক PIN নেই। PIN দিন এবং ঠিকানা যাচাই করুন।', 'Saved address needs a valid PIN. Enter a PIN and review the address.'));
         } else {
           setError('');
