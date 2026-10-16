@@ -90,6 +90,9 @@ export default function IndiaShippingDashboard(){
  const history=events.filter(x=>x.shipment_id===shipment?.id);
  const preparation=preparations.find(x=>x.order_id===selected);
  const isCod=order?.payment_method?.toLowerCase()==='cod';
+ const total=Number(order?.grand_total??0);
+ const isFullCod=Boolean(isCod&&order?.payment_status==='unpaid'&&Number(order?.payment_advance_amount??0)===0);
+ const expectedCodAmount=isFullCod?Number(order?.grand_total??0):Number(order?.payment_due_amount);
  const due=Number(order?.payment_due_amount);
  const advance=Number(order?.payment_advance_amount??0);
  const paymentNeedsVerification=Boolean(order&&(order.payment_method==='cashfree'||(isCod&&advance>0)));
@@ -101,7 +104,9 @@ export default function IndiaShippingDashboard(){
   ...(!preparationReady?['Save valid parcel preparation measurements']:[]),
   ...(shipment?.awb||shipment?.external_shipment_id?['External shipment already exists — duplicate booking prohibited']:[]),
   ...(paymentNeedsVerification&&!dispatchVerified?['Server-side Cashfree verification required for collected payments']:[]),
-  ...(isCod&&(!Number.isFinite(due)||due<0)?['COD collection balance requires verification']:[]),
+  ...(isCod&&(!Number.isFinite(expectedCodAmount)||expectedCodAmount<=0)?['COD amount cannot be determined safely']:[]),
+  ...(isCod&&!isFullCod&&(Math.abs(advance+due-total)>0.01)?['Partial COD advance and due do not match order total']:[]),
+  ...(isFullCod&&due===0?['Full COD database due is zero; normalize COD amount server-side before booking']:[]),
   ...(!isCod&&order.payment_method!=='cashfree'?['Unsupported payment method — manual review']:[]),
  ]:[];
 
@@ -139,7 +144,7 @@ export default function IndiaShippingDashboard(){
      </div>
      <div className="space-y-3 rounded-lg border p-4" role="region" aria-label="Phase 4 dispatch safety preflight">
       <h3 className="font-semibold">Phase 4 · Dispatch Safety Preflight</h3>
-      <p className="text-sm">Payment mode: <strong>{order.payment_method||'Unknown'}</strong> · Advance recorded: ₹{advance.toFixed(2)} · COD due recorded: ₹{Number.isFinite(due)?due.toFixed(2):'Unknown'}</p>
+      <p className="text-sm">Payment mode: <strong>{order.payment_method||'Unknown'}</strong> · Advance recorded: ₹{advance.toFixed(2)} · Database due: ₹{Number.isFinite(due)?due.toFixed(2):'Unknown'} · Calculated COD collection: ₹{isCod&&Number.isFinite(expectedCodAmount)?expectedCodAmount.toFixed(2):'0.00'}</p>
       <p className="text-sm">Server-side Cashfree dispatch verification: <strong>{dispatchVerified?'Recorded (recheck at booking)':'Not recorded'}</strong></p>
       {preflightBlocks.length>0?<ul className="list-disc space-y-1 pl-5 text-sm text-amber-800">{preflightBlocks.map(reason=><li key={reason}>{reason}</li>)}</ul>:<p className="text-sm text-emerald-800">Preliminary data checks pass; live payment re-verification, courier quote, duplicate lock and admin consent still required.</p>}
       <button type="button" onClick={checkPaymentPreflight} disabled={preflightLoading||saving||!(order.payment_method==='cashfree'||(isCod&&advance>0))} className="rounded-lg border border-emerald-700 px-4 py-3 text-sm font-semibold disabled:opacity-50">{preflightLoading?'Checking Cashfree…':'Verify Cashfree Payment (read only)'}</button>
