@@ -514,7 +514,7 @@ export default function AccountPage() {
               )}
 
               {showAddrForm && (
-                <AddressForm address={editingAddr} onSave={handleSaveAddress} onClose={() => { setShowAddrForm(false); setEditingAddr(null); }} />
+                <AddressForm address={editingAddr} countryCode={country} onSave={handleSaveAddress} onClose={() => { setShowAddrForm(false); setEditingAddr(null); }} />
               )}
             </div>
           )}
@@ -756,26 +756,57 @@ export default function AccountPage() {
   );
 }
 
-function AddressForm({ address, onSave, onClose }: { address: CustomerAddress | null; onSave: (data: any) => void; onClose: () => void }) {
+function AddressForm({ address, countryCode, onSave, onClose }: { address: CustomerAddress | null; countryCode: 'BD' | 'IN'; onSave: (data: any) => void; onClose: () => void }) {
   const [label, setLabel] = useState(address?.label || 'Home');
   const [name, setName] = useState(address?.name || '');
   const [phone, setPhone] = useState(address?.phone || '');
   const [isDefault, setIsDefault] = useState(address?.is_default || false);
-  const [addrValue, setAddrValue] = useState<AddressValue>({
-    division: '', district: '', thana: '', detail: '', postalCode: '',
+  // Preserve the legacy BD structure. India uses the same database columns for State
+  // (division), City (district), and PIN, but must reverify PIN on every edit.
+  const [addrValue, setAddrValue] = useState<AddressValue>(() => {
+    if (!address) return { division: '', district: '', thana: '', detail: '', postalCode: '', landmark: '' };
+    const pin = String(address.postal_code || '').trim();
+    const district = String(address.district || '').trim();
+    const division = String(address.division || '').trim();
+    const thana = String(address.thana || '').trim();
+    const savedDetail = String(address.detail || '').trim();
+    if (countryCode === 'BD') {
+      return { division, district, thana, detail: savedDetail || String(address.address || ''), postalCode: pin };
+    }
+    // Old rows may contain the structured suffix in the address string itself.
+    // Strip only matching terminal fields, never arbitrary street/address fragments.
+    const parts = String(address.address || '').split(',').map(p => p.trim()).filter(Boolean);
+    const matches = (value: string, expected: string) => Boolean(expected) && value.toLowerCase() === expected.toLowerCase();
+    if (parts.length && matches(parts[parts.length - 1], pin)) parts.pop();
+    if (parts.length && matches(parts[parts.length - 1], division)) parts.pop();
+    if (parts.length && matches(parts[parts.length - 1], district)) parts.pop();
+    if (parts.length && matches(parts[parts.length - 1], thana)) parts.pop();
+    return {
+      division: '', // Don't trust an unverified saved State.
+      district,
+      thana: '',
+      detail: savedDetail || parts.join(', '),
+      postalCode: /^[1-9][0-9]{5}$/.test(pin) ? pin : '',
+      landmark: '',
+    };
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !phone || !addrValue.division || !addrValue.district || !addrValue.thana || !addrValue.detail) {
-      toast('সব প্রয়োজনীয় তথ্য পূরণ করুন', 'error'); return;
+    const india = countryCode === 'IN';
+    const validPin = /^[1-9][0-9]{5}$/.test(addrValue.postalCode || '');
+    if (!name.trim() || !phone.trim() || !addrValue.division.trim() || !addrValue.district.trim() ||
+        !addrValue.detail.trim() || (india ? !validPin || !/^[0-9]{10}$/.test(phone.trim()) : !addrValue.thana.trim())) {
+      toast(india ? 'সঠিক ১০ সংখ্যার মোবাইল, যাচাইকৃত PIN, State, City ও ঠিকানা দিন' : 'সব প্রয়োজনীয় তথ্য পূরণ করুন', 'error');
+      return;
     }
     onSave({
-      label, name, phone,
+      label, name: name.trim(), phone: phone.trim(),
       address: formatAddressToString(addrValue),
       division: addrValue.division,
       district: addrValue.district,
-      thana: addrValue.thana,
+      thana: india ? '' : addrValue.thana,
+      detail: addrValue.detail,
       postal_code: addrValue.postalCode || '',
       is_default: isDefault,
     });
@@ -785,7 +816,7 @@ function AddressForm({ address, onSave, onClose }: { address: CustomerAddress | 
     <div className="mt-4 rounded-2xl border-2 border-primary/20 bg-secondary/20 p-4">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="font-bold text-sm">{address ? 'ঠিকানা এডিট করুন' : 'নতুন ঠিকানা যোগ করুন'}</h3>
-        <button onClick={onClose}><X className="h-5 w-5" /></button>
+        <button type="button" onClick={onClose}><X className="h-5 w-5" /></button>
       </div>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -797,10 +828,10 @@ function AddressForm({ address, onSave, onClose }: { address: CustomerAddress | 
           <div><label className="mb-1 block text-xs font-bold text-muted-foreground">নাম *</label><input value={name} onChange={(e) => setName(e.target.value)} className="input-bangla" required /></div>
           <div><label className="mb-1 block text-xs font-bold text-muted-foreground">ফোন *</label><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-bangla" required /></div>
         </div>
-        <AddressSelector value={addrValue} onChange={setAddrValue} />
+        <AddressSelector value={addrValue} onChange={setAddrValue} countryCode={countryCode} />
         <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer"><input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} className="accent-primary" /> ডিফল্ট ঠিকানা হিসেবে সেট করুন</label>
         <div className="flex gap-2">
-          <button type="submit" className="flex-1 rounded-xl bg-primary py-3 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition cursor-pointer">সেভ করুন</button>
+          <button type="submit" className="flex-1 rounded-xl bg-primary py-3 text-xs font-bold text-primary-foreground hover:opacity-90 transition cursor-pointer">সেভ করুন</button>
           <button type="button" onClick={onClose} className="rounded-xl border border-border px-6 py-3 text-xs font-bold hover:bg-secondary transition cursor-pointer">বাতিল</button>
         </div>
       </form>
