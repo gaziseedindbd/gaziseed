@@ -287,6 +287,35 @@ export default function CheckoutPage() {
     const addr = savedAddresses.find((a) => a.id === id);
     if (addr) {
       setForm((current) => ({ ...current, name: addr.name, phone: addr.phone }));
+      // India saved addresses use the existing structured columns. Always re-verify
+      // the PIN from the postal directory rather than trusting an old State value.
+      if (country === 'IN') {
+        const pin = String(addr.postal_code || '').trim();
+        // Saved addresses may already contain district/state/PIN in the legacy free-text field.
+        // Strip only matching trailing structured suffixes to avoid duplicated address parts.
+        const savedDistrict = String(addr.district || '').trim();
+        const savedState = String(addr.division || '').trim();
+        let detail = String(addr.address || '').trim();
+        const suffixParts = detail.split(',').map((part) => part.trim()).filter(Boolean);
+        const same = (a: string, b: string) => Boolean(b) && a.toLowerCase() === b.toLowerCase();
+        if (suffixParts.length && same(suffixParts[suffixParts.length - 1], pin)) suffixParts.pop();
+        if (suffixParts.length && same(suffixParts[suffixParts.length - 1], savedState)) suffixParts.pop();
+        if (suffixParts.length && same(suffixParts[suffixParts.length - 1], savedDistrict)) suffixParts.pop();
+        detail = suffixParts.join(', ');
+        setAddrValue({
+          division: '',
+          district: savedDistrict,
+          thana: '',
+          detail,
+          postalCode: /^[1-9]\d{5}$/.test(pin) ? pin : '',
+          landmark: '',
+        });
+        if (!/^[1-9]\d{5}$/.test(pin)) {
+          setError(t('পুরোনো ঠিকানায় সঠিক PIN নেই। PIN দিন এবং ঠিকানা যাচাই করুন।', 'Saved address needs a valid PIN. Enter a PIN and review the address.'));
+        } else {
+          setError('');
+        }
+      }
     }
   };
 
@@ -535,7 +564,7 @@ export default function CheckoutPage() {
       setError(country === 'IN' ? t('সঠিক ১০ সংখ্যার ভারতীয় মোবাইল নম্বর দিন', 'Enter a valid 10-digit Indian mobile number') : t('সঠিক মোবাইল নম্বর দিন', 'Enter a valid phone number'));
       return;
     }
-    if (!addrValue.division || !addrValue.district || !addrValue.thana || !addrValue.detail || (country === 'IN' && !/^\d{6}$/.test(addrValue.postalCode || ''))) {
+    if (!addrValue.division || !addrValue.district || (country === 'BD' && !addrValue.thana) || !addrValue.detail || (country === 'IN' && !/^[1-9]\d{5}$/.test(addrValue.postalCode || ''))) {
       setError(country === 'IN' ? t('সম্পূর্ণ ভারতীয় ঠিকানা ও ৬ সংখ্যার PIN কোড দিন', 'Enter a complete Indian address and 6-digit PIN code') : t('সম্পূর্ণ ঠিকানা দিন', 'Enter full address'));
       return;
     }
