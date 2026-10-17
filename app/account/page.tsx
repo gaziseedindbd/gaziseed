@@ -112,7 +112,7 @@ export default function AccountPage() {
     const isEditing = !!editingAddr;
     const payload = { ...addrData, user_id: user.id, country_code: getVisitorCountry() };
     if (isEditing) {
-      const { error } = await supabase.from('customer_addresses').update(payload).eq('id', editingAddr!.id);
+      const { error } = await supabase.from('customer_addresses').update(payload).eq('id', editingAddr!.id).eq('user_id', user.id).eq('country_code', getVisitorCountry());
       if (error) { toast('আপডেট ব্যর্থ', 'error'); return; }
       toast('ঠিকানা আপডেট হয়েছে');
     } else {
@@ -120,7 +120,8 @@ export default function AccountPage() {
         const { error: clearDefaultError } = await supabase
           .from('customer_addresses')
           .update({ is_default: false })
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .eq('country_code', getVisitorCountry());
         if (clearDefaultError) {
           toast('ডিফল্ট ঠিকানা পরিবর্তন করা যায়নি', 'error');
           return;
@@ -138,7 +139,7 @@ export default function AccountPage() {
   const handleDeleteAddress = async (id: string) => {
     if (!confirm('ঠিকানা মুছতে চান?')) return;
     const target = addresses.find((address) => address.id === id);
-    const { error } = await supabase.from('customer_addresses').delete().eq('id', id);
+    const { error } = await supabase.from('customer_addresses').delete().eq('id', id).eq('user_id', user.id).eq('country_code', getVisitorCountry());
     if (error) {
       toast('ঠিকানা মুছে ফেলা যায়নি', 'error');
       return;
@@ -150,7 +151,9 @@ export default function AccountPage() {
         const { error: defaultError } = await supabase
           .from('customer_addresses')
           .update({ is_default: true })
-          .eq('id', replacement.id);
+          .eq('id', replacement.id)
+          .eq('user_id', user.id)
+          .eq('country_code', getVisitorCountry());
         if (defaultError) {
           toast('নতুন ডিফল্ট ঠিকানা সেট করা যায়নি', 'error');
         }
@@ -163,7 +166,8 @@ export default function AccountPage() {
     const { error: clearError } = await supabase
       .from('customer_addresses')
       .update({ is_default: false })
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .eq('country_code', getVisitorCountry());
     if (clearError) {
       toast('ডিফল্ট ঠিকানা পরিবর্তন করা যায়নি', 'error');
       return;
@@ -172,7 +176,8 @@ export default function AccountPage() {
       .from('customer_addresses')
       .update({ is_default: true })
       .eq('id', id)
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .eq('country_code', getVisitorCountry());
     if (setError) {
       toast('নতুন ডিফল্ট ঠিকানা সেট করা যায়নি', 'error');
       return;
