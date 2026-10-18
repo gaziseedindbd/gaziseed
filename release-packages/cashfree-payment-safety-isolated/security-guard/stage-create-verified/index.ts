@@ -1,4 +1,3 @@
-// @ts-nocheck -- Deno-only Supabase Edge Function; Next.js must not resolve remote Deno imports.
 import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 /** Isolated Cashfree Sandbox creation + same-invocation verification + atomic finish. Not for production. */
 import {validateCreateEvidence} from "./trusted-create-evidence";
@@ -47,6 +46,10 @@ D.serve(async req=>{
  }catch{return stop("provider_outcome_uncertain",503)}
  const result=validateCreateEvidence({checkoutKey,intentId:checkoutKey,orderId,amount:1,currency:"INR",country:"IN",fingerprint},created,live,attempts,Date.now());
  if(!result.allowReady||!result.sessionId)return stop(result.reason);
+ const sessionLength=result.sessionId.length;
+ const sessionFormatOk=sessionLength>=12&&sessionLength<=1024;
+ const sessionProofChecks={session_format_ok:sessionFormatOk,session_length_in_range:sessionFormatOk,order_binding_ok:created.order_id===orderId&&live.order_id===orderId,amount_binding_ok:created.order_amount===1&&live.order_amount===1};
+ if(!sessionFormatOk)return response(409,{ok:false,test_only:true,state:"reconcile_first",decision:"reconcile_first",reason:"session_response_length_invalid",verification:sessionProofChecks,automatic_retry_allowed:false});
  let completed:Record<string,unknown>;
  const uri=D.env.get("CASHFREE_STAGE_WRITER_DATABASE_URL");
  if(!uri)return stop("writer_secret_missing",503);
@@ -61,6 +64,6 @@ D.serve(async req=>{
   completed=rows[0]?.result;
  }catch{return stop("finish_uncertain_reconcile",503)}
  finally{await db.end({timeout:1}).catch(()=>{})}
- return response(completed.state==="ready"?200:409,{ok:completed.state==="ready",test_only:true,checkout_key:checkoutKey,provider_order_id:orderId,state:completed.state,verified_session:true,provider_paid:false,decision:completed.state==="ready"?"session_ready":"reconcile_first",automatic_retry_allowed:false});
+ return response(completed.state==="ready"?200:409,{ok:completed.state==="ready",test_only:true,checkout_key:checkoutKey,provider_order_id:orderId,state:completed.state,writer_result:typeof completed?.state==="string"?completed.state:"invalid_writer_result",verification:sessionProofChecks,verified_session:true,provider_paid:false,decision:completed.state==="ready"?"session_ready":"reconcile_first",automatic_retry_allowed:false});
 });
 export {};
