@@ -23,6 +23,17 @@ D.serve(async(req)=>{
   const r=rows[0];if(r.status!=="creating"||r.country_code!=="IN"||r.currency!=="INR"||Number(r.amount)!==1||r.provider_order_id!=="gzt_"+checkoutKey.replaceAll("-",""))return deny("registry_mismatch");
   const auth={Accept:"application/json","x-api-version":"2025-01-01","x-client-id":id,"x-client-secret":secret};
   const url="https://sandbox.cashfree.com/pg/orders/"+encodeURIComponent(r.provider_order_id);
+  // Bind persisted server-side CREATE response to this exact checkout and order.
+  // A stored session alone is NOT proof. Require independently provider-returned session equality.
+  const savedFetch=await fetch(PROJECT+"/rest/v1/cashfree_checkout_dedup?checkout_key=eq."+checkoutKey+"&select=checkout_key,status,amount,session_response",{headers:dbHeaders,signal:AbortSignal.timeout(10000)});
+  if(!savedFetch.ok)return deny("saved_session_lookup_failed",503);
+  const savedRows=await savedFetch.json();
+  if(!Array.isArray(savedRows)||savedRows.length!==1)return deny("saved_session_missing");
+  const stored=savedRows[0];
+  const storedSession=stored?.session_response;
+  if(stored.checkout_key!==checkoutKey||stored.status!=="ready"||Number(stored.amount)!==Number(r.amount)||
+    !storedSession||storedSession.order_id!==r.provider_order_id||
+    typeof storedSession.payment_session_id!=="string"||!storedSession.payment_session_id)return deny("saved_session_identity_mismatch");
   const ord=await fetch(url,{headers:auth,signal:AbortSignal.timeout(12000)});
   if(!ord.ok)return deny("provider_order_http_"+ord.status,503);
   const order=await ord.json();
@@ -30,9 +41,12 @@ D.serve(async(req)=>{
   if(!pay.ok)return deny("provider_payments_http_"+pay.status,503);
   const attempts=await pay.json();
   if(!Array.isArray(attempts))return deny("malformed_attempts",503);
-  const decision=verifySession({registry:{status:r.status,country_code:r.country_code,currency:r.currency,provider_order_id:r.provider_order_id,amount:Number(r.amount)},order:order&&typeof order==="object"?order:null,payments:attempts,session:null,now:Date.now()});
+  // Some provider order schemas omit payment_session_id. In that case fail closed.
+  const providerSession=(order&&typeof order.payment_session_id==="string")?order.payment_session_id:null;
+  const proven=providerSession!==null && providerSession.length>0 && providerSession===storedSession.payment_session_id;
+  const decision=verifySession({registry:{status:r.status,country_code:r.country_code,currency:r.currency,provider_order_id:r.provider_order_id,amount:Number(r.amount)},order:order&&typeof order==="object"?order:null,payments:attempts,session:proven?{order_id:r.provider_order_id,payment_session_id:providerSession!,source:"trusted_provider_response"}:null,now:Date.now()});
   // Intentionally NO session provenance: a DB-saved payment_session_id is not independently verified.
-  return out(200,{ok:true,test_only:true,read_only:true,provider_order_status:typeof order?.order_status==="string"?order.order_status:"UNKNOWN",payment_attempt_count:attempts.length,allowReady:decision.allowReady,decision:decision.decision,reason:decision.reason,provider_order_created:false,payment_created:false,database_modified:false});
+  return out(200,{ok:true,test_only:true,read_only:true,provider_order_status:typeof order?.order_status==="string"?order.order_status:"UNKNOWN",payment_attempt_count:attempts.length,session_provenance_verified:proven,allowReady:decision.allowReady,decision:decision.decision,reason:decision.reason,provider_order_created:false,payment_created:false,database_modified:false});
  }catch{return deny("provider_or_database_unavailable",503)}
 });
 export {};
