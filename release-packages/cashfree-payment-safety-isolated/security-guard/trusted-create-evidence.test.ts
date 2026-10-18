@@ -1,0 +1,24 @@
+import {strict as assert} from "node:assert";
+import {validateCreateEvidence as verify, type BoundCheckout} from "./trusted-create-evidence";
+const now=Date.parse("2026-10-18T12:00:00Z");
+const checkout:BoundCheckout={checkoutKey:"fixture-key",intentId:"fixture-intent",orderId:"fixture-order",amount:1,currency:"INR",country:"IN",fingerprint:"a".repeat(64)};
+const create={order_id:"fixture-order",order_currency:"INR",order_amount:1,payment_session_id:"session-from-create"};
+const readback={order_id:"fixture-order",order_currency:"INR",order_amount:1,order_status:"ACTIVE",order_expiry_time:"2026-11-18T12:00:00Z"};
+const run=(name:string,c:unknown=create,r:unknown=readback,p:unknown=[],expected=false)=>{
+ const result=verify(checkout,c as typeof create,r as typeof readback,p as [],now);
+ assert.equal(result.allowReady,expected,name);console.log("PASS",name);
+};
+run("trusted active create and readback",create,readback,[],true);
+run("missing CREATE",null);
+run("forged session", {...create,payment_session_id:""});
+run("mismatched create order",{...create,order_id:"other"});
+run("mismatched create amount",{...create,order_amount:2});
+run("provider timeout",create,null);
+run("readback wrong order",create,{...readback,order_id:"other"});
+run("readback wrong currency",create,{...readback,order_currency:"BDT"});
+run("already paid order",create,{...readback,order_status:"PAID"});
+run("expired order",create,{...readback,order_expiry_time:"2026-10-17T00:00:00Z"});
+run("missing payments response",create,readback,null);
+run("pending payment",create,readback,[{order_id:"fixture-order",payment_amount:1,payment_currency:"INR",payment_status:"PENDING"}]);
+run("successful payment",create,readback,[{order_id:"fixture-order",payment_amount:1,payment_currency:"INR",payment_status:"SUCCESS"}]);
+run("wrong payment amount",create,readback,[{order_id:"fixture-order",payment_amount:2,payment_currency:"INR",payment_status:"FAILED"}]);
