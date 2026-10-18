@@ -47,3 +47,5 @@ runtime.serve(async request=>{
  if(state==="reused")return reply(200,{ok:true,test_only:true,state,decision:"reuse_existing",automatic_provider_creation:false});
  return reply(409,{ok:false,test_only:true,state,decision:"reconcile_first",automatic_provider_creation:false});
 });
+
+export {};
