@@ -59,3 +59,5 @@ runtime.serve(async req=>{
   note:"Verification only: stage registry is not modified; automatic recovery not enabled",
   order_created:false,payment_created:false,database_modified:false});
 });
+
+export {};
