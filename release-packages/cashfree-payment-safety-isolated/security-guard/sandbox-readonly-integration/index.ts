@@ -2,7 +2,7 @@
 import {verifySession} from "./verify-session";
 const PROJECT="https://qqehtphbpypcmxliaiqd.supabase.co";
 const D=(globalThis as unknown as {Deno:{env:{get:(s:string)=>string|undefined},serve:(f:(r:Request)=>Promise<Response>)=>void}}).Deno;
-const ALLOWED="b6296cfe-2cf0-4da6-851e-99d313cb7d42";
+const ALLOWED_KEYS=new Set(["b6296cfe-2cf0-4da6-851e-99d313cb7d42","713ea2e4-2288-4ede-9ceb-d23ca0b284ad"]);
 const out=(status:number,data:Record<string,unknown>)=>new Response(JSON.stringify(data),{status,headers:{"content-type":"application/json","cache-control":"no-store"}});
 async function equal(a:string,b:string){if(!a||!b)return false;const x=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(a));const y=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(b));const v=new Uint8Array(x),w=new Uint8Array(y);let n=0;for(let i=0;i<v.length;i++)n|=v[i]^w[i];return n===0}
 D.serve(async(req)=>{
@@ -11,15 +11,16 @@ D.serve(async(req)=>{
  if(D.env.get("SUPABASE_URL")!==PROJECT)return deny("wrong_project",503);
  if(!await equal(req.headers.get("x-test-token")??"",D.env.get("CASHFREE_SANDBOX_TEST_TOKEN")??""))return deny("unauthorized",401);
  let body:unknown;try{body=await req.json()}catch{return deny("invalid_json",400)}
- if(!body||typeof body!=="object"||(body as Record<string,unknown>).checkout_key!==ALLOWED)return deny("fixture_not_allowlisted",400);
+ if(!body||typeof body!=="object"||!ALLOWED_KEYS.has(String((body as Record<string,unknown>).checkout_key)))return deny("fixture_not_allowlisted",400);
+ const checkoutKey=String((body as Record<string,unknown>).checkout_key);
  const svc=D.env.get("SUPABASE_SERVICE_ROLE_KEY"),id=D.env.get("CASHFREE_SANDBOX_APP_ID"),secret=D.env.get("CASHFREE_SANDBOX_SECRET_KEY");
  if(!svc||!id||!secret)return deny("missing_test_secrets",503);
  const dbHeaders={apikey:svc,Authorization:"Bearer "+svc};
  try{
-  const reg=await fetch(PROJECT+"/rest/v1/cashfree_checkout_claims_stage?checkout_key=eq."+ALLOWED+"&select=status,country_code,currency,provider_order_id,amount",{headers:dbHeaders,signal:AbortSignal.timeout(10000)});
+  const reg=await fetch(PROJECT+"/rest/v1/cashfree_checkout_claims_stage?checkout_key=eq."+checkoutKey+"&select=status,country_code,currency,provider_order_id,amount",{headers:dbHeaders,signal:AbortSignal.timeout(10000)});
   if(!reg.ok)return deny("registry_lookup_failed",503);
   const rows=await reg.json();if(!Array.isArray(rows)||rows.length!==1)return deny("registry_missing");
-  const r=rows[0];if(r.status!=="creating"||r.country_code!=="IN"||r.currency!=="INR"||Number(r.amount)!==1||r.provider_order_id!=="gzt_"+ALLOWED.replaceAll("-",""))return deny("registry_mismatch");
+  const r=rows[0];if(r.status!=="creating"||r.country_code!=="IN"||r.currency!=="INR"||Number(r.amount)!==1||r.provider_order_id!=="gzt_"+checkoutKey.replaceAll("-",""))return deny("registry_mismatch");
   const auth={Accept:"application/json","x-api-version":"2025-01-01","x-client-id":id,"x-client-secret":secret};
   const url="https://sandbox.cashfree.com/pg/orders/"+encodeURIComponent(r.provider_order_id);
   const ord=await fetch(url,{headers:auth,signal:AbortSignal.timeout(12000)});
