@@ -1,3 +1,4 @@
+import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 /** Isolated Cashfree Sandbox creation + same-invocation verification + atomic finish. Not for production. */
 import {validateCreateEvidence} from "./trusted-create-evidence";
 const PROJECT="https://qqehtphbpypcmxliaiqd.supabase.co";
@@ -46,8 +47,19 @@ D.serve(async req=>{
  const result=validateCreateEvidence({checkoutKey,intentId:checkoutKey,orderId,amount:1,currency:"INR",country:"IN",fingerprint},created,live,attempts,Date.now());
  if(!result.allowReady||!result.sessionId)return stop(result.reason);
  let completed:Record<string,unknown>;
- try{completed=await rpc("cf_stage_finish_verified_checkout",{p_key:checkoutKey,p_intent:checkoutKey,p_provider_order:orderId,p_fingerprint:fingerprint,p_amount:1,p_response:{order_id:orderId,payment_session_id:result.sessionId}})}
- catch{return stop("finish_uncertain_reconcile",503)}
+ const uri=D.env.get("CASHFREE_STAGE_WRITER_DATABASE_URL");
+ if(!uri)return stop("writer_secret_missing",503);
+ let u:URL;try{u=new URL(uri)}catch{return stop("writer_uri_invalid",503)}
+ if(u.protocol!=="postgresql:"||u.hostname!=="aws-0-ap-southeast-1.pooler.supabase.com"||u.port!=="6543"||u.pathname!=="/postgres"||u.username!=="cashfree_stage_verified_writer.qqehtphbpypcmxliaiqd")return stop("writer_scope_mismatch",503);
+ const db=postgres(uri,{max:1,connect_timeout:8,idle_timeout:1,prepare:false,ssl:"require"});
+ try{
+  const rows=await db`select public.cf_stage_finish_verified_checkout(
+    ${checkoutKey}::uuid,${checkoutKey}::uuid,${orderId}::text,${fingerprint}::text,
+    1::numeric,${JSON.stringify({order_id:orderId,payment_session_id:result.sessionId})}::jsonb
+  ) as result`;
+  completed=rows[0]?.result;
+ }catch{return stop("finish_uncertain_reconcile",503)}
+ finally{await db.end({timeout:1}).catch(()=>{})}
  return response(completed.state==="ready"?200:409,{ok:completed.state==="ready",test_only:true,checkout_key:checkoutKey,provider_order_id:orderId,state:completed.state,verified_session:true,provider_paid:false,decision:completed.state==="ready"?"session_ready":"reconcile_first",automatic_retry_allowed:false});
 });
 export {};
