@@ -1,3 +1,4 @@
+// @ts-nocheck -- Deno-only Supabase Edge Function; intentionally excluded from Next.js remote module resolution.
 import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 /** Isolated Cashfree Sandbox creation + same-invocation verification + atomic finish. Not for production. */
 import {validateCreateEvidence} from "./trusted-create-evidence";
