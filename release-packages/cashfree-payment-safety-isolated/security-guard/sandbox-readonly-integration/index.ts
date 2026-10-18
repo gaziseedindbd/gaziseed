@@ -1,5 +1,5 @@
 /** Read-only real sandbox verification integrated with the pure guard. Never writes DB. */
-import {verifySession} from "./verify-session.ts";
+import {verifySession} from "./verify-session";
 const PROJECT="https://qqehtphbpypcmxliaiqd.supabase.co";
 const D=(globalThis as unknown as {Deno:{env:{get:(s:string)=>string|undefined},serve:(f:(r:Request)=>Promise<Response>)=>void}}).Deno;
 const ALLOWED="b6296cfe-2cf0-4da6-851e-99d313cb7d42";
