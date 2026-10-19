@@ -65,6 +65,6 @@ D.serve(async req=>{
   completed=rows[0]?.result;
  }catch{return stop("finish_uncertain_reconcile",503)}
  finally{await db.end({timeout:1}).catch(()=>{})}
- return response(completed.state==="ready"?200:409,{ok:completed.state==="ready",test_only:true,checkout_key:checkoutKey,provider_order_id:orderId,state:completed.state,writer_result:typeof completed?.state==="string"?completed.state:"invalid_writer_result",verification:sessionProofChecks,verified_session:true,provider_paid:false,decision:completed.state==="ready"?"session_ready":"reconcile_first",automatic_retry_allowed:false});
+ return response(completed.state==="ready"?200:409,{ok:completed.state==="ready",test_only:true,checkout_key:checkoutKey,provider_order_id:orderId,state:completed.state,writer_result:typeof completed?.state==="string"?completed.state:"invalid_writer_result",writer_reason:typeof completed?.reason==="string"&&["request_identity_invalid","response_invalid","identity_conflict","status_conflict","already_ready_response_conflict","checkout_missing"].includes(completed.reason)?completed.reason:null,verification:sessionProofChecks,verified_session:true,provider_paid:false,decision:completed.state==="ready"?"session_ready":"reconcile_first",automatic_retry_allowed:false});
 });
 export {};
