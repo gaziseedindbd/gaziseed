@@ -56,6 +56,7 @@ D.serve(async req=>{
  if(!uri)return stop("writer_secret_missing",503);
  let u:URL;try{u=new URL(uri)}catch{return stop("writer_uri_invalid",503)}
  if(u.protocol!=="postgresql:"||u.hostname!=="aws-0-ap-southeast-1.pooler.supabase.com"||u.port!=="6543"||u.pathname!=="/postgres"||u.username!=="cashfree_stage_verified_writer.qqehtphbpypcmxliaiqd")return stop("writer_scope_mismatch",503);
+ const safeSqlCategory=(e:unknown)=>{const k=typeof (e as {code?:unknown})?.code==="string"?(e as {code:string}).code:"";if(k==="42501")return "permission_denied";if(k==="42883")return "rpc_not_found";if(k==="22P02"||k==="22023")return "invalid_sql_parameter";if(k==="57014"||k==="55P03")return "statement_timeout_or_lock";if(k.startsWith("08"))return "db_connection_error";return "unclassified_writer_error"};
  const db=postgres(uri,{max:1,connect_timeout:8,idle_timeout:1,prepare:false,ssl:"require"});
  try{
   const rows=await db`select public.cf_stage_finish_verified_checkout(
@@ -63,8 +64,9 @@ D.serve(async req=>{
     1::numeric,${JSON.stringify({order_id:orderId,payment_session_id:result.sessionId})}::jsonb
   ) as result`;
   completed=rows[0]?.result;
- }catch{return stop("finish_uncertain_reconcile",503)}
+ }catch(e){const category=safeSqlCategory(e);console.log(JSON.stringify({event:"sandbox_writer_completion",checkout_key:checkoutKey,outcome:"execution_failed",error_category:category,session_length_valid:sessionFormatOk}));return response(503,{ok:false,test_only:true,state:"reconcile_first",reason:"finish_uncertain_reconcile",writer_error_category:category,automatic_retry_allowed:false,provider_paid:false})}
  finally{await db.end({timeout:1}).catch(()=>{})}
+ console.log(JSON.stringify({event:"sandbox_writer_completion",checkout_key:checkoutKey,outcome:typeof completed?.state==="string"?completed.state:"invalid_result",writer_reason:typeof completed?.reason==="string"?completed.reason:null,session_length_valid:sessionFormatOk}));
  return response(completed.state==="ready"?200:409,{ok:completed.state==="ready",test_only:true,checkout_key:checkoutKey,provider_order_id:orderId,state:completed.state,writer_result:typeof completed?.state==="string"?completed.state:"invalid_writer_result",writer_reason:typeof completed?.reason==="string"&&["request_identity_invalid","response_invalid","identity_conflict","status_conflict","already_ready_response_conflict","checkout_missing"].includes(completed.reason)?completed.reason:null,verification:sessionProofChecks,verified_session:true,provider_paid:false,decision:completed.state==="ready"?"session_ready":"reconcile_first",automatic_retry_allowed:false});
 });
 export {};
