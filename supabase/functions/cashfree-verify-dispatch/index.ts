@@ -1,3 +1,4 @@
+import { sandboxDispatch } from "../_shared/sandbox-dispatch.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.112.3";
 
@@ -14,6 +15,9 @@ const moneyMatches = (a: number, b: number) =>
   Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) <= 0.01;
 
 Deno.serve(async (req: Request) => {
+  // Explicit project binding: the compatibility harness can never target Production.
+  if (Deno.env.get("SUPABASE_URL") === "https://qqehtphbpypcmxliaiqd.supabase.co")
+    return sandboxDispatch(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return fail("Method not allowed", 405);
 
@@ -158,3 +162,4 @@ Deno.serve(async (req: Request) => {
   if (updateError || !updated?.success) return auditedFail("Verified dispatch failed or order changed.");
   return reply({ ok: true, verified: true, status: updated.status });
 });
+
