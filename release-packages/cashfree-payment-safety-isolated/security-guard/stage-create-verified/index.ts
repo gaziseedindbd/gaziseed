@@ -61,7 +61,7 @@ D.serve(async req=>{
  try{
   const rows=await db`select public.cf_stage_finish_verified_checkout(
     ${checkoutKey}::uuid,${checkoutKey}::uuid,${orderId}::text,${fingerprint}::text,
-    1::numeric,${JSON.stringify({order_id:orderId,payment_session_id:result.sessionId})}::jsonb
+    1::numeric,${db.json({order_id:orderId,payment_session_id:result.sessionId})}::jsonb
   ) as result`;
   completed=rows[0]?.result;
  }catch(e){const category=safeSqlCategory(e);console.log(JSON.stringify({event:"sandbox_writer_completion",checkout_key:checkoutKey,outcome:"execution_failed",error_category:category,session_length_valid:sessionFormatOk}));return response(503,{ok:false,test_only:true,state:"reconcile_first",reason:"finish_uncertain_reconcile",writer_error_category:category,automatic_retry_allowed:false,provider_paid:false})}
