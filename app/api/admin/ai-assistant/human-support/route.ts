@@ -62,6 +62,11 @@ async function requireAdmin(request: Request) {
   return { ok: true as const, status: 200, message: '', user, countryCode: normalizedCountry };
 }
 
+function requireRows<T>(result: {data: T[] | null; error: unknown}): T[] {
+  if (result.error) throw result.error;
+  return result.data || [];
+}
+
 export async function GET(request: Request) {
   try {
     const auth = await requireAdmin(request);
@@ -96,7 +101,7 @@ export async function GET(request: Request) {
 
     const conversations =
       conversationIds.length > 0
-        ? (
+        ? requireRows(
             await sb
               .from('ai_conversations')
               .select(
@@ -104,7 +109,7 @@ export async function GET(request: Request) {
               )
               .in('id', conversationIds)
               .eq('country_code', auth.countryCode)
-          ).data || []
+          )
         : [];
 
     const externalUserIds = Array.from(
@@ -117,7 +122,7 @@ export async function GET(request: Request) {
 
     const messages =
       conversationIds.length > 0
-        ? (
+        ? requireRows(
             await sb
               .from('ai_messages')
               .select('id,conversation_id,role,content,created_at,action_status')
@@ -125,12 +130,12 @@ export async function GET(request: Request) {
               .in('conversation_id', conversationIds)
               .order('created_at', { ascending: false })
               .limit(Math.min(1500, conversationIds.length * 50))
-          ).data || []
+          )
         : [];
 
     const profiles =
       externalUserIds.length > 0
-        ? (
+        ? requireRows(
             await sb
               .from('messenger_customer_profiles')
               .select(
@@ -139,7 +144,7 @@ export async function GET(request: Request) {
               .eq('country_code', auth.countryCode)
               .in('page_id', Array.from(new Set(conversations.map(row => row.page_id).filter(Boolean))))
               .in('external_user_id', externalUserIds)
-          ).data || []
+          )
         : [];
 
     const conversationMap = new Map(
