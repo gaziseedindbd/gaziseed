@@ -24,7 +24,7 @@ Do not run an indiscriminate `db push`: activation is deliberately separated fro
 4. While dispatch is held, deploy the paired `cashfree-verify-dispatch` function (JWT verification enabled) and apply only `20261020030612_dispatch_evidence_activate.sql`. Deploy the Admin page update from this PR. The handler/guard must change together; mismatched versions fail closed or retain the old guard and are not an acceptable steady state.
 5. Check a controlled India order with verify-only, then one explicitly selected eligible dispatch; verify atomic history/audit and exactly one queue entry. Verify Bangladesh still uses its existing path. Resume dispatch only after checks pass. Do not create test live charges or send real Messenger test messages.
 
-No Production login, password, Edge Secret or migration was provisioned by this patch work. No production activation has been performed. PR #276 and checkout/Shiprocket configuration were not changed.
+Update 2026-10-20: Production preparation migration was applied and verified. The dedicated principal cashfree_dispatch_writer exists as NOLOGIN/NOINHERIT, with only cashfree_evidence_writer membership and no direct order/evidence writes. Password and Edge Secret are not configured. The active dispatch guard fingerprint remains unchanged; activation and API/UI rollout have not been performed. PR #276 and checkout/Shiprocket configuration were not changed.
 
 ## Rollback
 
