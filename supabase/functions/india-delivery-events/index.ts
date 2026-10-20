@@ -1,6 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.112.3";
 
+import {indiaTrackingTimestamp} from '../india-shipping-booking/core/india-tracking.ts';
+
 // Event-only ingestion. Does not create shipments, update payment, or request pickups.
 Deno.serve(async (request: Request) => {
   const reply = (code: number, body: object) => new Response(JSON.stringify(body), {
@@ -60,7 +62,7 @@ Deno.serve(async (request: Request) => {
     typeof time === "string" ? time.slice(0, 100) : "",
   ]);
   const { error } = await admin.from("india_shipping_webhook_events")
-    .insert({ shipment_id: shipment.id, event_key: eventKey, event_status: status });
+    .insert({ shipment_id: shipment.id, event_key: eventKey, event_status: status, event_occurred_at: indiaTrackingTimestamp(time) });
   if (error?.code === "23505") return reply(200, { ok: true, duplicate: true });
   if (error) return reply(503, { ok: false });
   return reply(200, { ok: true });

@@ -79,6 +79,25 @@ SELECT public.reconcile_india_shipping_booking((SELECT id FROM shipping_ids));
 SELECT pg_temp.shipping_check('uncertain state recorded',(SELECT creation_state='reconcile_required' FROM public.india_shipping_shipments WHERE id=(SELECT id FROM shipping_ids)));
 SELECT pg_temp.shipping_check('uncertain booking cannot reclaim',NOT public.claim_india_shipping_booking((SELECT id FROM shipping_ids),'81000000-0000-4000-8000-000000000001'));
 SELECT pg_temp.shipping_check('uncertain external IDs cannot bypass reconciliation',NOT public.record_india_shipping_external_order((SELECT id FROM shipping_ids),'99','98',7));
+DO $tracking$
+DECLARE t record; sid uuid;
+BEGIN
+ SELECT id INTO sid FROM public.india_shipping_shipments WHERE order_id='82000000-0000-4000-8000-000000000001';
+ FOR t IN SELECT * FROM (VALUES
+ ('newest projected','In Transit',interval '-2 hours','In Transit'),
+ ('older ignored','Picked Up',interval '-3 hours','In Transit'),
+ ('equal time ignored','Picked Up',interval '-2 hours','In Transit'),
+ ('missing time ignored','Delivered',NULL::interval,'In Transit'),
+ ('future ignored','Delivered',interval '1 day','In Transit'),
+ ('delivery projected','Delivered',interval '-1 hour','Delivered'),
+ ('terminal cannot regress','In Transit',interval '0 seconds','Delivered')) AS checks(name,status,offset_time,expected)
+ LOOP
+  INSERT INTO public.india_shipping_webhook_events(shipment_id,event_key,event_status,event_occurred_at) VALUES(sid,'tracking-'||t.name,t.status,now()+t.offset_time);
+  PERFORM pg_temp.shipping_check('tracking '||t.name,(SELECT tracking_status=t.expected FROM public.india_shipping_shipments WHERE id=sid));
+ END LOOP;
+ PERFORM pg_temp.shipping_check('tracking leaves order and payment unchanged',(SELECT status='packed' AND payment_status='paid' FROM public.orders WHERE id='82000000-0000-4000-8000-000000000001'));
+ PERFORM pg_temp.shipping_check('tracking is not a client RPC',NOT has_function_privilege('authenticated','public.project_india_shipping_tracking()','EXECUTE'));
+END $tracking$;
 RESET ROLE;
 SELECT jsonb_build_object('passed',count(*),'checks',jsonb_agg(name ORDER BY name),'fixtures_rolled_back',true) result FROM shipping_results;
 ROLLBACK;
