@@ -20,10 +20,10 @@ Deno.serve(async req=>{
  const db=postgres(url,{max:1,connect_timeout:8,prepare:false,ssl:"require"});
  let writer;
  try{
- const admins=await db`SELECT user_id,country_code,role,is_active FROM security_compat.admin_users WHERE user_id=${who.id}::uuid AND is_active`;
+ const admins=await db`SELECT user_id,country_code,role,is_active FROM public.admin_users WHERE user_id=${who.id}::uuid AND is_active`;
  if(admins.length!==1)return reply(403,{error:"sandbox_admin_not_enrolled"});
  const a=admins[0];let country=a.country_code;
- if(a.role==="master_admin"){const ctx=await db`SELECT country_code FROM security_compat.admin_branch_context WHERE user_id=${who.id}::uuid`;country=ctx[0]?.country_code||"BD";}
+ if(a.role==="master_admin"){const ctx=await db`SELECT country_code FROM public.admin_branch_context WHERE user_id=${who.id}::uuid`;country=ctx[0]?.country_code||"BD";}
  if(country!=="IN")return reply(403,{error:"india_test_admin_required"});
  if(body.action==="create_payment"){
  const app=Deno.env.get("STEP22_CASHFREE_SANDBOX_APP_ID"),key=Deno.env.get("STEP22_CASHFREE_SANDBOX_SECRET_KEY");
@@ -35,8 +35,8 @@ Deno.serve(async req=>{
  let orderId=rows[0]?.order_id,gateway=rows[0]?.provider_order_id;
  if(!orderId){
  orderId=crypto.randomUUID();gateway="gazi_dispatch_"+orderId.replaceAll("-","");
- await tx`INSERT INTO security_compat.orders(id,country_code,status,order_status,payment_method,payment_status,final_amount,payment_advance_amount,payment_due_amount,internal_notes) VALUES(${orderId}::uuid,'IN','packed','packed','cashfree','paid',1,1,0,'Synthetic positive test fixture; provider verification required')`;
- await tx`INSERT INTO security_compat.payment_intents(completed_order_id,country_code,currency,status,amount,cashfree_order_id) VALUES(${orderId}::uuid,'IN','INR','completed',1,${gateway})`;
+ await tx`INSERT INTO public.orders(id,order_number,country_code,status,order_status,payment_method,payment_status,final_amount,payment_advance_amount,payment_due_amount,internal_notes) VALUES(${orderId}::uuid,${'SBX-'+orderId.slice(-8)},'IN','packed','packed','cashfree','paid',1,1,0,'Synthetic positive test fixture; provider verification required')`;
+ await tx`INSERT INTO public.cashfree_payment_intents(completed_order_id,country_code,currency,status,amount,cashfree_order_id,items,metadata) VALUES(${orderId}::uuid,'IN','INR','completed',1,${gateway},'[]','{}')`;
  await tx`INSERT INTO security_compat.preview_payment_sessions(actor_id,order_id,provider_order_id) VALUES(${who.id}::uuid,${orderId}::uuid,${gateway})`;
  }
  return {orderId,gateway};
@@ -54,19 +54,20 @@ Deno.serve(async req=>{
  return reply(200,{ok:true,payment_session_id:provider.payment_session_id,order_id:session.orderId,sandbox:true});
  }
  if(body.action==='list'){
- const rows=await db`SELECT o.*,coalesce(s.created_at,'2026-10-19T00:00:00Z'::timestamptz) AS created_at FROM security_compat.orders o LEFT JOIN security_compat.preview_payment_sessions s ON s.order_id=o.id WHERE o.country_code='IN' ORDER BY o.id`;
+ const rows=await db`SELECT o.*,coalesce(s.created_at,'2026-10-19T00:00:00Z'::timestamptz) AS created_at FROM public.orders o LEFT JOIN security_compat.preview_payment_sessions s ON s.order_id=o.id WHERE o.country_code='IN' ORDER BY o.id`;
  return reply(200,{ok:true,sandbox:true,orders:rows.map((o:any)=>({...o,order_number:'SBX-'+o.id.slice(-8),customer_name:'Sandbox test fixture',customer_phone:'9999999999',delivery_address:'Synthetic test address — no shipment',order_source:'website',subtotal:o.final_amount,total_amount:o.final_amount,delivery_charge:0}))});
  }
  if(['items','audit','history'].includes(body.action)){
- const orders=await db`SELECT id,status FROM security_compat.orders WHERE id=${body.orderId}::uuid AND country_code='IN'`;
+ const orders=await db`SELECT id,status FROM public.orders WHERE id=${body.orderId}::uuid AND country_code='IN'`;
  if(orders.length!==1)return reply(404,{error:'sandbox_order_not_found'});
  if(body.action==='items')return reply(200,{ok:true,items:[]});
  if(body.action==='audit'){
- const entries=await db`SELECT 'verification-'||order_id::text AS id,verified_at AS created_at,'admin' AS actor_type,null::text AS actor_id,'verification' AS event_type,CASE WHEN revoked_at IS NULL THEN 'success' ELSE 'blocked' END AS outcome,jsonb_build_object('verified_amount',amount,'reason',CASE WHEN revoked_at IS NULL THEN 'Sandbox provider evidence' ELSE 'Sandbox evidence revoked' END) AS details FROM security_compat.verified_payment_evidence WHERE order_id=${body.orderId}::uuid UNION ALL SELECT 'dispatch-'||order_id::text,consumed_at,'system',null,'dispatch','success',jsonb_build_object('amount',amount) FROM security_compat.verified_payment_evidence WHERE order_id=${body.orderId}::uuid AND consumed_at IS NOT NULL ORDER BY created_at DESC`;
+ const entries=await db`SELECT id,created_at,actor_type,actor_id,event_type,outcome,details FROM public.payment_security_audit_log WHERE order_id=${body.orderId}::uuid AND country_code='IN' ORDER BY created_at DESC LIMIT 50`;
  return reply(200,{ok:true,entries});}
  if(body.status!=='shipped'||orders[0].status!=='shipped'||typeof body.note!=='string')return reply(409,{error:'history_status_not_confirmed'});
- const history=await db`INSERT INTO security_compat.order_status_history(order_id,actor_id,status,note) SELECT ${body.orderId}::uuid,${who.id}::uuid,'shipped',${body.note.slice(0,2000)} WHERE EXISTS(SELECT 1 FROM security_compat.verified_payment_evidence WHERE order_id=${body.orderId}::uuid AND consumed_at IS NOT NULL AND revoked_at IS NULL) ON CONFLICT(order_id,status) DO UPDATE SET order_id=excluded.order_id RETURNING id`;
+ const history=await db`SELECT id FROM public.order_status_history WHERE order_id=${body.orderId}::uuid AND status='shipped' LIMIT 1`;
  return reply(history.length===1?200:409,{ok:history.length===1});
+
  }
 
  const response=await fetch(BASE+'/functions/v1/cashfree-verify-dispatch',{

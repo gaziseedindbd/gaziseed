@@ -66,3 +66,15 @@ test('support fallback routes customers to the matching country contact', () => 
   assert.match(supportTool, /directPhone: '\+91 6002786881'/);
   assert.match(supportTool, /directPhone: '01811332293'/);
 });
+
+
+test('Messenger recommendation prices skip zero or negative offer fields and fall back to a valid price', () => {
+  const recommendationBlock = route.slice(
+    route.indexOf('const productCards = recommendations.products.map'),
+    route.indexOf('await saveMessage(sb, conversation.id, {', route.indexOf('const productCards = recommendations.products.map')),
+  );
+
+  assert.match(recommendationBlock, /productRecord\.offer_price[\s\S]*productRecord\.sale_price[\s\S]*productRecord\.price[\s\S]*productRecord\.regular_price/);
+  assert.match(recommendationBlock, /typeof value === 'number' && value > 0/);
+  assert.match(recommendationBlock, /\?\? 0/);
+});

@@ -163,6 +163,7 @@ export default function AdminOrdersPage() {
 
     setUpdatingStatus(true);
     try {
+      let historyRecordedByDispatch = false;
       const needsPaidDispatchVerification =
         adminCountry === 'IN' &&
         newStatus === 'shipped' &&
@@ -191,6 +192,7 @@ export default function AdminOrdersPage() {
           toast(result?.error || 'Cashfree payment verification failed. Do not dispatch.', 'error');
           return;
         }
+        historyRecordedByDispatch = result.history_recorded === true;
       } else {
         const { error } = await supabase
           .from('orders')
@@ -206,7 +208,7 @@ export default function AdminOrdersPage() {
         }
       }
 
-      if (newStatus !== currentStatus) {
+      if (newStatus !== currentStatus && !historyRecordedByDispatch) {
         const { error: historyError } = await supabase
           .from('order_status_history')
           .insert({
