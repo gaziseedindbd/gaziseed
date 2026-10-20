@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { PaymentAuditPanel } from '@/components/admin/payment-audit-panel';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, cashfreeEnvironmentLabel } from '@/lib/supabase/client';
 import { ORDER_SOURCE_LABELS } from '@/lib/admin-order-display';
 import { OrderPaymentSummary } from '@/components/admin/order-payment-summary';
 import { useSearchParams } from 'next/navigation';
@@ -567,7 +567,7 @@ export default function AdminOrdersPage() {
               <div className="mb-4 rounded-2xl border border-primary/20 bg-primary/[0.05] p-4">
                 <div className="text-sm font-bold">Cashfree Payment Verification</div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Live Cashfree API দিয়ে amount, INR, payment status ও refund যাচাই করুন।
+                  {cashfreeEnvironmentLabel} Cashfree API দিয়ে amount, INR, payment status ও refund যাচাই করুন।
                   Shipment-এর আগে আবার automatic verification হবে।
                 </p>
                 {verifiedCashfree && (

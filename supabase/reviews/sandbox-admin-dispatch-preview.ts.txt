@@ -13,7 +13,8 @@ Deno.serve(async req=>{
  let who;try{const r=await fetch(BASE+"/auth/v1/user",{headers:{apikey:pub,authorization:auth},signal:AbortSignal.timeout(8000)});if(!r.ok)return reply(401,{error:"sandbox_session_invalid"});who=await r.json();}catch{return reply(503,{error:"auth_unavailable"})}
  if(!who?.id)return reply(401,{error:"sandbox_session_invalid"});
  let body;try{body=await req.json()}catch{return reply(400,{error:"invalid_json"})}
- if(!["list","verify_only","shipped","create_payment"].includes(body.action)||Object.keys(body).some(k=>!["action","orderId"].includes(k)))return reply(400,{error:"invalid_action"});
+ if(!body||typeof body!=="object"||Array.isArray(body))return reply(400,{error:"invalid_json"});
+ if(!["list","verify_only","shipped","create_payment","items","audit","history"].includes(body.action)||Object.keys(body).some(k=>!["action","orderId","note","status"].includes(k)))return reply(400,{error:"invalid_action"});
  if(!["list","create_payment"].includes(body.action)&&(!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(body.orderId||"")))return reply(400,{error:"invalid_order_id"});
  const url=Deno.env.get("SUPABASE_DB_URL");if(!url)return reply(503,{error:"db_configuration_missing"});
  const db=postgres(url,{max:1,connect_timeout:8,prepare:false,ssl:"require"});
@@ -52,7 +53,22 @@ Deno.serve(async req=>{
  if(provider.order_status!=="ACTIVE"||typeof provider.payment_session_id!=="string")return reply(409,{error:"checkout_not_active"});
  return reply(200,{ok:true,payment_session_id:provider.payment_session_id,order_id:session.orderId,sandbox:true});
  }
- if(body.action==="list"){const rows=await db`SELECT id,status,order_status,payment_method,payment_status,final_amount,payment_advance_amount,payment_due_amount,internal_notes FROM security_compat.orders WHERE country_code='IN' ORDER BY id`;return reply(200,{ok:true,sandbox:true,orders:rows});}
+ if(body.action==='list'){
+ const rows=await db`SELECT o.*,coalesce(s.created_at,'2026-10-19T00:00:00Z'::timestamptz) AS created_at FROM security_compat.orders o LEFT JOIN security_compat.preview_payment_sessions s ON s.order_id=o.id WHERE o.country_code='IN' ORDER BY o.id`;
+ return reply(200,{ok:true,sandbox:true,orders:rows.map((o:any)=>({...o,order_number:'SBX-'+o.id.slice(-8),customer_name:'Sandbox test fixture',customer_phone:'9999999999',delivery_address:'Synthetic test address — no shipment',order_source:'website',subtotal:o.final_amount,total_amount:o.final_amount,delivery_charge:0}))});
+ }
+ if(['items','audit','history'].includes(body.action)){
+ const orders=await db`SELECT id,status FROM security_compat.orders WHERE id=${body.orderId}::uuid AND country_code='IN'`;
+ if(orders.length!==1)return reply(404,{error:'sandbox_order_not_found'});
+ if(body.action==='items')return reply(200,{ok:true,items:[]});
+ if(body.action==='audit'){
+ const entries=await db`SELECT 'verification-'||order_id::text AS id,verified_at AS created_at,'admin' AS actor_type,null::text AS actor_id,'verification' AS event_type,CASE WHEN revoked_at IS NULL THEN 'success' ELSE 'blocked' END AS outcome,jsonb_build_object('verified_amount',amount,'reason',CASE WHEN revoked_at IS NULL THEN 'Sandbox provider evidence' ELSE 'Sandbox evidence revoked' END) AS details FROM security_compat.verified_payment_evidence WHERE order_id=${body.orderId}::uuid UNION ALL SELECT 'dispatch-'||order_id::text,consumed_at,'system',null,'dispatch','success',jsonb_build_object('amount',amount) FROM security_compat.verified_payment_evidence WHERE order_id=${body.orderId}::uuid AND consumed_at IS NOT NULL ORDER BY created_at DESC`;
+ return reply(200,{ok:true,entries});}
+ if(body.status!=='shipped'||orders[0].status!=='shipped'||typeof body.note!=='string')return reply(409,{error:'history_status_not_confirmed'});
+ const history=await db`INSERT INTO security_compat.order_status_history(order_id,actor_id,status,note) SELECT ${body.orderId}::uuid,${who.id}::uuid,'shipped',${body.note.slice(0,2000)} WHERE EXISTS(SELECT 1 FROM security_compat.verified_payment_evidence WHERE order_id=${body.orderId}::uuid AND consumed_at IS NOT NULL AND revoked_at IS NULL) ON CONFLICT(order_id,status) DO UPDATE SET order_id=excluded.order_id RETURNING id`;
+ return reply(history.length===1?200:409,{ok:history.length===1});
+ }
+
  const response=await fetch(BASE+'/functions/v1/cashfree-verify-dispatch',{
  method:'POST',headers:{authorization:auth,apikey:pub,'content-type':'application/json'},
  body:JSON.stringify({orderId:body.orderId,status:body.action,note:'Sandbox Preview dispatch'}),signal:AbortSignal.timeout(25000)});
