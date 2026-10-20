@@ -28,6 +28,7 @@ export type MessengerProduct = {
   germination_rate: string | null;
   harvest_time: string | null;
   country_code: string;
+  translations?: Record<string, Record<string, string>> | null;
   description?: string | null;
   brand?: string | null;
   origin?: string | null;
@@ -82,6 +83,7 @@ const PRODUCT_FIELDS = [
   'germination_rate',
   'harvest_time',
   'country_code',
+  'translations',
 ].join(',');
 
 function normalizeSearchTerm(value: string): string {
@@ -437,8 +439,18 @@ export function getMessengerProductSelectionQuickReplies(
     const product = candidate as Record<string, unknown>;
     if (typeof product.id !== 'string') continue;
 
+    const translations = product.translations && typeof product.translations === 'object'
+      ? product.translations as Record<string, Record<string, string>>
+      : {};
+    const hindiName = typeof translations.hi?.name === 'string' ? translations.hi.name.trim() : '';
     const preferEnglish = language === 'English' || language === 'Hindi';
-    const name = preferEnglish
+    const name = language === 'Hindi'
+      ? hindiName ||
+        (typeof product.name_en === 'string' && product.name_en.trim()) ||
+        (typeof product.name_bn === 'string' && product.name_bn.trim()) ||
+        (typeof product.slug === 'string' && product.slug.trim()) ||
+        ''
+      : preferEnglish
       ? (typeof product.name_en === 'string' && product.name_en.trim()) ||
         (typeof product.name_bn === 'string' && product.name_bn.trim()) ||
         (typeof product.slug === 'string' && product.slug.trim()) ||
@@ -467,6 +479,7 @@ export function serializeMessengerProducts(products: MessengerProduct[]) {
       id: product.id,
       name_bn: product.name_bn,
       name_en: product.name_en,
+      translations: product.translations || null,
       slug: product.slug,
       short_description: product.short_description,
       image: product.image,
