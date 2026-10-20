@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { PaymentAuditPanel } from '@/components/admin/payment-audit-panel';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, cashfreeEnvironmentLabel } from '@/lib/supabase/client';
 import { ORDER_SOURCE_LABELS } from '@/lib/admin-order-display';
 import { OrderPaymentSummary } from '@/components/admin/order-payment-summary';
 import { useSearchParams } from 'next/navigation';
@@ -163,6 +163,7 @@ export default function AdminOrdersPage() {
 
     setUpdatingStatus(true);
     try {
+      let historyRecordedByDispatch = false;
       const needsPaidDispatchVerification =
         adminCountry === 'IN' &&
         newStatus === 'shipped' &&
@@ -191,6 +192,7 @@ export default function AdminOrdersPage() {
           toast(result?.error || 'Cashfree payment verification failed. Do not dispatch.', 'error');
           return;
         }
+        historyRecordedByDispatch = result.history_recorded === true;
       } else {
         const { error } = await supabase
           .from('orders')
@@ -206,7 +208,7 @@ export default function AdminOrdersPage() {
         }
       }
 
-      if (newStatus !== currentStatus) {
+      if (newStatus !== currentStatus && !historyRecordedByDispatch) {
         const { error: historyError } = await supabase
           .from('order_status_history')
           .insert({
@@ -567,7 +569,7 @@ export default function AdminOrdersPage() {
               <div className="mb-4 rounded-2xl border border-primary/20 bg-primary/[0.05] p-4">
                 <div className="text-sm font-bold">Cashfree Payment Verification</div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Live Cashfree API দিয়ে amount, INR, payment status ও refund যাচাই করুন।
+                  {cashfreeEnvironmentLabel} Cashfree API দিয়ে amount, INR, payment status ও refund যাচাই করুন।
                   Shipment-এর আগে আবার automatic verification হবে।
                 </p>
                 {verifiedCashfree && (
