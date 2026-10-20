@@ -13,7 +13,7 @@
     ]
   },
   "include": [
-    "tests/india-shiprocket-selection.test.ts",
+    "tests/india-shiprocket-*.test.ts",
     "lib/shiprocket/selection.ts"
   ]
 }

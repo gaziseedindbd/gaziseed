@@ -16,7 +16,7 @@ Deno.serve(async req=>{
   const [admin,country]=await Promise.all([client.rpc("is_admin"),client.rpc("current_admin_country")]);
   if(admin.error||country.error||admin.data!==true||String(country.data??"").toUpperCase()!=="IN")return reply(403,{ok:false});
   const db=createClient(url,JSON.parse(secret).default,{auth:{persistSession:false,autoRefreshToken:false}});
-  const {data:orders,error:orderError}=await db.from("orders").select("id,order_number,customer_name,delivery_address,status,payment_status,grand_total,created_at").eq("country_code","IN").order("created_at",{ascending:false}).limit(60);
+  const {data:orders,error:orderError}=await db.from("orders").select("id,order_number,customer_name,delivery_address,status,payment_status,payment_method,payment_advance_amount,payment_due_amount,cashfree_dispatch_verified_at,grand_total,created_at").eq("country_code","IN").order("created_at",{ascending:false}).limit(60);
   if(orderError)return reply(503,{ok:false,code:"orders_unavailable"});
   const ids=(orders??[]).map(x=>x.id);
   const {data:shipments,error:shipError}=ids.length?await db.from("india_shipping_shipments").select("id,order_id,external_shipment_id,awb,courier_company_id,tracking_status,pickup_approved_at").in("order_id",ids):{data:[],error:null};

@@ -89,7 +89,7 @@ test("courier quote normalization rejects missing total and selects valid lowest
   assert.equal(findIndiaCourier(data, {mode:"cod",total:500,collectOnDelivery:380,cashfreePaid:120})?.courier.courier_company_id, 2);
   assert.equal(findIndiaCourier({data:{}}, {mode:"prepaid",total:500,collectOnDelivery:0,cashfreePaid:500}), null);
 });
-test("payload sends only remaining COD and refuses invalid destination", () => {
+test("partial COD provider payload stays blocked; invalid destination refused", () => {
   const options = {
     orderNumber:"TEST", pickupLocation:"Primary",
     parcel:{pickupPostcode:"783124",deliveryPostcode:"110001",weightKg:0.5,lengthCm:12,breadthCm:10,heightCm:5,codAmount:380,declaredValue:500},
@@ -98,7 +98,7 @@ test("payload sends only remaining COD and refuses invalid destination", () => {
     items:[{name:"Seeds",sku:"TEST-1",quantity:1,price:500}],
     courierCompanyId:2, requestKey:"test-order-key-12345",
   };
-  assert.equal(buildIndiaShipmentPayload(options).cod_amount,380);
+  assert.throws(()=>buildIndiaShipmentPayload(options));
   assert.throws(()=>buildIndiaShipmentPayload({...options,destination:{...options.destination,postcode:"999999"}}));
   assert.throws(()=>buildIndiaShipmentPayload({...options,parcel:{...options.parcel,codAmount:500}}));
 });
@@ -112,13 +112,13 @@ test("legacy prepaid with zero advance field still requires gateway paid final",
 import { prepareIndiaShipment } from "../lib/shiprocket/india-prepare";
 test("end-to-end pure preparation refuses unverified and selects cheapest eligible India courier", () => {
   const base = {
-    order: { ...payment, payment_method: "cod", payment_status:"partially_paid",
-      payment_advance_amount:120, payment_due_amount:380 },
-    verifiedGateway: {...evidence, paidAmount:120},
-    sourceOrderNumber:"IND-EXAMPLE", immutableRequestKey:"india-example-order-12345",
+    order: { ...payment, payment_method: "cashfree", payment_status:"paid",
+      payment_advance_amount:0, payment_due_amount:0 },
+    verifiedGateway: {...evidence, paidAmount:500},
+    sourceOrderNumber:"IND-EXAMPLE", immutableRequestKey:"india-test-12345678",
     pickupLocation:"Primary",
     parcel:{pickupPostcode:"783124",deliveryPostcode:"110001",weightKg:0.5,
-      lengthCm:12,breadthCm:10,heightCm:5,codAmount:380,declaredValue:500},
+      lengthCm:12,breadthCm:10,heightCm:5,codAmount:0,declaredValue:500},
     destination:{name:"Customer",phone:"9876543210",address:"Test Street",
       city:"Delhi",state:"Delhi",postcode:"110001"},
     items:[{name:"Seeds",sku:"TEST-1",quantity:1,price:500}],
@@ -129,7 +129,8 @@ test("end-to-end pure preparation refuses unverified and selects cheapest eligib
   };
   const ready = prepareIndiaShipment(base);
   assert.equal(ready?.courierCompanyId,9);
-  assert.equal(ready?.bookingPayload.cod_amount,380);
+  assert.equal(ready?.bookingPayload.payment_method,'Prepaid');
+  assert.equal('cod_amount' in ready!.bookingPayload,false);
   assert.equal(prepareIndiaShipment({...base,verifiedGateway:null}),null);
   assert.equal(prepareIndiaShipment({...base,order:{...base.order,country_code:"BD"}}),null);
   assert.equal(prepareIndiaShipment({...base,parcel:{...base.parcel,codAmount:500}}),null);

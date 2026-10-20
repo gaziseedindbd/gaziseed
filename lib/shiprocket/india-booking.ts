@@ -62,13 +62,13 @@ export function buildIndiaShipmentPayload(input: {
   requestKey: string;
 }): RecordValue {
   const { parcel, destination: d, money: m, items } = input;
-  if (!validateIndiaParcel(parcel) || d.postcode !== parcel.deliveryPostcode ||
+  if (m.mode !== 'prepaid' || m.collectOnDelivery !== 0 || !validateIndiaParcel(parcel) || d.postcode !== parcel.deliveryPostcode ||
       !/^[A-Za-z][A-Za-z\s-]{1,80}$/.test(d.state.trim()) ||
       !d.city.trim() || !d.address.trim() || !d.name.trim() ||
       !/^\+?[0-9\s-]{10,16}$/.test(d.phone) ||
       !input.pickupLocation.trim() || !input.orderNumber.trim() ||
       !Number.isSafeInteger(input.courierCompanyId) || input.courierCompanyId <= 0 ||
-      !/^[a-zA-Z0-9_-]{16,128}$/.test(input.requestKey) ||
+      !/^[a-zA-Z0-9_-]{16,20}$/.test(input.requestKey) ||
       m.total !== parcel.declaredValue || m.collectOnDelivery !== parcel.codAmount ||
       !items.length || items.some(i => !i.name || !i.sku || !Number.isSafeInteger(i.quantity) ||
         i.quantity <= 0 || !Number.isFinite(i.price) || i.price <= 0))
@@ -86,8 +86,8 @@ export function buildIndiaShipmentPayload(input: {
     })),
     payment_method: m.mode === "prepaid" ? "Prepaid" : "COD",
     sub_total: m.total,
-    // Shiprocket COD collection must equal remaining due, not full order total.
-    cod_amount: m.collectOnDelivery,
+    // Partial COD external booking is blocked until its provider contract is verified.
+    // Never assume an undocumented cod_amount field controls collection.
     length: parcel.lengthCm, breadth: parcel.breadthCm,
     height: parcel.heightCm, weight: parcel.weightKg,
     courier_id: input.courierCompanyId,

@@ -2358,16 +2358,18 @@ async function processMessengerEvent(event: MessengerEvent) {
       const productCards = recommendations.products.map((product) => {
         const productRecord = product as Record<string, unknown>;
         const name = formatMessengerProductName(productRecord);
+        // Ignore zero/negative prices so an empty offer field cannot mask
+        // a valid sale, base, or regular price.
         const priceValue =
-          typeof productRecord.offer_price === 'number'
-            ? productRecord.offer_price
-            : typeof productRecord.sale_price === 'number'
-              ? productRecord.sale_price
-              : typeof productRecord.price === 'number'
-                ? productRecord.price
-                : typeof productRecord.regular_price === 'number'
-                  ? productRecord.regular_price
-                  : 0;
+          [
+            productRecord.offer_price,
+            productRecord.sale_price,
+            productRecord.price,
+            productRecord.regular_price,
+          ].find(
+            (value): value is number =>
+              typeof value === 'number' && value > 0,
+          ) ?? 0;
         const stock =
           typeof product.stock === 'number' ? product.stock : 0;
 

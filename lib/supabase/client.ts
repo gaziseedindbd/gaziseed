@@ -66,3 +66,4 @@ export const formatPriceEn = (price: number): string => {
     ? '₹ ' + Number(price).toLocaleString('en-IN')
     : '৳ ' + Number(price).toLocaleString('en-US');
 };
+export const cashfreeEnvironmentLabel = supabaseUrl === "https://qqehtphbpypcmxliaiqd.supabase.co" ? "Sandbox" : "Live";

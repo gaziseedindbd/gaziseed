@@ -11,8 +11,10 @@ const positive = (v: number) => Number.isFinite(v) && v > 0;
 const pin = (v: string) => /^[1-9][0-9]{5}$/.test(v);
 export function validateIndiaParcel(p: ShipmentParcel): boolean {
   return pin(p.pickupPostcode) && pin(p.deliveryPostcode) &&
-    positive(p.weightKg) && positive(p.lengthCm) && positive(p.breadthCm) &&
-    positive(p.heightCm) && Number.isFinite(p.codAmount) && p.codAmount >= 0 &&
+    positive(p.weightKg) && p.weightKg >= 0.01 && p.weightKg <= 100 &&
+    positive(p.lengthCm) && p.lengthCm >= 1 && p.lengthCm <= 200 &&
+    positive(p.breadthCm) && p.breadthCm >= 1 && p.breadthCm <= 200 &&
+    positive(p.heightCm) && p.heightCm >= 1 && p.heightCm <= 200 && Number.isFinite(p.codAmount) && p.codAmount >= 0 &&
     Number.isFinite(p.declaredValue) && p.declaredValue > 0;
 }
 export type JsonRecord = Record<string, unknown>;
@@ -55,6 +57,8 @@ export class IndiaCourierClient {
   async createOrder(verifiedOrderPayload: JsonRecord) {
     // Only a server-side orchestrator may call this after payment validation,
     // India branch checking and an atomic shipment reservation.
+    if (verifiedOrderPayload.payment_method !== 'Prepaid' || 'cod_amount' in verifiedOrderPayload)
+      throw new Error('COD booking provider contract is not enabled');
     return this.request("/orders/create/adhoc", "POST", verifiedOrderPayload);
   }
   async assignAwb(shipmentId: number, courierId: number) {

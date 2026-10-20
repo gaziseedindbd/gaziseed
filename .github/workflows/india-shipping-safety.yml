@@ -14,14 +14,14 @@ jobs:
       - name: Reject changes outside isolated India shipping scope
         shell: bash
         env:
-          BASE_REF: ${{ github.base_ref }}
+          BASE_REF: ${{ github.base_ref || 'main' }}
         run: |
           set -euo pipefail
           git fetch origin "$BASE_REF"
           unexpected=0
           while IFS= read -r path; do
             case "$path" in
-              app/admin/india-shipping/*|components/admin/admin-layout.tsx|lib/shiprocket/*|tests/india-shiprocket-*|tsconfig.india-shipping-tests.json|package.json|supabase/functions/india-delivery-events/*|supabase/functions/india-delivery-approval/*|supabase/functions/india-shipping-payment-preflight/*|supabase/functions/india-shipping-connection-check/*|supabase/functions/india-shipping-rates/*|supabase/functions/india-shipping-admin-overview/*|supabase/functions/india-shipping-preparation/*|supabase/migrations/*india_shipping*|supabase/migrations/*india_pickup*|docs/india-shiprocket-*|.github/workflows/india-shipping-safety.yml)
+              app/admin/india-shipping/*|components/admin/admin-layout.tsx|lib/shiprocket/*|tests/india-shiprocket-*|tsconfig.india-shipping-tests.json|package.json|supabase/functions/india-delivery-events/*|supabase/functions/india-delivery-approval/*|supabase/functions/india-shipping-payment-preflight/*|supabase/functions/india-shipping-connection-check/*|supabase/functions/india-shipping-rates/*|supabase/functions/india-shipping-admin-overview/*|supabase/functions/india-shipping-preparation/*|supabase/migrations/*india_shipping*|supabase/migrations/*india_pickup*|supabase/tests/india-shipping-*|docs/india-shiprocket-*|.github/workflows/india-shipping-safety.yml)
                 echo "Allowed: $path" ;;
               *)
                 echo "::error file=$path::Outside India shipping scope; review required"

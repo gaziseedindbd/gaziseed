@@ -168,11 +168,10 @@ export default function ComboLandingPage() {
   const savings = Math.max(0, regular - offer);
   // India quotes use the same explicit free-delivery flag as the database.
   const currentTierFreeValue = currentTier?.freeDelivery ?? currentTier?.free_delivery;
-  const freeDelivery = typeof currentTierFreeValue === 'boolean'
+  const freeDelivery = (typeof currentTierFreeValue === 'boolean'
     ? currentTierFreeValue
-    : combo?.free_delivery === true || (country === 'BD' && offer >= 600);
-  const fallbackDelivery = freeDelivery ? 0 : country === 'IN' ? (offer >= 499 ? 60 : 90) : offer >= 400 ? 50 : offer >= 200 ? 70 : 120;
-  const delivery = country === 'IN' && indiaDeliveryQuote !== null ? indiaDeliveryQuote : fallbackDelivery;
+    : combo?.free_delivery === true) || items.some((item) => item.products?.free_delivery === true);
+  const delivery = indiaDeliveryQuote ?? 0;
   const total = offer + delivery;
   const codAdvance = delivery > 0 ? delivery : 120;
   const codDue = Math.max(0, total - codAdvance);
@@ -180,7 +179,7 @@ export default function ComboLandingPage() {
   useEffect(() => {
     let active = true;
     const loadQuote = async () => {
-      if (country !== 'IN' || offer <= 0) {
+      if (offer <= 0) {
         setIndiaDeliveryQuote(null);
         setIndiaDeliveryQuoteLoading(false);
         return;
@@ -222,6 +221,7 @@ export default function ComboLandingPage() {
 
     setSubmitting(true);
     try {
+      if (indiaDeliveryQuoteLoading || indiaDeliveryQuote === null) throw new Error('Delivery charge is still being verified');
       if (country === 'IN') {
         if (indiaDeliveryQuoteLoading || indiaDeliveryQuote === null) throw new Error('Delivery charge is still being verified');
         if (paymentMethod === 'cod' && codAdvance > total) throw new Error('COD advance is higher than the payable total. Choose online payment.');
@@ -448,7 +448,7 @@ export default function ComboLandingPage() {
                   const tierFreeValue = tier?.freeDelivery ?? tier?.free_delivery;
                   const tierFree = typeof tierFreeValue === 'boolean'
                     ? tierFreeValue
-                    : combo?.free_delivery === true || (country === 'BD' && tierOffer >= 600);
+                    : combo?.free_delivery === true;
                   const selected = qty === selectedQty;
                   return (
                     <button key={qty} type="button" onClick={() => setSelectedQty(qty)} className={`group w-full rounded-[26px] border-2 p-4 text-left transition-all ${selected ? 'border-emerald-600 bg-emerald-50 shadow-[0_14px_35px_rgba(5,150,105,.14)]' : 'border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/40'}`}>
@@ -476,8 +476,8 @@ export default function ComboLandingPage() {
                     codAvailable={!indiaDeliveryQuoteLoading && indiaDeliveryQuote !== null && codAdvance <= total}
                     language={lang === 'hi' ? 'hi' : lang === 'en' ? 'en' : 'bn'}
                   /></div>}
-                  <div className="rounded-[24px] border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm sm:p-6"><div className="flex flex-wrap items-center justify-between gap-3 text-sm font-bold text-slate-700 sm:text-base"><span className="inline-flex items-center gap-2"><ShoppingCart className="h-4 w-4 text-emerald-700" />{selectedQty}× {copy('Pack', 'প্যাকেট', 'पैक')}</span><span className="text-xl font-black text-emerald-800 sm:text-2xl">{formatPrice(total)}</span></div><div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm sm:text-base"><span className="text-slate-500">{copy('Delivery', 'ডেলিভারি', 'डिलीवरी')}</span><span className="text-base font-black text-emerald-700 sm:text-lg">{freeDelivery ? (country === 'IN' ? 'FREE' : 'ফ্রি') : formatPrice(delivery)}</span></div>{country === 'IN' && paymentMethod === 'cod' && <div className="mt-4 space-y-3 border-t border-emerald-200 pt-4"><div className="flex flex-wrap items-center justify-between gap-3 text-sm sm:text-base"><span className="font-semibold text-slate-700">{copy("Advance payable now", "এখন অগ্রিম পরিশোধ", "अभी अग्रिम भुगतान")}</span><span className="text-lg font-black text-emerald-800 sm:text-xl">{formatPrice(codAdvance)}</span></div><div className="flex flex-wrap items-center justify-between gap-3 text-sm sm:text-base"><span className="font-semibold text-slate-700">{copy("Due on delivery", "ডেলিভারির সময় বাকি", "डिलीवरी पर शेष")}</span><span className="text-lg font-black text-emerald-800 sm:text-xl">{formatPrice(codDue)}</span></div></div>}</div>
-                  <button disabled={submitting || (country === 'IN' && (indiaDeliveryQuoteLoading || indiaDeliveryQuote === null || (paymentMethod === 'cod' && codAdvance > total)))} type="submit" className="inline-flex min-h-[62px] w-full items-center justify-center gap-3 rounded-[20px] bg-amber-400 px-6 py-4 text-base font-black sm:min-h-[66px] sm:text-lg text-amber-950 shadow-xl shadow-amber-900/10 transition hover:-translate-y-0.5 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"><ShieldCheck className="h-5 w-5" />{submitting ? copy('Starting secure checkout…', 'নিরাপদ চেকআউট শুরু হচ্ছে…', 'सुरक्षित चेकआउट शुरू हो रहा है…') : country === 'IN' ? (paymentMethod === 'cod' ? `${copy('Pay', 'পরিশোধ করুন', 'भुगतान करें')} ${formatPrice(codAdvance)} ${copy('advance', 'অগ্রিম', 'अग्रिम')}` : `${copy('Pay online', 'অনলাইনে পরিশোধ করুন', 'ऑनलाइन भुगतान करें')} ${formatPrice(total)}`) : `${copy('Confirm order', 'অর্ডার নিশ্চিত করুন', 'ऑर्डर पक्का करें')} ${formatPrice(total)}`}</button>
+                  <div className="rounded-[24px] border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm sm:p-6"><div className="flex flex-wrap items-center justify-between gap-3 text-sm font-bold text-slate-700 sm:text-base"><span className="inline-flex items-center gap-2"><ShoppingCart className="h-4 w-4 text-emerald-700" />{selectedQty}× {copy('Pack', 'প্যাকেট', 'पैक')}</span><span className="text-xl font-black text-emerald-800 sm:text-2xl">{formatPrice(total)}</span></div><div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm sm:text-base"><span className="text-slate-500">{copy('Delivery', 'ডেলিভারি', 'डिलीवरी')}</span><span className="text-base font-black text-emerald-700 sm:text-lg">{indiaDeliveryQuoteLoading || indiaDeliveryQuote === null ? 'Calculating…' : delivery === 0 ? (country === 'IN' ? 'FREE' : 'ফ্রি') : formatPrice(delivery)}</span></div>{country === 'IN' && paymentMethod === 'cod' && <div className="mt-4 space-y-3 border-t border-emerald-200 pt-4"><div className="flex flex-wrap items-center justify-between gap-3 text-sm sm:text-base"><span className="font-semibold text-slate-700">{copy("Advance payable now", "এখন অগ্রিম পরিশোধ", "अभी अग्रिम भुगतान")}</span><span className="text-lg font-black text-emerald-800 sm:text-xl">{formatPrice(codAdvance)}</span></div><div className="flex flex-wrap items-center justify-between gap-3 text-sm sm:text-base"><span className="font-semibold text-slate-700">{copy("Due on delivery", "ডেলিভারির সময় বাকি", "डिलीवरी पर शेष")}</span><span className="text-lg font-black text-emerald-800 sm:text-xl">{formatPrice(codDue)}</span></div></div>}</div>
+                  <button disabled={submitting || indiaDeliveryQuoteLoading || indiaDeliveryQuote === null || (country === 'IN' && paymentMethod === 'cod' && codAdvance > total)} type="submit" className="inline-flex min-h-[62px] w-full items-center justify-center gap-3 rounded-[20px] bg-amber-400 px-6 py-4 text-base font-black sm:min-h-[66px] sm:text-lg text-amber-950 shadow-xl shadow-amber-900/10 transition hover:-translate-y-0.5 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"><ShieldCheck className="h-5 w-5" />{submitting ? copy('Starting secure checkout…', 'নিরাপদ চেকআউট শুরু হচ্ছে…', 'सुरक्षित चेकआउट शुरू हो रहा है…') : country === 'IN' ? (paymentMethod === 'cod' ? `${copy('Pay', 'পরিশোধ করুন', 'भुगतान करें')} ${formatPrice(codAdvance)} ${copy('advance', 'অগ্রিম', 'अग्रिम')}` : `${copy('Pay online', 'অনলাইনে পরিশোধ করুন', 'ऑनलाइन भुगतान करें')} ${formatPrice(total)}`) : `${copy('Confirm order', 'অর্ডার নিশ্চিত করুন', 'ऑर्डर पक्का करें')} ${formatPrice(total)}`}</button>
                   <div className="flex items-center justify-center gap-3 pt-1 text-[10px] font-bold text-slate-500"><span className="inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />{copy("Secure", "নিরাপদ", "सुरक्षित")}</span><span className="h-1 w-1 rounded-full bg-slate-300"/><span className="inline-flex items-center gap-1"><WalletCards className="h-3.5 w-3.5 text-emerald-700"/>COD</span><span className="h-1 w-1 rounded-full bg-slate-300"/><span className="inline-flex items-center gap-1"><Truck className="h-3.5 w-3.5 text-emerald-700"/>{country === 'IN' ? 'India' : 'Bangladesh'}</span></div>
                 </form>
               </div>
