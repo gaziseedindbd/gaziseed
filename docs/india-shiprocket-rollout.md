@@ -19,9 +19,9 @@ Authoritative context joins the packed order, measured parcel, order_items, comp
 
 Cashfree order, successful payment and refunds are independently read on every booking preflight. The real provider adapter checks returned order total/payment method/shipment identity after persisting external IDs and before AWB. Unknown or mismatched readback requires reconciliation. Real Shiprocket invoice and response fixtures are not yet certified.
 
-Sandbox qqehtphbpypcmxliaiqd alone forces sandbox_simulated mode. A fixed synthetic INR1 paid Cashfree Sandbox order passed HTTP preview, booking, durable external ID/AWB readback and duplicate rejection. Result: SBX-90000005, packed order, pickup not requested. Cashfree Sandbox reads and database persistence were real; courier quote/create/AWB were simulated. This operator-authenticated test harness did not exercise an end-user JWT through the normal Edge endpoint. The temporary harness is retired after verification.
+Sandbox qqehtphbpypcmxliaiqd alone forces sandbox_simulated mode. A fixed synthetic INR1 paid Cashfree Sandbox order passed HTTP preview, booking, durable external ID/AWB readback and duplicate rejection. Result: SBX-90000005, packed order, pickup not requested. Cashfree Sandbox reads and database persistence were real; courier quote/create/AWB were simulated. This operator-authenticated test harness did not exercise an end-user JWT through the normal Edge endpoint. The temporary harness is retired after verification. Sandbox overview and preparation Edge Functions are deployed with JWT verification. A Sandbox-only admin self-read RLS policy allows an active India admin to read user_id/role/is_active/country_code for their own row; unrelated users see zero rows and authenticated role updates remain denied. This setup is not applied to Production.
 
-Production requires BOTH INDIA_SHIPPING_BOOKING_MODE=live_prepaid and INDIA_SHIPPING_PROVIDER_CONTRACT=prepaid_v1_verified. Neither was configured and no Production function or migration was deployed. The existing Admin UI is preserved; it does not yet expose this booking endpoint. No real Shiprocket shipment, AWB, wallet debit, charge or pickup was created.
+Production requires BOTH INDIA_SHIPPING_BOOKING_MODE=live_prepaid and INDIA_SHIPPING_PROVIDER_CONTRACT=prepaid_v1_verified. Neither was configured and no Production function or migration was deployed. The existing Admin UI now includes a Sandbox-only destination confirmation, authoritative preflight and explicit one-attempt booking control. It is hidden for Production clients. The same Vercel project has branch-specific public Supabase configuration for this draft Preview only. Browser verification remains pending: the local browser stopped responding during provider navigation; no end-user JWT flow is claimed as passed. No real Shiprocket shipment, AWB, wallet debit, charge or pickup was created.
 
 ## COD and remaining release gates
 
@@ -29,7 +29,7 @@ Partial and full COD booking remain blocked at payload, transport and database r
 
 Official contract reference: https://apidocs.shiprocket.in/?version=latest (Create Custom Order, Serviceability, Order Details, Assign AWB). Payloads reconcile item subtotal, shipping and discount; real provider readback must confirm the final total before AWB. Verify pickup location, provider timestamps, actual response shapes and invoice semantics against this account before setting the Production gates.
 
-Prepaid release additionally requires the normal Admin JWT/UI flow, real provider integration and crash/concurrent-request reconciliation coverage. Tracking-event projection/out-of-order processing remains a separate audited gap. Existing webhook ingestion is preserved. No automatic create retries or pickup API are exposed.
+Prepaid release additionally requires completing browser verification of the normal Admin JWT/UI flow, real provider integration and crash/concurrent-request reconciliation coverage. Tracking-event projection/out-of-order processing remains a separate audited gap. Existing webhook ingestion is preserved. No automatic create retries or pickup API are exposed.
 
 ## Validation and environments
 

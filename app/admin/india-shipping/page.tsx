@@ -1,6 +1,7 @@
 'use client';
 import {useEffect,useState} from 'react';
 import Link from 'next/link';
+import SandboxBooking from './sandbox-booking';
 import {supabase} from '@/lib/supabase/client';
 type Order={id:string;order_number:string|null;customer_name:string|null;delivery_address:string|null;status:string|null;payment_status:string|null;payment_method:string|null;payment_advance_amount:number|null;payment_due_amount:number|null;cashfree_dispatch_verified_at:string|null;grand_total:number|null;created_at:string};
 type Shipment={id:string;order_id:string;external_shipment_id:string|null;awb:string|null;courier_company_id:number|null;tracking_status:string|null;pickup_approved_at:string|null};
@@ -17,8 +18,16 @@ export default function IndiaShippingDashboard(){
  const [preflightLoading,setPreflightLoading]=useState(false),[preflightResult,setPreflightResult]=useState('');
  const [quoteLoading,setQuoteLoading]=useState(false),[quoteMessage,setQuoteMessage]=useState(''),[quote,setQuote]=useState<{name:string;estimatedCost:number;courierId:number}|null>(null);
  const [pickupPin,setPickupPin]=useState('783124');
- function chooseOrder(id:string){if(saving||preflightLoading||quoteLoading)return;setSelected(id);setQuote(null);setQuoteMessage('');setPreflightResult('');setSaveMessage('');setMobileDetails(true);window.scrollTo({top:0,behavior:'smooth'});}
- function backToOrders(){if(saving||preflightLoading||quoteLoading)return;setMobileDetails(false);window.scrollTo({top:0,behavior:'smooth'});}
+ const [bookingBusy,setBookingBusy]=useState(false);
+ async function refreshBooking(){
+  const {data,error}=await supabase.functions.invoke('india-shipping-admin-overview',{method:'POST',body:{}});
+  if(error||data?.ok!==true)throw Error('Booking response received, but database readback failed. Refresh before any further action.');
+  const saved=(data.shipments??[]).find((s:Shipment)=>s.order_id===selected);
+  if(!saved?.external_shipment_id||!saved.awb?.startsWith('SBX-'))throw Error('Sandbox shipment could not be confirmed in database. Do not retry.');
+  setShipments(data.shipments??[]);setEvents(data.events??[]);
+ }
+ function chooseOrder(id:string){if(saving||preflightLoading||quoteLoading||bookingBusy)return;setSelected(id);setQuote(null);setQuoteMessage('');setPreflightResult('');setSaveMessage('');setMobileDetails(true);window.scrollTo({top:0,behavior:'smooth'});}
+ function backToOrders(){if(saving||preflightLoading||quoteLoading||bookingBusy)return;setMobileDetails(false);window.scrollTo({top:0,behavior:'smooth'});}
  useEffect(()=>{let alive=true;(async()=>{try{
  const {data:session}=await supabase.auth.getSession();
  if(!session.session?.access_token)throw new Error('India Admin login required');
@@ -158,14 +167,14 @@ export default function IndiaShippingDashboard(){
    <section className={`${mobileDetails ? "hidden lg:block" : "block"} space-y-3 min-w-0`}><h2 className="text-lg font-semibold">Select India Order</h2>
     <input aria-label="Search India orders" placeholder="Search order number or customer" value={search} onChange={e=>setSearch(e.target.value)} className="w-full rounded-lg border p-3" />
     <p className="text-xs text-gray-500">Most recent 60 India orders, read-only</p>
-    <div className="max-h-[550px] space-y-2 overflow-auto">{filtered.map(o=><button type="button" key={o.id} onClick={()=>chooseOrder(o.id)} disabled={saving}
+    <div className="max-h-[550px] space-y-2 overflow-auto">{filtered.map(o=><button type="button" key={o.id} onClick={()=>chooseOrder(o.id)} disabled={saving||bookingBusy}
      className={`w-full rounded-lg border p-3 text-left ${selected===o.id?'border-emerald-700 bg-emerald-50':''}`}>
       <span className="block font-semibold">{o.order_number||o.id.slice(0,8)} · {o.customer_name||'Customer'}</span>
       <span className="text-sm text-gray-600">{o.status||'Status unavailable'} · ₹{Number(o.grand_total??0).toFixed(2)} · {formatDate(o.created_at)}</span>
      </button>)}
      {filtered.length===0&&<p className="text-sm">No matching India orders found.</p>}</div>
    </section>
-   <section id="shipping-order-details" className={`${mobileDetails ? "block" : "hidden lg:block"} min-w-0 space-y-4 break-words`}><button type="button" onClick={backToOrders} disabled={saving} className="rounded-lg border px-4 py-3 text-sm font-semibold lg:hidden">← Back to Orders</button><h2 className="text-lg font-semibold">Shipment Details & Tracking</h2>
+   <section id="shipping-order-details" className={`${mobileDetails ? "block" : "hidden lg:block"} min-w-0 space-y-4 break-words`}><button type="button" onClick={backToOrders} disabled={saving||bookingBusy} className="rounded-lg border px-4 py-3 text-sm font-semibold lg:hidden">← Back to Orders</button><h2 className="text-lg font-semibold">Shipment Details & Tracking</h2>
     {!order?<p className="rounded-lg border p-5 text-sm">Choose an India order to view shipping details.</p>:<>
      <div className="space-y-2 rounded-lg border p-4 text-sm">
       <p><strong>Order:</strong> {order.order_number||order.id}</p>
@@ -184,7 +193,7 @@ export default function IndiaShippingDashboard(){
       <p className="text-sm">Payment mode: <strong>{order.payment_method||'Unknown'}</strong> · Advance recorded: ₹{advance.toFixed(2)} · Database due: ₹{Number.isFinite(due)?due.toFixed(2):'Unknown'} · Calculated COD collection: ₹{isCod&&Number.isFinite(expectedCodAmount)?expectedCodAmount.toFixed(2):'0.00'}</p>
       <p className="text-sm">Server-side Cashfree dispatch verification: <strong>{dispatchVerified?'Recorded (recheck at booking)':'Not recorded'}</strong></p>
       {preflightBlocks.length>0?<ul className="list-disc space-y-1 pl-5 text-sm text-amber-800">{preflightBlocks.map(reason=><li key={reason}>{reason}</li>)}</ul>:<p className="text-sm text-emerald-800">Preliminary data checks pass; live payment re-verification, courier quote, duplicate lock and admin consent still required.</p>}
-      <button type="button" onClick={checkPaymentPreflight} disabled={preflightLoading||saving||!(order.payment_method==='cashfree'||(isCod&&advance>0))} className="rounded-lg border border-emerald-700 px-4 py-3 text-sm font-semibold disabled:opacity-50">{preflightLoading?'Checking Cashfree…':'Verify Cashfree Payment (read only)'}</button>
+      <button type="button" onClick={checkPaymentPreflight} disabled={preflightLoading||saving||bookingBusy||!(order.payment_method==='cashfree'||(isCod&&advance>0))} className="rounded-lg border border-emerald-700 px-4 py-3 text-sm font-semibold disabled:opacity-50">{preflightLoading?'Checking Cashfree…':'Verify Cashfree Payment (read only)'}</button>
       {preflightResult&&<p role="status" aria-live="polite" className="rounded-lg border p-3 text-sm">{preflightResult}</p>}
       <p className="text-xs font-medium text-red-700">Booking, AWB and pickup remain disabled. This preflight uses read-only order data and does not authorize dispatch.</p>
      </div>
@@ -194,7 +203,7 @@ export default function IndiaShippingDashboard(){
        {([["Delivery PIN",pin,setPin,"700016"],["Weight (kg)",weight,setWeight,"0.5"],["Length (cm)",length,setLength,"15"],["Breadth (cm)",breadth,setBreadth,"10"],["Height (cm)",height,setHeight,"5"]] as const).map(([title,value,setter,placeholder])=><label key={title} className="flex flex-col gap-1 text-sm">{title}<input className="w-full rounded-lg border p-3" value={value} onChange={e=>setter(e.target.value)} placeholder={placeholder} inputMode={title==="Delivery PIN"?"numeric":"decimal"}/></label>)}
       </div>
       <label className="flex flex-col gap-1 text-sm">Packing notes (optional)<textarea className="rounded-lg border p-3" maxLength={500} rows={2} value={notes} onChange={e=>setNotes(e.target.value)} /></label>
-      <button type="button" onClick={savePreparation} disabled={saving||!selected||Boolean(shipment?.awb||shipment?.external_shipment_id)} className="rounded-lg bg-emerald-700 px-5 py-3 font-semibold text-white disabled:opacity-50">{saving?"Saving…":"Save Preparation Draft"}</button>
+      <button type="button" onClick={savePreparation} disabled={saving||bookingBusy||!selected||Boolean(shipment?.awb||shipment?.external_shipment_id)} className="rounded-lg bg-emerald-700 px-5 py-3 font-semibold text-white disabled:opacity-50">{saving?"Saving…":"Save Preparation Draft"}</button>
       {saveMessage&&<p role="status" aria-live="polite" className="rounded-lg border p-3 text-sm">{saveMessage}</p>}
       {preparations.some(p=>p.order_id===selected)&&<p className="text-xs text-emerald-700">Saved draft available for this India order.</p>}
       {preparations.some(p=>p.order_id===selected&&(Number(p.weight_kg)<0.01||Number(p.length_cm)<1||Number(p.breadth_cm)<1||Number(p.height_cm)<1))&&<p role="alert" className="text-sm font-medium text-amber-700">Previously saved measurements are too small for a practical parcel. Correct and save them before any future shipment.</p>}
@@ -202,11 +211,12 @@ export default function IndiaShippingDashboard(){
      <div className="rounded-lg border p-4"><h3 className="font-semibold">Courier Selection</h3>
       <p className="mt-2 text-sm">Quote the selected India order using saved parcel measurements and server-stored payment amounts. Courier booking remains disabled.</p>
       <label className="mt-3 flex flex-col gap-1 text-sm">Verified pickup PIN<input inputMode="numeric" className="rounded-lg border p-3" value={pickupPin} onChange={e=>setPickupPin(e.target.value)} /></label>
-      <button type="button" className="mt-3 rounded-lg border border-emerald-700 px-4 py-3 text-sm font-semibold disabled:opacity-50" onClick={quoteSelectedOrder} disabled={quoteLoading||saving||!preparationReady}>{quoteLoading?'Checking eligible couriers…':'Find Cheapest Courier for This Order (quote only)'}</button>
+      <button type="button" className="mt-3 rounded-lg border border-emerald-700 px-4 py-3 text-sm font-semibold disabled:opacity-50" onClick={quoteSelectedOrder} disabled={quoteLoading||saving||bookingBusy||!preparationReady}>{quoteLoading?'Checking eligible couriers…':'Find Cheapest Courier for This Order (quote only)'}</button>
       {quote&&<p role="status" className="mt-3 font-semibold">Auto-recommended: {quote.name} · ₹{quote.estimatedCost.toFixed(2)}</p>}
       {quoteMessage&&<p role="status" className="mt-2 text-xs">{quoteMessage}</p>}
       <Link href="/admin/india-shipping/rates" className="mt-3 inline-block rounded-lg border px-4 py-2 text-sm">Compare Rates</Link>
      </div>
+     <SandboxBooking key={selected+"/"+String(preparation?.updated_at)} orderId={selected} pin={preparation?.delivery_pin??''} address={order.delivery_address??''} hasShipment={Boolean(shipment)} blocked={saving||preflightLoading||quoteLoading} onBusy={setBookingBusy} onBooked={refreshBooking} />
      <div className="rounded-lg border p-4"><h3 className="font-semibold">Tracking History</h3>
       {history.length===0?<p className="mt-2 text-sm">No events recorded for this order.</p>:<ol className="mt-3 space-y-2">{history.map((e,i)=><li key={i} className="border-l-2 pl-3 text-sm"><strong>{e.event_status||'Status update'}</strong><div className="text-gray-500">{formatDate(e.event_occurred_at||e.received_at)}</div></li>)}</ol>}
      </div>
