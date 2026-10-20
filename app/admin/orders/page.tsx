@@ -185,9 +185,22 @@ export default function AdminOrdersPage() {
         if (error || result?.success !== true)
           throw new Error(messages[result?.code] || 'Status সংরক্ষণ করা যায়নি। পেজ refresh করুন।');
       }
-      toast('অর্ডারের status ও history সংরক্ষণ হয়েছে');
-      setSelectedOrder(null);
-      await loadOrders();
+      // Keep the details and list mounted so filters and scroll position survive.
+      // The write is already confirmed; a failed read must not offer to repeat it.
+      let refreshedOrder: any = null;
+      try {
+        const {data, error} = await supabase.from('orders').select('*')
+          .eq('id', selectedOrder.id).eq('country_code', adminCountry).single();
+        if (!error) refreshedOrder = data;
+      } catch { /* Retain the confirmed status if the follow-up read is unavailable. */ }
+      const applySavedStatus = (order: any) => refreshedOrder || {
+        ...order, status: newStatus, order_status: newStatus,
+      };
+      setOrders(current => current.map(order => order.id === selectedOrder.id ? applySavedStatus(order) : order));
+      setSelectedOrder((current: any) => current?.id === selectedOrder.id ? applySavedStatus(current) : current);
+      setAuditRefreshKey(value => value + 1);
+      toast(refreshedOrder ? 'অর্ডারের status ও history সংরক্ষণ হয়েছে' :
+        'Status সংরক্ষণ হয়েছে। সর্বশেষ অন্যান্য তথ্য দেখতে পরে order আবার খুলুন।');
       return true;
     } catch (error) {
       toast(error instanceof Error ? error.message : 'Status পরিবর্তন করা যায়নি', 'error');
