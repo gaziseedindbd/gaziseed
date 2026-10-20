@@ -1,6 +1,6 @@
 # India Cashfree dispatch evidence: release record
 
-Status (2026-10-20): Sandbox verified; Production activation blocked on dedicated Production writer provisioning and coordinated deployment. This supersedes the earlier compatibility-schema prototype results. PR #277 remains draft.
+Status (2026-10-20): Sandbox verified. Production writer credential configured by the owner, read-only readiness checks passed, paired API v8 and activation migration deployed. Admin UI release follows through PR #277. This supersedes earlier blocked/prototype status.
 
 The API independently checks Cashfree order, successful payment and refunds before recording short-lived evidence through a dedicated database login. Only the service-role dispatch RPC can consume that evidence, after checking the stored active India admin and financial snapshot. Shipping, history and audit commit atomically. Immutable subject registration prevents method/status or intent-link downgrades from escaping the guard. Bangladesh paths are preserved.
 
@@ -33,3 +33,11 @@ Keep dispatch held. Redeploy the previous Edge function version and execute `dis
 ## Sandbox reproduction
 
 Use only `qqehtphbpypcmxliaiqd`. `production_port_sandbox_fixture_schema.sql` is a metadata-only fixture baseline; never run it in Production. The Sandbox adapter source is `sandbox-admin-dispatch-preview.ts.txt`. Enroll an existing synthetic auth user as an active India admin and implement the is_admin/current_admin_country auth helpers against auth.uid and stored admin context; do not grant direct client access to fixture tables. Apply prepare/activate, grant the existing Sandbox writer group membership, and run `supabase/tests/dispatch_evidence_public_port.sql` (always ends in rollback). The fixture contains no customer export or webhook credentials.
+
+## Production deployment evidence — 2026-10-20
+
+The owner configured a new password and CASHFREE_DISPATCH_WRITER_DATABASE_URL directly in Supabase. No credential value was read or committed. The read-only authenticated readiness probe returned HTTP 200 with database_connection, writer_identity, writer_rpc and cashfree_credentials_valid all true; Cashfree returned order_not_found (404) for a deliberately nonexistent order. No payment operation or order update was performed.
+
+The main cashfree-verify-dispatch function deployed as v8 with JWT verification enabled. Activation applied successfully; guard fingerprint is 8ca48b048f66a67385cf0e1c924e8b77. The zzz_guard_cashfree_verified_dispatch trigger is enabled on all order updates; subject registration is enabled. Client direct dispatch, writer order UPDATE and service-role evidence INSERT remain denied, with zero pending markers. Owner direct RPC invocation was denied in a rolled-back read-only negative test.
+
+Production Admin navigation redirected to the storefront because the browser has no active admin session. Therefore no authenticated verify-only smoke or real-order dispatch was performed in Production. These remain explicitly unverified; Sandbox real-component E2E is the evidence for shipping behavior. Do not mark a real order shipped merely to test deployment.
