@@ -156,7 +156,7 @@ export async function GET(request: Request) {
       messagesByConversation.set(message.conversation_id, list);
     }
 
-    const supportQueue = rows.map((handoff) => {
+    const supportQueue = rows.filter(handoff => conversationMap.has(handoff.conversation_id)).map((handoff) => {
       const conversation = conversationMap.get(handoff.conversation_id);
       const externalUserId = conversation?.external_user_id || null;
 
@@ -248,6 +248,7 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (conversationReadError) throw conversationReadError;
+    if (!conversation) return NextResponse.json({success: false, message: 'Conversation not found in the selected branch'}, {status: 404});
 
     if (body.action === 'claim') {
       const { error } = await sb
