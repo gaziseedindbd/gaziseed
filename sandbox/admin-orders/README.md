@@ -18,6 +18,7 @@ npm run typecheck
 
 Deploy only `dist/index.html`, `dist/app.js`, `dist/style.css`, `dist/sandbox.css`, and `dist/vercel.json` as a static Preview under the existing gaziseed Vercel project. Never promote it to Production. No project environment-variable changes are needed. Keep PR #277 draft/Production blocked; do not modify PR #276.
 
-Browser acceptance remains pending until the user signs in to this new Preview. Verify fake local paid/refund blocks, successful Sandbox payment verification and shipped update, persisted history/audit and replay protection using the actual component controls. Prior standalone harness/main-API successes do not by themselves certify this component integration.
+Component-level browser acceptance passed on 2026-10-20 after user login: original Verify button displayed VERIFIED PAID for an INR1 Sandbox prepaid payment; original shipped dropdown/Update persisted shipped status, note, one history and one local notification. Audit showed real evidence verification and dispatch rows on reopening. Refunded fixture stayed packed and repeated current-status update created no duplicates. See `supabase/reviews/real-admin-component-sandbox-results.md` for evidence and limits. Full Next.js Admin shell/auth/real-table integration and Production release remain blocked.
 
 Preview deployed: https://gaziseed-6zjcqdqmw-gazi-seed.vercel.app/
+
