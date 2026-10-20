@@ -1,6 +1,7 @@
 import { bookIndiaShipment, type BookingPorts, type BookingSnapshot } from './india-orchestrator';
+import {verifyIndiaPrepaidReadback} from './india-provider-readback';
 import { prepareIndiaShipment } from './india-prepare';
-import { IndiaCourierClient, loginIndiaCourier } from './india-client';
+import { IndiaCourierClient, loginIndiaCourier, INDIA_SANDBOX_COURIER_BASE } from './india-client';
 
 type Database = { rpc(name:string,args:Record<string,unknown>):PromiseLike<{data:any;error:any}> };
 type Environment = Record<string,string|undefined>;
@@ -15,6 +16,7 @@ export function createIndiaBookingApi(deps:{db:Database;authenticate(req:Request
   const sandbox=deps.env.SUPABASE_URL===SBX;
   if(!sandbox&&deps.env.SUPABASE_URL!==PROD)return reply({ok:false,code:'project_unavailable'},503);
   const simulated=sandbox&&deps.env.INDIA_SHIPPING_BOOKING_MODE==='sandbox_simulated';
+  const realSandbox=sandbox&&deps.env.INDIA_SHIPPING_BOOKING_MODE==='sandbox_provider';
   // Both settings remain absent/off in Production. Enable only after account contract/E2E review.
   const live=!sandbox&&deps.env.INDIA_SHIPPING_BOOKING_MODE==='live_prepaid'&&deps.env.INDIA_SHIPPING_PROVIDER_CONTRACT==='prepaid_v1_verified';
   let actor:string|null;
@@ -30,12 +32,12 @@ export function createIndiaBookingApi(deps:{db:Database;authenticate(req:Request
   const f=deps.fetch??fetch;
   try {
    if(body.action==='confirm_destination'){
-    if(!simulated&&!live)return reply({ok:false,code:'destination_workflow_disabled'},503);
+    if(!simulated&&!realSandbox&&!live)return reply({ok:false,code:'destination_workflow_disabled'},503);
     if(typeof body.city!=='string'||typeof body.state!=='string'||typeof body.postcode!=='string')return reply({ok:false,code:'invalid_destination'},400);
     await rpc('confirm_india_shipping_destination',{p_order:body.orderId,p_actor:actor,p_city:body.city,p_state:body.state,p_pin:body.postcode});
-    return reply({ok:true,confirmed:true,test_only:simulated});
+    return reply({ok:true,confirmed:true,test_only:sandbox});
    }
-   if(!simulated&&!live)return reply({ok:false,code:'live_booking_disabled'},503);
+   if(!simulated&&!realSandbox&&!live)return reply({ok:false,code:'live_booking_disabled'},503);
    const load=async(id:string):Promise<BookingSnapshot|null>=>{
     const context=await rpc('get_india_shipping_booking_context',{p_order:id,p_actor:actor});
     if(!context)return null;
@@ -60,18 +62,18 @@ export function createIndiaBookingApi(deps:{db:Database;authenticate(req:Request
     return {verified:true,gatewayOrderStatus:'PAID',currency:'INR',paidAmount:amount,refundClear:true,completedIntentCount:1};
    };
    let courier:IndiaCourierClient|undefined;
-   const provider=async()=>courier??=await loginIndiaCourier(deps.env.SHIPROCKET_API_EMAIL??'',deps.env.SHIPROCKET_API_PASSWORD??'');
+   const provider=async()=>courier??=await loginIndiaCourier(deps.env[realSandbox?'SHIPROCKET_SANDBOX_API_EMAIL':'SHIPROCKET_API_EMAIL']??'',deps.env[realSandbox?'SHIPROCKET_SANDBOX_API_PASSWORD':'SHIPROCKET_API_PASSWORD']??'',realSandbox?INDIA_SANDBOX_COURIER_BASE:undefined);
    const quote:BookingPorts['quote']=async s=>simulated?{data:{available_courier_companies:[{courier_company_id:900001,courier_name:'Sandbox simulated courier',rate:25,pickup_availability:1}]}}:(await provider()).serviceability(s.parcel);
    if(body.action==='preview'){
     const s=await load(body.orderId);if(!s)return reply({ok:false,code:'authoritative_context_incomplete'},409);
     const evidence=await verify(s),q=await quote(s);
     const plan=prepareIndiaShipment({...s,sourceOrderNumber:s.orderNumber,immutableRequestKey:s.requestKey,verifiedGateway:evidence,serviceabilityResponse:q,invoice:s.invoice});
     if(!plan)return reply({ok:false,code:'payment_parcel_or_provider_contract_blocked'},409);
-    return reply({ok:true,ready:true,test_only:simulated,courierId:plan.courierCompanyId,estimatedCost:plan.estimatedCourierCost,collectOnDelivery:plan.collectOnDelivery,bookingEnabled:simulated||live,shipmentCreated:false});
+    return reply({ok:true,ready:true,test_only:sandbox,provider_mode:simulated?'simulated':realSandbox?'shiprocket_sandbox':'live',courierId:plan.courierCompanyId,estimatedCost:plan.estimatedCourierCost,collectOnDelivery:plan.collectOnDelivery,bookingEnabled:simulated||realSandbox||live,shipmentCreated:false});
    }
    const s=await load(body.orderId);if(!s)return reply({ok:false,code:'authoritative_context_incomplete'},409);
    const numericId=Number.parseInt(s.orderId.replace(/-/g,'').slice(-10),16)+90000000;
-   const ports:BookingPorts={enabled:simulated||live,
+   const ports:BookingPorts={enabled:simulated||realSandbox||live,
     authorizeIndiaAdmin:async()=>{try{await rpc('get_india_shipping_booking_context',{p_order:body.orderId,p_actor:actor});return actor}catch{return null}},
     loadOrder:load,verifyCashfree:verify,quote,
     reserve:async snapshot=>rpc('reserve_india_shipping_booking',{p_order:snapshot.orderId,p_actor:actor,p_key:snapshot.requestKey}),
@@ -81,16 +83,14 @@ export function createIndiaBookingApi(deps:{db:Database;authenticate(req:Request
     verifyExternalOrder:async(order,shipment,snapshot)=>{
      if(simulated)return true;
      const result=await (await provider()).getOrder(order);
-     const data=result.data as Record<string,unknown>|undefined;
-     if(!data||Number(data.id)!==order||!Number.isFinite(Number(data.total))||Math.abs(Number(data.total)-Number(snapshot.order.final_amount))>0.01||String(data.payment_method).toLowerCase()!=='prepaid'||!Array.isArray(data.shipments))return false;
-     return data.shipments.some((s:Record<string,unknown>)=>Number(s.id)===shipment);
+     return verifyIndiaPrepaidReadback(result,order,shipment,snapshot);
     },
     assignAwb:async(id,c)=>simulated?{awb_assign_status:1,response:{data:{shipment_id:id,courier_company_id:c,awb_code:'SBX-'+id}}}:(await provider()).assignAwb(id,c),
     recordAwb:async(id,shipment,awb)=>rpc('record_india_shipping_awb',{p_shipment_id:id,p_external_shipment_id:String(shipment),p_awb:awb}),
     markReconcile:async id=>{await rpc('reconcile_india_shipping_booking',{p_id:id})},
    };
    const result=await bookIndiaShipment(body.orderId,ports);
-   return reply({...result,test_only:simulated,live_shipment_created:live&&result.ok,pickup_requested:false},result.ok?200:409);
+   return reply({...result,test_only:sandbox,provider_mode:simulated?'simulated':realSandbox?'shiprocket_sandbox':'live',live_shipment_created:live&&result.ok,pickup_requested:false},result.ok?200:409);
   }catch{return reply({ok:false,code:'shipping_operation_unavailable'},503)}
  };
 }

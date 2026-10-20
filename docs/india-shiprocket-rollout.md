@@ -33,7 +33,7 @@ Normal Admin JWT/UI booking verification is complete for the simulated Sandbox c
 
 ## Validation and environments
 
-41 TypeScript tests pass: API authorization/input boundaries, project gates, Cashfree currency/amount/payment/refund validation, booking success and duplicate rejection, immutable snapshot changes, provider readback mismatch, timeout and persistence reconciliation. Generated Deno core copies are checked against the shared source. Typecheck, targeted lint and the full Next.js build pass.
+45 TypeScript tests pass: API authorization/input boundaries, project gates, Cashfree currency/amount/payment/refund validation, booking success and duplicate rejection, immutable snapshot changes, provider readback mismatch, timeout and persistence reconciliation. Generated Deno core copies are checked against the shared source. Typecheck, targeted lint and the full Next.js build pass.
 
 50 real SQL checks pass in Sandbox with transaction fixtures rolled back. Coverage includes actor/branch permissions, authoritative context and invoice validation, stale destination, canonical request keys, reserved data immutability, duplicate claims, provider ID/AWB ordering and explicit pickup approval/replay rejection.
 
@@ -42,3 +42,13 @@ The draft migration chain, including 20261020074851_india_shipping_booking_guard
 PR #266 remains draft and unmerged. Main/Production, Bangladesh and PR #276 are unchanged by this work. Uncertain reserved/submitting/external_created records must be manually reconciled against their immutable provider request key; never reset a claim automatically.
 
 The remaining provider gate is concrete: Shiprocket redirected to /newlogin and no signed-in provider session was available. No provider write request was made. Official usage guidance warns that valid API requests affect real account data: https://apidocs-test.shiprocket.in/guides/usage-guidelines/. Obtain account-specific COD collection semantics and a provider-approved test procedure before enabling live creation/AWB. A documentation hostname containing test is not proof of a transactional Sandbox.
+
+## Actual Shiprocket Sandbox contract run
+
+The account now has enabled Sandbox access at sandbox.shiprocket.in, using api-sandbox.shiprocket.in. Live credentials were not reused. A synthetic pickup GAZI-SBX-ONLY / 110001 was created only there. Provider validation rejected an address without house/road information and a repeated-digit dummy phone; corrected synthetic input was accepted.
+
+Prepaid order 353206429 / shipment 352582290 was created with item subtotal INR500, shipping INR100, discount INR20. Readback confirmed total INR580, INR currency, prepaid method, original request key and a single `shipments` OBJECT. The draft guard is fixed to accept the documented object/array shapes while checking order/shipment identity, currency, invoice charges and item lines. Repeating the same create key returned the SAME order and shipment IDs.
+
+Partial-COD probe 353206430 / 352582291 supplied partial_cod_collected=120, but order readback did not expose a verified remaining-collection amount or advance field. Acceptance alone is not certification; COD stays blocked. Sandbox serviceability returned couriers with pickup_availability=0, so the automatic booking gate stayed blocked. A separate isolated prepaid AWB contract request encountered a connection failure; subsequent read-only reconciliation returned NEW with AWB null. No automatic AWB retry or pickup was sent. This is not an AWB success claim.
+
+A real-Sandbox transport option is prepared behind INDIA_SHIPPING_BOOKING_MODE=sandbox_provider, valid only on gaziseed-test. It requires SHIPROCKET_SANDBOX_API_EMAIL/PASSWORD and the test pickup configuration; login and all calls are restricted to the exact Sandbox API host. The mode is not enabled yet and the default remains simulation until the user securely supplies the Sandbox password. UI labels distinguish simulation from the real provider Sandbox. Production gates remain off.

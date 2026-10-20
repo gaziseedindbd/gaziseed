@@ -23,7 +23,7 @@ export default function IndiaShippingDashboard(){
   const {data,error}=await supabase.functions.invoke('india-shipping-admin-overview',{method:'POST',body:{}});
   if(error||data?.ok!==true)throw Error('Booking response received, but database readback failed. Refresh before any further action.');
   const saved=(data.shipments??[]).find((s:Shipment)=>s.order_id===selected);
-  if(!saved?.external_shipment_id||!saved.awb?.startsWith('SBX-'))throw Error('Sandbox shipment could not be confirmed in database. Do not retry.');
+  if(!saved?.external_shipment_id||!saved.awb?.trim())throw Error('Sandbox shipment could not be confirmed in database. Do not retry.');
   setShipments(data.shipments??[]);setEvents(data.events??[]);
  }
  function chooseOrder(id:string){if(saving||preflightLoading||quoteLoading||bookingBusy)return;setSelected(id);setQuote(null);setQuoteMessage('');setPreflightResult('');setSaveMessage('');setMobileDetails(true);window.scrollTo({top:0,behavior:'smooth'});}

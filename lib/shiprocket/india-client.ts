@@ -2,6 +2,8 @@
  * No pickup-request API is exposed here: packing approval is a separate workflow.
  */
 const BASE = "https://apiv2.shiprocket.in/v1/external";
+export const INDIA_SANDBOX_COURIER_BASE="https://api-sandbox.shiprocket.in/v1/external";
+function validBase(base:string){if(base!==BASE&&base!==INDIA_SANDBOX_COURIER_BASE)throw Error("Untrusted courier API host");return base;}
 export type ShipmentParcel = {
   pickupPostcode: string; deliveryPostcode: string;
   weightKg: number; lengthCm: number; breadthCm: number; heightCm: number;
@@ -26,11 +28,12 @@ async function jsonResponse(res: Response): Promise<JsonRecord> {
   return body as JsonRecord;
 }
 export class IndiaCourierClient {
-  constructor(private readonly token: string) {
+  constructor(private readonly token: string,private readonly base=BASE) {
+    validBase(base);
     if (!token) throw new Error("Missing shipping API authentication");
   }
   private async request(path: string, method: "GET" | "POST", body?: JsonRecord) {
-    const res = await fetch(BASE + path, {
+    const res = await fetch(this.base + path, {
       method,
       headers: { Authorization: "Bearer " + this.token, "Content-Type": "application/json" },
       ...(body ? { body: JSON.stringify(body) } : {}),
@@ -74,14 +77,14 @@ export class IndiaCourierClient {
     });
   }
 }
-export async function loginIndiaCourier(email: string, password: string) {
+export async function loginIndiaCourier(email: string, password: string, base=BASE) {
   if (!email || !password) throw new Error("Missing shipping API credentials");
-  const res = await fetch(BASE + "/auth/login", {
+  const res = await fetch(validBase(base) + "/auth/login", {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
     signal: AbortSignal.timeout(15000), cache: "no-store",
   });
   const result = await jsonResponse(res);
   if (typeof result.token !== "string" || !result.token) throw new Error("Missing shipping auth token");
-  return new IndiaCourierClient(result.token);
+  return new IndiaCourierClient(result.token,base);
 }
