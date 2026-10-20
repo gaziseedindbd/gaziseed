@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import {
   Bot,
@@ -58,6 +58,7 @@ type SupportQueueItem = {
 };
 
 type DashboardData = {
+  country_code: 'IN' | 'BD';
   messenger: { enabled: boolean; meta_configured: boolean; webhook_signature_required: boolean };
   settings: { is_enabled: boolean; provider: string | null; model: string | null; base_url: string | null; temperature: number | null; max_tokens: number | null; feature_flags: Record<string, boolean>; updated_at: string | null } | null;
   providers: Provider[];
@@ -105,7 +106,10 @@ export default function AIMessengerAdminPage() {
   const [error, setError] = useState('');
   const [supportQueue, setSupportQueue] = useState<SupportQueueItem[]>([]);
 
+  const requestVersion = useRef(0);
+
   async function load() {
+    const version = ++requestVersion.current;
     setLoading(true);
     setError('');
     try {
@@ -126,12 +130,13 @@ export default function AIMessengerAdminPage() {
         throw new Error(supportJson.message || 'Human support queue load failed');
       }
 
+      if (version !== requestVersion.current) return;
       setData(assistantJson);
       setSupportQueue(supportJson.support_queue || []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'AI Messenger data load failed');
+      if (version === requestVersion.current) setError(e instanceof Error ? e.message : 'AI Messenger data load failed');
     } finally {
-      setLoading(false);
+      if (version === requestVersion.current) setLoading(false);
     }
   }
 
@@ -161,7 +166,7 @@ export default function AIMessengerAdminPage() {
     void load();
     const handleBranchChange = () => { setData(null); setSupportQueue([]); void load(); };
     window.addEventListener('gazi-branch-change', handleBranchChange);
-    return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
+    return () => { requestVersion.current += 1; window.removeEventListener('gazi-branch-change', handleBranchChange); };
   }, []);
 
   if (loading && !data) return <div className="flex min-h-[420px] items-center justify-center"><RefreshCw className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -180,7 +185,7 @@ export default function AIMessengerAdminPage() {
       <div className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Bot className="h-6 w-6" /></div>
-          <div><h1 className="text-2xl font-bold">AI Messenger</h1><p className="mt-1 text-sm text-muted-foreground">Facebook Messenger AI-এর live monitoring center</p></div>
+          <div><h1 className="text-2xl font-bold">AI Messenger</h1><p className="mt-1 text-sm text-muted-foreground">Facebook Messenger AI-এর live monitoring center · {data.country_code === 'IN' ? '🇮🇳 India' : '🇧🇩 Bangladesh'}</p></div>
         </div>
         <button onClick={() => void load()} disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:bg-secondary disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh</button>
       </div>
@@ -269,7 +274,7 @@ export default function AIMessengerAdminPage() {
             <div className="flex items-center gap-2">
               <UserRound className="h-5 w-5 text-primary" />
               <div>
-                <h2 className="text-lg font-bold">Bangladesh Human Support Queue</h2>
+                <h2 className="text-lg font-bold">{data.country_code === 'IN' ? 'India' : 'Bangladesh'} Human Support Queue</h2>
                 <p className="text-sm text-muted-foreground">Customer request → pending → agent takeover → closed</p>
               </div>
             </div>
@@ -280,7 +285,7 @@ export default function AIMessengerAdminPage() {
 
           <div className="space-y-4">
             {supportQueue.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No Bangladesh human-support requests yet.</p>
+              <p className="text-sm text-muted-foreground">No {data.country_code === 'IN' ? 'India' : 'Bangladesh'} human-support requests yet.</p>
             ) : (
               supportQueue.map((handoff) => (
                 <div key={handoff.id} className="rounded-2xl border border-border p-4">
