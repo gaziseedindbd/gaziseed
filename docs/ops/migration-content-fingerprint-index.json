@@ -1,0 +1,1237 @@
+{
+  "algorithm": "SQL lexical token sequence + FNV-1a 64-bit; whitespace and SQL comments ignored; quoted string tokens preserved",
+  "entries": [
+    {
+      "version": "20260801130143",
+      "name": "create_core_schema",
+      "filename": "20260801130143_create_core_schema.sql",
+      "path": "supabase/migrations/20260801130143_create_core_schema.sql",
+      "fnv64": "2a60bbef77d5372d",
+      "tokens": 2769,
+      "chars": 18489,
+      "hasContent": true
+    },
+    {
+      "version": "20260801130235",
+      "name": "create_rls_and_order_function",
+      "filename": "20260801130235_create_rls_and_order_function.sql",
+      "path": "supabase/migrations/20260801130235_create_rls_and_order_function.sql",
+      "fnv64": "a13971422096fe59",
+      "tokens": 1726,
+      "chars": 20349,
+      "hasContent": true
+    },
+    {
+      "version": "20260801134623",
+      "name": "add_ads_landing_system",
+      "filename": "20260801134623_add_ads_landing_system.sql",
+      "path": "supabase/migrations/20260801134623_add_ads_landing_system.sql",
+      "fnv64": "575135b88aadd9d7",
+      "tokens": 269,
+      "chars": 2894,
+      "hasContent": true
+    },
+    {
+      "version": "20260802023332",
+      "name": "add_landing_content_seo_fields",
+      "filename": "20260802023332_add_landing_content_seo_fields.sql",
+      "path": "supabase/migrations/20260802023332_add_landing_content_seo_fields.sql",
+      "fnv64": "dc2df8e5f478f3b3",
+      "tokens": 428,
+      "chars": 3459,
+      "hasContent": true
+    },
+    {
+      "version": "20260802023348",
+      "name": "add_storage_policies",
+      "filename": "20260802023348_add_storage_policies.sql",
+      "path": "supabase/migrations/20260802023348_add_storage_policies.sql",
+      "fnv64": "a7a8b2ab144367e3",
+      "tokens": 87,
+      "chars": 858,
+      "hasContent": true
+    },
+    {
+      "version": "20260802023552",
+      "name": "fix_create_order_bundle_stock",
+      "filename": "20260802023552_fix_create_order_bundle_stock.sql",
+      "path": "supabase/migrations/20260802023552_fix_create_order_bundle_stock.sql",
+      "fnv64": "6e26d8a9c38c46df",
+      "tokens": 94,
+      "chars": 7164,
+      "hasContent": true
+    },
+    {
+      "version": "20260802024630",
+      "name": "add_quantity_offers_table",
+      "filename": "20260802024630_add_quantity_offers_table.sql",
+      "path": "supabase/migrations/20260802024630_add_quantity_offers_table.sql",
+      "fnv64": "6263d86abf9aec92",
+      "tokens": 234,
+      "chars": 1894,
+      "hasContent": true
+    },
+    {
+      "version": "20260802024653",
+      "name": "update_create_order_quantity_offers",
+      "filename": "20260802024653_update_create_order_quantity_offers.sql",
+      "path": "supabase/migrations/20260802024653_update_create_order_quantity_offers.sql",
+      "fnv64": "22a2671a757cd206",
+      "tokens": 94,
+      "chars": 8989,
+      "hasContent": true
+    },
+    {
+      "version": "20260803004029",
+      "name": "fix_order_items_quantity_offer_and_address_fields",
+      "filename": "20260803004029_fix_order_items_quantity_offer_and_address_fields.sql",
+      "path": "supabase/migrations/20260803004029_fix_order_items_quantity_offer_and_address_fields.sql",
+      "fnv64": "1f6288247596bca1",
+      "tokens": 88,
+      "chars": 743,
+      "hasContent": true
+    },
+    {
+      "version": "20260803004049",
+      "name": "fix_create_order_quantity_offer_id",
+      "filename": "20260803004049_fix_create_order_quantity_offer_id.sql",
+      "path": "supabase/migrations/20260803004049_fix_create_order_quantity_offer_id.sql",
+      "fnv64": "cd03964272156d60",
+      "tokens": 94,
+      "chars": 8368,
+      "hasContent": true
+    },
+    {
+      "version": "20260803014748",
+      "name": "add_admin_audit_log_and_master_admin",
+      "filename": "20260803014748_add_admin_audit_log_and_master_admin.sql",
+      "path": "supabase/migrations/20260803014748_add_admin_audit_log_and_master_admin.sql",
+      "fnv64": "b67747180a5326de",
+      "tokens": 240,
+      "chars": 3889,
+      "hasContent": true
+    },
+    {
+      "version": "20260803020458",
+      "name": "add_review_management_and_master_admin",
+      "filename": "20260803020458_add_review_management_and_master_admin.sql",
+      "path": "supabase/migrations/20260803020458_add_review_management_and_master_admin.sql",
+      "fnv64": "e7d4d20a3d2d43ef",
+      "tokens": 271,
+      "chars": 3218,
+      "hasContent": true
+    },
+    {
+      "version": "20260803021435",
+      "name": "fix_reviews_rls_and_contact_messages",
+      "filename": "20260803021435_fix_reviews_rls_and_contact_messages.sql",
+      "path": "supabase/migrations/20260803021435_fix_reviews_rls_and_contact_messages.sql",
+      "fnv64": "7b9bb61ef773a558",
+      "tokens": 183,
+      "chars": 2519,
+      "hasContent": true
+    },
+    {
+      "version": "20260804011846",
+      "name": "add_growth_features_tables",
+      "filename": "20260804011846_add_growth_features_tables.sql",
+      "path": "supabase/migrations/20260804011846_add_growth_features_tables.sql",
+      "fnv64": "ce7796a10a36b6e8",
+      "tokens": 1477,
+      "chars": 10851,
+      "hasContent": true
+    },
+    {
+      "version": "20260804013805",
+      "name": "add_sales_operations_upgrade",
+      "filename": "20260804013805_add_sales_operations_upgrade.sql",
+      "path": "supabase/migrations/20260804013805_add_sales_operations_upgrade.sql",
+      "fnv64": "0c0b0255dd48a289",
+      "tokens": 1602,
+      "chars": 10984,
+      "hasContent": true
+    },
+    {
+      "version": "20260809193316",
+      "name": "final_master_upgrade",
+      "filename": "20260809193316_final_master_upgrade.sql",
+      "path": "supabase/migrations/20260809193316_final_master_upgrade.sql",
+      "fnv64": "093dc0c86a3fa085",
+      "tokens": 371,
+      "chars": 3248,
+      "hasContent": true
+    },
+    {
+      "version": "20260809195055",
+      "name": "rebrand_to_seed_bari",
+      "filename": "20260809195055_rebrand_to_seed_bari.sql",
+      "path": "supabase/migrations/20260809195055_rebrand_to_seed_bari.sql",
+      "fnv64": "af87ccf48c044188",
+      "tokens": 21,
+      "chars": 528,
+      "hasContent": true
+    },
+    {
+      "version": "20260809202738",
+      "name": "add_ai_settings_foundation",
+      "filename": "20260809202738_add_ai_settings_foundation.sql",
+      "path": "supabase/migrations/20260809202738_add_ai_settings_foundation.sql",
+      "fnv64": "bc8e754729f3eb61",
+      "tokens": 337,
+      "chars": 3864,
+      "hasContent": true
+    },
+    {
+      "version": "20260809205944",
+      "name": "add_themes_popups_notifications",
+      "filename": "20260809205944_add_themes_popups_notifications.sql",
+      "path": "supabase/migrations/20260809205944_add_themes_popups_notifications.sql",
+      "fnv64": "d2a35d38cac8192b",
+      "tokens": 403,
+      "chars": 3517,
+      "hasContent": true
+    },
+    {
+      "version": "20260809212905",
+      "name": "clear_old_products_preserve_reviews_inventory",
+      "filename": "20260809212905_clear_old_products_preserve_reviews_inventory.sql",
+      "path": "supabase/migrations/20260809212905_clear_old_products_preserve_reviews_inventory.sql",
+      "fnv64": "6ec5fe4b5c9dc4c4",
+      "tokens": 124,
+      "chars": 1945,
+      "hasContent": true
+    },
+    {
+      "version": "20260810184101",
+      "name": "add_watermark_settings",
+      "filename": "20260810184101_add_watermark_settings.sql",
+      "path": "supabase/migrations/20260810184101_add_watermark_settings.sql",
+      "fnv64": "5ccd4c5ff1fae6b9",
+      "tokens": 75,
+      "chars": 564,
+      "hasContent": true
+    },
+    {
+      "version": "20260812205315",
+      "name": "20260812190000_add_referral_program_foundation",
+      "filename": "20260812205315_20260812190000_add_referral_program_foundation.sql",
+      "path": "supabase/migrations/20260812205315_20260812190000_add_referral_program_foundation.sql",
+      "fnv64": "466ded2effb40e0d",
+      "tokens": 874,
+      "chars": 11355,
+      "hasContent": true
+    },
+    {
+      "version": "20260812205724",
+      "name": "20260812210000_add_referral_code_auto_generation",
+      "filename": "20260812205724_20260812210000_add_referral_code_auto_generation.sql",
+      "path": "supabase/migrations/20260812205724_20260812210000_add_referral_code_auto_generation.sql",
+      "fnv64": "df711f67986f892d",
+      "tokens": 81,
+      "chars": 4841,
+      "hasContent": true
+    },
+    {
+      "version": "20260812211208",
+      "name": "add_referral_terms_column",
+      "filename": "20260812211208_add_referral_terms_column.sql.sql",
+      "path": "supabase/migrations/20260812211208_add_referral_terms_column.sql.sql",
+      "fnv64": "627fbfc5490d0266",
+      "tokens": 11,
+      "chars": 69,
+      "hasContent": true
+    },
+    {
+      "version": "20260812211600",
+      "name": "add_referral_qualification_logic",
+      "filename": "20260812211600_add_referral_qualification_logic.sql.sql",
+      "path": "supabase/migrations/20260812211600_add_referral_qualification_logic.sql.sql",
+      "fnv64": "6b4832fc6d6f8313",
+      "tokens": 97,
+      "chars": 3814,
+      "hasContent": true
+    },
+    {
+      "version": "20260812212031",
+      "name": "add_referral_reward_calculation",
+      "filename": "20260812212031_add_referral_reward_calculation.sql.sql",
+      "path": "supabase/migrations/20260812212031_add_referral_reward_calculation.sql.sql",
+      "fnv64": "5cfaf1ea6d614f60",
+      "tokens": 76,
+      "chars": 3112,
+      "hasContent": true
+    },
+    {
+      "version": "20260812212843",
+      "name": "add_referral_reward_issue_ledger",
+      "filename": "20260812212843_add_referral_reward_issue_ledger.sql.sql",
+      "path": "supabase/migrations/20260812212843_add_referral_reward_issue_ledger.sql.sql",
+      "fnv64": "305690316d6f8dfe",
+      "tokens": 55,
+      "chars": 3397,
+      "hasContent": true
+    },
+    {
+      "version": "20260812212916",
+      "name": "fix_reward_ledger_trigger_timing",
+      "filename": "20260812212916_fix_reward_ledger_trigger_timing.sql.sql",
+      "path": "supabase/migrations/20260812212916_fix_reward_ledger_trigger_timing.sql.sql",
+      "fnv64": "1c5a4deae0070737",
+      "tokens": 24,
+      "chars": 497,
+      "hasContent": true
+    },
+    {
+      "version": "20260814204631",
+      "name": "fix_referral_trigger_search_path",
+      "filename": "20260814204631_fix_referral_trigger_search_path.sql",
+      "path": "supabase/migrations/20260814204631_fix_referral_trigger_search_path.sql",
+      "fnv64": "68799f1f3b7f016e",
+      "tokens": 38,
+      "chars": 566,
+      "hasContent": true
+    },
+    {
+      "version": "20260815114254",
+      "name": "create_fresh_master_admin_account",
+      "filename": "20260815114254_create_fresh_master_admin_account.sql",
+      "path": "supabase/migrations/20260815114254_create_fresh_master_admin_account.sql",
+      "fnv64": "8301fbf67175dcd7",
+      "tokens": 124,
+      "chars": 1689,
+      "hasContent": true
+    },
+    {
+      "version": "20260815114950",
+      "name": "create_product_images_bucket",
+      "filename": "20260815114950_create_product_images_bucket.sql",
+      "path": "supabase/migrations/20260815114950_create_product_images_bucket.sql",
+      "fnv64": "a3081e2a2d749b8a",
+      "tokens": 87,
+      "chars": 1704,
+      "hasContent": true
+    },
+    {
+      "version": "20260817020243",
+      "name": "create_master_admin_seedbari_account",
+      "filename": "20260817020243_create_master_admin_seedbari_account.sql",
+      "path": "supabase/migrations/20260817020243_create_master_admin_seedbari_account.sql",
+      "fnv64": "317ec4942c2b2331",
+      "tokens": 156,
+      "chars": 1751,
+      "hasContent": true
+    },
+    {
+      "version": "20260817020658",
+      "name": "fix_admin_rpc_search_path",
+      "filename": "20260817020658_fix_admin_rpc_search_path.sql",
+      "path": "supabase/migrations/20260817020658_fix_admin_rpc_search_path.sql",
+      "fnv64": "07bb89eab0fff7e9",
+      "tokens": 78,
+      "chars": 1604,
+      "hasContent": true
+    },
+    {
+      "version": "20260817044128",
+      "name": "20260812212031_add_referral_reward_calculation",
+      "filename": "20260817044128_20260812212031_add_referral_reward_calculation.sql.sql.sql",
+      "path": "supabase/migrations/20260817044128_20260812212031_add_referral_reward_calculation.sql.sql.sql",
+      "fnv64": "5cfaf1ea6d614f60",
+      "tokens": 76,
+      "chars": 1941,
+      "hasContent": true
+    },
+    {
+      "version": "20260817044137",
+      "name": "20260812212843_add_referral_reward_issue_ledger",
+      "filename": "20260817044137_20260812212843_add_referral_reward_issue_ledger.sql.sql.sql",
+      "path": "supabase/migrations/20260817044137_20260812212843_add_referral_reward_issue_ledger.sql.sql.sql",
+      "fnv64": "305690316d6f8dfe",
+      "tokens": 55,
+      "chars": 1981,
+      "hasContent": true
+    },
+    {
+      "version": "20260817044143",
+      "name": "20260812212916_fix_reward_ledger_trigger_timing",
+      "filename": "20260817044143_20260812212916_fix_reward_ledger_trigger_timing.sql.sql.sql",
+      "path": "supabase/migrations/20260817044143_20260812212916_fix_reward_ledger_trigger_timing.sql.sql.sql",
+      "fnv64": "1c5a4deae0070737",
+      "tokens": 24,
+      "chars": 212,
+      "hasContent": true
+    },
+    {
+      "version": "20260817044149",
+      "name": "20260814204631_fix_referral_trigger_search_path",
+      "filename": "20260817044149_20260814204631_fix_referral_trigger_search_path.sql.sql",
+      "path": "supabase/migrations/20260817044149_20260814204631_fix_referral_trigger_search_path.sql.sql",
+      "fnv64": "68799f1f3b7f016e",
+      "tokens": 38,
+      "chars": 238,
+      "hasContent": true
+    },
+    {
+      "version": "20260817044158",
+      "name": "20260815114254_create_fresh_master_admin_account",
+      "filename": "20260817044158_20260815114254_create_fresh_master_admin_account.sql.sql",
+      "path": "supabase/migrations/20260817044158_20260815114254_create_fresh_master_admin_account.sql.sql",
+      "fnv64": "8301fbf67175dcd7",
+      "tokens": 124,
+      "chars": 749,
+      "hasContent": true
+    },
+    {
+      "version": "20260817044206",
+      "name": "20260815114950_create_product_images_bucket",
+      "filename": "20260817044206_20260815114950_create_product_images_bucket.sql.sql",
+      "path": "supabase/migrations/20260817044206_20260815114950_create_product_images_bucket.sql.sql",
+      "fnv64": "a3081e2a2d749b8a",
+      "tokens": 87,
+      "chars": 464,
+      "hasContent": true
+    },
+    {
+      "version": "20260817044213",
+      "name": "20260817020243_create_master_admin_seedbari_account",
+      "filename": "20260817044213_20260817020243_create_master_admin_seedbari_account.sql.sql",
+      "path": "supabase/migrations/20260817044213_20260817020243_create_master_admin_seedbari_account.sql.sql",
+      "fnv64": "317ec4942c2b2331",
+      "tokens": 156,
+      "chars": 940,
+      "hasContent": true
+    },
+    {
+      "version": "20260817044220",
+      "name": "20260817020658_fix_admin_rpc_search_path",
+      "filename": "20260817044220_20260817020658_fix_admin_rpc_search_path.sql.sql",
+      "path": "supabase/migrations/20260817044220_20260817020658_fix_admin_rpc_search_path.sql.sql",
+      "fnv64": "07bb89eab0fff7e9",
+      "tokens": 78,
+      "chars": 677,
+      "hasContent": true
+    },
+    {
+      "version": "20260824012900",
+      "name": "secure_offer_order_dispatch",
+      "filename": "20260824012900_secure_offer_order_dispatch.sql",
+      "path": "supabase/migrations/20260824012900_secure_offer_order_dispatch.sql",
+      "fnv64": "dfb5855e59732205",
+      "tokens": 74,
+      "chars": 2283,
+      "hasContent": true
+    },
+    {
+      "version": "20260824015000",
+      "name": "remove_legacy_delivery_zone_order_rpc",
+      "filename": "20260824015000_remove_legacy_delivery_zone_order_rpc.sql",
+      "path": "supabase/migrations/20260824015000_remove_legacy_delivery_zone_order_rpc.sql",
+      "fnv64": "3644d7bc71686c5c",
+      "tokens": 37,
+      "chars": 434,
+      "hasContent": true
+    },
+    {
+      "version": "20260824020000",
+      "name": "enforce_single_master_admin",
+      "filename": "20260824020000_enforce_single_master_admin.sql",
+      "path": "supabase/migrations/20260824020000_enforce_single_master_admin.sql",
+      "fnv64": "f60e54373fc32fdb",
+      "tokens": 19,
+      "chars": 411,
+      "hasContent": true
+    },
+    {
+      "version": "20260824023000",
+      "name": "harden_last_master_admin_guard",
+      "filename": "20260824023000_harden_last_master_admin_guard.sql",
+      "path": "supabase/migrations/20260824023000_harden_last_master_admin_guard.sql",
+      "fnv64": "c59d0a3b821238df",
+      "tokens": 78,
+      "chars": 1845,
+      "hasContent": true
+    },
+    {
+      "version": "20260824024500",
+      "name": "restrict_admin_helper_rpc",
+      "filename": "20260824024500_restrict_admin_helper_rpc.sql",
+      "path": "supabase/migrations/20260824024500_restrict_admin_helper_rpc.sql",
+      "fnv64": "a0d27da54be9b1f5",
+      "tokens": 28,
+      "chars": 293,
+      "hasContent": true
+    },
+    {
+      "version": "20260824031000",
+      "name": "fix_addresses_rls",
+      "filename": "20260824031000_fix_addresses_rls.sql",
+      "path": "supabase/migrations/20260824031000_fix_addresses_rls.sql",
+      "fnv64": "11d9551cd042ff59",
+      "tokens": 43,
+      "chars": 431,
+      "hasContent": true
+    },
+    {
+      "version": "20260824033000",
+      "name": "harden_customers_rls",
+      "filename": "20260824033000_harden_customers_rls.sql",
+      "path": "supabase/migrations/20260824033000_harden_customers_rls.sql",
+      "fnv64": "9246d40a3e235bbc",
+      "tokens": 35,
+      "chars": 425,
+      "hasContent": true
+    },
+    {
+      "version": "20260824035000",
+      "name": "harden_legacy_delivery_rls",
+      "filename": "20260824035000_harden_legacy_delivery_rls.sql",
+      "path": "supabase/migrations/20260824035000_harden_legacy_delivery_rls.sql",
+      "fnv64": "e0d79464aafe07fa",
+      "tokens": 70,
+      "chars": 680,
+      "hasContent": true
+    },
+    {
+      "version": "20260824041000",
+      "name": "harden_order_user_ownership",
+      "filename": "20260824041000_harden_order_user_ownership.sql",
+      "path": "supabase/migrations/20260824041000_harden_order_user_ownership.sql",
+      "fnv64": "d640d4fbe59bddc8",
+      "tokens": 56,
+      "chars": 843,
+      "hasContent": true
+    },
+    {
+      "version": "20260824043000",
+      "name": "harden_last_master_admin_privilege",
+      "filename": "20260824043000_harden_last_master_admin_privilege.sql",
+      "path": "supabase/migrations/20260824043000_harden_last_master_admin_privilege.sql",
+      "fnv64": "b2e7798f843bdb70",
+      "tokens": 50,
+      "chars": 466,
+      "hasContent": true
+    },
+    {
+      "version": "20260824044500",
+      "name": "restrict_order_ownership_trigger",
+      "filename": "20260824044500_restrict_order_ownership_trigger.sql",
+      "path": "supabase/migrations/20260824044500_restrict_order_ownership_trigger.sql",
+      "fnv64": "0415a342079915a4",
+      "tokens": 50,
+      "chars": 461,
+      "hasContent": true
+    },
+    {
+      "version": "20260824050000",
+      "name": "harden_auto_confirm_user",
+      "filename": "20260824050000_harden_auto_confirm_user.sql",
+      "path": "supabase/migrations/20260824050000_harden_auto_confirm_user.sql",
+      "fnv64": "f695290fe15682a3",
+      "tokens": 62,
+      "chars": 510,
+      "hasContent": true
+    },
+    {
+      "version": "20260824052000",
+      "name": "harden_update_updated_at",
+      "filename": "20260824052000_harden_update_updated_at.sql",
+      "path": "supabase/migrations/20260824052000_harden_update_updated_at.sql",
+      "fnv64": "b1fafafaa1a4bd3e",
+      "tokens": 62,
+      "chars": 443,
+      "hasContent": true
+    },
+    {
+      "version": "20260824053500",
+      "name": "harden_set_order_number",
+      "filename": "20260824053500_harden_set_order_number.sql",
+      "path": "supabase/migrations/20260824053500_harden_set_order_number.sql",
+      "fnv64": "da1ce67d7919b0a4",
+      "tokens": 62,
+      "chars": 449,
+      "hasContent": true
+    },
+    {
+      "version": "20260824054500",
+      "name": "harden_calculate_delivery_charge",
+      "filename": "20260824054500_harden_calculate_delivery_charge.sql",
+      "path": "supabase/migrations/20260824054500_harden_calculate_delivery_charge.sql",
+      "fnv64": "4568294c9caeb4e5",
+      "tokens": 15,
+      "chars": 231,
+      "hasContent": true
+    },
+    {
+      "version": "20260824055500",
+      "name": "harden_is_admin_search_path",
+      "filename": "20260824055500_harden_is_admin_search_path.sql",
+      "path": "supabase/migrations/20260824055500_harden_is_admin_search_path.sql",
+      "fnv64": "fef4c0e3b499eef3",
+      "tokens": 12,
+      "chars": 197,
+      "hasContent": true
+    },
+    {
+      "version": "20260824061000",
+      "name": "harden_is_master_admin_search_path",
+      "filename": "20260824061000_harden_is_master_admin_search_path.sql",
+      "path": "supabase/migrations/20260824061000_harden_is_master_admin_search_path.sql",
+      "fnv64": "9b044e758faace36",
+      "tokens": 12,
+      "chars": 211,
+      "hasContent": true
+    },
+    {
+      "version": "20260824063000",
+      "name": "harden_public_order_user_identity",
+      "filename": "20260824063000_harden_public_order_user_identity.sql",
+      "path": "supabase/migrations/20260824063000_harden_public_order_user_identity.sql",
+      "fnv64": "8b6e70bb05b40ea6",
+      "tokens": 72,
+      "chars": 1067,
+      "hasContent": true
+    },
+    {
+      "version": "20260824065000",
+      "name": "fix_combo_order_item_line_total",
+      "filename": "20260824065000_fix_combo_order_item_line_total.sql",
+      "path": "supabase/migrations/20260824065000_fix_combo_order_item_line_total.sql",
+      "fnv64": "584b0626af38b304",
+      "tokens": 64,
+      "chars": 4494,
+      "hasContent": true
+    },
+    {
+      "version": "20260824090000",
+      "name": "add_feature_toggle_columns",
+      "filename": "20260824090000_add_feature_toggle_columns.sql",
+      "path": "supabase/migrations/20260824090000_add_feature_toggle_columns.sql",
+      "fnv64": "5803cd8a0239c50f",
+      "tokens": 125,
+      "chars": 788,
+      "hasContent": true
+    },
+    {
+      "version": "20260824104500",
+      "name": "harden_rls_auth_initplan",
+      "filename": "20260824104500_harden_rls_auth_initplan.sql",
+      "path": "supabase/migrations/20260824104500_harden_rls_auth_initplan.sql",
+      "fnv64": "3ffa7051c2e1ad72",
+      "tokens": 133,
+      "chars": 931,
+      "hasContent": true
+    },
+    {
+      "version": "20260824220000",
+      "name": "referral_reward_safety",
+      "filename": "20260824220000_referral_reward_safety.sql",
+      "path": "supabase/migrations/20260824220000_referral_reward_safety.sql",
+      "fnv64": "cbf29ce484222325",
+      "tokens": 0,
+      "chars": 309,
+      "hasContent": true
+    },
+    {
+      "version": "20260824221500",
+      "name": "referral_reward_issuance",
+      "filename": "20260824221500_referral_reward_issuance.sql",
+      "path": "supabase/migrations/20260824221500_referral_reward_issuance.sql",
+      "fnv64": "cbf29ce484222325",
+      "tokens": 0,
+      "chars": 285,
+      "hasContent": true
+    },
+    {
+      "version": "20260824230000",
+      "name": "complete_referral_program",
+      "filename": "20260824230000_complete_referral_program.sql",
+      "path": "supabase/migrations/20260824230000_complete_referral_program.sql",
+      "fnv64": "df8bc8fa20d3520f",
+      "tokens": 1216,
+      "chars": 12845,
+      "hasContent": true
+    },
+    {
+      "version": "20260825041143",
+      "name": "harden_storage_object_policies",
+      "filename": "20260825041143_harden_storage_object_policies.sql",
+      "path": "supabase/migrations/20260825041143_harden_storage_object_policies.sql",
+      "fnv64": "de87d2ae38c48b2e",
+      "tokens": 286,
+      "chars": 1974,
+      "hasContent": true
+    },
+    {
+      "version": "20260825093000",
+      "name": "fix_referral_wallet_balance_ledger_usage",
+      "filename": "20260825093000_fix_referral_wallet_balance_ledger_usage.sql",
+      "path": "supabase/migrations/20260825093000_fix_referral_wallet_balance_ledger_usage.sql",
+      "fnv64": "8dc91090f31e2fec",
+      "tokens": 25,
+      "chars": 854,
+      "hasContent": true
+    },
+    {
+      "version": "20260929140000",
+      "name": "add_messenger_customer_profiles",
+      "filename": "20260929140000_add_messenger_customer_profiles.sql",
+      "path": "supabase/migrations/20260929140000_add_messenger_customer_profiles.sql",
+      "fnv64": "08ffa4d337beab98",
+      "tokens": 342,
+      "chars": 2384,
+      "hasContent": true,
+      "productionFingerprintMatch": {
+        "productionVersion": "20260929132935",
+        "productionName": "20260929140000_add_messenger_customer_profiles",
+        "matchType": "EXACT_SQL_TOKEN_FINGERPRINT",
+        "note": "same SQL token fingerprint; filename/version differs"
+      }
+    },
+    {
+      "version": "20260929145000",
+      "name": "messenger_rate_limit_abuse_protection",
+      "filename": "20260929145000_messenger_rate_limit_abuse_protection.sql",
+      "path": "supabase/migrations/20260929145000_messenger_rate_limit_abuse_protection.sql",
+      "fnv64": "9050fc64b0d7464e",
+      "tokens": 380,
+      "chars": 8959,
+      "hasContent": true
+    },
+    {
+      "version": "20260929170000",
+      "name": "messenger_product_search_optimization",
+      "filename": "20260929170000_messenger_product_search_optimization.sql",
+      "path": "supabase/migrations/20260929170000_messenger_product_search_optimization.sql",
+      "fnv64": "700f4b3b6c242f7a",
+      "tokens": 481,
+      "chars": 7449,
+      "hasContent": true,
+      "productionFingerprintMatch": {
+        "productionVersion": "20260929140411",
+        "productionName": "20260929170000_messenger_product_search_optimization",
+        "matchType": "EXACT_SQL_TOKEN_FINGERPRINT",
+        "note": "same SQL token fingerprint; filename/version differs"
+      }
+    },
+    {
+      "version": "20261001173000",
+      "name": "preserve_cashfree_order_source",
+      "filename": "20261001173000_preserve_cashfree_order_source.sql",
+      "path": "supabase/migrations/20261001173000_preserve_cashfree_order_source.sql",
+      "fnv64": "eca218cea5b6b77e",
+      "tokens": 129,
+      "chars": 10329,
+      "hasContent": true,
+      "productionFingerprintMatch": {
+        "productionVersion": "20261001171349",
+        "productionName": "preserve_cashfree_order_source",
+        "matchType": "EXACT_SQL_TOKEN_FINGERPRINT",
+        "note": "same SQL token fingerprint; filename/version differs"
+      }
+    },
+    {
+      "version": "20261003100000",
+      "name": "harden_public_rpc_rate_limits",
+      "filename": "20261003100000_harden_public_rpc_rate_limits.sql",
+      "path": "supabase/migrations/20261003100000_harden_public_rpc_rate_limits.sql",
+      "fnv64": "4af20fb62805daf3",
+      "tokens": 402,
+      "chars": 9613,
+      "hasContent": true
+    },
+    {
+      "version": "20261003210000",
+      "name": "add_meta_ads_insights",
+      "filename": "20261003210000_add_meta_ads_insights.sql",
+      "path": "supabase/migrations/20261003210000_add_meta_ads_insights.sql",
+      "fnv64": "80d7862b65ad6351",
+      "tokens": 305,
+      "chars": 1731,
+      "hasContent": true,
+      "productionFingerprintMatch": {
+        "productionVersion": "20261003163727",
+        "productionName": "add_meta_ads_insights_daily",
+        "matchType": "EXACT_SQL_TOKEN_FINGERPRINT",
+        "note": "same SQL token fingerprint; filename/version differs"
+      }
+    },
+    {
+      "version": "20261007120000",
+      "name": "add_product_growing_types",
+      "filename": "20261007120000_add_product_growing_types.sql",
+      "path": "supabase/migrations/20261007120000_add_product_growing_types.sql",
+      "fnv64": "eb43c11bc21f8753",
+      "tokens": 43,
+      "chars": 386,
+      "hasContent": true
+    },
+    {
+      "version": "20261007123000",
+      "name": "add_bulk_offer_free_item_text",
+      "filename": "20261007123000_add_bulk_offer_free_item_text.sql",
+      "path": "supabase/migrations/20261007123000_add_bulk_offer_free_item_text.sql",
+      "fnv64": "fcfdcac17ccf13fa",
+      "tokens": 13,
+      "chars": 80,
+      "hasContent": true,
+      "productionFingerprintMatch": {
+        "productionVersion": "20261007064522",
+        "productionName": "add_bulk_pricing_free_item_text",
+        "matchType": "EXACT_SQL_TOKEN_FINGERPRINT",
+        "note": "same SQL token fingerprint; filename/version differs"
+      }
+    },
+    {
+      "version": "20261008093000",
+      "name": "fix_ai_settings_country_key",
+      "filename": "20261008093000_fix_ai_settings_country_key.sql",
+      "path": "supabase/migrations/20261008093000_fix_ai_settings_country_key.sql",
+      "fnv64": "4e097e25d32724b4",
+      "tokens": 162,
+      "chars": 1601,
+      "hasContent": true
+    },
+    {
+      "version": "20261008095500",
+      "name": "move_ai_keys_to_vault",
+      "filename": "20261008095500_move_ai_keys_to_vault.sql",
+      "path": "supabase/migrations/20261008095500_move_ai_keys_to_vault.sql",
+      "fnv64": "bfbe12c25bee5a07",
+      "tokens": 190,
+      "chars": 2932,
+      "hasContent": true
+    },
+    {
+      "version": "20261008102000",
+      "name": "scope_messenger_profiles_by_country",
+      "filename": "20261008102000_scope_messenger_profiles_by_country.sql",
+      "path": "supabase/migrations/20261008102000_scope_messenger_profiles_by_country.sql",
+      "fnv64": "524f5992047cb74d",
+      "tokens": 58,
+      "chars": 1045,
+      "hasContent": true
+    },
+    {
+      "version": "20261008103500",
+      "name": "disable_unconfigured_generic_ai",
+      "filename": "20261008103500_disable_unconfigured_generic_ai.sql",
+      "path": "supabase/migrations/20261008103500_disable_unconfigured_generic_ai.sql",
+      "fnv64": "cfc8e8e04f0f5095",
+      "tokens": 21,
+      "chars": 299,
+      "hasContent": true
+    },
+    {
+      "version": "20261008160000",
+      "name": "fix_ads_offer_order_totals",
+      "filename": "20261008160000_fix_ads_offer_order_totals.sql",
+      "path": "supabase/migrations/20261008160000_fix_ads_offer_order_totals.sql",
+      "fnv64": "b4296bcfbbab15ac",
+      "tokens": 136,
+      "chars": 7133,
+      "hasContent": true,
+      "productionFingerprintMatch": {
+        "productionVersion": "20261008155002",
+        "productionName": "fix_ads_package_item_totals",
+        "matchType": "EXACT_SQL_TOKEN_FINGERPRINT",
+        "note": "same SQL token fingerprint; filename/version differs"
+      }
+    },
+    {
+      "version": "20261008183000",
+      "name": "add_messenger_order_notification_sending_state",
+      "filename": "20261008183000_add_messenger_order_notification_sending_state.sql",
+      "path": "supabase/migrations/20261008183000_add_messenger_order_notification_sending_state.sql",
+      "fnv64": "ffd03f658f1854d6",
+      "tokens": 57,
+      "chars": 455,
+      "hasContent": true,
+      "productionFingerprintMatch": {
+        "productionVersion": "20261008115546",
+        "productionName": "allow_messenger_notification_sending_state",
+        "matchType": "EXACT_SQL_TOKEN_FINGERPRINT",
+        "note": "same SQL token fingerprint; filename/version differs"
+      }
+    },
+    {
+      "version": "20260909150000",
+      "name": "fix_referral_code_brand_prefix",
+      "filename": "20260909150000_fix_referral_code_brand_prefix.sql",
+      "path": "supabase/migrations/20260909150000_fix_referral_code_brand_prefix.sql",
+      "fnv64": "814918240579f045",
+      "tokens": 34,
+      "chars": 924,
+      "hasContent": true
+    },
+    {
+      "version": "20260911041600",
+      "name": "add_cod_advance_payment_support",
+      "filename": "20260911041600_add_cod_advance_payment_support.sql",
+      "path": "supabase/migrations/20260911041600_add_cod_advance_payment_support.sql",
+      "fnv64": "ee4a20c435f933d9",
+      "tokens": 187,
+      "chars": 5187,
+      "hasContent": true
+    },
+    {
+      "version": "20260912105000",
+      "name": "add_admin_cod_due_settlement",
+      "filename": "20260912105000_add_admin_cod_due_settlement.sql",
+      "path": "supabase/migrations/20260912105000_add_admin_cod_due_settlement.sql",
+      "fnv64": "ec9d2ecdfdeed020",
+      "tokens": 187,
+      "chars": 7604,
+      "hasContent": true
+    },
+    {
+      "version": "20260925070940",
+      "name": "add_messenger_message_id_idempotency",
+      "filename": "20260925070940_add_messenger_message_id_idempotency.sql",
+      "path": "supabase/migrations/20260925070940_add_messenger_message_id_idempotency.sql",
+      "fnv64": "5936bcc9f94b8751",
+      "tokens": 20,
+      "chars": 154,
+      "hasContent": true
+    },
+    {
+      "version": "20261001104900",
+      "name": "messenger_order_confirmation_notifications",
+      "filename": "20261001104900_messenger_order_confirmation_notifications.sql",
+      "path": "supabase/migrations/20261001104900_messenger_order_confirmation_notifications.sql",
+      "fnv64": "3d4d4292fcd3a7b6",
+      "tokens": 245,
+      "chars": 2477,
+      "hasContent": true
+    },
+    {
+      "version": "20261001132000",
+      "name": "messenger_order_status_notifications",
+      "filename": "20261001132000_messenger_order_status_notifications.sql",
+      "path": "supabase/migrations/20261001132000_messenger_order_status_notifications.sql",
+      "fnv64": "807cf5dca1becc22",
+      "tokens": 249,
+      "chars": 2952,
+      "hasContent": true
+    },
+    {
+      "version": "20261001143000",
+      "name": "add_packed_order_status_notification",
+      "filename": "20261001143000_add_packed_order_status_notification.sql",
+      "path": "supabase/migrations/20261001143000_add_packed_order_status_notification.sql",
+      "fnv64": "3d2d51b174bacdc3",
+      "tokens": 22,
+      "chars": 1344,
+      "hasContent": true
+    },
+    {
+      "version": "20261001143000",
+      "name": "messenger_transliteration_search",
+      "filename": "20261001143000_messenger_transliteration_search.sql",
+      "path": "supabase/migrations/20261001143000_messenger_transliteration_search.sql",
+      "fnv64": "e2063663738704f3",
+      "tokens": 379,
+      "chars": 11793,
+      "hasContent": true
+    },
+    {
+      "version": "20261001144000",
+      "name": "fix_messenger_transliteration",
+      "filename": "20261001144000_fix_messenger_transliteration.sql",
+      "path": "supabase/migrations/20261001144000_fix_messenger_transliteration.sql",
+      "fnv64": "4b9e616a539da270",
+      "tokens": 165,
+      "chars": 4240,
+      "hasContent": true
+    },
+    {
+      "version": "20261001160000",
+      "name": "normalize_india_product_prices",
+      "filename": "20261001160000_normalize_india_product_prices.sql",
+      "path": "supabase/migrations/20261001160000_normalize_india_product_prices.sql",
+      "fnv64": "c9b3daeb30c66afd",
+      "tokens": 87,
+      "chars": 715,
+      "hasContent": true
+    },
+    {
+      "version": "20261001163000",
+      "name": "sync_india_cashfree_delivery_rules",
+      "filename": "20261001163000_sync_india_cashfree_delivery_rules.sql",
+      "path": "supabase/migrations/20261001163000_sync_india_cashfree_delivery_rules.sql",
+      "fnv64": "13b333316aeb9609",
+      "tokens": 44,
+      "chars": 8658,
+      "hasContent": true
+    },
+    {
+      "version": "20261002150843",
+      "name": "allow_unknown_messenger_rate_limit_country",
+      "filename": "20261002150843_allow_unknown_messenger_rate_limit_country.sql",
+      "path": "supabase/migrations/20261002150843_allow_unknown_messenger_rate_limit_country.sql",
+      "fnv64": "6071a7cff7dac108",
+      "tokens": 125,
+      "chars": 7351,
+      "hasContent": true
+    },
+    {
+      "version": "20261002153000",
+      "name": "optimize_messenger_customer_profiles_rls",
+      "filename": "20261002153000_optimize_messenger_customer_profiles_rls.sql",
+      "path": "supabase/migrations/20261002153000_optimize_messenger_customer_profiles_rls.sql",
+      "fnv64": "c94aeb8653ae3b95",
+      "tokens": 110,
+      "chars": 713,
+      "hasContent": true
+    },
+    {
+      "version": "20261002154500",
+      "name": "remove_duplicate_ai_messages_external_index",
+      "filename": "20261002154500_remove_duplicate_ai_messages_external_index.sql",
+      "path": "supabase/migrations/20261002154500_remove_duplicate_ai_messages_external_index.sql",
+      "fnv64": "d856685c6c8a0103",
+      "tokens": 8,
+      "chars": 222,
+      "hasContent": true
+    },
+    {
+      "version": "20261002160000",
+      "name": "remove_multiple_permissive_rls_overlaps",
+      "filename": "20261002160000_remove_multiple_permissive_rls_overlaps.sql",
+      "path": "supabase/migrations/20261002160000_remove_multiple_permissive_rls_overlaps.sql",
+      "fnv64": "e294c67947709480",
+      "tokens": 43,
+      "chars": 15179,
+      "hasContent": true
+    },
+    {
+      "version": "20261002161500",
+      "name": "finish_multiple_permissive_rls_overlaps",
+      "filename": "20261002161500_finish_multiple_permissive_rls_overlaps.sql",
+      "path": "supabase/migrations/20261002161500_finish_multiple_permissive_rls_overlaps.sql",
+      "fnv64": "9c3c6e7fbe419645",
+      "tokens": 238,
+      "chars": 2624,
+      "hasContent": true
+    },
+    {
+      "version": "20261002163500",
+      "name": "remove_redundant_translation_cache_index",
+      "filename": "20261002163500_remove_redundant_translation_cache_index.sql",
+      "path": "supabase/migrations/20261002163500_remove_redundant_translation_cache_index.sql",
+      "fnv64": "23ac08c63cc29179",
+      "tokens": 8,
+      "chars": 271,
+      "hasContent": true
+    },
+    {
+      "version": "20261002164500",
+      "name": "secure_internal_service_role_only_tables",
+      "filename": "20261002164500_secure_internal_service_role_only_tables.sql",
+      "path": "supabase/migrations/20261002164500_secure_internal_service_role_only_tables.sql",
+      "fnv64": "2fef788f2b5446f4",
+      "tokens": 199,
+      "chars": 1809,
+      "hasContent": true
+    },
+    {
+      "version": "20261002170500",
+      "name": "harden_messenger_profile_trigger_search_path",
+      "filename": "20261002170500_harden_messenger_profile_trigger_search_path.sql",
+      "path": "supabase/migrations/20261002170500_harden_messenger_profile_trigger_search_path.sql",
+      "fnv64": "49d777c7ce4055be",
+      "tokens": 14,
+      "chars": 348,
+      "hasContent": true
+    },
+    {
+      "version": "20261003033000",
+      "name": "restrict_messenger_trigger_function_execute",
+      "filename": "20261003033000_restrict_messenger_trigger_function_execute.sql",
+      "path": "supabase/migrations/20261003033000_restrict_messenger_trigger_function_execute.sql",
+      "fnv64": "cda438980f34165e",
+      "tokens": 56,
+      "chars": 614,
+      "hasContent": true
+    },
+    {
+      "version": "20261003090000",
+      "name": "restrict_legacy_public_order_rpcs",
+      "filename": "20261003090000_restrict_legacy_public_order_rpcs.sql",
+      "path": "supabase/migrations/20261003090000_restrict_legacy_public_order_rpcs.sql",
+      "fnv64": "ce8889a7a89a9a50",
+      "tokens": 88,
+      "chars": 871,
+      "hasContent": true
+    },
+    {
+      "version": "20261003093000",
+      "name": "harden_public_order_rpc_context",
+      "filename": "20261003093000_harden_public_order_rpc_context.sql",
+      "path": "supabase/migrations/20261003093000_harden_public_order_rpc_context.sql",
+      "fnv64": "c62cf5540d1621ec",
+      "tokens": 164,
+      "chars": 4676,
+      "hasContent": true
+    },
+    {
+      "version": "20261003160000",
+      "name": "add_meta_capi_purchase_events",
+      "filename": "20261003160000_add_meta_capi_purchase_events.sql",
+      "path": "supabase/migrations/20261003160000_add_meta_capi_purchase_events.sql",
+      "fnv64": "dbda755fe1b1c00a",
+      "tokens": 212,
+      "chars": 1214,
+      "hasContent": true
+    },
+    {
+      "version": "20261004223000",
+      "name": "add_product_promotional_spotlight_hindi_and_language_images",
+      "filename": "20261004223000_add_product_promotional_spotlight_hindi_and_language_images.sql",
+      "path": "supabase/migrations/20261004223000_add_product_promotional_spotlight_hindi_and_language_images.sql",
+      "fnv64": "b4ccb29b1d81294e",
+      "tokens": 104,
+      "chars": 819,
+      "hasContent": true
+    },
+    {
+      "version": "20261006010000",
+      "name": "fix_bulk_pricing_country_visibility",
+      "filename": "20261006010000_fix_bulk_pricing_country_visibility.sql",
+      "path": "supabase/migrations/20261006010000_fix_bulk_pricing_country_visibility.sql",
+      "fnv64": "a4278a3e3f302390",
+      "tokens": 58,
+      "chars": 498,
+      "hasContent": true
+    },
+    {
+      "version": "20261006053000",
+      "name": "fix_public_banner_select",
+      "filename": "20261006053000_fix_public_banner_select.sql",
+      "path": "supabase/migrations/20261006053000_fix_public_banner_select.sql",
+      "fnv64": "e23d2184cade3625",
+      "tokens": 34,
+      "chars": 359,
+      "hasContent": true
+    },
+    {
+      "version": "20261006124815",
+      "name": "disable_missing_home_banner",
+      "filename": "20261006124815_disable_missing_home_banner.sql",
+      "path": "supabase/migrations/20261006124815_disable_missing_home_banner.sql",
+      "fnv64": "3831d90d4aa488bf",
+      "tokens": 94,
+      "chars": 601,
+      "hasContent": true
+    },
+    {
+      "version": "20261008123000",
+      "name": "add_sending_state_to_messenger_order_status_notifications",
+      "filename": "20261008123000_add_sending_state_to_messenger_order_status_notifications.sql",
+      "path": "supabase/migrations/20261008123000_add_sending_state_to_messenger_order_status_notifications.sql",
+      "fnv64": "b5a5237f5e0d6e0d",
+      "tokens": 46,
+      "chars": 355,
+      "hasContent": true
+    },
+    {
+      "version": "20261008153430",
+      "name": "grant_public_ads_order_rpc",
+      "filename": "20261008153430_grant_public_ads_order_rpc.sql",
+      "path": "supabase/migrations/20261008153430_grant_public_ads_order_rpc.sql",
+      "fnv64": "1071781f463555ab",
+      "tokens": 39,
+      "chars": 334,
+      "hasContent": true
+    },
+    {
+      "version": "20261008161145",
+      "name": "india_cashfree_campaign_payments",
+      "filename": "20261008161145_india_cashfree_campaign_payments.sql",
+      "path": "supabase/migrations/20261008161145_india_cashfree_campaign_payments.sql",
+      "fnv64": "1ae9603ff3bb9acd",
+      "tokens": 295,
+      "chars": 23127,
+      "hasContent": true
+    },
+    {
+      "version": "20261008190000",
+      "name": "fix_admin_branch_access_and_inventory",
+      "filename": "20261008190000_fix_admin_branch_access_and_inventory.sql",
+      "path": "supabase/migrations/20261008190000_fix_admin_branch_access_and_inventory.sql",
+      "fnv64": "709da8b9263463f1",
+      "tokens": 62,
+      "chars": 2150,
+      "hasContent": true
+    },
+    {
+      "version": "20261008201500",
+      "name": "allow_public_active_landing_pages",
+      "filename": "20261008201500_allow_public_active_landing_pages.sql",
+      "path": "supabase/migrations/20261008201500_allow_public_active_landing_pages.sql",
+      "fnv64": "803b56aab4e33ea5",
+      "tokens": 63,
+      "chars": 541,
+      "hasContent": true
+    },
+    {
+      "version": "20261009021411",
+      "name": "add_landing_faq_translations",
+      "filename": "20261009021411_add_landing_faq_translations.sql",
+      "path": "supabase/migrations/20261009021411_add_landing_faq_translations.sql",
+      "fnv64": "cca0420370c70d62",
+      "tokens": 37,
+      "chars": 329,
+      "hasContent": true
+    },
+    {
+      "version": "20261009025432",
+      "name": "public_read_active_animated_landings",
+      "filename": "20261009025432_public_read_active_animated_landings.sql",
+      "path": "supabase/migrations/20261009025432_public_read_active_animated_landings.sql",
+      "fnv64": "9afed754b8ee2d1b",
+      "tokens": 98,
+      "chars": 863,
+      "hasContent": true
+    },
+    {
+      "version": "20261010033111",
+      "name": "cashfree_future_payment_recovery",
+      "filename": "20261010033111_cashfree_future_payment_recovery.sql",
+      "path": "supabase/migrations/20261010033111_cashfree_future_payment_recovery.sql",
+      "fnv64": "1629af370f27ebe1",
+      "tokens": 272,
+      "chars": 7369,
+      "hasContent": true
+    },
+    {
+      "version": "20261010034249",
+      "name": "harden_cod_advance_and_due_integrity",
+      "filename": "20261010034249_harden_cod_advance_and_due_integrity.sql",
+      "path": "supabase/migrations/20261010034249_harden_cod_advance_and_due_integrity.sql",
+      "fnv64": "d9514e00e98a739a",
+      "tokens": 185,
+      "chars": 22489,
+      "hasContent": true
+    },
+    {
+      "version": "20261010035233",
+      "name": "payment_security_audit_log",
+      "filename": "20261010035233_payment_security_audit_log.sql",
+      "path": "supabase/migrations/20261010035233_payment_security_audit_log.sql",
+      "fnv64": "a3f5d8adbf073d62",
+      "tokens": 683,
+      "chars": 18769,
+      "hasContent": true
+    },
+    {
+      "version": "20261011045154",
+      "name": "add_product_faq_hindi",
+      "filename": "20261011045154_add_product_faq_hindi.sql",
+      "path": "supabase/migrations/20261011045154_add_product_faq_hindi.sql",
+      "fnv64": "77e29046d51fd898",
+      "tokens": 21,
+      "chars": 201,
+      "hasContent": true
+    }
+  ]
+}
