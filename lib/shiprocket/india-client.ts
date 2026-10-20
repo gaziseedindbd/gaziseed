@@ -61,6 +61,10 @@ export class IndiaCourierClient {
       throw new Error('COD booking provider contract is not enabled');
     return this.request("/orders/create/adhoc", "POST", verifiedOrderPayload);
   }
+  async getOrder(orderId:number) {
+    if(!Number.isSafeInteger(orderId)||orderId<=0)throw new Error('Invalid provider order ID');
+    return this.request('/orders/show/'+orderId,'GET');
+  }
   async assignAwb(shipmentId: number, courierId: number) {
     if (!Number.isSafeInteger(shipmentId) || shipmentId <= 0 ||
         !Number.isSafeInteger(courierId) || courierId <= 0)

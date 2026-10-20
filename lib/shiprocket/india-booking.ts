@@ -36,9 +36,8 @@ export function normalizeIndiaCourierQuotes(response: unknown): CourierQuote[] {
       cod_charges: 0,
       other_charges: 0,
       cod: raw.cod === 1 || raw.cod === true || raw.cod === "1",
-      pickup_available: raw.pickup_available === true || raw.pickup_available === 1 ||
-        raw.pickup_available === "1",
-      blocked: raw.blocked === true,
+      pickup_available: [true,1,"1"].includes((raw.pickup_available ?? raw.pickup_availability) as boolean | number | string),
+      blocked: [true,1,"1"].includes(raw.blocked as boolean | number | string) || [true,1,"1"].includes(raw.odablock as boolean | number | string),
     };
     return [courier];
   });
@@ -60,6 +59,7 @@ export function buildIndiaShipmentPayload(input: {
   items: ShippingLine[];
   courierCompanyId: number;
   requestKey: string;
+  invoice?: {itemsSubtotal:number;shipping:number;discount:number};
 }): RecordValue {
   const { parcel, destination: d, money: m, items } = input;
   if (m.mode !== 'prepaid' || m.collectOnDelivery !== 0 || !validateIndiaParcel(parcel) || d.postcode !== parcel.deliveryPostcode ||
@@ -73,6 +73,10 @@ export function buildIndiaShipmentPayload(input: {
       !items.length || items.some(i => !i.name || !i.sku || !Number.isSafeInteger(i.quantity) ||
         i.quantity <= 0 || !Number.isFinite(i.price) || i.price <= 0))
     throw new Error("India shipping booking prerequisites not satisfied");
+  const invoice=input.invoice??{itemsSubtotal:items.reduce((n,i)=>n+i.price*i.quantity,0),shipping:0,discount:0};
+  if(![invoice.itemsSubtotal,invoice.shipping,invoice.discount].every(n=>Number.isFinite(n)&&n>=0)||
+    Math.abs(items.reduce((n,i)=>n+i.price*i.quantity,0)-invoice.itemsSubtotal)>0.01||
+    Math.abs(invoice.itemsSubtotal+invoice.shipping-invoice.discount-m.total)>0.01)throw new Error('Invoice mismatch');
   return {
     order_id: input.requestKey, order_date: new Date().toISOString().slice(0, 16).replace("T", " "),
     pickup_location: input.pickupLocation,
@@ -85,7 +89,8 @@ export function buildIndiaShipmentPayload(input: {
       name: i.name, sku: i.sku, units: i.quantity, selling_price: i.price,
     })),
     payment_method: m.mode === "prepaid" ? "Prepaid" : "COD",
-    sub_total: m.total,
+    sub_total: invoice.itemsSubtotal,
+    shipping_charges:invoice.shipping,total_discount:invoice.discount,
     // Partial COD external booking is blocked until its provider contract is verified.
     // Never assume an undocumented cod_amount field controls collection.
     length: parcel.lengthCm, breadth: parcel.breadthCm,

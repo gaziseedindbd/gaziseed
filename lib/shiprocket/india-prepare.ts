@@ -22,6 +22,7 @@ export function prepareIndiaShipment(input: {
   destination: VerifiedIndiaDestination;
   items: ShippingLine[];
   serviceabilityResponse: unknown;
+  invoice?: {itemsSubtotal:number;shipping:number;discount:number};
 }): IndiaShipmentPreparation | null {
   const money = resolveIndiaShippingMoney(input.order, input.verifiedGateway);
   if (!money || input.parcel.codAmount !== money.collectOnDelivery ||
@@ -38,6 +39,7 @@ export function prepareIndiaShipment(input: {
       destination: input.destination,
       items: input.items,
       courierCompanyId: courier.courier.courier_company_id,
+      invoice:input.invoice,
     });
     return {
       courierCompanyId: courier.courier.courier_company_id,

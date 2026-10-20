@@ -8,6 +8,8 @@ export type BookingSnapshot = {
   order: IndiaPaymentOrder; orderNumber: string; requestKey: string;
   pickupLocation: string; parcel: ShipmentParcel;
   destination: VerifiedIndiaDestination; items: ShippingLine[];
+  intent?: {id:string;providerOrderId:string;amount:number};
+  invoice?: {itemsSubtotal:number;shipping:number;discount:number};
 };
 // Server-only ports. No request body may supply a snapshot or gateway evidence.
 // The caller must authenticate and load these through trusted backend adapters.
@@ -21,6 +23,7 @@ export type BookingPorts = {
   claim(reservationId: string, actorId: string): Promise<boolean>;
   createOrder(payload: JsonRecord): Promise<unknown>;
   recordExternal(reservationId: string, orderId: number, shipmentId: number, courierId: number): Promise<boolean>;
+  verifyExternalOrder?(orderId:number,shipmentId:number,snapshot:BookingSnapshot):Promise<boolean>;
   assignAwb(shipmentId: number, courierId: number): Promise<unknown>;
   recordAwb(reservationId: string, shipmentId: number, awb: string): Promise<boolean>;
   markReconcile(reservationId: string): Promise<void>;
@@ -44,7 +47,7 @@ export async function bookIndiaShipment(orderId: string, ports: BookingPorts): P
     const evidence = await ports.verifyCashfree(initial);
     const quotes = await ports.quote(initial);
     const prepared = prepareIndiaShipment({...initial, sourceOrderNumber:initial.orderNumber,
-      immutableRequestKey:initial.requestKey, verifiedGateway:evidence, serviceabilityResponse:quotes});
+      immutableRequestKey:initial.requestKey, verifiedGateway:evidence, serviceabilityResponse:quotes, invoice:initial.invoice});
     if (!prepared) return {ok:false,state:'blocked'};
     reservation = await ports.reserve(initial, actor);
     if (!reservation) return {ok:false,state:'duplicate'};
@@ -56,12 +59,13 @@ export async function bookIndiaShipment(orderId: string, ports: BookingPorts): P
     const freshEvidence = await ports.verifyCashfree(fresh);
     const freshQuotes = await ports.quote(fresh);
     const freshPlan = prepareIndiaShipment({...fresh,sourceOrderNumber:fresh.orderNumber,
-      immutableRequestKey:fresh.requestKey,verifiedGateway:freshEvidence,serviceabilityResponse:freshQuotes});
+      immutableRequestKey:fresh.requestKey,verifiedGateway:freshEvidence,serviceabilityResponse:freshQuotes,invoice:fresh.invoice});
     if (!freshPlan || freshPlan.courierCompanyId !== prepared.courierCompanyId || freshPlan.estimatedCourierCost !== prepared.estimatedCourierCost) throw Error('payment_changed');
     const created = await ports.createOrder(freshPlan.bookingPayload);
     if (!record(created) || !integer(created.order_id) || !integer(created.shipment_id)) throw Error('unknown_create_outcome');
     if (!await ports.recordExternal(reservation,created.order_id,created.shipment_id,freshPlan.courierCompanyId))
       throw Error('external_persistence_failed');
+    if(ports.verifyExternalOrder&&!await ports.verifyExternalOrder(created.order_id,created.shipment_id,fresh))throw Error('provider_order_mismatch');
     const assigned = await ports.assignAwb(created.shipment_id,freshPlan.courierCompanyId);
     if (!record(assigned) || assigned.awb_assign_status !== 1 || !record(assigned.response) || !record(assigned.response.data))
       throw Error('unknown_awb_outcome');

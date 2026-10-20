@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:messenger": "rm -rf .tmp/messenger-tests && tsc -p tsconfig.messenger-tests.json && node .tmp/messenger-tests/tests/messenger-e2e.test.js && node .tmp/messenger-tests/tests/messenger-intents.test.js && node tests/messenger-database-first.test.cjs && rm -rf .tmp/messenger-tests",
-    "test:india-shipping": "tsc -p tsconfig.india-shipping-tests.json && node --test .tmp/india-shipping-tests/tests/india-shiprocket-*.test.js"
+    "test:india-shipping": "node scripts/shiprocket-bundle.cjs --check && tsc -p tsconfig.india-shipping-tests.json && node --test .tmp/india-shipping-tests/tests/india-shiprocket-*.test.js"
   },
   "dependencies": {
     "browser-image-compression": "^2.0.2",

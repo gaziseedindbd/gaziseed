@@ -11,26 +11,32 @@ PR #266 is synchronized with main 35a2c690b7d2ed227000505dbd9a2445f888b9fb. Four
 - Pickup approval is atomic against a packed India order, records its original actor once, and pickup claims revalidate that actor's current India privileges. No provider pickup API is exposed or called.
 - The redundant, undeployed india-shipping-payment-preflight prototype is removed. Use the deployed cashfree-verify-dispatch verify_only path; it is not reusable authorization to book.
 
-## Deliberate boundary
+## Authenticated server integration and Sandbox verification
 
-There is no authenticated booking HTTP endpoint or production adapter wiring in this change. The orchestrator requires explicitly supplied trusted server adapters and enabled=true; nothing calls it from the website. No Production migration/function deployment, shipment, AWB, wallet debit or pickup is authorized by pushing this branch.
+The new india-shipping-booking Edge Function authenticates a user JWT with getUser, checks India admin scope, and derives the actor from that identity. Its preview, confirm_destination and book actions accept no client actor, payment evidence, amounts or booking snapshots. Service-only RPCs independently validate the stored active India admin.
 
-Partial COD money remains modeled and quotes still work, but external COD booking is blocked at payload, transport and database reservation layers. The former cod_amount assumption is removed: until the account/provider contract is verified, it must not be assumed that an extra field changes the amount Shiprocket collects. Full COD also remains blocked. Never reduce the declared invoice/order value to fake a partial balance.
+Authoritative context joins the packed order, measured parcel, order_items, completed INR payment intent and admin-confirmed destination. Item totals, shipping and discount must reconcile to the invoice; wallet payments remain blocked pending explicit reconciliation. Destination confirmation binds city/state/PIN to the saved source address and parcel PIN. This is human-admin confirmation, not independent postal geocoding. Changes invalidate confirmation; reserved items, destination, parcel and financial data are locked.
 
-Source contract reference: https://apidocs.shiprocket.in/?version=latest (Create Custom Order and Assign AWB). The documented custom-order subtotal is caller-calculated, not automatically reconciled from items. The partial-COD contract has not been verified for this account; do not unlock it from secondary-source examples.
+Cashfree order, successful payment and refunds are independently read on every booking preflight. The real provider adapter checks returned order total/payment method/shipment identity after persisting external IDs and before AWB. Unknown or mismatched readback requires reconciliation. Real Shiprocket invoice and response fixtures are not yet certified.
 
-The build payload is a prepaid foundation, not a certified invoice integration: final authoritative structured address/PIN validation, item/shipping/discount reconciliation, timestamp format, pickup-location verification and account-specific provider fixtures must be reviewed when implementing production adapters. Never construct booking snapshots or gateway evidence from client JSON.
+Sandbox qqehtphbpypcmxliaiqd alone forces sandbox_simulated mode. A fixed synthetic INR1 paid Cashfree Sandbox order passed HTTP preview, booking, durable external ID/AWB readback and duplicate rejection. Result: SBX-90000005, packed order, pickup not requested. Cashfree Sandbox reads and database persistence were real; courier quote/create/AWB were simulated. This operator-authenticated test harness did not exercise an end-user JWT through the normal Edge endpoint. The temporary harness is retired after verification.
 
-Tracking-event projection/out-of-order processing remains a separate audited gap. This increment does not claim it is fixed. Existing webhook event ingestion is preserved.
+Production requires BOTH INDIA_SHIPPING_BOOKING_MODE=live_prepaid and INDIA_SHIPPING_PROVIDER_CONTRACT=prepaid_v1_verified. Neither was configured and no Production function or migration was deployed. The existing Admin UI is preserved; it does not yet expose this booking endpoint. No real Shiprocket shipment, AWB, wallet debit, charge or pickup was created.
+
+## COD and remaining release gates
+
+Partial and full COD booking remain blocked at payload, transport and database reservation layers. Do not infer a collection amount from an undocumented cod_amount field or reduce the invoice value to simulate a balance. The account-specific contract for collecting only the remaining balance still needs confirmation from Shiprocket and a provider test fixture. This cannot be certified by local mocks or Cashfree tests.
+
+Official contract reference: https://apidocs.shiprocket.in/?version=latest (Create Custom Order, Serviceability, Order Details, Assign AWB). Payloads reconcile item subtotal, shipping and discount; real provider readback must confirm the final total before AWB. Verify pickup location, provider timestamps, actual response shapes and invoice semantics against this account before setting the Production gates.
+
+Prepaid release additionally requires the normal Admin JWT/UI flow, real provider integration and crash/concurrent-request reconciliation coverage. Tracking-event projection/out-of-order processing remains a separate audited gap. Existing webhook ingestion is preserved. No automatic create retries or pickup API are exposed.
 
 ## Validation and environments
 
-24 TypeScript helper/orchestrator tests cover success, disabled/unauthorized/BD/COD paths, snapshot/refund/price changes, duplicate calls, timeouts, malformed responses, provider identity mismatch, persistence failures and unavailable reconciliation storage. These use mocked provider/database adapters; they are not live Shiprocket E2E tests.
+39 TypeScript tests pass: API authorization/input boundaries, project gates, Cashfree currency/amount/payment/refund validation, booking success and duplicate rejection, immutable snapshot changes, provider readback mismatch, timeout and persistence reconciliation. Generated Deno core copies are checked against the shared source. Typecheck, targeted lint and the full Next.js build pass.
 
-30 real SQL checks pass in Sandbox qqehtphbpypcmxliaiqd, with all synthetic fixtures rolled back. They cover service/actor/branch permissions, parcel/money guards, duplicate reservations/claims, immutable reserved data, provider ID/AWB ordering, explicit pickup approval and replay rejection. Sequential one-shot claims are tested; concurrent external/provider crash behavior still needs integration coverage with the real adapters.
+41 real SQL checks pass in Sandbox with transaction fixtures rolled back. Coverage includes actor/branch permissions, authoritative context and invoice validation, stale destination, canonical request keys, reserved data immutability, duplicate claims, provider ID/AWB ordering and explicit pickup approval/replay rejection.
 
-The draft shipping migration chain was applied ONLY in Sandbox, including 20261020074851_india_shipping_booking_guard.sql. Production still has only the earlier shipment/preparation/event tables and no new booking claims. Do not bulk db push: inventory applied migration versions and explicitly review this chain first. The old actor-free reserve/claim RPCs are revoked by the new guard migration.
+The draft migration chain, including 20261020074851_india_shipping_booking_guard.sql and 20261020111914_india_shipping_server_context.sql, was applied ONLY in Sandbox. A minimal RLS-protected Sandbox order_items fixture table supplies the existing Production schema contract. Production retains its earlier tables and has no new booking context/destination/claim integration. Do not bulk db push; inventory migration versions and review the explicit chain first.
 
-## Next production integration gate
-
-Implement reviewed server adapters behind a disabled feature gate, with auth-derived actor identity, authoritative versioned address/items/parcel/payment data and real Cashfree checks. Exercise duplicate concurrency and timeout reconciliation in Sandbox before enabling any live provider call. Reconcile reserved/submitting/external_created records manually against the immutable request key and provider dashboard when uncertain; do not clear locks or reset state automatically. No financial or destination changes are allowed while booking is unresolved. Pickup remains a separate explicit admin action after AWB readiness.
+PR #266 remains draft and unmerged. Main/Production, Bangladesh and PR #276 are unchanged by this work. Uncertain reserved/submitting/external_created records must be manually reconciled against their immutable provider request key; never reset a claim automatically.
