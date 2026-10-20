@@ -52,3 +52,18 @@ Prepaid order 353206429 / shipment 352582290 was created with item subtotal INR5
 Partial-COD probe 353206430 / 352582291 supplied partial_cod_collected=120, but order readback did not expose a verified remaining-collection amount or advance field. Acceptance alone is not certification; COD stays blocked. Sandbox serviceability returned couriers with pickup_availability=0, so the automatic booking gate stayed blocked. A separate isolated prepaid AWB contract request encountered a connection failure; subsequent read-only reconciliation returned NEW with AWB null. No automatic AWB retry or pickup was sent. This is not an AWB success claim.
 
 A real-Sandbox transport option is prepared behind INDIA_SHIPPING_BOOKING_MODE=sandbox_provider, valid only on gaziseed-test. It requires SHIPROCKET_SANDBOX_API_EMAIL/PASSWORD and the test pickup configuration; login and all calls are restricted to the exact Sandbox API host. The mode is not enabled yet and the default remains simulation until the user securely supplies the Sandbox password. UI labels distinguish simulation from the real provider Sandbox. Production gates remain off.
+
+
+### Website connection diagnostic — 2026-10-20 20:25 IST
+
+The Sandbox Preview's existing `/admin/india-shipping/connection` button was traced through the actual signed-in India Admin session. The `india-shipping-connection-check` function was missing from Sandbox, and its previous source only selected live credential names/endpoint. Fixed exact-project-bound selection, deployed the diagnostic only to `qqehtphbpypcmxliaiqd` (JWT verification enabled), and added current Supabase browser CORS headers. Unknown projects, unauthorized admins and missing Sandbox credentials cannot make provider calls. Redirects are refused; diagnostics never expose credentials, token or raw provider response.
+
+Actual website request at `2026-10-20T14:55:05.394Z` produced a structured Edge Function log:
+- `admin_authorized: true`, `environment: sandbox`, `credentials_configured: true`.
+- Endpoint: `https://api-sandbox.shiprocket.in/v1/external/auth/login`.
+- `provider_http_status: 498`, `provider_response_type: text/plain`, `code: provider_access_denied`.
+- `noShipmentCreated: true`, `database_modified: false`, `pickup_requested: false`.
+
+This confirms website → Sandbox Edge Function → India Admin authorization → secret lookup → outbound provider request. It does **not** validate the saved password, successful provider authentication, AWB or full booking. A separate credential-free request also received 498, so an invalid password has not been established. The denial's exact owner (provider/in-between network) is still unconfirmed; do not claim Shiprocket requires IP allowlisting without confirmation. Sandbox dashboard advertises the same HTTPS host for external integrations; changing to plaintext HTTP or production is not a safe workaround.
+
+49 shipping tests pass, including Sandbox/live credential separation, unknown-project/unauthorized refusal, CORS, redirects and safe error categorization. Production's existing connection-check function remains unchanged (version 4). Booking mode remains `sandbox_simulated`; the temporary operator test harness remains retired. No migration, live booking, AWB or pickup was executed during this diagnostic.
