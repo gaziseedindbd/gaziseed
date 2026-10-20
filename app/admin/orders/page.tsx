@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import OrderStatusActions from '@/components/admin/order-status-actions';
+import {ORDER_STATUSES, ORDER_STATUS_LABELS, OrderStatus, nextOrderStatuses} from '@/lib/admin-order-status';
 import { PaymentAuditPanel } from '@/components/admin/payment-audit-panel';
 import { supabase, cashfreeEnvironmentLabel } from '@/lib/supabase/client';
 import { ORDER_SOURCE_LABELS } from '@/lib/admin-order-display';
@@ -9,11 +11,8 @@ import { useSearchParams } from 'next/navigation';
 import { toast } from '@/components/site/toast-provider';
 import { Search, Eye, X, Printer, AlertTriangle, Package, Calendar, Phone, User, Globe } from 'lucide-react';
 
-const STATUS_OPTIONS = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'delivered', 'cancelled', 'returned'];
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'অর্ডার গৃহীত', confirmed: 'কনফার্মড', processing: 'প্রসেসিং', packed: 'প্যাকড',
-  shipped: 'শিপড', delivered: 'ডেলিভারড', cancelled: 'বাতিল', returned: 'ফেরত',
-};
+const STATUS_OPTIONS = ORDER_STATUSES;
+const STATUS_LABELS = ORDER_STATUS_LABELS;
 
 const SOURCE_FILTERS = ['all', 'website', 'ads', 'facebook', 'instagram', 'google', 'tiktok', 'animated_landing', 'facebook_messenger_ai'];
 
@@ -27,8 +26,7 @@ export default function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
-  const [newStatus, setNewStatus] = useState('');
-  const [note, setNote] = useState('');
+  const statusRequestInFlight = useRef(false);
   const [settlingDue, setSettlingDue] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [auditRefreshKey, setAuditRefreshKey] = useState(0);
@@ -101,8 +99,6 @@ export default function AdminOrdersPage() {
   const openOrder = async (order: any) => {
     setSelectedOrder(order);
     setVerifiedCashfree(null);
-    setNewStatus(order.status);
-    setNote(order.internal_notes || '');
     setLoadingItems(true);
 
     const { data, error } = await supabase
@@ -151,82 +147,53 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const updateStatus = async () => {
-    if (!selectedOrder || updatingStatus) return;
-
-    const currentStatus = selectedOrder.status;
-    if (newStatus !== currentStatus && !STATUS_OPTIONS.includes(newStatus)) {
-      toast('এই স্ট্যাটাস পরিবর্তনটি অনুমোদিত নয়', 'error');
-      setNewStatus(currentStatus);
-      return;
-    }
-
+  const updateStatus = async (newStatus: OrderStatus, reason: string): Promise<boolean> => {
+    if (!selectedOrder || statusRequestInFlight.current || updatingStatus || settlingDue || verifyingPayment) return false;
+    if (!nextOrderStatuses(selectedOrder.status).includes(newStatus)) return false;
+    statusRequestInFlight.current = true;
     setUpdatingStatus(true);
     try {
-      let historyRecordedByDispatch = false;
-      const needsPaidDispatchVerification =
-        adminCountry === 'IN' &&
-        newStatus === 'shipped' &&
-        newStatus !== currentStatus &&
-        (
-          ['cashfree', 'online'].includes(String(selectedOrder.payment_method || '').toLowerCase()) ||
-          ['paid', 'partially_paid'].includes(String(selectedOrder.payment_status || '').toLowerCase()) ||
-          Number(selectedOrder.payment_advance_amount || 0) > 0
-        );
-
+      const needsPaidDispatchVerification = adminCountry === 'IN' && newStatus === 'shipped' && (
+        ['cashfree', 'online'].includes(String(selectedOrder.payment_method || '').toLowerCase()) ||
+        ['paid', 'partially_paid'].includes(String(selectedOrder.payment_status || '').toLowerCase()) ||
+        Number(selectedOrder.payment_advance_amount || 0) > 0
+      );
       if (needsPaidDispatchVerification) {
-        const { data: sessionData } = await supabase.auth.getSession();
+        const {data: sessionData} = await supabase.auth.getSession();
         const accessToken = sessionData.session?.access_token;
-        if (!accessToken) {
-          toast('Payment verification-এর জন্য পুনরায় Admin Login করুন', 'error');
-          return;
-        }
-        const { data: result, error: verificationError } = await supabase.functions.invoke(
-          'cashfree-verify-dispatch',
-          {
-            body: { orderId: selectedOrder.id, status: 'shipped', note },
-            headers: { Authorization: `Bearer ${accessToken}` },
-          },
-        );
-        if (verificationError || !result?.ok || !result?.verified) {
-          toast(result?.error || 'Cashfree payment verification failed. Do not dispatch.', 'error');
-          return;
-        }
-        historyRecordedByDispatch = result.history_recorded === true;
+        if (!accessToken) throw new Error('Payment verification-এর জন্য পুনরায় Admin Login করুন');
+        const note = [selectedOrder.internal_notes, reason].filter(Boolean).join('\n');
+        const {data: result, error} = await supabase.functions.invoke('cashfree-verify-dispatch', {
+          body: {orderId: selectedOrder.id, status: 'shipped', note},
+          headers: {Authorization: `Bearer ${accessToken}`},
+        });
+        if (error || !result?.ok || !result?.verified || result.history_recorded !== true)
+          throw new Error(result?.error || 'Verified dispatch নিশ্চিত হয়নি। পুনরায় চেষ্টা করার আগে order refresh করুন।');
       } else {
-        const { error } = await supabase
-          .from('orders')
-          .update({
-            status: newStatus,
-            internal_notes: note,
-          })
-          .eq('id', selectedOrder.id);
-        if (error) {
-          console.error('Order status update failed:', error);
-          toast(error.hint || error.message || 'আপডেট করতে সমস্যা হয়েছে', 'error');
-          return;
-        }
+        const {data: result, error} = await supabase.rpc('admin_transition_order_status', {
+          p_order_id: selectedOrder.id, p_expected_status: selectedOrder.status, p_status: newStatus,
+          p_note: reason, p_confirmed: true, p_expected_country: adminCountry,
+        });
+        const messages: Record<string,string> = {
+          admin_required: 'সক্রিয় Admin access প্রয়োজন', branch_changed: 'Admin branch বদলেছে। পেজ refresh করুন।',
+          order_unavailable: 'এই branch-এ order পাওয়া যায়নি', stale_order: 'অন্য কেউ status বদলেছেন। পেজ refresh করুন।',
+          invalid_transition: 'এই ধাপে পরিবর্তন অনুমোদিত নয়', reason_required: 'কারণ / যাচাইয়ের তথ্য লিখুন',
+          confirmation_required: 'কাজটি সম্পন্ন হয়েছে নিশ্চিত করুন',
+          verified_dispatch_required: 'Cashfree verification প্রয়োজন। Order refresh করে আবার যাচাই করুন।',
+          status_update_failed: 'Status সংরক্ষণ হয়নি। Order refresh করে আবার যাচাই করুন।',
+        };
+        if (error || result?.success !== true)
+          throw new Error(messages[result?.code] || 'Status সংরক্ষণ করা যায়নি। পেজ refresh করুন।');
       }
-
-      if (newStatus !== currentStatus && !historyRecordedByDispatch) {
-        const { error: historyError } = await supabase
-          .from('order_status_history')
-          .insert({
-            order_id: selectedOrder.id,
-            status: newStatus,
-            note,
-          });
-
-        if (historyError) {
-          console.error('Order status history insert failed:', historyError);
-          toast('স্ট্যাটাস আপডেট হয়েছে, কিন্তু হিস্টোরি সেভ হয়নি', 'error');
-        }
-      }
-
-      toast('আপডেট সফল হয়েছে');
+      toast('অর্ডারের status ও history সংরক্ষণ হয়েছে');
       setSelectedOrder(null);
       await loadOrders();
+      return true;
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Status পরিবর্তন করা যায়নি', 'error');
+      return false;
     } finally {
+      statusRequestInFlight.current = false;
       setUpdatingStatus(false);
     }
   };
@@ -429,14 +396,14 @@ export default function AdminOrdersPage() {
       {/* Order Detail Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setSelectedOrder(null)} />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-xs" onClick={() => { if (!updatingStatus && !settlingDue && !verifyingPayment) setSelectedOrder(null); }} />
           <div className="relative z-10 max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-background p-4 pt-0 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:p-6 sm:pt-0 shadow-2xl border border-border">
             <div className="sticky top-0 z-20 mb-4 flex items-center justify-between gap-3 border-b border-border bg-background pt-4 pb-3 sm:pt-6">
               <div>
                 <h2 className="text-base sm:text-xl font-bold break-words">অর্ডার: {selectedOrder.order_number}</h2>
                 <span className="text-xs text-muted-foreground">{new Date(selectedOrder.created_at).toLocaleDateString('bn-BD')}</span>
               </div>
-              <button onClick={() => setSelectedOrder(null)} aria-label="Close order details" className="shrink-0 p-2 rounded-full hover:bg-secondary"><X className="h-6 w-6" /></button>
+              <button onClick={() => { if (!updatingStatus && !settlingDue && !verifyingPayment) setSelectedOrder(null); }} aria-label="Close order details" className="shrink-0 p-2 rounded-full hover:bg-secondary"><X className="h-6 w-6" /></button>
             </div>
 
             <div className="mb-4 flex gap-2">
@@ -590,39 +557,12 @@ export default function AdminOrdersPage() {
 
             {selectedOrder.country_code === 'IN' && <PaymentAuditPanel key={selectedOrder.id} orderId={selectedOrder.id} refreshKey={auditRefreshKey} />}
 
-            {/* স্ট্যাটাস আপডেট */}
-            <div className="space-y-2.5 border-t border-border pt-3.5">
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-muted-foreground">স্ট্যাটাস পরিবর্তন</label>
-                <select
-                  value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value)}
-                  className="input-bangla w-full"
-                  disabled={updatingStatus}
-                >
-                  {STATUS_OPTIONS.map((s) => (
-                    <option key={s} value={s}>{STATUS_LABELS[s] || s}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-muted-foreground">অভ্যন্তরীণ নোট</label>
-                <input 
-                  type="text" 
-                  value={note} 
-                  onChange={(e) => setNote(e.target.value)} 
-                  className="input-bangla w-full text-xs sm:text-sm" 
-                  placeholder="অর্ডার সংক্রান্ত নোট লিখুন..." 
-                />
-              </div>
-              <button
-                onClick={updateStatus}
-                disabled={updatingStatus}
-                className="w-full rounded-xl bg-primary py-2.5 sm:py-3 font-semibold text-primary-foreground hover:bg-primary/90 transition shadow disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {updatingStatus ? 'আপডেট হচ্ছে...' : 'আপডেট করুন'}
-              </button>
-            </div>
+            {selectedOrder.internal_notes && <div className="rounded-xl border border-border p-3 text-xs">
+              <p className="font-semibold">সংরক্ষিত অভ্যন্তরীণ নোট</p>
+              <p className="mt-1 whitespace-pre-wrap break-words text-muted-foreground">{selectedOrder.internal_notes}</p>
+            </div>}
+            <OrderStatusActions key={selectedOrder.id} orderId={selectedOrder.id} status={selectedOrder.status}
+              disabled={updatingStatus || settlingDue || verifyingPayment} onAction={updateStatus} />
           </div>
         </div>
       )}
