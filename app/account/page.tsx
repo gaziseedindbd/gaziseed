@@ -112,7 +112,7 @@ export default function AccountPage() {
     const isEditing = !!editingAddr;
     const payload = { ...addrData, user_id: user.id, country_code: getVisitorCountry() };
     if (isEditing) {
-      const { error } = await supabase.from('customer_addresses').update(payload).eq('id', editingAddr!.id);
+      const { error } = await supabase.from('customer_addresses').update(payload).eq('id', editingAddr!.id).eq('user_id', user.id).eq('country_code', getVisitorCountry());
       if (error) { toast('আপডেট ব্যর্থ', 'error'); return; }
       toast('ঠিকানা আপডেট হয়েছে');
     } else {
@@ -120,7 +120,8 @@ export default function AccountPage() {
         const { error: clearDefaultError } = await supabase
           .from('customer_addresses')
           .update({ is_default: false })
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .eq('country_code', getVisitorCountry());
         if (clearDefaultError) {
           toast('ডিফল্ট ঠিকানা পরিবর্তন করা যায়নি', 'error');
           return;
@@ -138,7 +139,7 @@ export default function AccountPage() {
   const handleDeleteAddress = async (id: string) => {
     if (!confirm('ঠিকানা মুছতে চান?')) return;
     const target = addresses.find((address) => address.id === id);
-    const { error } = await supabase.from('customer_addresses').delete().eq('id', id);
+    const { error } = await supabase.from('customer_addresses').delete().eq('id', id).eq('user_id', user.id).eq('country_code', getVisitorCountry());
     if (error) {
       toast('ঠিকানা মুছে ফেলা যায়নি', 'error');
       return;
@@ -150,7 +151,9 @@ export default function AccountPage() {
         const { error: defaultError } = await supabase
           .from('customer_addresses')
           .update({ is_default: true })
-          .eq('id', replacement.id);
+          .eq('id', replacement.id)
+          .eq('user_id', user.id)
+          .eq('country_code', getVisitorCountry());
         if (defaultError) {
           toast('নতুন ডিফল্ট ঠিকানা সেট করা যায়নি', 'error');
         }
@@ -163,7 +166,8 @@ export default function AccountPage() {
     const { error: clearError } = await supabase
       .from('customer_addresses')
       .update({ is_default: false })
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .eq('country_code', getVisitorCountry());
     if (clearError) {
       toast('ডিফল্ট ঠিকানা পরিবর্তন করা যায়নি', 'error');
       return;
@@ -172,7 +176,8 @@ export default function AccountPage() {
       .from('customer_addresses')
       .update({ is_default: true })
       .eq('id', id)
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .eq('country_code', getVisitorCountry());
     if (setError) {
       toast('নতুন ডিফল্ট ঠিকানা সেট করা যায়নি', 'error');
       return;
@@ -514,7 +519,7 @@ export default function AccountPage() {
               )}
 
               {showAddrForm && (
-                <AddressForm address={editingAddr} onSave={handleSaveAddress} onClose={() => { setShowAddrForm(false); setEditingAddr(null); }} />
+                <AddressForm address={editingAddr} countryCode={country} onSave={handleSaveAddress} onClose={() => { setShowAddrForm(false); setEditingAddr(null); }} />
               )}
             </div>
           )}
@@ -756,26 +761,60 @@ export default function AccountPage() {
   );
 }
 
-function AddressForm({ address, onSave, onClose }: { address: CustomerAddress | null; onSave: (data: any) => void; onClose: () => void }) {
+function AddressForm({ address, countryCode, onSave, onClose }: { address: CustomerAddress | null; countryCode: 'BD' | 'IN'; onSave: (data: any) => void; onClose: () => void }) {
+  const { lang } = useLang();
+  const tr = (bn: string, en: string, hi: string) => countryCode !== 'IN' || lang === 'bn' ? bn : lang === 'hi' ? hi : en;
+  const indiaError = tr('সঠিক ১০ সংখ্যার মোবাইল, যাচাইকৃত PIN, State, City ও ঠিকানা দিন', 'Enter a valid 10-digit mobile, verified PIN, State, City and address', 'सही 10 अंकों का मोबाइल, सत्यापित पिन, राज्य, शहर और पता दर्ज करें');
   const [label, setLabel] = useState(address?.label || 'Home');
   const [name, setName] = useState(address?.name || '');
   const [phone, setPhone] = useState(address?.phone || '');
   const [isDefault, setIsDefault] = useState(address?.is_default || false);
-  const [addrValue, setAddrValue] = useState<AddressValue>({
-    division: '', district: '', thana: '', detail: '', postalCode: '',
+  // Preserve the legacy BD structure. India uses the same database columns for State
+  // (division), City (district), and PIN, but must reverify PIN on every edit.
+  const [addrValue, setAddrValue] = useState<AddressValue>(() => {
+    if (!address) return { division: '', district: '', thana: '', detail: '', postalCode: '', landmark: '' };
+    const pin = String(address.postal_code || '').trim();
+    const district = String(address.district || '').trim();
+    const division = String(address.division || '').trim();
+    const thana = String(address.thana || '').trim();
+    const savedDetail = String((address as CustomerAddress & { detail?: string }).detail || '').trim();
+    if (countryCode === 'BD') {
+      return { division, district, thana, detail: savedDetail || String(address.address || ''), postalCode: pin };
+    }
+    // Old rows may contain the structured suffix in the address string itself.
+    // Strip only matching terminal fields, never arbitrary street/address fragments.
+    const parts = String(address.address || '').split(',').map(p => p.trim()).filter(Boolean);
+    const matches = (value: string, expected: string) => Boolean(expected) && value.toLowerCase() === expected.toLowerCase();
+    if (parts.length && matches(parts[parts.length - 1], pin)) parts.pop();
+    if (parts.length && matches(parts[parts.length - 1], division)) parts.pop();
+    if (parts.length && matches(parts[parts.length - 1], district)) parts.pop();
+    // Keep legacy locality/thana text in the India street address; no Thana field exists in the new form.
+    return {
+      division: '', // Don't trust an unverified saved State.
+      district,
+      thana: '',
+      detail: parts.join(', ').length > savedDetail.length ? parts.join(', ') : (savedDetail || parts.join(', ')),
+      postalCode: /^[1-9][0-9]{5}$/.test(pin) ? pin : '',
+      landmark: '',
+    };
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !phone || !addrValue.division || !addrValue.district || !addrValue.thana || !addrValue.detail) {
-      toast('সব প্রয়োজনীয় তথ্য পূরণ করুন', 'error'); return;
+    const india = countryCode === 'IN';
+    const validPin = /^[1-9][0-9]{5}$/.test(addrValue.postalCode || '');
+    if (!name.trim() || !phone.trim() || !addrValue.division.trim() || !addrValue.district.trim() ||
+        !addrValue.detail.trim() || (india ? !validPin || !/^[0-9]{10}$/.test(phone.trim()) : !addrValue.thana.trim())) {
+      toast(india ? indiaError : 'সব প্রয়োজনীয় তথ্য পূরণ করুন', 'error');
+      return;
     }
     onSave({
-      label, name, phone,
+      label, name: name.trim(), phone: phone.trim(),
       address: formatAddressToString(addrValue),
       division: addrValue.division,
       district: addrValue.district,
-      thana: addrValue.thana,
+      thana: india ? '' : addrValue.thana,
+      detail: addrValue.detail,
       postal_code: addrValue.postalCode || '',
       is_default: isDefault,
     });
@@ -784,24 +823,24 @@ function AddressForm({ address, onSave, onClose }: { address: CustomerAddress | 
   return (
     <div className="mt-4 rounded-2xl border-2 border-primary/20 bg-secondary/20 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-bold text-sm">{address ? 'ঠিকানা এডিট করুন' : 'নতুন ঠিকানা যোগ করুন'}</h3>
-        <button onClick={onClose}><X className="h-5 w-5" /></button>
+        <h3 className="font-bold text-sm">{address ? tr('ঠিকানা এডিট করুন', 'Edit Address', 'पता संपादित करें') : tr('নতুন ঠিকানা যোগ করুন', 'Add New Address', 'नया पता जोड़ें')}</h3>
+        <button type="button" onClick={onClose}><X className="h-5 w-5" /></button>
       </div>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">লেবেল</label>
+          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">{tr('লেবেল', 'Label', 'लेबल')}</label>
             <select value={label} onChange={(e) => setLabel(e.target.value)} className="input-bangla">
-              <option value="Home">Home</option><option value="Office">Office</option><option value="Other">Other</option>
+              <option value="Home">{tr("বাড়ি", "Home", "घर")}</option><option value="Office">{tr("অফিস", "Office", "कार्यालय")}</option><option value="Other">{tr("অন্যান্য", "Other", "अन्य")}</option>
             </select>
           </div>
-          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">নাম *</label><input value={name} onChange={(e) => setName(e.target.value)} className="input-bangla" required /></div>
-          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">ফোন *</label><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-bangla" required /></div>
+          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">{tr('নাম', 'Full Name', 'पूरा नाम')} *</label><input value={name} onChange={(e) => setName(e.target.value)} className="input-bangla" required /></div>
+          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">{tr('ফোন', 'Mobile Number', 'मोबाइल नंबर')} *</label><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-bangla" required /></div>
         </div>
-        <AddressSelector value={addrValue} onChange={setAddrValue} />
-        <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer"><input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} className="accent-primary" /> ডিফল্ট ঠিকানা হিসেবে সেট করুন</label>
+        <AddressSelector value={addrValue} onChange={setAddrValue} countryCode={countryCode} />
+        <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer"><input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} className="accent-primary" /> {tr('ডিফল্ট ঠিকানা হিসেবে সেট করুন', 'Set as default address', 'डिफ़ॉल्ट पता सेट करें')}</label>
         <div className="flex gap-2">
-          <button type="submit" className="flex-1 rounded-xl bg-primary py-3 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition cursor-pointer">সেভ করুন</button>
-          <button type="button" onClick={onClose} className="rounded-xl border border-border px-6 py-3 text-xs font-bold hover:bg-secondary transition cursor-pointer">বাতিল</button>
+          <button type="submit" className="flex-1 rounded-xl bg-primary py-3 text-xs font-bold text-primary-foreground hover:opacity-90 transition cursor-pointer">{tr('সেভ করুন', 'Save Address', 'पता सहेजें')}</button>
+          <button type="button" onClick={onClose} className="rounded-xl border border-border px-6 py-3 text-xs font-bold hover:bg-secondary transition cursor-pointer">{tr('বাতিল', 'Cancel', 'रद्द करें')}</button>
         </div>
       </form>
     </div>
