@@ -142,6 +142,7 @@ export default function AdminCustomersPage() {
   const [branch, setBranch] = useState<Branch>('BD');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedCustomerEmail, setSelectedCustomerEmail] = useState('');
+  const [selectedGuest, setSelectedGuest] = useState<CustomerRow | null>(null);
   const [detail, setDetail] = useState<CustomerDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
@@ -192,7 +193,11 @@ export default function AdminCustomersPage() {
   useEffect(() => { void loadCustomers(); }, [loadCustomers]);
 
   const openCustomer = async (customer: CustomerRow) => {
-    if (!customer.user_id) return;
+    if (!customer.user_id) {
+      setSelectedGuest(customer);
+      return;
+    }
+    setSelectedGuest(null);
     const requestId = ++detailRequest.current;
     setSelectedCustomerId(customer.user_id);
     setSelectedCustomerEmail(customer.email);
@@ -263,6 +268,7 @@ export default function AdminCustomersPage() {
 
   const closeCustomer = () => {
     detailRequest.current++;
+    setSelectedGuest(null);
     setSelectedCustomerId(null);
     setSelectedCustomerEmail('');
     setDetail(null);
@@ -377,6 +383,8 @@ export default function AdminCustomersPage() {
         </>
       )}
 
+      {selectedGuest && <GuestCustomerDetailModal customer={selectedGuest} branch={branch} onClose={closeCustomer} />}
+
       {selectedCustomerId && (
         <CustomerDetailModal
           loading={detailLoading}
@@ -415,7 +423,7 @@ function CustomerTableRow({ customer, branch, onOpen }: { customer: CustomerRow;
     <td className="px-4 py-3.5"><CustomerTypeBadge type={customer.type} /></td>
     <td className="px-4 py-3.5 tabular-nums text-foreground">{customer.orders.length.toLocaleString('bn-BD')}</td>
     <td className="whitespace-nowrap px-4 py-3.5 font-bold tabular-nums text-foreground">{formatBranchPrice(customer.totalSpend, branch)}</td>
-    <td className="px-4 py-3.5 text-right"><button type="button" onClick={() => onOpen(customer)} disabled={!customer.user_id} aria-label={`${title} — বিস্তারিত দেখুন`} title={customer.user_id ? 'বিস্তারিত দেখুন' : 'গেস্ট কাস্টমারের অ্যাকাউন্ট নেই'} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-45"><Eye className="h-4 w-4" aria-hidden="true" /><span>বিস্তারিত</span></button></td>
+    <td className="px-4 py-3.5 text-right"><button type="button" onClick={() => onOpen(customer)} aria-label={`${title} — বিস্তারিত দেখুন`} title="অর্ডার ও যোগাযোগের তথ্য দেখুন" className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"><Eye className="h-4 w-4" aria-hidden="true" /><span>বিস্তারিত</span></button></td>
   </tr>;
 }
 
@@ -424,7 +432,7 @@ function CustomerMobileCard({ customer, branch, onOpen }: { customer: CustomerRo
   return <article className="rounded-xl border border-border bg-background p-4 shadow-sm">
     <div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><Avatar name={title} /><div className="min-w-0"><h2 className="truncate font-bold text-foreground">{title}</h2>{customer.email && <p className="truncate text-xs text-muted-foreground">{customer.email}</p>}</div></div><CustomerTypeBadge type={customer.type} /></div>
     <div className="mt-4 grid grid-cols-2 gap-3 text-sm"><div><p className="text-xs text-muted-foreground">ফোন</p><p className="mt-0.5 truncate font-medium text-foreground">{customer.phone || '—'}</p></div><div><p className="text-xs text-muted-foreground">অর্ডার</p><p className="mt-0.5 font-semibold text-foreground">{customer.orders.length.toLocaleString('bn-BD')}</p></div><div><p className="text-xs text-muted-foreground">মোট খরচ</p><p className="mt-0.5 font-bold text-foreground">{formatBranchPrice(customer.totalSpend, branch)}</p></div><div><p className="text-xs text-muted-foreground">সর্বশেষ অর্ডার</p><p className="mt-0.5 text-foreground">{formatDate(customer.latestOrderAt)}</p></div></div>
-    <button type="button" onClick={() => onOpen(customer)} disabled={!customer.user_id} className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-border bg-card text-sm font-semibold text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-45"><Eye className="h-4 w-4" aria-hidden="true" />{customer.user_id ? 'কাস্টমার বিস্তারিত' : 'গেস্ট কাস্টমার'}</button>
+    <button type="button" onClick={() => onOpen(customer)} className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-border bg-card text-sm font-semibold text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"><Eye className="h-4 w-4" aria-hidden="true" />কাস্টমার বিস্তারিত</button>
   </article>;
 }
 
@@ -434,6 +442,56 @@ function Avatar({ name }: { name: string }) {
 
 function CustomerTypeBadge({ type }: { type: CustomerKind }) {
   return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${type === 'registered' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' : 'bg-secondary text-muted-foreground'}`}>{type === 'registered' ? 'নিবন্ধিত' : 'গেস্ট'}</span>;
+}
+
+function GuestCustomerDetailModal({ customer, branch, onClose }: { customer: CustomerRow; branch: Branch; onClose: () => void }) {
+  const dialogRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeButtonRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); onCloseRef.current(); }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>('button:not([disabled]),input:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])'));
+      if (!focusable.length) { event.preventDefault(); dialogRef.current.focus(); return; }
+      const first = focusable[0]; const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+      previousFocus?.focus();
+    };
+  }, []);
+
+  const name = customer.name || 'নাম নেই';
+  return <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:p-4" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="guest-customer-detail-title" tabIndex={-1} className="flex h-full max-h-[96dvh] w-full max-w-2xl flex-col overflow-hidden rounded-none border border-border bg-background shadow-2xl outline-none sm:h-auto sm:rounded-3xl">
+      <header className="flex shrink-0 items-center justify-between border-b border-border bg-background/95 px-4 py-3 sm:px-6">
+        <div className="min-w-0"><p className="text-xs font-bold uppercase tracking-[.14em] text-primary">{branch === 'IN' ? 'India customer' : 'Bangladesh customer'}</p><h2 id="guest-customer-detail-title" className="mt-0.5 truncate text-lg font-extrabold sm:text-xl">গেস্ট কাস্টমার বিস্তারিত</h2></div>
+        <button ref={closeButtonRef} type="button" onClick={onClose} aria-label="কাস্টমার বিস্তারিত বন্ধ করুন" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"><X className="h-5 w-5" aria-hidden="true" /></button>
+      </header>
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
+        <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
+          <div className="flex items-start gap-3"><Avatar name={name} /><div className="min-w-0"><h3 className="truncate text-lg font-bold text-foreground">{name}</h3><CustomerTypeBadge type="guest" /></div></div>
+          <dl className="mt-5 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2"><DetailFact icon={<Phone className="h-4 w-4" />} label="ফোন" value={customer.phone || '—'} /><DetailFact icon={<Mail className="h-4 w-4" />} label="ইমেইল" value={customer.email || '—'} /><DetailFact icon={<Clock3 className="h-4 w-4" />} label="সর্বশেষ অর্ডার" value={formatDate(customer.latestOrderAt, true)} /></dl>
+        </section>
+        <section aria-label="Guest customer totals" className="grid grid-cols-2 gap-3"><StatCard icon={<Package className="h-4 w-4" />} label="মোট অর্ডার" value={customer.orders.length.toLocaleString('bn-BD')} /><StatCard icon={<Shield className="h-4 w-4" />} label="মোট খরচ" value={formatBranchPrice(customer.totalSpend, branch)} /></section>
+        <DetailSection icon={<Package className="h-4 w-4" />} title="অর্ডার হিস্ট্রি" empty="কোনো অর্ডার নেই" count={customer.orders.length}>
+          {customer.orders.map((order) => <article key={order.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background p-3 text-sm"><div className="min-w-0"><p className="truncate font-bold text-foreground">{order.order_number || order.id}</p><p className="mt-1 text-xs text-muted-foreground">{formatDate(order.created_at, true)} · {order.status || 'স্ট্যাটাস নেই'}</p></div><span className="font-bold tabular-nums text-foreground">{formatBranchPrice(numberOrZero(order.grand_total), branch)}</span></article>)}
+        </DetailSection>
+        <p className="rounded-xl bg-secondary/60 p-3 text-xs text-muted-foreground">গেস্ট কাস্টমারের লগইন অ্যাকাউন্ট নেই। তাই এখানে শুধু অর্ডার ও যোগাযোগের তথ্য দেখানো হচ্ছে।</p>
+      </div>
+    </section>
+  </div>;
 }
 
 function CustomerDetailModal({ loading, error, detail, email, branch, isMasterAdmin, onClose, onAction, onRefresh }: {
