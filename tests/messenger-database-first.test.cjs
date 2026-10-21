@@ -103,7 +103,7 @@ test('Messenger Admin endpoints reject non-admin users before branch data querie
   assert.ok(activeAdminFilter > activeAdminLookup, 'dashboard route must require an active admin record');
   assert.ok(noAdminDenial > activeAdminFilter, 'dashboard route must deny users without an active admin record');
   assert.ok(dashboardDataRead > noAdminDenial, 'dashboard data queries must happen only after the active-admin gate');
-  assert.match(messengerAdminRoute.slice(noAdminDenial, dashboardDataRead), /status:\\s*403/);
+  assert.match(messengerAdminRoute.slice(noAdminDenial, dashboardDataRead), /status:\s*403/);
 
   const supportGateStart = messengerSupportRoute.indexOf('async function requireAdmin(request: Request)');
   const supportIdentityCheck = messengerSupportRoute.indexOf('sb.auth.getUser(accessToken)', supportGateStart);
