@@ -131,26 +131,30 @@ export default function Home({ initialBanners = [], initialHeroImage = null, ini
   return (
     <div className={`${themeClass} home-premium-scope`}>
       {visitorCountry === 'IN' ? (
-        <section id="gazi-india-home-hero" className="section-pad home-india-hero-section">
+        <section id="gazi-india-home-hero" className="section-pad home-hero-section home-india-hero-section">
           <div className="container-custom">
-            <div className="home-india-hero-card">
-              <div className="home-india-hero-orb home-india-hero-orb-top" aria-hidden="true" />
-              <div className="home-india-hero-orb home-india-hero-orb-bottom" aria-hidden="true" />
-              <div className="home-india-hero-content">
-                <div className="home-india-hero-badge">🇮🇳 GAZI SEED INDIA</div>
-                <h1>{t('ভালো চাষের জন্য উন্নত বীজ', 'Premium Seeds for Better Farming', 'बेहतर खेती के लिए गुणवत्तापूर्ण बीज')}</h1>
-                <p>{t('সারা ভারতে ডেলিভারি, নিরাপদ পেমেন্ট ও নির্ভরযোগ্য সহায়তায় বীজ কিনুন।', 'India-focused seed shopping with fast pan-India delivery, secure payments and trusted customer support.', 'पूरे भारत में डिलीवरी, सुरक्षित भुगतान और विश्वसनीय सहायता के साथ बीज खरीदें।')}</p>
-                <div className="home-india-hero-pills"><span>UPI</span><span>PhonePe</span><span>Paytm</span><span className="secondary">{t('কার্ড ও COD', 'Cards & COD', 'कार्ड और COD')}</span></div>
-                <Link
-                  href="/all-products"
-                  className="mt-4 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-base font-bold text-emerald-900 shadow-lg transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-emerald-800"
-                >
-                  {t('বীজ কিনুন', 'Shop Seeds', 'बीज खरीदें')}
-                  <ChevronRight className="h-5 w-5" aria-hidden="true" />
-                </Link>
-              </div>
-              <div className="home-india-hero-visual">
-                <Image src="https://ufxsthshyebahkwbmioe.supabase.co/storage/v1/object/public/product-images/1791389448437-ipo6t8f.webp" alt={t('London-2 মিষ্টি কুমড়ার আসল বীজ প্যাকেট', 'Original London-2 sweet pumpkin seed packet', 'London-2 मीठे कद्दू का असली बीज पैकेट')} fill sizes="(max-width: 767px) 100px, 360px" priority className="object-contain" />
+            <div className="hero-wrap home-hero-fallback home-india-hero-fallback relative overflow-hidden">
+              <div className="hero-inner relative block h-full w-full p-0">
+                <div className="hero-fallback-shell">
+                  <div className="hero-fallback-content">
+                    <span className="hero-fallback-badge">🇮🇳 GAZI SEED INDIA</span>
+                    <h1>{t('ভালো চাষের জন্য উন্নত বীজ', 'Premium Seeds for Better Farming', 'बेहतर खेती के लिए गुणवत्तापूर्ण बीज')}</h1>
+                    <p>{t('সারা ভারতে ডেলিভারি, নিরাপদ পেমেন্ট ও নির্ভরযোগ্য সহায়তায় বীজ কিনুন।', 'India-focused seed shopping with fast pan-India delivery, secure payments and trusted customer support.', 'पूरे भारत में डिलीवरी, सुरक्षित भुगतान और विश्वसनीय सहायता के साथ बीज खरीदें।')}</p>
+                    <div className="hero-fallback-payment-pills" aria-label={t('পেমেন্ট পদ্ধতি', 'Payment methods', 'भुगतान के तरीके')}><span>UPI</span><span>PhonePe</span><span>Paytm</span><span>{t('কার্ড ও COD', 'Cards & COD', 'कार्ड और COD')}</span></div>
+                    <Link href="/all-products" className="hero-btn inline-flex">{t('বীজ কিনুন', 'Shop Seeds', 'बीज खरीदें')}<ChevronRight className="h-4 w-4" aria-hidden="true" /></Link>
+                  </div>
+                  <div className="hero-fallback-visual" aria-label={t('গাজী সিড ইন্ডিয়ার বীজের বিভাগ ও সেবা', 'GAZI SEED India seed categories and service highlights', 'GAZI SEED India के बीज वर्ग और सेवा विशेषताएँ')}>
+                    <div className="hero-fallback-media-grid">{[0, 1, 2].map((categoryIndex) => { const category = categories[categoryIndex]; return <div key={categoryIndex} className="hero-fallback-media-card">{category?.image ? <Image src={category.image} alt={tCategoryName(category.name_bn, category.name_en)} fill sizes="(max-width: 767px) 88vw, 220px" quality={65} className="object-cover" /> : <div className="hero-fallback-media-placeholder"><Sprout className="h-10 w-10" aria-hidden="true" /></div>}</div>; })}</div>
+                    <div className="hero-fallback-service-card">
+                      <div className="hero-fallback-seed-mark"><Sprout className="h-7 w-7" aria-hidden="true" /></div>
+                      <div className="hero-fallback-proof-grid">
+                        <div><ShieldCheck className="h-4 w-4" aria-hidden="true" /><span>{t('অরিজিনাল বীজ', 'Original Seeds', 'असली बीज')}</span></div>
+                        <div><Truck className="h-4 w-4" aria-hidden="true" /><span>{t('সারা ভারতে ডেলিভারি', 'Pan-India Delivery', 'पूरे भारत में डिलीवरी')}</span></div>
+                        <div><Heart className="h-4 w-4" aria-hidden="true" /><span>{t('নিরাপদ অর্ডার', 'Secure Ordering', 'सुरक्षित ऑर्डर')}</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
