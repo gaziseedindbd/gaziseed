@@ -39,10 +39,7 @@ export async function GET(request: Request) {
     if (!adminRow) {
       return NextResponse.json({ success: false, message: 'Admin access required' }, { status: 403 });
     }
-    if (!sb) return NextResponse.json({ success: false, message: 'Server configuration incomplete' }, { status: 500 });
-
-    let adminCountry: 'BD' | 'IN' =
-      String(adminRow.country_code || '').toUpperCase() === 'IN' ? 'IN' : 'BD';
+    let resolvedCountry = String(adminRow.country_code || '').toUpperCase();
 
     if (adminRow.role === 'master_admin') {
       const { data: branchContext, error: branchContextError } = await sb
@@ -52,27 +49,50 @@ export async function GET(request: Request) {
         .maybeSingle();
 
       if (branchContextError) throw branchContextError;
-      adminCountry =
-        String(branchContext?.country_code || '').toUpperCase() === 'IN' ? 'IN' : 'BD';
+      resolvedCountry = String(branchContext?.country_code || '').toUpperCase();
     }
+
+    if (!['IN', 'BD'].includes(resolvedCountry)) {
+      return NextResponse.json({success: false, message: 'Unable to verify admin branch'}, {status: 403});
+    }
+    const adminCountry = resolvedCountry as 'IN' | 'BD';
 
     const monitoringSince = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     const [settingsRes, conversationsRes, handoffsRes, messagesRes, monitoringMessagesRes, productOrdersRes, comboOrdersRes, offerOrdersRes] = await Promise.all([
       sb.from('ai_settings').select('id,is_enabled,provider,model,base_url,temperature,max_tokens,feature_flags,updated_at,country_code').eq('id', 1).eq('country_code', adminCountry).maybeSingle(),
-      sb.from('ai_conversations').select('id,channel,external_user_id,page_id,status,metadata,last_message_at,created_at,updated_at').order('updated_at', { ascending: false }).limit(12),
-      sb.from('ai_handoffs').select('id,conversation_id,reason,status,assigned_to,notes,created_at,resolved_at').order('created_at', { ascending: false }).limit(12),
-      sb.from('ai_messages').select('id,conversation_id,role,provider,model,tool_name,action_status,requires_confirmation,created_at').order('created_at', { ascending: false }).limit(20),
-      sb.from('ai_messages').select('role,provider,action_status,source_context').gte('created_at', monitoringSince).order('created_at', { ascending: false }).limit(2000),
-      sb.from('orders').select('id', { count: 'exact', head: true }).eq('order_source', 'facebook_messenger_ai'),
-      sb.from('orders').select('id', { count: 'exact', head: true }).eq('order_source', 'facebook_messenger_ai_combo'),
-      sb.from('orders').select('id', { count: 'exact', head: true }).eq('order_source', 'facebook_messenger_ai_offer'),
+      sb.from('ai_conversations').select('id,channel,external_user_id,page_id,status,metadata,last_message_at,created_at,updated_at').eq('country_code', adminCountry).order('updated_at', { ascending: false }).limit(12),
+      sb.from('ai_handoffs').select('id,conversation_id,reason,status,assigned_to,notes,created_at,resolved_at').eq('country_code', adminCountry).order('created_at', { ascending: false }).limit(12),
+      sb.from('ai_messages').select('id,conversation_id,role,provider,model,tool_name,action_status,requires_confirmation,created_at').eq('country_code', adminCountry).order('created_at', { ascending: false }).limit(20),
+      sb.from('ai_messages').select('conversation_id,role,provider,action_status,source_context').eq('country_code', adminCountry).gte('created_at', monitoringSince).order('created_at', { ascending: false }).limit(2000),
+      sb.from('orders').select('id', { count: 'exact', head: true }).eq('country_code', adminCountry).eq('order_source', 'facebook_messenger_ai'),
+      sb.from('orders').select('id', { count: 'exact', head: true }).eq('country_code', adminCountry).eq('order_source', 'facebook_messenger_ai_combo'),
+      sb.from('orders').select('id', { count: 'exact', head: true }).eq('country_code', adminCountry).eq('order_source', 'facebook_messenger_ai_offer'),
     ]);
 
-    if (settingsRes.error) throw settingsRes.error;
-    if (monitoringMessagesRes.error) throw monitoringMessagesRes.error;
+    for (const result of [settingsRes, conversationsRes, handoffsRes, messagesRes,
+      monitoringMessagesRes, productOrdersRes, comboOrdersRes, offerOrdersRes]) {
+      if (result.error) throw result.error;
+    }
+    // Legacy rows may have a branch that disagrees with their conversation.
+    // Both row and parent must belong to the selected branch.
+    const parentIds = Array.from(new Set([
+      ...(handoffsRes.data || []).map(row => row.conversation_id),
+      ...(messagesRes.data || []).map(row => row.conversation_id),
+      ...(monitoringMessagesRes.data || []).map(row => row.conversation_id),
+    ].filter(Boolean)));
+    const permittedParents = new Set<string>();
+    for (let index = 0; index < parentIds.length; index += 100) {
+      const {data: parents, error: parentError} = await sb.from('ai_conversations')
+        .select('id').eq('country_code', adminCountry).in('id', parentIds.slice(index, index + 100));
+      if (parentError) throw parentError;
+      for (const parent of parents || []) permittedParents.add(parent.id);
+    }
+    const safeHandoffs = (handoffsRes.data || []).filter(row => permittedParents.has(row.conversation_id));
+    const safeMessages = (messagesRes.data || []).filter(row => permittedParents.has(row.conversation_id));
+    const safeMonitoring = (monitoringMessagesRes.data || []).filter(row => permittedParents.has(row.conversation_id));
     const monitoring = buildMessengerMonitoringSummary(
-      (monitoringMessagesRes.data || []).map((message) => ({
+      safeMonitoring.map((message) => ({
         role: message.role,
         provider: message.provider,
         action_status: message.action_status,
@@ -126,6 +146,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
+      country_code: adminCountry,
       messenger: {
         enabled: process.env.AI_MESSENGER_ENABLED === 'true',
         meta_configured: Boolean(process.env.META_VERIFY_TOKEN && process.env.META_APP_SECRET && process.env.META_PAGE_ACCESS_TOKEN),
@@ -146,8 +167,8 @@ export async function GET(request: Request) {
       providers,
       stats: {
         conversations: conversationsRes.data?.length || 0,
-        open_handoffs: (handoffsRes.data || []).filter((h) => ['open', 'assigned'].includes(h.status)).length,
-        recent_messages: messagesRes.data?.length || 0,
+        open_handoffs: safeHandoffs.filter((h) => ['open', 'assigned'].includes(h.status)).length,
+        recent_messages: safeMessages.length,
         product_orders: productOrdersRes.count || 0,
         combo_orders: comboOrdersRes.count || 0,
         offer_orders: offerOrdersRes.count || 0,
@@ -157,8 +178,8 @@ export async function GET(request: Request) {
         ...monitoring,
       },
       conversations: conversationsRes.data || [],
-      handoffs: handoffsRes.data || [],
-      messages: messagesRes.data || [],
+      handoffs: safeHandoffs,
+      messages: safeMessages,
     });
   } catch (error) {
     return NextResponse.json({ success: false, message: error instanceof Error ? error.message : 'AI Messenger admin request failed' }, { status: 500 });

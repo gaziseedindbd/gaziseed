@@ -78,3 +78,49 @@ test('Messenger recommendation prices skip zero or negative offer fields and fal
   assert.match(recommendationBlock, /typeof value === 'number' && value > 0/);
   assert.match(recommendationBlock, /\?\? 0/);
 });
+
+
+const messengerAdminRoute = fs.readFileSync(
+  path.join(root, 'app/api/admin/ai-assistant/route.ts'),
+  'utf8',
+);
+const messengerSupportRoute = fs.readFileSync(
+  path.join(root, 'app/api/admin/ai-assistant/human-support/route.ts'),
+  'utf8',
+);
+
+test('Messenger Admin endpoints reject non-admin users before branch data queries', () => {
+  const tokenGuard = messengerAdminRoute.indexOf("if (!accessToken)");
+  const identityCheck = messengerAdminRoute.indexOf('sb.auth.getUser(accessToken)');
+  const activeAdminLookup = messengerAdminRoute.indexOf(".from('admin_users')");
+  const activeAdminFilter = messengerAdminRoute.indexOf(".eq('is_active', true)", activeAdminLookup);
+  const noAdminDenial = messengerAdminRoute.indexOf('if (!adminRow)', activeAdminFilter);
+  const dashboardDataRead = messengerAdminRoute.indexOf(".from('ai_settings')");
+
+  assert.ok(tokenGuard >= 0, 'dashboard route must reject requests without a bearer token');
+  assert.ok(identityCheck > tokenGuard, 'dashboard route must validate the bearer token with Supabase');
+  assert.ok(activeAdminLookup > identityCheck, 'dashboard route must look up the authenticated user as an admin');
+  assert.ok(activeAdminFilter > activeAdminLookup, 'dashboard route must require an active admin record');
+  assert.ok(noAdminDenial > activeAdminFilter, 'dashboard route must deny users without an active admin record');
+  assert.ok(dashboardDataRead > noAdminDenial, 'dashboard data queries must happen only after the active-admin gate');
+  assert.match(messengerAdminRoute.slice(noAdminDenial, dashboardDataRead), /status:\s*403/);
+
+  const supportGateStart = messengerSupportRoute.indexOf('async function requireAdmin(request: Request)');
+  const supportIdentityCheck = messengerSupportRoute.indexOf('sb.auth.getUser(accessToken)', supportGateStart);
+  const supportAdminLookup = messengerSupportRoute.indexOf(".from('admin_users')", supportIdentityCheck);
+  const supportActiveAdminFilter = messengerSupportRoute.indexOf(".eq('is_active', true)", supportAdminLookup);
+  const supportNoAdminDenial = messengerSupportRoute.indexOf('if (!adminRow)', supportActiveAdminFilter);
+  const supportGetStart = messengerSupportRoute.indexOf('export async function GET');
+  const supportGetGate = messengerSupportRoute.indexOf('const auth = await requireAdmin(request);', supportGetStart);
+  const supportGetDataRead = messengerSupportRoute.indexOf(".from('ai_handoffs')", supportGetStart);
+  const supportPostStart = messengerSupportRoute.indexOf('export async function POST');
+  const supportPostGate = messengerSupportRoute.indexOf('const auth = await requireAdmin(request);', supportPostStart);
+  const supportPostBodyRead = messengerSupportRoute.indexOf('await request.json()', supportPostStart);
+
+  assert.ok(supportIdentityCheck > supportGateStart, 'human-support route must validate the authenticated user');
+  assert.ok(supportAdminLookup > supportIdentityCheck, 'human-support route must look up active admin access');
+  assert.ok(supportActiveAdminFilter > supportAdminLookup, 'human-support route must require an active admin record');
+  assert.ok(supportNoAdminDenial > supportActiveAdminFilter, 'human-support route must deny users without an active admin record');
+  assert.ok(supportGetGate > supportGetStart && supportGetGate < supportGetDataRead, 'support GET must authorize before reading handoffs');
+  assert.ok(supportPostGate > supportPostStart && supportPostGate < supportPostBodyRead, 'support POST must authorize before reading action input');
+});

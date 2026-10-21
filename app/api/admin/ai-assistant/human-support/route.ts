@@ -42,7 +42,9 @@ async function requireAdmin(request: Request) {
     return { ok: false as const, status: 403, message: 'Admin access required', user: null };
   }
 
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_ANON_KEY || '';
   if (!anonKey) {
     return { ok: false as const, status: 500, message: 'Server configuration incomplete', user: null };
   }
@@ -58,6 +60,11 @@ async function requireAdmin(request: Request) {
   }
 
   return { ok: true as const, status: 200, message: '', user, countryCode: normalizedCountry };
+}
+
+function requireRows<T>(result: {data: T[] | null; error: unknown}): T[] {
+  if (result.error) throw result.error;
+  return result.data || [];
 }
 
 export async function GET(request: Request) {
@@ -94,7 +101,7 @@ export async function GET(request: Request) {
 
     const conversations =
       conversationIds.length > 0
-        ? (
+        ? requireRows(
             await sb
               .from('ai_conversations')
               .select(
@@ -102,7 +109,7 @@ export async function GET(request: Request) {
               )
               .in('id', conversationIds)
               .eq('country_code', auth.countryCode)
-          ).data || []
+          )
         : [];
 
     const externalUserIds = Array.from(
@@ -115,35 +122,36 @@ export async function GET(request: Request) {
 
     const messages =
       conversationIds.length > 0
-        ? (
+        ? requireRows(
             await sb
               .from('ai_messages')
               .select('id,conversation_id,role,content,created_at,action_status')
+              .eq('country_code', auth.countryCode)
               .in('conversation_id', conversationIds)
               .order('created_at', { ascending: false })
               .limit(Math.min(1500, conversationIds.length * 50))
-          ).data || []
+          )
         : [];
 
     const profiles =
       externalUserIds.length > 0
-        ? (
+        ? requireRows(
             await sb
               .from('messenger_customer_profiles')
               .select(
                 'id,page_id,external_user_id,country_code,name,phone,address,total_orders,total_spent,last_order_number,order_numbers,updated_at',
               )
-              .eq('country_code', 'BD')
-              .eq('page_id', process.env.META_PAGE_ID || '')
+              .eq('country_code', auth.countryCode)
+              .in('page_id', Array.from(new Set(conversations.map(row => row.page_id).filter(Boolean))))
               .in('external_user_id', externalUserIds)
-          ).data || []
+          )
         : [];
 
     const conversationMap = new Map(
       conversations.map((conversation) => [conversation.id, conversation]),
     );
     const profileMap = new Map(
-      profiles.map((profile) => [String(profile.external_user_id), profile]),
+      profiles.map((profile) => [String(profile.page_id) + ':' + String(profile.external_user_id), profile]),
     );
     const messagesByConversation = new Map<string, typeof messages>();
 
@@ -153,7 +161,7 @@ export async function GET(request: Request) {
       messagesByConversation.set(message.conversation_id, list);
     }
 
-    const supportQueue = rows.map((handoff) => {
+    const supportQueue = rows.filter(handoff => conversationMap.has(handoff.conversation_id)).map((handoff) => {
       const conversation = conversationMap.get(handoff.conversation_id);
       const externalUserId = conversation?.external_user_id || null;
 
@@ -162,7 +170,7 @@ export async function GET(request: Request) {
         queue_state: getMessengerHumanSupportQueueState(handoff.status),
         conversation: conversation || null,
         customer_profile: externalUserId
-          ? profileMap.get(externalUserId) || null
+          ? profileMap.get(String(conversation?.page_id) + ':' + externalUserId) || null
           : null,
         context: (messagesByConversation.get(handoff.conversation_id) || [])
           .slice(0, 30)
@@ -201,7 +209,7 @@ export async function POST(request: Request) {
       handoff_id?: string;
     };
 
-    if (!body.action || !body.handoff_id) {
+    if (!body.action || !['claim', 'close', 'reopen'].includes(body.action) || !body.handoff_id) {
       return NextResponse.json(
         { success: false, message: 'handoff_id and action are required' },
         { status: 400 },
@@ -241,9 +249,11 @@ export async function POST(request: Request) {
       .from('ai_conversations')
       .select('metadata')
       .eq('id', handoff.conversation_id)
+      .eq('country_code', auth.countryCode)
       .maybeSingle();
 
     if (conversationReadError) throw conversationReadError;
+    if (!conversation) return NextResponse.json({success: false, message: 'Conversation not found in the selected branch'}, {status: 404});
 
     if (body.action === 'claim') {
       const { error } = await sb
@@ -292,9 +302,10 @@ export async function POST(request: Request) {
           status: 'open',
           assigned_to: null,
           resolved_at: null,
-          notes: 'Bangladesh human-support handoff reopened and returned to the pending queue.',
+          notes: 'Selected-branch human-support handoff reopened and returned to the pending queue.',
         })
-        .eq('id', handoff.id);
+        .eq('id', handoff.id)
+        .eq('country_code', auth.countryCode);
 
       if (error) throw error;
 
@@ -313,7 +324,8 @@ export async function POST(request: Request) {
           metadata,
           updated_at: now,
         })
-        .eq('id', handoff.conversation_id);
+        .eq('id', handoff.conversation_id)
+        .eq('country_code', auth.countryCode);
 
       if (conversationError) throw conversationError;
 
@@ -329,9 +341,10 @@ export async function POST(request: Request) {
       .update({
         status: 'resolved',
         resolved_at: now,
-        notes: 'Bangladesh human-support handoff closed by admin.',
+        notes: 'Selected-branch human-support handoff closed by admin.',
       })
-      .eq('id', handoff.id);
+      .eq('id', handoff.id)
+        .eq('country_code', auth.countryCode);
 
     if (closeError) throw closeError;
 
@@ -350,7 +363,8 @@ export async function POST(request: Request) {
         metadata,
         updated_at: now,
       })
-      .eq('id', handoff.conversation_id);
+      .eq('id', handoff.conversation_id)
+        .eq('country_code', auth.countryCode);
 
     if (conversationError) throw conversationError;
 
@@ -366,7 +380,7 @@ export async function POST(request: Request) {
         message:
           error instanceof Error
             ? error.message
-            : 'Bangladesh human-support action failed',
+            : 'Selected-branch human-support action failed',
       },
       { status: 500 },
     );
