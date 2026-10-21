@@ -375,7 +375,7 @@ export default function CheckoutPage() {
   const selectedWalletAmount = walletSummary?.unlocked ? Math.min(walletSummary.max_usable, grandTotal) : 0;
   const codAdvance = country === 'IN' ? (deliveryCharge > 0 ? deliveryCharge : 120) : 0;
   const codAvailable = country !== 'IN' || deliveryCharge > 0 || payableTotal >= 120;
-  const codDue = country === 'IN' && paymentMethod === 'cod' ? Math.max(0, payableTotal - codAdvance) : 0;
+  const codDue = country === 'IN' ? Math.max(0, payableTotal - codAdvance) : 0;
 
   const freeDeliveryThreshold = useMemo(() => {
     const candidates = deliveryRules.filter((rule) => rule.is_free && rule.min_order > 0)
@@ -1032,10 +1032,10 @@ export default function CheckoutPage() {
                   {walletCredit > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('ওয়ালেট ক্রেডিট', 'Wallet credit')}</span><span className="font-bold">-{formatPrice(walletCredit)}</span></div>}
                   <div className="mt-4 flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-primary/15 bg-primary/[0.05] p-4">
                     <div>
-                      <span className="block text-base font-black">{t('সর্বমোট', 'Total')}</span>
-                      <span className="mt-0.5 block text-[10px] font-semibold text-muted-foreground">{t('চূড়ান্ত পরিশোধযোগ্য', 'Final payable amount')}</span>
+                      <span className="block text-base font-black">{t('পরিশোধযোগ্য মোট', 'Total to pay', 'कुल देय राशि')}</span>
+                      <span className="mt-0.5 block text-[10px] font-semibold text-muted-foreground">{country === 'IN' && paymentMethod === 'cod' ? t('অগ্রিম ও ডেলিভারিতে বাকি মিলিয়ে', 'Advance now + due on delivery', 'अभी अग्रिम + डिलीवरी पर शेष') : t('ওয়ালেট ব্যবহারের পর', 'After wallet credit', 'वॉलेट क्रेडिट के बाद')}</span>
                     </div>
-                    <span className="text-3xl font-black tracking-tight text-primary tabular-nums sm:text-4xl">{formatPrice(country === 'IN' && paymentMethod === 'cod' ? codAdvance : payableTotal)}</span>
+                    <span className="text-3xl font-black tracking-tight text-primary tabular-nums sm:text-4xl">{formatPrice(payableTotal)}</span>
                   </div>
 
                   {!deliveryQuoteReady && <div role="alert" className="rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-900"><p>{t('ডেলিভারি চার্জ যাচাই হচ্ছে বা সাময়িকভাবে পাওয়া যাচ্ছে না।', 'Delivery charge is being checked or is temporarily unavailable.', 'डिलीवरी शुल्क की जाँच हो रही है या अभी उपलब्ध नहीं है।')}</p><button type="button" onClick={() => setDeliveryQuoteRetry((n) => n + 1)} className="mt-2 rounded-xl border border-amber-400 px-4 py-2 font-black">{t('আবার চেষ্টা করুন', 'Retry delivery check', 'फिर कोशिश करें')}</button></div>}
