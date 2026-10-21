@@ -6,35 +6,10 @@ import {
   Mail, MapPin, Package, Phone, RefreshCw, Search, Shield, Unlock, Users, X,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { aggregateCustomers, type CustomerRow, type CustomerTypeFilter, type OrderSummary } from '@/lib/admin/customer-aggregation';
 
 type Branch = 'BD' | 'IN';
-type CustomerKind = 'registered' | 'guest';
-type CustomerTypeFilter = 'all' | CustomerKind;
 type SortField = 'recent' | 'orders' | 'spend' | 'name';
-
-type OrderSummary = {
-  id: string;
-  order_number: string | null;
-  customer_name: string | null;
-  customer_phone: string | null;
-  customer_email: string | null;
-  user_id: string | null;
-  status: string | null;
-  grand_total: number | string | null;
-  created_at: string;
-};
-
-type CustomerRow = {
-  key: string;
-  user_id: string | null;
-  name: string;
-  phone: string;
-  email: string;
-  orders: OrderSummary[];
-  totalSpend: number;
-  latestOrderAt: string;
-  type: CustomerKind;
-};
 
 type AuditLog = {
   id: string;
@@ -71,7 +46,6 @@ type CustomerDetail = {
 const PAGE_SIZE = 20;
 const ORDER_FETCH_SIZE = 1000;
 const FUNCTION_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-customer-support`;
-const isCancelled = (status: string | null) => ['cancelled', 'canceled'].includes((status || '').toLowerCase());
 const normalize = (value: string | null | undefined) => (value || '').trim().toLocaleLowerCase();
 const numberOrZero = (value: number | string | null | undefined) => {
   const result = Number(value);
@@ -94,41 +68,6 @@ function formatDate(value: string | null | undefined, withTime = false) {
   }).format(date);
 }
 
-function aggregateCustomers(orders: OrderSummary[]): CustomerRow[] {
-  const groups = new Map<string, CustomerRow>();
-  for (const order of orders) {
-    const registered = Boolean(order.user_id);
-    const phone = (order.customer_phone || '').trim();
-    const key = registered
-      ? `registered:${order.user_id}`
-      : phone
-        ? `guest:${phone.replace(/\s+/g, '')}`
-        : `guest-order:${order.id}`;
-    let row = groups.get(key);
-    if (!row) {
-      row = {
-        key,
-        user_id: order.user_id,
-        name: (order.customer_name || '').trim(),
-        phone,
-        email: (order.customer_email || '').trim(),
-        orders: [],
-        totalSpend: 0,
-        latestOrderAt: order.created_at,
-        type: registered ? 'registered' : 'guest',
-      };
-      groups.set(key, row);
-    }
-    row.orders.push(order);
-    if (isCancelled(order.status) === false) row.totalSpend += numberOrZero(order.grand_total);
-    if (order.created_at > row.latestOrderAt) row.latestOrderAt = order.created_at;
-    if (!row.name && order.customer_name) row.name = order.customer_name.trim();
-    if (!row.email && order.customer_email) row.email = order.customer_email.trim();
-    if (!row.phone && phone) row.phone = phone;
-  }
-  return Array.from(groups.values());
-}
-
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -141,7 +80,6 @@ export default function AdminCustomersPage() {
   const [page, setPage] = useState(1);
   const [branch, setBranch] = useState<Branch>('BD');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
-  const [selectedCustomerEmail, setSelectedCustomerEmail] = useState('');
   const [selectedGuest, setSelectedGuest] = useState<CustomerRow | null>(null);
   const [detail, setDetail] = useState<CustomerDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -180,7 +118,18 @@ export default function AdminCustomersPage() {
         allOrders.push(...batch);
         if (batch.length < ORDER_FETCH_SIZE) break;
       }
-      setCustomers(aggregateCustomers(allOrders));
+      const registeredIds = Array.from(new Set(allOrders.map((order) => order.user_id).filter((id): id is string => Boolean(id))));
+      const adminUserIds = new Set<string>();
+      for (let from = 0; from < registeredIds.length; from += 100) {
+        const ids = registeredIds.slice(from, from + 100);
+        const { data: adminAccounts, error: adminLookupError } = await supabase
+          .from('admin_users')
+          .select('user_id')
+          .in('user_id', ids);
+        if (adminLookupError) throw new Error('অভ্যন্তরীণ অ্যাকাউন্ট যাচাই করা যায়নি। নিরাপদে তালিকা দেখানো বন্ধ রাখা হয়েছে।');
+        for (const account of adminAccounts || []) adminUserIds.add(account.user_id);
+      }
+      setCustomers(aggregateCustomers(allOrders, adminUserIds));
     } catch (error) {
       setCustomers([]);
       setLoadError(error instanceof Error ? error.message : 'কাস্টমার তালিকা লোড করা যায়নি।');
@@ -200,7 +149,6 @@ export default function AdminCustomersPage() {
     setSelectedGuest(null);
     const requestId = ++detailRequest.current;
     setSelectedCustomerId(customer.user_id);
-    setSelectedCustomerEmail(customer.email);
     setDetailLoading(true);
     setDetailError('');
     setDetail(null);
@@ -215,6 +163,9 @@ export default function AdminCustomersPage() {
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'কাস্টমার তথ্য লোড করা যায়নি।');
+      if (!result?.user?.id || result.user.id !== customer.user_id) {
+        throw new Error('কাস্টমার অ্যাকাউন্টের পরিচয় মেলেনি। নিরাপত্তার জন্য বিস্তারিত দেখানো হয়নি।');
+      }
       if (requestId === detailRequest.current) setDetail(result as CustomerDetail);
     } catch (error) {
       if (requestId === detailRequest.current) setDetailError(error instanceof Error ? error.message : 'কাস্টমার তথ্য লোড করা যায়নি।');
@@ -258,7 +209,8 @@ export default function AdminCustomersPage() {
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const visibleCustomers = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const registeredCount = customers.filter((customer) => customer.type === 'registered').length;
-  const guestCount = customers.length - registeredCount;
+  const guestCount = customers.filter((customer) => customer.type === 'guest').length;
+  const orderOnlyCount = customers.filter((customer) => customer.type === 'order_only').length;
   const orderCount = customers.reduce((sum, customer) => sum + customer.orders.length, 0);
 
   const changeSort = (field: SortField) => {
@@ -270,7 +222,6 @@ export default function AdminCustomersPage() {
     detailRequest.current++;
     setSelectedGuest(null);
     setSelectedCustomerId(null);
-    setSelectedCustomerEmail('');
     setDetail(null);
     setDetailError('');
     setDetailLoading(false);
@@ -301,11 +252,12 @@ export default function AdminCustomersPage() {
         </section>
       ) : (
         <>
-          <section aria-label="Customer overview" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <section aria-label="Customer overview" className="grid grid-cols-2 gap-3 xl:grid-cols-5">
             <StatCard icon={<Users className="h-4 w-4" />} label="মোট কাস্টমার" value={customers.length.toLocaleString('bn-BD')} />
             <StatCard icon={<Shield className="h-4 w-4" />} label="নিবন্ধিত" value={registeredCount.toLocaleString('bn-BD')} />
             <StatCard icon={<Users className="h-4 w-4" />} label="গেস্ট" value={guestCount.toLocaleString('bn-BD')} />
             <StatCard icon={<Package className="h-4 w-4" />} label="মোট অর্ডার" value={orderCount.toLocaleString('bn-BD')} />
+            <StatCard icon={<AlertCircle className="h-4 w-4" />} label="অ্যাকাউন্ট মেলেনি" value={orderOnlyCount.toLocaleString('bn-BD')} />
           </section>
 
           <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
@@ -318,7 +270,7 @@ export default function AdminCustomersPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"><Filter className="h-3.5 w-3.5" aria-hidden="true" /> ধরন</span>
                 {([
-                  ['all', 'সব'], ['registered', 'নিবন্ধিত'], ['guest', 'গেস্ট'],
+                  ['all', 'সব'], ['registered', 'নিবন্ধিত'], ['guest', 'গেস্ট'], ['order_only', 'অ্যাকাউন্ট মেলেনি'],
                 ] as const).map(([value, label]) => (
                   <button key={value} type="button" aria-pressed={typeFilter === value} onClick={() => setTypeFilter(value)} className={`min-h-9 rounded-lg px-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 ${typeFilter === value ? 'bg-primary text-primary-foreground' : 'border border-border bg-background text-muted-foreground hover:bg-secondary'}`}>
                     {label}
@@ -390,7 +342,6 @@ export default function AdminCustomersPage() {
           loading={detailLoading}
           error={detailError}
           detail={detail}
-          email={selectedCustomerEmail}
           branch={branch}
           isMasterAdmin={isMasterAdmin}
           onClose={closeCustomer}
@@ -440,8 +391,14 @@ function Avatar({ name }: { name: string }) {
   return <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-extrabold text-primary">{name.trim().charAt(0).toLocaleUpperCase() || 'ক'}</span>;
 }
 
-function CustomerTypeBadge({ type }: { type: CustomerKind }) {
-  return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${type === 'registered' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' : 'bg-secondary text-muted-foreground'}`}>{type === 'registered' ? 'নিবন্ধিত' : 'গেস্ট'}</span>;
+function CustomerTypeBadge({ type }: { type: CustomerRow['type'] }) {
+  const label = type === 'registered' ? 'নিবন্ধিত' : type === 'guest' ? 'গেস্ট' : 'অ্যাকাউন্ট মেলেনি';
+  const style = type === 'registered'
+    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
+    : type === 'order_only'
+      ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200'
+      : 'bg-secondary text-muted-foreground';
+  return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${style}`}>{label}</span>;
 }
 
 function GuestCustomerDetailModal({ customer, branch, onClose }: { customer: CustomerRow; branch: Branch; onClose: () => void }) {
@@ -476,29 +433,28 @@ function GuestCustomerDetailModal({ customer, branch, onClose }: { customer: Cus
   return <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:p-4" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="guest-customer-detail-title" tabIndex={-1} className="flex h-full max-h-[96dvh] w-full max-w-2xl flex-col overflow-hidden rounded-none border border-border bg-background shadow-2xl outline-none sm:h-auto sm:rounded-3xl">
       <header className="flex shrink-0 items-center justify-between border-b border-border bg-background/95 px-4 py-3 sm:px-6">
-        <div className="min-w-0"><p className="text-xs font-bold uppercase tracking-[.14em] text-primary">{branch === 'IN' ? 'India customer' : 'Bangladesh customer'}</p><h2 id="guest-customer-detail-title" className="mt-0.5 truncate text-lg font-extrabold sm:text-xl">গেস্ট কাস্টমার বিস্তারিত</h2></div>
+        <div className="min-w-0"><p className="text-xs font-bold uppercase tracking-[.14em] text-primary">{branch === 'IN' ? 'India customer' : 'Bangladesh customer'}</p><h2 id="guest-customer-detail-title" className="mt-0.5 truncate text-lg font-extrabold sm:text-xl">{customer.type === 'order_only' ? 'অসংযুক্ত অর্ডারের তথ্য' : 'গেস্ট কাস্টমার বিস্তারিত'}</h2></div>
         <button ref={closeButtonRef} type="button" onClick={onClose} aria-label="কাস্টমার বিস্তারিত বন্ধ করুন" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"><X className="h-5 w-5" aria-hidden="true" /></button>
       </header>
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
         <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
-          <div className="flex items-start gap-3"><Avatar name={name} /><div className="min-w-0"><h3 className="truncate text-lg font-bold text-foreground">{name}</h3><CustomerTypeBadge type="guest" /></div></div>
+          <div className="flex items-start gap-3"><Avatar name={name} /><div className="min-w-0"><h3 className="truncate text-lg font-bold text-foreground">{name}</h3><CustomerTypeBadge type={customer.type} /></div></div>
           <dl className="mt-5 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2"><DetailFact icon={<Phone className="h-4 w-4" />} label="ফোন" value={customer.phone || '—'} /><DetailFact icon={<Mail className="h-4 w-4" />} label="ইমেইল" value={customer.email || '—'} /><DetailFact icon={<Clock3 className="h-4 w-4" />} label="সর্বশেষ অর্ডার" value={formatDate(customer.latestOrderAt, true)} /></dl>
         </section>
         <section aria-label="Guest customer totals" className="grid grid-cols-2 gap-3"><StatCard icon={<Package className="h-4 w-4" />} label="মোট অর্ডার" value={customer.orders.length.toLocaleString('bn-BD')} /><StatCard icon={<Shield className="h-4 w-4" />} label="মোট খরচ" value={formatBranchPrice(customer.totalSpend, branch)} /></section>
         <DetailSection icon={<Package className="h-4 w-4" />} title="অর্ডার হিস্ট্রি" empty="কোনো অর্ডার নেই" count={customer.orders.length}>
           {customer.orders.map((order) => <article key={order.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background p-3 text-sm"><div className="min-w-0"><p className="truncate font-bold text-foreground">{order.order_number || order.id}</p><p className="mt-1 text-xs text-muted-foreground">{formatDate(order.created_at, true)} · {order.status || 'স্ট্যাটাস নেই'}</p></div><span className="font-bold tabular-nums text-foreground">{formatBranchPrice(numberOrZero(order.grand_total), branch)}</span></article>)}
         </DetailSection>
-        <p className="rounded-xl bg-secondary/60 p-3 text-xs text-muted-foreground">গেস্ট কাস্টমারের লগইন অ্যাকাউন্ট নেই। তাই এখানে শুধু অর্ডার ও যোগাযোগের তথ্য দেখানো হচ্ছে।</p>
+        <p className="rounded-xl bg-secondary/60 p-3 text-xs text-muted-foreground">{customer.type === 'order_only' ? 'এই অর্ডারের সঙ্গে গ্রাহক অ্যাকাউন্ট নিরাপদভাবে মেলেনি। তাই অ্যাকাউন্টের ব্যক্তিগত তথ্য বা পাসওয়ার্ড নিয়ন্ত্রণ দেখানো হচ্ছে না; এখানে শুধু অর্ডারের তথ্য আছে।' : 'গেস্ট কাস্টমারের লগইন অ্যাকাউন্ট নেই। তাই এখানে শুধু অর্ডার ও যোগাযোগের তথ্য দেখানো হচ্ছে।'}</p>
       </div>
     </section>
   </div>;
 }
 
-function CustomerDetailModal({ loading, error, detail, email, branch, isMasterAdmin, onClose, onAction, onRefresh }: {
+function CustomerDetailModal({ loading, error, detail, branch, isMasterAdmin, onClose, onAction, onRefresh }: {
   loading: boolean;
   error: string;
   detail: CustomerDetail | null;
-  email: string;
   branch: Branch;
   isMasterAdmin: boolean;
   onClose: () => void;
@@ -581,8 +537,8 @@ function CustomerDetailModal({ loading, error, detail, email, branch, isMasterAd
           : error ? <div role="alert" className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 text-sm"><p className="font-bold text-foreground">কাস্টমার তথ্য লোড হয়নি</p><p className="mt-1 text-muted-foreground">{error}</p><button type="button" onClick={onRefresh} className="mt-3 rounded-lg bg-primary px-3 py-2 font-semibold text-primary-foreground">আবার চেষ্টা করুন</button></div>
           : detail ? <>
             <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
-              <div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><Avatar name={name === 'নাম নেই' ? detail.user.email : name} /><div className="min-w-0"><h3 className="truncate text-lg font-bold text-foreground">{name}</h3><p className="truncate text-sm text-muted-foreground">{detail.user.email || email || '—'}</p></div></div><span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${isLocked ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'}`}>{isLocked ? 'লক করা' : 'সক্রিয়'}</span></div>
-              <dl className="mt-5 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2"><DetailFact icon={<Phone className="h-4 w-4" />} label="ফোন" value={phone} /><DetailFact icon={<Mail className="h-4 w-4" />} label="ইমেইল" value={detail.user.email || email || '—'} /><DetailFact icon={<Clock3 className="h-4 w-4" />} label="নিবন্ধন" value={formatDate(detail.user.created_at)} /><DetailFact icon={<Clock3 className="h-4 w-4" />} label="শেষ লগইন" value={detail.user.last_sign_in_at ? formatDate(detail.user.last_sign_in_at, true) : 'কখনো নয়'} /></dl>
+              <div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><Avatar name={name === 'নাম নেই' ? detail.user.email : name} /><div className="min-w-0"><h3 className="truncate text-lg font-bold text-foreground">{name}</h3><p className="truncate text-sm text-muted-foreground">{detail.user.email || '—'}</p></div></div><span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${isLocked ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'}`}>{isLocked ? 'লক করা' : 'সক্রিয়'}</span></div>
+              <dl className="mt-5 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2"><DetailFact icon={<Phone className="h-4 w-4" />} label="ফোন" value={phone} /><DetailFact icon={<Mail className="h-4 w-4" />} label="ইমেইল" value={detail.user.email || '—'} /><DetailFact icon={<Clock3 className="h-4 w-4" />} label="নিবন্ধন" value={formatDate(detail.user.created_at)} /><DetailFact icon={<Clock3 className="h-4 w-4" />} label="শেষ লগইন" value={detail.user.last_sign_in_at ? formatDate(detail.user.last_sign_in_at, true) : 'কখনো নয়'} /></dl>
             </section>
             <section aria-label="Customer totals" className="grid grid-cols-2 gap-3"><StatCard icon={<Package className="h-4 w-4" />} label="মোট অর্ডার" value={numberOrZero(detail.total_orders).toLocaleString('bn-BD')} /><StatCard icon={<Shield className="h-4 w-4" />} label="মোট খরচ" value={formatBranchPrice(detail.total_spend, branch)} /></section>
             <DetailSection icon={<MapPin className="h-4 w-4" />} title="সংরক্ষিত ঠিকানা" empty="কোনো ঠিকানা সংরক্ষিত নেই" count={detail.addresses.length}>

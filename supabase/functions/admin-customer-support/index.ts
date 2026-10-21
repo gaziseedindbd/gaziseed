@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { getCustomerAccessFailure } from "../_shared/customer-access.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -118,6 +119,19 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Never treat an internal staff account as a customer, even when an order
+    // has an accidental user_id link to that account. This also protects all
+    // account-support actions from being aimed at an admin identity.
+    const { data: targetAdmin, error: targetAdminError } = await adminClient
+      .from("admin_users")
+      .select("user_id")
+      .eq("user_id", targetUserId)
+      .maybeSingle();
+    if (targetAdminError) {
+      return new Response(JSON.stringify({ error: "Failed to verify customer account type" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     // Scope service-role customer access to the caller's selected branch.
     const [{ data: targetOrders, error: targetOrdersError }, { data: targetAddresses, error: targetAddressesError }] = await Promise.all([
       adminClient.from("orders").select("country_code").eq("user_id", targetUserId),
@@ -130,7 +144,13 @@ Deno.serve(async (req: Request) => {
     }
     const hasBranchRecord = [...(targetOrders || []), ...(targetAddresses || [])]
       .some((row: any) => String(row.country_code || "").toUpperCase() === currentAdminCountry);
-    if (!isMaster && !hasBranchRecord) {
+    const accessFailure = getCustomerAccessFailure(Boolean(targetAdmin), hasBranchRecord);
+    if (accessFailure === "internal_admin_account") {
+      return new Response(JSON.stringify({ error: "এই অর্ডারটি অভ্যন্তরীণ অ্যাডমিন অ্যাকাউন্টের সঙ্গে যুক্ত; গ্রাহকের লগইন প্রোফাইল দেখানো যাবে না" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (accessFailure === "customer_not_in_branch") {
       return new Response(JSON.stringify({ error: "Customer not found in your branch" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -264,36 +284,51 @@ Deno.serve(async (req: Request) => {
       case "get_customer_detail": {
         // Fetch user details
         const { data: targetUser, error: targetError } = await adminClient.auth.admin.getUserById(targetUserId);
-        if (targetError) {
+        if (targetError || !targetUser?.user || targetUser.user.id !== targetUserId) {
           return new Response(JSON.stringify({ error: "User not found" }), {
             status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
 
         // Fetch addresses
-        const { data: addresses } = await adminClient
+        const { data: addresses, error: addressError } = await adminClient
           .from("customer_addresses")
           .select("*")
           .eq("user_id", targetUserId)
           .eq("country_code", currentAdminCountry)
           .order("created_at", { ascending: false });
+        if (addressError) {
+          return new Response(JSON.stringify({ error: "Failed to load customer addresses" }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
 
         // Fetch orders
-        const { data: orders } = await adminClient
+        const { data: orders, error: orderError } = await adminClient
           .from("orders")
           .select("*")
           .eq("user_id", targetUserId)
           .eq("country_code", currentAdminCountry)
           .order("created_at", { ascending: false });
+        if (orderError) {
+          return new Response(JSON.stringify({ error: "Failed to load customer orders" }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
 
         // Fetch audit logs
-        const { data: auditLogs } = await adminClient
+        const { data: auditLogs, error: auditError } = await adminClient
           .from("admin_audit_log")
           .select("*")
           .eq("target_user_id", targetUserId)
           .eq("country_code", currentAdminCountry)
           .order("created_at", { ascending: false })
           .limit(50);
+        if (auditError) {
+          return new Response(JSON.stringify({ error: "Failed to load customer audit history" }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
 
         // Calculate totals
         const activeOrders = (orders || []).filter((o: any) => o.status !== "cancelled");
