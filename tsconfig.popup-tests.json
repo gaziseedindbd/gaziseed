@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "declaration": false,
+    "incremental": false,
+    "outDir": ".tmp/popup-tests"
+  },
+  "include": ["lib/promotional-popup.ts", "lib/supabase/types.ts"]
+}

@@ -1,215 +1,531 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
+import { Calendar, Check, Eye, EyeOff, ImagePlus, Link as LinkIcon, Loader2, Plus, Save, Sparkles, Sprout, Trash2, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from '@/components/site/toast-provider';
-import { Save, Trash2, Plus, X, Calendar, Eye, EyeOff, Upload, Link as LinkIcon } from 'lucide-react';
 import type { PromotionalPopup } from '@/lib/supabase/types';
 import { processLocalImage, processUrlImage, uploadProcessedFile } from '@/lib/image-processing';
+import { getPopupCopy, isAllowedPopupHref, type PopupLanguage } from '@/lib/promotional-popup';
+
+type PopupLocaleContent = NonNullable<PromotionalPopup['localized_content'][PopupLanguage]>;
+type AdminLocale = { code: PopupLanguage; label: string; hint: string };
+
+const LOCALES: Record<'BD' | 'IN', AdminLocale[]> = {
+  BD: [
+    { code: 'bn', label: 'বাংলা', hint: 'Bangladesh storefront' },
+    { code: 'en', label: 'English', hint: 'Bangladesh storefront' },
+  ],
+  IN: [
+    { code: 'bn', label: 'বাংলা', hint: 'India storefront' },
+    { code: 'en', label: 'English', hint: 'India storefront' },
+    { code: 'hi', label: 'हिन्दी', hint: 'India storefront' },
+  ],
+};
 
 const FREQ_OPTIONS = [
-  { value: 'every_visit', label: 'Every Visit' },
-  { value: 'once_per_session', label: 'Once Per Session' },
-  { value: 'once_per_day', label: 'Once Per Day' },
-  { value: 'once_until_closed', label: 'Once Until Closed' },
-];
+  { value: 'once_per_day', label: 'Once per day' },
+  { value: 'once_per_session', label: 'Once per browser session' },
+  { value: 'once_until_closed', label: 'Once until the customer closes it' },
+  { value: 'every_visit', label: 'Every visit' },
+] as const;
+
+function localDateTimeValue(value?: string | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
+function dateTimeToIso(value: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function copyForLocale(popup: PromotionalPopup, language: PopupLanguage): PopupLocaleContent {
+  const copy = getPopupCopy(popup, language);
+  return {
+    title: copy.title,
+    description: copy.description,
+    offer: copy.offer,
+    cta_text: copy.cta_text,
+  };
+}
+
+function initialLocaleMap(popup: PromotionalPopup, locales: AdminLocale[]) {
+  const current = popup.localized_content || {};
+  const hasSavedCopy = Object.values(current).some((copy) =>
+    Boolean(copy?.title || copy?.description || copy?.offer || copy?.cta_text),
+  );
+  if (hasSavedCopy) return current;
+  const fallbackLocale = locales.some((locale) => locale.code === 'bn') ? 'bn' : locales[0].code;
+  return { ...current, [fallbackLocale]: copyForLocale(popup, fallbackLocale) };
+}
+
+function newPopup(country: 'BD' | 'IN'): PromotionalPopup {
+  const now = new Date();
+  return {
+    id: '',
+    country_code: country,
+    title: '',
+    description: '',
+    image: '',
+    offer: '',
+    cta_text: '',
+    cta_link: '/all-products',
+    localized_content: {},
+    display_delay: 3,
+    start_date: now.toISOString(),
+    end_date: null,
+    is_active: false,
+    show_on_main: true,
+    show_on_offers: false,
+    show_close_button: true,
+    auto_close: false,
+    auto_close_seconds: 10,
+    display_frequency: 'once_per_day',
+    created_at: '',
+    updated_at: '',
+  };
+}
 
 export default function AdminPopupsPage() {
   const [popups, setPopups] = useState<PromotionalPopup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [editing, setEditing] = useState<PromotionalPopup | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [urlInput, setUrlInput] = useState('');
   const [adminCountry, setAdminCountry] = useState<'BD' | 'IN'>('BD');
+  const [branchVerified, setBranchVerified] = useState(false);
+  const [activeLocale, setActiveLocale] = useState<PopupLanguage>('bn');
+  const [mutatingId, setMutatingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const locales = LOCALES[adminCountry];
+  const activeLocaleInfo = locales.find((locale) => locale.code === activeLocale) || locales[0];
+
+  const fetchPopups = useCallback(async (country: 'BD' | 'IN') => {
+    setLoadError(false);
+    const { data, error } = await supabase
+      .from('promotional_popups')
+      .select('*')
+      .eq('country_code', country)
+      .order('created_at', { ascending: false });
+    if (error) {
+      setPopups([]);
+      setLoadError(true);
+      setLoading(false);
+      toast('Popup list could not be loaded. Check your branch access and try again.', 'error');
+      return;
+    }
+    setPopups((data || []) as PromotionalPopup[]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const init = async () => {
+      const { data, error } = await supabase.rpc('current_admin_country');
+      if (cancelled) return;
+      if (error) {
+        setLoadError(true);
+        setLoading(false);
+        toast('Admin branch could not be verified. Popup editing is disabled.', 'error');
+        return;
+      }
+      const country = String(data).toUpperCase() === 'IN' ? 'IN' : 'BD';
+      setAdminCountry(country);
+      setBranchVerified(true);
+      setActiveLocale('bn');
+      await fetchPopups(country);
+    };
+    void init();
+    return () => { cancelled = true; };
+  }, [fetchPopups]);
 
   const uploadImage = async (file: File) => {
+    if (!editing) return;
     setUploading(true);
     try {
-      const processed = await processLocalImage(file, { maxWidth: 1200, maxHeight: 1200 });
+      const processed = await processLocalImage(file, { maxWidth: 1600, maxHeight: 1200 });
       const url = await uploadProcessedFile(processed, 'product-images', supabase);
-      if (editing) setEditing({ ...editing, image: url });
-      toast('ছবি প্রসেস ও আপলোড হয়েছে');
-    } catch (err: any) { toast(`আপলোড ব্যর্থ: ${err.message}`, 'error'); }
-    finally { setUploading(false); }
+      setEditing((current) => current ? { ...current, image: url } : current);
+      toast('Popup image processed and uploaded.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown upload error';
+      toast(`Image upload failed: ${message}`, 'error');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const importFromUrl = async () => {
-    if (!urlInput.trim()) return;
+    if (!urlInput.trim() || !editing) return;
     setUploading(true);
     try {
-      const processed = await processUrlImage(urlInput.trim(), { maxWidth: 1200, maxHeight: 1200 });
+      const processed = await processUrlImage(urlInput.trim(), { maxWidth: 1600, maxHeight: 1200 });
       const url = await uploadProcessedFile(processed, 'product-images', supabase);
-      if (editing) setEditing({ ...editing, image: url });
+      setEditing((current) => current ? { ...current, image: url } : current);
       setUrlInput('');
-      toast('ছবি ইম্পোর্ট ও ওয়াটারমার্ক হয়েছে');
-    } catch (err: any) { toast(`ইম্পোর্ট ব্যর্থ: ${err.message}`, 'error'); }
-    finally { setUploading(false); }
+      toast('Popup image imported and processed.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown import error';
+      toast(`Image import failed: ${message}`, 'error');
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const fetchPopups = async (country = adminCountry) => {
-    const { data } = await supabase.from('promotional_popups').select('*').eq('country_code', country).order('created_at', { ascending: false });
-    setPopups((data || []) as PromotionalPopup[]);
-    setLoading(false);
+  const beginNew = () => {
+    setActiveLocale('bn');
+    setEditing(newPopup(adminCountry));
   };
 
-  useEffect(() => { const init = async () => { const { data, error } = await supabase.rpc('current_admin_country'); if (error) { toast('Admin branch নির্ধারণ ব্যর্থ', 'error'); return; } const country = String(data).toUpperCase() === 'IN' ? 'IN' : 'BD'; setAdminCountry(country); await fetchPopups(country); }; void init(); }, []);
+  const beginEdit = (popup: PromotionalPopup) => {
+    setActiveLocale('bn');
+    setEditing({ ...popup, localized_content: initialLocaleMap(popup, locales) });
+  };
 
-  const newPopup = (): PromotionalPopup => ({
-    id: '', title: '', description: '', image: '', offer: '', cta_text: '', cta_link: '',
-    start_date: new Date().toISOString().slice(0, 16),
-    end_date: null, is_active: false, show_on_main: true, show_on_offers: false,
-    show_close_button: true, auto_close: false, auto_close_seconds: 10,
-    display_frequency: 'every_visit', created_at: '', updated_at: '',
-  });
+  const setLocaleField = (field: keyof PopupLocaleContent, value: string) => {
+    if (!editing) return;
+    setEditing((current) => {
+      if (!current) return current;
+      const localeContent = current.localized_content?.[activeLocale] || {};
+      return {
+        ...current,
+        localized_content: {
+          ...(current.localized_content || {}),
+          [activeLocale]: { ...localeContent, [field]: value },
+        },
+      };
+    });
+  };
+
+  const preview = useMemo(() => editing ? getPopupCopy(editing, activeLocale) : null, [editing, activeLocale]);
+  const previewImage = editing?.image?.trim();
+
+  const validate = (popup: PromotionalPopup) => {
+    const hasTitle = locales.some((locale) => Boolean(popup.localized_content?.[locale.code]?.title?.trim()));
+    if (!hasTitle) return 'Add a title in at least one storefront language.';
+    if (!popup.show_on_main && !popup.show_on_offers) return 'Choose at least one popup placement.';
+    const href = popup.cta_link.trim();
+    if (href && !isAllowedPopupHref(href)) return 'Enter a valid site path or an http/https URL for the CTA.';
+    const start = new Date(popup.start_date).getTime();
+    const end = popup.end_date ? new Date(popup.end_date).getTime() : null;
+    if (!Number.isFinite(start)) return 'Enter a valid start date and time.';
+    if (end !== null && (!Number.isFinite(end) || end <= start)) return 'End date must be later than the start date.';
+    if (!Number.isInteger(popup.display_delay) || popup.display_delay < 0 || popup.display_delay > 30) return 'Display delay must be between 0 and 30 seconds.';
+    if (popup.auto_close && (!Number.isInteger(popup.auto_close_seconds) || popup.auto_close_seconds < 3 || popup.auto_close_seconds > 60)) return 'Auto-close must be between 3 and 60 seconds.';
+    return null;
+  };
 
   const save = async () => {
-    if (!editing) return;
-    if (editing.id) {
-      const { id, created_at, updated_at, ...payload } = editing;
-      const { error } = await supabase.from('promotional_popups').update(payload).eq('id', editing.id);
-      if (error) { toast('Save failed', 'error'); return; }
-      toast('Popup updated');
-    } else {
-      const { id, created_at, updated_at, ...payload } = editing;
-      const { error } = await supabase.from('promotional_popups').insert(payload);
-      if (error) { toast('Save failed', 'error'); return; }
-      toast('Popup created');
+    if (!editing || saving) return;
+    const validationError = validate(editing);
+    if (validationError) {
+      toast(validationError, 'error');
+      return;
     }
-    setEditing(null);
-    fetchPopups();
+
+    const primaryCopy = editing.localized_content?.bn || editing.localized_content?.en || editing.localized_content?.hi || {};
+    const payload = {
+      country_code: adminCountry,
+      title: primaryCopy.title?.trim() || editing.title || '',
+      description: primaryCopy.description?.trim() || editing.description || '',
+      offer: primaryCopy.offer?.trim() || editing.offer || '',
+      cta_text: primaryCopy.cta_text?.trim() || editing.cta_text || '',
+      cta_link: editing.cta_link.trim() || '/all-products',
+      localized_content: editing.localized_content || {},
+      start_date: dateTimeToIso(editing.start_date),
+      end_date: editing.end_date ? dateTimeToIso(editing.end_date) : null,
+      is_active: editing.is_active,
+      show_on_main: editing.show_on_main,
+      show_on_offers: editing.show_on_offers,
+      show_close_button: true,
+      auto_close: editing.auto_close,
+      display_delay: Math.min(30, Math.max(0, Number(editing.display_delay) || 0)),
+      auto_close_seconds: Math.min(60, Math.max(3, Number(editing.auto_close_seconds) || 8)),
+      display_frequency: editing.display_frequency,
+    };
+    if (!payload.start_date) {
+      toast('Start date is invalid.', 'error');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      let error;
+      if (editing.id) {
+        const result = await supabase
+          .from('promotional_popups')
+          .update(payload)
+          .eq('id', editing.id)
+          .eq('country_code', adminCountry)
+          .select('id')
+          .maybeSingle();
+        error = result.error;
+        if (!error && !result.data) error = new Error('Popup was not found in this branch. Refresh the list and try again.');
+      } else {
+        const result = await supabase.from('promotional_popups').insert(payload).select('id').single();
+        error = result.error;
+      }
+      if (error) {
+        toast(`Popup could not be saved: ${error.message}`, 'error');
+        return;
+      }
+      toast(editing.id ? 'Popup updated successfully.' : 'Popup created successfully.');
+      setEditing(null);
+      await fetchPopups(adminCountry);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown save error';
+      toast(`Popup could not be saved: ${message}`, 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const toggleActive = async (p: PromotionalPopup) => {
-    await supabase.from('promotional_popups').update({ is_active: !p.is_active }).eq('id', p.id).eq('country_code', adminCountry);
-    fetchPopups();
+  const toggleActive = async (popup: PromotionalPopup) => {
+    setMutatingId(popup.id);
+    const { data, error } = await supabase
+      .from('promotional_popups')
+      .update({ is_active: !popup.is_active })
+      .eq('id', popup.id)
+      .eq('country_code', adminCountry)
+      .select('id')
+      .maybeSingle();
+    if (error) toast(`Popup status could not be changed: ${error.message}`, 'error');
+    else if (!data) toast('Popup was not found in this branch. Refresh the list and try again.', 'error');
+    else toast(popup.is_active ? 'Popup paused.' : 'Popup activated.');
+    await fetchPopups(adminCountry);
+    setMutatingId(null);
   };
 
-  const del = async (id: string) => {
-    if (!confirm('Delete this popup?')) return;
-    await supabase.from('promotional_popups').delete().eq('id', id).eq('country_code', adminCountry);
-    fetchPopups();
-    toast('Popup deleted');
+  const del = async (popup: PromotionalPopup) => {
+    if (!window.confirm(`Delete “${popup.title || 'this popup'}” from the ${adminCountry === 'IN' ? 'India' : 'Bangladesh'} branch?`)) return;
+    setMutatingId(popup.id);
+    const { data, error } = await supabase
+      .from('promotional_popups')
+      .delete()
+      .eq('id', popup.id)
+      .eq('country_code', adminCountry)
+      .select('id')
+      .maybeSingle();
+    if (error) toast(`Popup could not be deleted: ${error.message}`, 'error');
+    else if (!data) toast('Popup was not found in this branch. Refresh the list and try again.', 'error');
+    else toast('Popup deleted.');
+    await fetchPopups(adminCountry);
+    setMutatingId(null);
   };
 
-  if (loading) return <div className="h-64 animate-pulse rounded-2xl bg-secondary" />;
+  if (loading) return <div className="h-64 animate-pulse rounded-2xl bg-secondary" aria-label="Loading popup settings" />;
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Promotional Popups</h1>
-        <button onClick={() => setEditing(newPopup())} className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-          <Plus className="h-4 w-4" /> New Popup
-        </button>
+    <div className="mx-auto w-full max-w-6xl px-1 pb-10">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="mb-1 text-xs font-bold uppercase tracking-[.18em] text-primary">Promotion settings</p>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Promotional Popups</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Create a timed, branch-specific offer customers can close at any time.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-bold text-foreground">
+            {adminCountry === 'IN' ? '🇮🇳 India · INR' : '🇧🇩 Bangladesh · BDT'}
+          </span>
+          <button disabled={!branchVerified || loadError} onClick={beginNew} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50">
+            <Plus className="h-4 w-4" /> New popup
+          </button>
+        </div>
       </div>
 
-      {/* List */}
-      <div className="space-y-3">
-        {popups.length === 0 && <p className="text-muted-foreground">No popups yet. Click &quot;New Popup&quot; to create one.</p>}
-        {popups.map((p) => (
-          <div key={p.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-4">
-            <div className="flex items-center gap-4">
-              {p.image ? <img src={p.image} alt="" className="h-12 w-12 rounded-lg object-cover" /> : <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-secondary text-xl">📣</div>}
-              <div>
-                <p className="font-semibold text-foreground">{p.title || '(untitled)'}</p>
-                <p className="text-xs text-muted-foreground">
-                  {p.is_active ? <span className="text-green-600">Active</span> : <span className="text-muted-foreground">Inactive</span>}
-                  {' · '}
-                  {p.display_frequency.replace(/_/g, ' ')}
-                  {' · '}
-                  {p.show_on_main ? 'Main ' : ''}{p.show_on_offers ? 'Offers' : ''}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => toggleActive(p)} className="rounded-lg p-2 hover:bg-secondary" title={p.is_active ? 'Deactivate' : 'Activate'}>
-                {p.is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-              <button onClick={() => setEditing(p)} className="rounded-lg p-2 hover:bg-secondary"><Save className="h-4 w-4" /></button>
-              <button onClick={() => del(p.id)} className="rounded-lg p-2 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></button>
-            </div>
-          </div>
-        ))}
+      <div className="mb-5 flex items-start gap-3 rounded-2xl border border-primary/15 bg-primary/5 p-4 text-sm text-foreground">
+        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+        <p><strong>Customer-friendly by design:</strong> one eligible popup is shown at a time; the newest eligible popup is selected. A visible close control is always kept available.</p>
       </div>
 
-      {/* Edit modal */}
-      {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e) => { if (e.target === e.currentTarget) setEditing(null); }}>
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-card p-6 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold">{editing.id ? 'Edit Popup' : 'New Popup'}</h2>
-              <button onClick={() => setEditing(null)}><X className="h-5 w-5" /></button>
+      {loadError ? (
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-sm text-foreground">
+          <p className="font-semibold">Popup list could not be loaded.</p>
+          <button onClick={() => fetchPopups(adminCountry)} className="mt-3 rounded-lg border border-border bg-card px-3 py-2 font-semibold hover:bg-secondary">Try again</button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {popups.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Sparkles className="h-6 w-6" /></div>
+              <h2 className="font-bold">No popups for this branch yet</h2>
+              <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">Create one popup, add the branch languages, set its dates and placement, then activate it when ready.</p>
+              <button onClick={beginNew} className="mt-4 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground">Create popup</button>
             </div>
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium">Title</label>
-                <input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} className="input-bangla" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">Description</label>
-                <textarea value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} className="input-bangla min-h-[60px]" />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">Image</label>
-                <div className="flex gap-1">
-                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"><Upload className="h-4 w-4" /> Upload</button>
-                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) uploadImage(e.target.files[0]); e.target.value = ''; }} />
-                  <input value={urlInput} onChange={(e) => setUrlInput(e.target.value)} className="input-bangla flex-1" placeholder="or image URL (watermarked)" />
-                  <button type="button" onClick={importFromUrl} disabled={uploading} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"><LinkIcon className="h-4 w-4" /></button>
-                </div>
-                {uploading && <p className="mt-1 text-xs text-primary">Processing...</p>}
-                {editing.image && <img src={editing.image} alt="" className="mt-1 h-20 w-20 rounded-lg object-cover" />}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-sm font-medium">Offer Text</label>
-                  <input value={editing.offer} onChange={(e) => setEditing({ ...editing, offer: e.target.value })} className="input-bangla" placeholder="20% OFF" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium">CTA Text</label>
-                  <input value={editing.cta_text} onChange={(e) => setEditing({ ...editing, cta_text: e.target.value })} className="input-bangla" placeholder="Shop Now" />
-                </div>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">CTA Link</label>
-                <input value={editing.cta_link} onChange={(e) => setEditing({ ...editing, cta_link: e.target.value })} className="input-bangla" placeholder="/all-products" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-sm font-medium">Start Date</label>
-                  <input type="datetime-local" value={(editing.start_date || '').slice(0, 16)} onChange={(e) => setEditing({ ...editing, start_date: e.target.value })} className="input-bangla" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium">End Date (optional)</label>
-                  <input type="datetime-local" value={(editing.end_date || '').slice(0, 16)} onChange={(e) => setEditing({ ...editing, end_date: e.target.value || null })} className="input-bangla" />
-                </div>
-              </div>
-              <div className="space-y-2 border-t border-border pt-3">
-                <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={editing.is_active} onChange={(e) => setEditing({ ...editing, is_active: e.target.checked })} className="accent-primary" /> Active (ON/OFF)</label>
-                <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={editing.show_on_main} onChange={(e) => setEditing({ ...editing, show_on_main: e.target.checked })} className="accent-primary" /> Show on Main Website</label>
-                <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={editing.show_on_offers} onChange={(e) => setEditing({ ...editing, show_on_offers: e.target.checked })} className="accent-primary" /> Show on Ads Landing Pages (/offer/*)</label>
-              </div>
-              <div className="space-y-2 border-t border-border pt-3">
-                <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={editing.show_close_button} onChange={(e) => setEditing({ ...editing, show_close_button: e.target.checked })} className="accent-primary" /> Show X Close Button</label>
-                <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={editing.auto_close} onChange={(e) => setEditing({ ...editing, auto_close: e.target.checked })} className="accent-primary" /> Auto Close</label>
-                {editing.auto_close && (
-                  <div>
-                    <label className="mb-1 block text-sm font-medium">Auto Close After (seconds)</label>
-                    <input type="number" value={editing.auto_close_seconds} onChange={(e) => setEditing({ ...editing, auto_close_seconds: Number(e.target.value) })} className="input-bangla" />
+          )}
+          {popups.map((popup) => {
+            const title = popup.localized_content?.bn?.title || popup.localized_content?.en?.title || popup.localized_content?.hi?.title || popup.title || '(Untitled popup)';
+            const activeLocales = locales.filter((locale) => Boolean(popup.localized_content?.[locale.code]?.title?.trim())).map((locale) => locale.label);
+            return (
+              <article key={popup.id} className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-4">
+                  {popup.image ? (
+                    <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-secondary"><Image src={popup.image} alt="" fill sizes="80px" unoptimized className="object-cover" /></div>
+                  ) : (
+                    <div className="flex h-16 w-20 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><ImagePlus className="h-6 w-6" /></div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate font-bold text-foreground">{title}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                      <span className={`rounded-full px-2 py-0.5 font-semibold ${popup.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-secondary text-muted-foreground'}`}>{popup.is_active ? 'Active' : 'Paused'}</span>
+                      <span>·</span><span>{popup.display_frequency.replace(/_/g, ' ')}</span>
+                      <span>·</span><span>{popup.show_on_main ? 'Main site' : ''}{popup.show_on_main && popup.show_on_offers ? ' + ' : ''}{popup.show_on_offers ? 'Offer pages' : ''}</span>
+                      {activeLocales.length > 0 && <><span>·</span><span>{activeLocales.join(' / ')}</span></>}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">Starts {new Date(popup.start_date).toLocaleString()} {popup.end_date ? `· Ends ${new Date(popup.end_date).toLocaleString()}` : '· No end date'}</p>
                   </div>
-                )}
+                </div>
+                <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
+                  <button disabled={mutatingId === popup.id} onClick={() => void toggleActive(popup)} aria-label={popup.is_active ? 'Pause popup' : 'Activate popup'} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background transition hover:bg-secondary disabled:opacity-50">
+                    {mutatingId === popup.id ? <Loader2 className="h-4 w-4 animate-spin" /> : popup.is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                  <button onClick={() => beginEdit(popup)} aria-label="Edit popup" className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-semibold transition hover:bg-secondary"><Save className="h-4 w-4" /> Edit</button>
+                  <button disabled={mutatingId === popup.id} onClick={() => void del(popup)} aria-label="Delete popup" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-destructive/20 bg-destructive/5 text-destructive transition hover:bg-destructive/10 disabled:opacity-50"><Trash2 className="h-4 w-4" /></button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {editing && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/60 p-2 backdrop-blur-sm sm:p-5" onClick={(event) => { if (event.target === event.currentTarget && !saving && !uploading) setEditing(null); }}>
+          <section role="dialog" aria-modal="true" aria-labelledby="popup-editor-title" className="max-h-[96dvh] w-full max-w-6xl overflow-y-auto rounded-3xl border border-white/20 bg-background shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/95 px-5 py-4 backdrop-blur sm:px-7">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[.16em] text-primary">{adminCountry === 'IN' ? 'India popup' : 'Bangladesh popup'}</p>
+                <h2 id="popup-editor-title" className="mt-0.5 text-lg font-extrabold">{editing.id ? 'Edit popup' : 'Create popup'}</h2>
               </div>
-              <div className="border-t border-border pt-3">
-                <label className="mb-1 block text-sm font-medium">Display Frequency</label>
-                <select value={editing.display_frequency} onChange={(e) => setEditing({ ...editing, display_frequency: e.target.value })} className="input-bangla">
-                  {FREQ_OPTIONS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
-                </select>
+              <button type="button" disabled={saving || uploading} onClick={() => setEditing(null)} aria-label="Close editor" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border hover:bg-secondary disabled:opacity-50"><X className="h-5 w-5" /></button>
+            </div>
+
+            <div className="grid gap-6 p-4 sm:p-7 lg:grid-cols-[minmax(0,1fr)_minmax(340px,.85fr)]">
+              <div className="space-y-6">
+                <section>
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div><h3 className="font-bold">Popup message</h3><p className="text-xs text-muted-foreground">Fill the languages your customers use. Missing language copy falls back to the next available version.</p></div>
+                  </div>
+                  <div className="mb-4 flex flex-wrap gap-2" aria-label="Popup language">
+                    {locales.map((locale) => (
+                      <button key={locale.code} type="button" aria-pressed={activeLocale === locale.code} onClick={() => setActiveLocale(locale.code)} className={`min-h-10 rounded-xl px-3.5 text-sm font-bold transition ${activeLocale === locale.code ? 'bg-primary text-primary-foreground shadow-sm' : 'border border-border bg-card text-foreground hover:bg-secondary'}`}>
+                        {locale.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
+                    <label className="block text-sm font-semibold">Title <span className="text-destructive">*</span>
+                      <input value={editing.localized_content?.[activeLocale]?.title || ''} onChange={(event) => setLocaleField('title', event.target.value)} maxLength={120} className="input-bangla mt-1.5" placeholder={activeLocale === 'hi' ? 'अपना ऑफ़र शीर्षक लिखें' : activeLocale === 'en' ? 'Write a clear offer headline' : 'অফারের শিরোনাম লিখুন'} />
+                      <span className="mt-1 block text-right text-[11px] font-normal text-muted-foreground">{editing.localized_content?.[activeLocale]?.title?.length || 0}/120</span>
+                    </label>
+                    <label className="block text-sm font-semibold">Description
+                      <textarea value={editing.localized_content?.[activeLocale]?.description || ''} onChange={(event) => setLocaleField('description', event.target.value)} maxLength={280} rows={3} className="input-bangla mt-1.5 min-h-[90px]" placeholder="A short, helpful explanation of the offer" />
+                      <span className="mt-1 block text-right text-[11px] font-normal text-muted-foreground">{editing.localized_content?.[activeLocale]?.description?.length || 0}/280</span>
+                    </label>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="block text-sm font-semibold">Offer badge
+                        <input value={editing.localized_content?.[activeLocale]?.offer || ''} onChange={(event) => setLocaleField('offer', event.target.value)} maxLength={48} className="input-bangla mt-1.5" placeholder="Limited-time offer" />
+                      </label>
+                      <label className="block text-sm font-semibold">Button label
+                        <input value={editing.localized_content?.[activeLocale]?.cta_text || ''} onChange={(event) => setLocaleField('cta_text', event.target.value)} maxLength={40} className="input-bangla mt-1.5" placeholder="Shop this offer" />
+                      </label>
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <h3 className="mb-1 font-bold">Popup image</h3>
+                  <p className="mb-3 text-xs text-muted-foreground">Use a clear 16:9 campaign image. It will be cropped to fit and compressed before upload.</p>
+                  <div className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-4 sm:flex-row">
+                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3.5 text-sm font-bold text-primary-foreground disabled:opacity-50"><ImagePlus className="h-4 w-4" /> Upload image</button>
+                    <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => { if (event.target.files?.[0]) void uploadImage(event.target.files[0]); event.target.value = ''; }} />
+                    <input value={urlInput} onChange={(event) => setUrlInput(event.target.value)} className="input-bangla min-w-0 flex-1" placeholder="Or import an image URL" aria-label="Image URL to import" />
+                    <button type="button" onClick={() => void importFromUrl()} disabled={uploading || !urlInput.trim()} aria-label="Import image URL" className="inline-flex h-10 items-center justify-center rounded-xl border border-border px-3 hover:bg-secondary disabled:opacity-50"><LinkIcon className="h-4 w-4" /></button>
+                  </div>
+                  {uploading && <p className="mt-2 inline-flex items-center gap-2 text-xs font-semibold text-primary"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Processing image…</p>}
+                  {editing.image && <div className="mt-3 flex items-center gap-3 rounded-xl border border-border bg-card p-2"><div className="relative h-16 w-28 overflow-hidden rounded-lg bg-secondary"><Image src={editing.image} alt="Popup image preview" fill sizes="112px" unoptimized className="object-cover" /></div><span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">Image ready</span><button type="button" onClick={() => setEditing({ ...editing, image: '' })} className="rounded-lg px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/5">Remove</button></div>}
+                </section>
+
+                <section>
+                  <h3 className="mb-3 font-bold">Button destination</h3>
+                  <label className="block text-sm font-semibold">CTA link
+                    <input value={editing.cta_link || ''} onChange={(event) => setEditing({ ...editing, cta_link: event.target.value })} className="input-bangla mt-1.5" placeholder="/all-products or https://example.com/offer" />
+                    <span className="mt-1 block text-xs font-normal text-muted-foreground">Use a site path such as /all-products or a secure https:// link.</span>
+                  </label>
+                </section>
+
+                <section>
+                  <h3 className="mb-3 font-bold">Schedule and display</h3>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="block text-sm font-semibold">Starts at
+                      <input type="datetime-local" value={localDateTimeValue(editing.start_date)} onChange={(event) => setEditing({ ...editing, start_date: event.target.value })} className="input-bangla mt-1.5" />
+                    </label>
+                    <label className="block text-sm font-semibold">Ends at (optional)
+                      <input type="datetime-local" value={localDateTimeValue(editing.end_date)} onChange={(event) => setEditing({ ...editing, end_date: event.target.value || null })} className="input-bangla mt-1.5" />
+                    </label>
+                    <label className="block text-sm font-semibold">Show after (seconds)
+                      <input type="number" min={0} max={30} step={1} value={editing.display_delay} onChange={(event) => setEditing({ ...editing, display_delay: Number(event.target.value) })} className="input-bangla mt-1.5" />
+                    </label>
+                    <label className="block text-sm font-semibold">Display frequency
+                      <select value={editing.display_frequency} onChange={(event) => setEditing({ ...editing, display_frequency: event.target.value })} className="input-bangla mt-1.5">
+                        {FREQ_OPTIONS.map((frequency) => <option key={frequency.value} value={frequency.value}>{frequency.label}</option>)}
+                      </select>
+                    </label>
+                  </div>
+                  <div className="mt-4 space-y-2 rounded-2xl border border-border bg-card p-4">
+                    <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={editing.is_active} onChange={(event) => setEditing({ ...editing, is_active: event.target.checked })} className="h-4 w-4 accent-primary" /> Activate this popup</label>
+                    <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={editing.show_on_main} onChange={(event) => setEditing({ ...editing, show_on_main: event.target.checked })} className="h-4 w-4 accent-primary" /> Show on main storefront</label>
+                    <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={editing.show_on_offers} onChange={(event) => setEditing({ ...editing, show_on_offers: event.target.checked })} className="h-4 w-4 accent-primary" /> Show on offer landing pages</label>
+                    <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={editing.auto_close} onChange={(event) => setEditing({ ...editing, auto_close: event.target.checked })} className="h-4 w-4 accent-primary" /> Close automatically</label>
+                    {editing.auto_close && <label className="ml-6 block max-w-xs text-sm font-semibold">Auto-close after (3–60 seconds)
+                      <input type="number" min={3} max={60} step={1} value={editing.auto_close_seconds} onChange={(event) => setEditing({ ...editing, auto_close_seconds: Number(event.target.value) })} className="input-bangla mt-1.5" />
+                    </label>}
+                    <p className="flex items-center gap-2 border-t border-border pt-3 text-xs text-muted-foreground"><Check className="h-4 w-4 text-emerald-600" /> A visible close button is always shown for customer control.</p>
+                  </div>
+                </section>
               </div>
-              <button onClick={save} className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-semibold text-primary-foreground hover:bg-primary/90">
-                <Save className="h-4 w-4" /> {editing.id ? 'Update Popup' : 'Create Popup'}
+
+              <aside className="space-y-4 lg:sticky lg:top-[88px] lg:self-start">
+                <div>
+                  <h3 className="font-bold">Live preview</h3>
+                  <p className="text-xs text-muted-foreground">Preview for {activeLocaleInfo.label} · {adminCountry === 'IN' ? 'India' : 'Bangladesh'}</p>
+                </div>
+                <div className="overflow-hidden rounded-[1.75rem] border border-border bg-card shadow-[0_20px_55px_-32px_rgba(0,0,0,.55)]">
+                  <div className={`relative isolate overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-800 to-lime-700 ${previewImage ? 'aspect-[16/9]' : 'flex min-h-40 items-center justify-center text-lime-100'}`}>
+                    {previewImage ? <Image src={previewImage} alt="" fill sizes="(max-width: 1024px) 90vw, 400px" unoptimized className="object-cover" /> : <Sprout className="h-14 w-14" strokeWidth={1.4} aria-hidden="true" />}
+                    <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/65 via-transparent to-emerald-950/10" />
+                    <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-emerald-950/65 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.14em] text-white"><Sparkles className="h-3 w-3 text-lime-300" /> GAZI SEED</span>
+                    <span className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-white/70 bg-white/95 text-slate-700 shadow"><X className="h-4 w-4" /></span>
+                  </div>
+                  <div className="px-5 pb-6 pt-5 text-center">
+                    {preview?.offer && <span className="mb-3 inline-flex rounded-full border border-amber-300/70 bg-amber-50 px-3.5 py-1.5 text-xs font-extrabold text-amber-900">{preview.offer}</span>}
+                    <h4 className="text-xl font-extrabold leading-tight text-foreground">{preview?.title || 'Your offer headline will appear here'}</h4>
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">{preview?.description || 'Add a short description to help customers understand this offer.'}</p>
+                    <div className="mt-5"><span className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white">{preview?.cta_text || 'Shop this offer'}<span aria-hidden="true">→</span></span></div>
+                    <p className="mt-4 text-[10px] font-semibold uppercase tracking-[.16em] text-muted-foreground/70">GAZI SEED · {adminCountry === 'IN' ? 'India' : 'Bangladesh'}</p>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-border bg-secondary/40 p-4 text-xs leading-5 text-muted-foreground">
+                  <div className="mb-1 flex items-center gap-2 font-bold text-foreground"><Calendar className="h-4 w-4 text-primary" /> Display summary</div>
+                  {editing.is_active ? 'Active' : 'Paused'} · {editing.show_on_main ? 'Main storefront' : ''}{editing.show_on_main && editing.show_on_offers ? ' + ' : ''}{editing.show_on_offers ? 'Offer pages' : ''} · waits {editing.display_delay || 0}s · {editing.display_frequency.replace(/_/g, ' ')}
+                </div>
+              </aside>
+            </div>
+
+            <div className="sticky bottom-0 flex flex-col-reverse gap-2 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:flex-row sm:justify-end sm:px-7">
+              <button type="button" disabled={saving || uploading} onClick={() => setEditing(null)} className="min-h-11 rounded-xl border border-border px-5 text-sm font-bold hover:bg-secondary disabled:opacity-50">Cancel</button>
+              <button type="button" disabled={saving || uploading} onClick={() => void save()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{saving ? 'Saving…' : editing.id ? 'Save popup' : 'Create popup'}
               </button>
             </div>
-          </div>
+          </section>
         </div>
       )}
     </div>

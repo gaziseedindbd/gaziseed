@@ -680,12 +680,20 @@ export type CustomerTag = {
 
 export type PromotionalPopup = {
   id: string;
+  country_code: 'BD' | 'IN';
   title: string;
   description: string;
   image: string;
   offer: string;
   cta_text: string;
   cta_link: string;
+  localized_content: Partial<Record<'bn' | 'en' | 'hi', {
+    title?: string;
+    description?: string;
+    offer?: string;
+    cta_text?: string;
+  }>>;
+  display_delay: number;
   start_date: string;
   end_date: string | null;
   is_active: boolean;
