@@ -134,7 +134,7 @@ export default function AdminCustomersPage() {
       }
       orderSnapshot.current = allOrders;
       internalAccountIds.current = adminUserIds;
-      setCustomers(aggregateCustomers(allOrders, new Set([...adminUserIds, ...unavailableAuthIds.current])));
+      setCustomers(aggregateCustomers(allOrders, new Set(Array.from(adminUserIds).concat(Array.from(unavailableAuthIds.current)))));
     } catch (error) {
       setCustomers([]);
       setLoadError(error instanceof Error ? error.message : 'কাস্টমার তালিকা লোড করা যায়নি।');
@@ -172,7 +172,7 @@ export default function AdminCustomersPage() {
           unavailableAuthIds.current.add(customer.user_id);
           setCustomers(aggregateCustomers(
             orderSnapshot.current,
-            new Set([...internalAccountIds.current, ...unavailableAuthIds.current]),
+            new Set(Array.from(internalAccountIds.current).concat(Array.from(unavailableAuthIds.current))),
           ));
           setSelectedCustomerId(null);
           setSelectedGuest({
