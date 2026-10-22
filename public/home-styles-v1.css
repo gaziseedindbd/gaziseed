@@ -822,3 +822,48 @@
     text-align:center!important;
   }
 }
+/* Bangladesh hero carousel: reserve the frame before images decode and keep
+   every slide positioned against that frame. Avoid display utility classes as
+   positioning hooks; older global .block rules must not move the active slide. */
+.home-premium-scope .home-hero-section .hero-wrap.hero-has-banners {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 1280px !important;
+  aspect-ratio: 2.4 / 1 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: hidden !important;
+}
+.home-premium-scope .home-hero-section .hero-wrap.hero-has-banners > .hero-inner {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.home-premium-scope .home-hero-section .hero-wrap.hero-has-banners > .hero-inner > .hero-carousel-slide {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  z-index: 1 !important;
+}
+.home-premium-scope .home-hero-section .hero-wrap.hero-has-banners > .hero-inner > .hero-carousel-slide[hidden] {
+  display: none !important;
+}
+.home-premium-scope .home-hero-section .hero-wrap.hero-has-banners > .hero-inner > .hero-carousel-slide:not([hidden]) {
+  display: block !important;
+}
+@media (max-width: 767px) {
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners {
+    aspect-ratio: 2 / 3 !important;
+  }
+}
