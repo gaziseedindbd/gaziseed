@@ -86,6 +86,9 @@ export default function AdminCustomersPage() {
   const [detailError, setDetailError] = useState('');
   const [isMasterAdmin, setIsMasterAdmin] = useState(false);
   const detailRequest = useRef(0);
+  const orderSnapshot = useRef<OrderSummary[]>([]);
+  const internalAccountIds = useRef<Set<string>>(new Set());
+  const unavailableAuthIds = useRef<Set<string>>(new Set());
 
   const loadCustomers = useCallback(async (isRefresh = false) => {
     setLoadError('');
@@ -129,7 +132,9 @@ export default function AdminCustomersPage() {
         if (adminLookupError) throw new Error('অভ্যন্তরীণ অ্যাকাউন্ট যাচাই করা যায়নি। নিরাপদে তালিকা দেখানো বন্ধ রাখা হয়েছে।');
         for (const account of adminAccounts || []) adminUserIds.add(account.user_id);
       }
-      setCustomers(aggregateCustomers(allOrders, adminUserIds));
+      orderSnapshot.current = allOrders;
+      internalAccountIds.current = adminUserIds;
+      setCustomers(aggregateCustomers(allOrders, new Set([...adminUserIds, ...unavailableAuthIds.current])));
     } catch (error) {
       setCustomers([]);
       setLoadError(error instanceof Error ? error.message : 'কাস্টমার তালিকা লোড করা যায়নি।');
@@ -162,6 +167,24 @@ export default function AdminCustomersPage() {
         body: JSON.stringify({ action: 'get_customer_detail', target_user_id: customer.user_id }),
       });
       const result = await response.json().catch(() => ({}));
+      if (response.status === 404 && result.error === 'User not found') {
+        if (requestId === detailRequest.current) {
+          unavailableAuthIds.current.add(customer.user_id);
+          setCustomers(aggregateCustomers(
+            orderSnapshot.current,
+            new Set([...internalAccountIds.current, ...unavailableAuthIds.current]),
+          ));
+          setSelectedCustomerId(null);
+          setSelectedGuest({
+            ...customer,
+            key: `order-only:${customer.key}`,
+            user_id: null,
+            email: '',
+            type: 'order_only',
+          });
+        }
+        return;
+      }
       if (!response.ok) throw new Error(result.error || 'কাস্টমার তথ্য লোড করা যায়নি।');
       if (!result?.user?.id || result.user.id !== customer.user_id) {
         throw new Error('কাস্টমার অ্যাকাউন্টের পরিচয় মেলেনি। নিরাপত্তার জন্য বিস্তারিত দেখানো হয়নি।');
