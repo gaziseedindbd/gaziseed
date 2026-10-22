@@ -12,16 +12,25 @@ interface ProductGalleryProps {
   discount?: number;
 }
 
+const AUTO_ADVANCE_MS = 4500;
+
 export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProps) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
+  const [autoPlayStopped, setAutoPlayStopped] = useState(false);
+  const [interactionPaused, setInteractionPaused] = useState(false);
+  const [focusWithin, setFocusWithin] = useState(false);
+  const [documentVisible, setDocumentVisible] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
   const { t } = useLang();
   const touchStartX = useRef<number | null>(null);
 
   const hasMultiple = images.length > 1;
+  const imageSetKey = JSON.stringify(images);
 
   const goTo = useCallback((idx: number) => {
     if (!images.length) return;
+    setAutoPlayStopped(true);
     setActiveIdx(((idx % images.length) + images.length) % images.length);
   }, [images.length]);
 
@@ -35,9 +44,41 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
     setActiveIdx((prev) => (prev - 1 + images.length) % images.length);
   }, [images.length]);
 
+  const manualNext = useCallback(() => {
+    setAutoPlayStopped(true);
+    next();
+  }, [next]);
+
+  const manualPrev = useCallback(() => {
+    setAutoPlayStopped(true);
+    prev();
+  }, [prev]);
+
   useEffect(() => {
     setActiveIdx(0);
-  }, [images]);
+    setAutoPlayStopped(false);
+  }, [imageSetKey]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
+    updatePreference();
+    mediaQuery.addEventListener('change', updatePreference);
+    return () => mediaQuery.removeEventListener('change', updatePreference);
+  }, []);
+
+  useEffect(() => {
+    const updateVisibility = () => setDocumentVisible(document.visibilityState === 'visible');
+    updateVisibility();
+    document.addEventListener('visibilitychange', updateVisibility);
+    return () => document.removeEventListener('visibilitychange', updateVisibility);
+  }, []);
+
+  useEffect(() => {
+    if (!hasMultiple || autoPlayStopped || interactionPaused || focusWithin || !documentVisible || prefersReducedMotion) return;
+    const timer = window.setInterval(next, AUTO_ADVANCE_MS);
+    return () => window.clearInterval(timer);
+  }, [hasMultiple, autoPlayStopped, interactionPaused, focusWithin, documentVisible, prefersReducedMotion, next]);
 
   useEffect(() => {
     const syncCountry = () => setCountry(getVisitorCountry());
@@ -52,16 +93,22 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
+    setInteractionPaused(true);
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
+    if (touchStartX.current === null) {
+      setInteractionPaused(false);
+      return;
+    }
+
     const delta = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(delta) > 50) {
-      if (delta < 0) next();
-      else prev();
+      if (delta < 0) manualNext();
+      else manualPrev();
     }
     touchStartX.current = null;
+    setInteractionPaused(false);
   };
 
   if (images.length === 0) {
@@ -81,6 +128,18 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
         className="group relative aspect-square overflow-hidden rounded-[1.5rem] border border-primary/10 bg-gradient-to-br from-primary/[0.035] via-white to-accent/[0.07] shadow-[0_18px_45px_-30px_rgba(15,23,42,.45)] sm:rounded-[1.75rem]"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onTouchCancel={() => {
+          touchStartX.current = null;
+          setInteractionPaused(false);
+        }}
+        onMouseEnter={() => setInteractionPaused(true)}
+        onMouseLeave={() => setInteractionPaused(false)}
+        onFocusCapture={() => setFocusWithin(true)}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            setFocusWithin(false);
+          }
+        }}
       >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(16,185,129,.12),transparent_30%),radial-gradient(circle_at_90%_85%,rgba(245,158,11,.10),transparent_32%)]" />
         {images[activeIdx] && (
@@ -112,14 +171,14 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
         {hasMultiple && (
           <>
             <button
-              onClick={prev}
+              onClick={manualPrev}
               className="absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/90 text-slate-700 shadow-lg backdrop-blur-md transition-all hover:scale-105 hover:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
               aria-label={t('আগের ছবি', 'Previous image', 'पिछली तस्वीर')}
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
             <button
-              onClick={next}
+              onClick={manualNext}
               className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/90 text-slate-700 shadow-lg backdrop-blur-md transition-all hover:scale-105 hover:bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
               aria-label={t('পরের ছবি', 'Next image', 'अगली तस्वीर')}
             >
