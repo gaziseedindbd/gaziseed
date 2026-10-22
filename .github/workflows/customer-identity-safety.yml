@@ -1,0 +1,37 @@
+name: Customer Identity Safety
+
+on:
+  pull_request:
+    paths:
+      - "app/admin/customers/**"
+      - "lib/admin/customer-aggregation.ts"
+      - "supabase/functions/admin-customer-support/**"
+      - "supabase/functions/_shared/customer-access.ts"
+      - "tests/customer-identity.test.mjs"
+      - "package.json"
+      - ".github/workflows/customer-identity-safety.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "app/admin/customers/**"
+      - "lib/admin/customer-aggregation.ts"
+      - "supabase/functions/admin-customer-support/**"
+      - "supabase/functions/_shared/customer-access.ts"
+      - "tests/customer-identity.test.mjs"
+      - "package.json"
+      - ".github/workflows/customer-identity-safety.yml"
+
+jobs:
+  customer-identity:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run test:customer-identity

@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test:messenger": "rm -rf .tmp/messenger-tests && tsc -p tsconfig.messenger-tests.json && node .tmp/messenger-tests/tests/messenger-e2e.test.js && node .tmp/messenger-tests/tests/messenger-intents.test.js && node tests/messenger-database-first.test.cjs && rm -rf .tmp/messenger-tests",
     "test:order-status": "tsc -p tsconfig.order-status-tests.json && node --test .tmp/order-status-tests/tests/order-status-actions.test.js",
-    "test:popup": "tsc -p tsconfig.popup-tests.json && node --test tests/promotional-popup.test.cjs"
+    "test:popup": "tsc -p tsconfig.popup-tests.json && node --test tests/promotional-popup.test.cjs",
+    "test:customer-identity": "node --experimental-strip-types --test tests/customer-identity.test.mjs"
   },
   "dependencies": {
     "browser-image-compression": "^2.0.2",
