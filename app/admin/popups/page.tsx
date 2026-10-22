@@ -239,6 +239,7 @@ export default function AdminPopupsPage() {
       offer: primaryCopy.offer?.trim() || editing.offer || '',
       cta_text: primaryCopy.cta_text?.trim() || editing.cta_text || '',
       cta_link: editing.cta_link.trim() || '/all-products',
+      image: editing.image?.trim() || null,
       localized_content: editing.localized_content || {},
       start_date: dateTimeToIso(editing.start_date),
       end_date: editing.end_date ? dateTimeToIso(editing.end_date) : null,
