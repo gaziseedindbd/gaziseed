@@ -558,8 +558,8 @@
 }
 
 @media(min-width:768px){
-  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel>div.block::before,
-  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel>div.block::after{
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners>div.block::before,
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners>div.block::after{
     display:flex!important;
     top:50%!important;
     width:36px!important;
@@ -569,15 +569,15 @@
     font-size:26px!important;
     z-index:20!important;
   }
-  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel>div.block::before{
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners>div.block::before{
     left:10px!important;
   }
-  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel>div.block::after{
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners>div.block::after{
     right:10px!important;
   }
 
   /* Reserve an explicit safe lane for the edge arrows so CTA/text cannot collide. */
-  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel .hero-content-overlay{
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay{
     padding-left:64px!important;
     padding-right:64px!important;
   }
@@ -586,8 +586,8 @@
 /* On mobile, the existing clickable pagination dots are the navigation control.
    Removing decorative edge arrows prevents crowding and accidental CTA overlap. */
 @media(max-width:767px){
-  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel>div.block::before,
-  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel>div.block::after{
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners>div.block::before,
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners>div.block::after{
     display:none!important;
   }
 }
@@ -827,7 +827,7 @@
 /* Bangladesh hero carousel: reserve the frame before images decode and keep
    every slide positioned against that frame. Avoid display utility classes as
    positioning hooks; older global .block rules must not move the active slide. */
-.home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel {
+.home-premium-scope .home-hero-section .hero-wrap.hero-has-banners {
   position: relative !important;
   width: 100% !important;
   max-width: 1280px !important;
@@ -837,7 +837,7 @@
   max-height: none !important;
   overflow: hidden !important;
 }
-.home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel > .hero-inner {
+.home-premium-scope .home-hero-section .hero-wrap.hero-has-banners > .hero-inner {
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
@@ -847,7 +847,7 @@
   margin: 0 !important;
   padding: 0 !important;
 }
-.home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel > .hero-inner > .hero-carousel-slide {
+.home-premium-scope .home-hero-section .hero-wrap.hero-has-banners > .hero-inner > .hero-carousel-slide {
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
@@ -858,14 +858,14 @@
   padding: 0 !important;
   z-index: 1 !important;
 }
-.home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel > .hero-inner > .hero-carousel-slide[hidden] {
+.home-premium-scope .home-hero-section .hero-wrap.hero-has-banners > .hero-inner > .hero-carousel-slide[hidden] {
   display: none !important;
 }
-.home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel > .hero-inner > .hero-carousel-slide:not([hidden]) {
+.home-premium-scope .home-hero-section .hero-wrap.hero-has-banners > .hero-inner > .hero-carousel-slide:not([hidden]) {
   display: block !important;
 }
 @media (max-width: 767px) {
-  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel {
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners {
     aspect-ratio: 2 / 3 !important;
   }
 }
