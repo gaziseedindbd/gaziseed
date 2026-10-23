@@ -11,7 +11,7 @@ export const getRouteCountryOverride = (): 'BD' | 'IN' | null => {
   const pathMatch = window.location.pathname.match(/^\/(in|bd)\/product(?:\/|$)/i);
   const pathCountry = pathMatch?.[1]?.toUpperCase();
   if (pathCountry === 'IN' || pathCountry === 'BD') return pathCountry;
-  const cookieMatch = document.cookie.match(/(?:^|;\\s*)gazi_route_country=(IN|BD)(?:;|$)/i);
+  const cookieMatch = document.cookie.match(/(?:^|;\s*)gazi_route_country=(IN|BD)(?:;|$)/i);
   const cookieCountry = cookieMatch?.[1]?.toUpperCase();
   return cookieCountry === 'IN' || cookieCountry === 'BD' ? cookieCountry : null;
 };
