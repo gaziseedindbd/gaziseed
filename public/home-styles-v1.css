@@ -901,8 +901,10 @@
     position: relative !important;
     inset: auto !important;
     width: 100% !important;
-    height: auto !important;
+    height: min(calc((100vw - 20px) * 1.5), 1100px) !important;
+    min-height: min(calc((100vw - 20px) * 1.5), 1100px) !important;
     aspect-ratio: 2 / 3 !important;
+    flex: 0 0 auto !important;
     overflow: hidden !important;
   }
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-image-wrap picture {
