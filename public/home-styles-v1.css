@@ -933,8 +933,8 @@
     height: auto !important;
     min-height: 68px !important;
     padding: 10px 16px !important;
-    background: #f8fbf8 !important;
-    border-top: 1px solid #e6eee8 !important;
+    background: linear-gradient(110deg, #064e3b 0%, #087b43 58%, #0b8a4b 100%) !important;
+    border-top: 0 !important;
     pointer-events: auto !important;
   }
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay > div {
@@ -962,10 +962,11 @@
     min-height: 46px !important;
     margin: 0 !important;
     padding: 0 22px !important;
+    border: 1px solid rgba(255, 255, 255, .82) !important;
     border-radius: 999px !important;
-    background: #087b43 !important;
-    color: #fff !important;
-    box-shadow: 0 8px 18px rgba(8, 123, 67, .18) !important;
+    background: #fff !important;
+    color: #087b43 !important;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, .16) !important;
   }
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners.hero-has-carousel {
     padding-bottom: 26px !important;
