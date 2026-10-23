@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { getVisitorCountry, getManualCountryOverride, setManualCountry } from '@/lib/supabase/client';
+import { getVisitorCountry, getManualCountryOverride, getRouteCountryOverride, setManualCountry } from '@/lib/supabase/client';
 import { useLang } from './language-provider';
 
 type CountryOption = 'AUTO' | 'BD' | 'IN';
@@ -11,7 +11,10 @@ export function CountrySelector({ mobile = false, initialCountry = 'BD' }: { mob
   const { t } = useLang();
   const [detected, setDetected] = useState<'BD' | 'IN'>(initialCountry);
   const [value, setValue] = useState<CountryOption>('AUTO');
-  useEffect(() => { setValue(getManualCountryOverride() || 'AUTO'); setDetected(getVisitorCountry()); }, [initialCountry]);
+  useEffect(() => {
+    setValue(getRouteCountryOverride() || getManualCountryOverride() || 'AUTO');
+    setDetected(getVisitorCountry());
+  }, [initialCountry]);
 
   useLayoutEffect(() => {
     const header = document.querySelector('header');
@@ -64,6 +67,16 @@ export function CountrySelector({ mobile = false, initialCountry = 'BD' }: { mob
       setManualCountry(next);
     }
     setValue(next);
+
+    const branchProductPath = window.location.pathname.match(/^\/(?:in|bd)(\/product\/[^/]+)$/i);
+    if (branchProductPath) {
+      const target = next === 'AUTO'
+        ? branchProductPath[1]
+        : `/${next.toLowerCase()}${branchProductPath[1]}`;
+      window.location.assign(target);
+      return;
+    }
+
     window.location.reload();
   };
 
