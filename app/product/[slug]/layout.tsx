@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const country = await getSeoCountry();
   const { product } = await getProductSeoData(slug, country);
-  const canonicalPath = `/product/${encodeURIComponent(slug)}`;
+  const canonicalPath = `/${country.toLowerCase()}/product/${encodeURIComponent(slug)}`;
 
   if (!product) {
     return {
@@ -109,7 +109,7 @@ export default async function ProductSeoLayout({
     500,
   );
   const imageValues = product.images?.length ? product.images : product.image ? [product.image] : [];
-  const url = `${SITE_URL}/product/${encodeURIComponent(product.slug)}`;
+  const url = `${SITE_URL}/${country.toLowerCase()}/product/${encodeURIComponent(product.slug)}`;
   const regular = Number(variant?.regular_price ?? product.regular_price ?? 0);
   const possibleSale = Number(variant?.sale_price ?? product.sale_price ?? 0);
   const price = possibleSale > 0 && possibleSale < regular ? possibleSale : regular;
