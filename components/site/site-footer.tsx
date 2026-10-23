@@ -28,10 +28,10 @@ export function SiteFooter({ initialCountry = 'BD' }: { initialCountry?: 'BD' | 
   }, [isAdminRoute]);
   const isIndia = country === 'IN';
   const fallbackBrand = 'GAZI SEED';
-  const fallbackTagline = t('বীজ • গাছ • কৃষি পণ্য', 'Quality Seeds • Better Farming', 'गुणवत्तापूर्ण बीज • बेहतर खेती');
+  const fallbackTagline = t('বীজ • বাগান • কৃষি পণ্য', 'Seeds • Gardening • Growing', 'बीज • बागवानी • खेती');
   const fallbackDescription = isIndia
-    ? t('ভারতের বিশ্বস্ত বীজ ও কৃষি পণ্যের অনলাইন স্টোর।', "India's trusted online store for seeds and agro products.", 'भारत का विश्वसनीय बीज और कृषि उत्पादों का ऑनलाइन स्टोर।')
-    : t('বাংলাদেশের বিশ্বস্ত বীজ ও কৃষি পণ্যের অনলাইন স্টোর। সারাদেশে ক্যাশ অন ডেলিভারি।', "Bangladesh's trusted online store for seeds and agro products. Cash on delivery nationwide.", 'बांग्लादेश का विश्वसनीय बीज और कृषि उत्पादों का ऑनलाइन स्टोर।');
+    ? t('ভারতে বীজ ও কৃষি পণ্যের অনলাইন স্টোর।', "Shop seeds and agro products in India.", 'भारत में बीज और कृषि उत्पादों की ऑनलाइन दुकान।')
+    : t('বাংলাদেশে বীজ ও কৃষি পণ্যের অনলাইন স্টোর। আপনার এলাকায় ডেলিভারি ও পেমেন্ট সুবিধা চেক করুন।', "Shop seeds and agro products in Bangladesh. Check delivery and payment options for your area.", 'बांग्लादेश में बीज और कृषि उत्पादों की ऑनलाइन दुकान।');
   const fallbackLocation = isIndia ? t('ভারত', 'India', 'भारत') : t('ঢাকা, বাংলাদেশ', 'Dhaka, Bangladesh', 'ढाका, बांग्लादेश');
 
   if (isAdminRoute) return null;
