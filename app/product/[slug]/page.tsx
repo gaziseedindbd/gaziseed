@@ -37,7 +37,7 @@ const getProductSeoData = cache(async (slug: string, country: 'BD' | 'IN') => {
   const supabase = await createServerSupabase(country);
   const { data: product } = await supabase
     .from('products')
-    .select('name_bn,name_en,slug,sku,short_description,description,regular_price,sale_price,image,images,stock,brand,is_active,is_ads_only,country_code,seo_title,meta_description')
+    .select('id,name_bn,name_en,slug,sku,short_description,description,regular_price,sale_price,image,images,stock,brand,is_active,is_ads_only,country_code,seo_title,meta_description')
     .eq('slug', slug)
     .eq('country_code', country)
     .eq('is_active', true)
