@@ -67,12 +67,14 @@ export function pageMetadata({
   image,
   path,
   type = 'website',
+  locale = 'bn_BD',
 }: {
   title: string;
   description?: string;
   image?: string | null;
   path: string;
   type?: 'website' | 'article';
+  locale?: string;
 }): Metadata {
   const cleanTitle = normalizeBrand(title.trim() || 'GAZI SEED');
   const cleanDescription = normalizeBrand((description || 'GAZI SEED — বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর।').trim());
