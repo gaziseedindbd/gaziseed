@@ -3,7 +3,6 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import Home from '@/components/site/home';
 import HomeStyleRegistry from '@/components/site/home-style-registry';
-import { getImageProps } from 'next/image';
 import type { Banner } from '@/lib/supabase/types';
 import { getSeoCountry, pageMetadata, SITE_URL } from '@/lib/seo-metadata';
 
@@ -121,30 +120,13 @@ export default async function Page() {
       },
     ],
   };
-  const firstBanner = initialBanners[0];
-  const heroImage = firstBanner?.desktop_image ? {
-    desktop: getImageProps({
-      src: firstBanner.desktop_image,
-      width: 1280,
-      height: 533,
-      quality: 75,
-      alt: firstBanner.title || 'GAZI SEED',
-    }).props,
-    mobile: getImageProps({
-      src: firstBanner.mobile_image || firstBanner.desktop_image,
-      width: 800,
-      height: 1200,
-      quality: 75,
-      alt: firstBanner.title || 'GAZI SEED',
-    }).props,
-  } : null;
   const homeStyles = readFileSync(path.join(process.cwd(), 'public/home-styles-v1.css'), 'utf8');
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeLd) }} />
       <HomeStyleRegistry css={homeStyles} />
-      <Home initialBanners={initialBanners} initialHeroImage={heroImage} initialVisitorCountry={visitorCountry} />
+      <Home initialBanners={initialBanners} initialVisitorCountry={visitorCountry} />
     </>
   );
 }
