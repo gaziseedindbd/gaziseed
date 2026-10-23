@@ -984,7 +984,7 @@
   50% { background-position: 100% 50%; }
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay {
     animation: none !important;
     background-position: 50% 50% !important;
