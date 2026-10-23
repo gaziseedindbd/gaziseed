@@ -117,9 +117,9 @@ export async function getServerRow(table: string, slugColumn: string, slug: stri
   return data as any;
 }
 
-export async function getServerProductById(id?: string | null) {
+export async function getServerProductById(id?: string | null, country?: SeoCountry) {
   if (!id) return null;
-  const supabase = await createServerSupabase();
+  const supabase = await createServerSupabase(country);
   const { data } = await supabase.from('products').select('*').eq('id', id).maybeSingle();
   return data as any;
 }
