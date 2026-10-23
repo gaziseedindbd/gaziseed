@@ -34,18 +34,15 @@ export function localizedSeoText(value: unknown, country: SeoCountry, fallback =
 }
 
 export function serializeJsonLd(value: unknown): string {
-  return JSON.stringify(value).replace(/[<>&\\u2028\\u2029]/g, (character) => {
+  return JSON.stringify(value).replace(/[<>&]/g, (character) => {
     const escapes: Record<string, string> = {
       '<': '\\u003c',
       '>': '\\u003e',
       '&': '\\u0026',
-      '\\u2028': '\\u2028',
-      '\\u2029': '\\u2029',
     };
     return escapes[character] || character;
   });
 }
-
 export function cleanSeoDescription(value: unknown, fallback: string, maxLength = 160): string {
   const text = (typeof value === 'string' ? value : fallback).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   const result = text || fallback;
