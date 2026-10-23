@@ -26,6 +26,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
         ? (product.name_en || product.name_bn)
         : (product.name_bn || product.name_en));
   const shortDescription = tDb(translated.short_description || product.short_description || '');
+  const productBranch = (product as Product & { country_code?: string }).country_code === 'IN' ? 'in' : 'bd';
 
   const badge = product.is_best_seller
     ? t('বেস্ট সেলার', 'Best Seller', 'बेस्ट सेलर')
@@ -97,7 +98,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
 
   return (
     <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-[1.2rem] border border-slate-200/70 bg-white shadow-[0_12px_34px_-24px_rgba(15,23,42,.48)] ring-1 ring-black/[0.02] transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-emerald-300/70 hover:shadow-[0_28px_70px_-34px_rgba(5,150,105,.34)] hover:ring-emerald-500/10 sm:rounded-[1.7rem] active:scale-[.995]">
-      <Link href={`/product/${product.slug}`} className="group block min-w-0">
+      <Link href={`/${productBranch}/product/${product.slug}`} className="group block min-w-0">
         <div className="relative mx-1.5 mt-1.5 aspect-square overflow-hidden rounded-[1rem] bg-gradient-to-br from-[#f7fbf8] via-[#eef7f1] to-[#f6f2e8] ring-1 ring-emerald-900/[0.04] sm:mx-2.5 sm:mt-2.5 sm:rounded-[1.3rem]">
           <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-emerald-200/25 blur-2xl transition-transform duration-500 group-hover:scale-125" />
           <div className="pointer-events-none absolute -bottom-12 -left-10 h-28 w-28 rounded-full bg-lime-200/20 blur-2xl transition-transform duration-500 group-hover:scale-125" />
