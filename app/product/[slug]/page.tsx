@@ -56,19 +56,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   });
 }
 
-export default async function ProductDetailPage() {
-  const country = await getSeoCountry();
-  const supabase = await createServerSupabase(country);
-  const { data: product } = await supabase
-    .from('products')
-    .select('name_bn,name_en,slug,sku,short_description,description,regular_price,sale_price,image,images,stock,is_active,is_ads_only,country_code,seo_title,meta_description')
-    .eq('country_code', country)
-    .eq('is_active', true)
-    .eq('is_ads_only', false)
-    .limit(1)
-    .maybeSingle();
-
-  // Product content remains owned by the existing client page. The small
-  // server query above only validates the branch-specific public route.
+export default function ProductDetailPage() {
   return <ProductDetailClientPage />;
 }
