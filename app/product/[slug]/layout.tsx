@@ -58,7 +58,7 @@ function absoluteImage(value: string) {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const country = await getSeoCountry();
-  const { product } = await getProductSeoData(slug, country);
+  const { product, variant } = await getProductSeoData(slug, country);
   const canonicalPath = `/${country.toLowerCase()}/product/${encodeURIComponent(slug)}`;
 
   if (!product) {
@@ -73,10 +73,18 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     ? product.name_en || product.name_bn || product.name || 'Seeds'
     : product.name_bn || product.name_en || product.name || 'বীজ';
   const title = localizedSeoText(product.seo_title, country, name);
-  const description = cleanSeoDescription(
-    localizedSeoText(product.meta_description || product.short_description || product.description, country, name),
-    name,
-  );
+  const stock = Number(variant?.stock ?? product.stock ?? 0);
+  const description = stock > 0
+    ? cleanSeoDescription(
+        localizedSeoText(product.meta_description || product.short_description || product.description, country, name),
+        name,
+      )
+    : cleanSeoDescription(
+        country === 'IN'
+          ? `${name} is currently out of stock. Sign up for an SMS notification when it is available again.`
+          : `${name} বর্তমানে স্টকে নেই। আবার স্টকে এলে SMS পেতে নোটিফিকেশন চালু করুন।`,
+        name,
+      );
   const image = product.image || product.images?.[0] || null;
 
   return pageMetadata({

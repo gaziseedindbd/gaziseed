@@ -17,8 +17,8 @@ export async function generateMetadata() {
       ? 'Quality Seeds Online in India | GAZI SEED'
       : 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
     description: isIndia
-      ? 'Shop quality vegetable, flower and gardening seeds online in India from GAZI SEED, with convenient delivery across India.'
-      : 'GAZI SEED - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। ক্যাশ অন ডেলিভারি সারাদেশে।',
+      ? 'Shop vegetable, flower and gardening seeds online in India from GAZI SEED. Check payment methods and delivery availability for your PIN code at checkout.'
+      : 'GAZI SEED - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। আপনার এলাকায় ডেলিভারি ও পেমেন্টের সুবিধা চেক করুন।',
     path: '/',
     locale: isIndia ? 'en_IN' : 'bn_BD',
   });

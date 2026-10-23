@@ -41,7 +41,7 @@ function getEnglishText(value: string | null): string {
 export const metadata: Metadata = {
   title: 'Premium Seeds Online in India | GAZI SEED India',
   description:
-    'Shop quality vegetable, chilli, flower and gardening seeds online in India from GAZI SEED. Explore India-focused seed collections, cultivation guides and convenient delivery.',
+    'Shop vegetable, chilli, flower and gardening seeds online in India from GAZI SEED. Explore India-focused seed collections and cultivation guides. Check delivery and payment availability for your PIN code at checkout.',
   alternates: {
     canonical: BASE_URL + '/india',
   },
@@ -158,8 +158,7 @@ export default async function IndiaLandingPage() {
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-emerald-50 sm:text-lg">
                 Explore quality seeds for Indian home gardens, terraces and farming.
-                Shop India-focused seed collections with secure payment options and
-                dependable pan-India delivery.
+                Explore India-focused seed collections and cultivation guides. Check payment methods and delivery availability for your PIN code at checkout.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link
@@ -345,8 +344,8 @@ export default async function IndiaLandingPage() {
           <div className="grid gap-4 md:grid-cols-3">
             {[
               ['Quality Seeds', 'Selected seed products with practical cultivation information.'],
-              ['India-Friendly Checkout', 'Secure payments including UPI, cards and COD where available.'],
-              ['Pan-India Delivery', 'Convenient delivery support for customers across India.'],
+              ['Payment Options', 'See available payment methods, including COD where offered, at checkout.'],
+              ['Delivery Availability', 'Check delivery availability and estimated timing for your PIN code at checkout.'],
             ].map(([title, text]) => (
               <div key={title} className="rounded-2xl border border-emerald-100 bg-white p-6 shadow-[0_14px_35px_-28px_rgba(4,62,40,.55)]">
                 <h2 className="text-lg font-black text-emerald-950">{title}</h2>
