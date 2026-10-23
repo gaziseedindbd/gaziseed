@@ -1,14 +1,15 @@
 import type { Metadata } from 'next';
-import { getServerRow, pageMetadata, SITE_URL } from '@/lib/seo-metadata';
+import { getSeoCountry, getServerRow, localizedSeoText, pageMetadata, SITE_URL } from '@/lib/seo-metadata';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getServerRow('blog_posts', 'slug', slug);
+  const country = await getSeoCountry();
+  const post = await getServerRow('blog_posts', 'slug', slug, country);
 
   if (!post || post.is_published === false) return {};
 
-  const title = post.seo_title?.trim() || post.title || 'GAZI SEED Garden Guide';
-  const description = post.meta_description?.trim() || post.content?.slice(0, 160) || 'GAZI SEED gardening and seed guide.';
+  const title = localizedSeoText(post.seo_title, country, post.title || 'GAZI SEED Garden Guide');
+  const description = localizedSeoText(post.meta_description || post.content, country, 'GAZI SEED gardening and seed guide.');
   const image = post.featured_image || null;
 
   return pageMetadata({
@@ -17,6 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     image,
     path: `/blog/${slug}`,
     type: 'article',
+    locale: country === 'IN' ? 'en_IN' : 'bn_BD',
   });
 }
 
@@ -28,12 +30,13 @@ export default async function BlogSlugLayout({
   children: React.ReactNode;
 }): Promise<JSX.Element> {
   const { slug } = await params;
-  const post = await getServerRow('blog_posts', 'slug', slug);
+  const country = await getSeoCountry();
+  const post = await getServerRow('blog_posts', 'slug', slug, country);
 
   if (!post || post.is_published === false) return <>{children}</>;
 
-  const title = post.seo_title?.trim() || post.title || 'GAZI SEED Garden Guide';
-  const description = (post.meta_description?.trim() || post.content?.slice(0, 160) || title).slice(0, 500);
+  const title = localizedSeoText(post.seo_title, country, post.title || 'GAZI SEED Garden Guide');
+  const description = localizedSeoText(post.meta_description || post.content, country, title).slice(0, 500);
   const url = `${SITE_URL}/blog/${encodeURIComponent(slug)}`;
   const image = post.featured_image || undefined;
   const published = post.publish_date || post.created_at;
@@ -52,7 +55,7 @@ export default async function BlogSlugLayout({
     articleSection: post.category || 'Gardening',
     author: { '@type': 'Organization', name: 'GAZI SEED', url: SITE_URL },
     publisher: { '@type': 'Organization', name: 'GAZI SEED', url: SITE_URL },
-    inLanguage: 'bn-BD',
+    inLanguage: country === 'IN' ? 'en-IN' : 'bn-BD',
   };
 
   return (
