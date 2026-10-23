@@ -30,7 +30,7 @@ export function localizedSeoText(value: unknown, country: SeoCountry, fallback =
 }
 
 export function cleanSeoDescription(value: unknown, fallback: string, maxLength = 160): string {
-  const text = (typeof value === 'string' ? value : fallback).replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();
+  const text = (typeof value === 'string' ? value : fallback).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   const result = text || fallback;
   return result.length > maxLength ? result.slice(0, maxLength - 1).trimEnd() + '…' : result;
 }
