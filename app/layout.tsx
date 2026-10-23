@@ -60,15 +60,21 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const requestHeaders = await headers();
   const cookieStore = await cookies();
+  const routeHeaderCountry = requestHeaders.get('x-gazi-route-country')?.toUpperCase();
+  const routeCookieCountry = cookieStore.get('gazi_route_country')?.value?.toUpperCase();
   const cookieOverride = cookieStore.get('gazi_country_override')?.value?.toUpperCase();
   const detectedCountry = (
     requestHeaders.get('x-vercel-ip-country') ||
     requestHeaders.get('cf-ipcountry') ||
     'BD'
   ).toUpperCase();
-  const visitorCountry = cookieOverride === 'IN' || cookieOverride === 'BD'
-    ? cookieOverride
-    : detectedCountry === 'IN' ? 'IN' : 'BD';
+  const visitorCountry = routeHeaderCountry === 'IN' || routeHeaderCountry === 'BD'
+    ? routeHeaderCountry
+    : routeCookieCountry === 'IN' || routeCookieCountry === 'BD'
+      ? routeCookieCountry
+      : cookieOverride === 'IN' || cookieOverride === 'BD'
+        ? cookieOverride
+        : detectedCountry === 'IN' ? 'IN' : 'BD';
 
   const serverSupabase = await createServerSupabase(visitorCountry);
   const { data: marketingSettings } = await serverSupabase
