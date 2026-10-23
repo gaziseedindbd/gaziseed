@@ -1,9 +1,20 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+function getRouteCountry(pathname: string): 'BD' | 'IN' | null {
+  const productMatch = pathname.match(/^\/(in|bd)\/product(?:\/|$)/i);
+  if (productMatch?.[1]?.toUpperCase() === 'IN') return 'IN';
+  if (productMatch?.[1]?.toUpperCase() === 'BD') return 'BD';
+  if (/^\/india(?:\/|$)/i.test(pathname)) return 'IN';
+
+  const categorySlug = pathname.match(/^\/category\/([^/]+)\/?$/i)?.[1]?.toLowerCase();
+  if (categorySlug?.endsWith('-in') || categorySlug?.endsWith('-india')) return 'IN';
+  if (categorySlug?.endsWith('-bd')) return 'BD';
+  return null;
+}
+
 export async function middleware(request: NextRequest) {
-  const pathMatch = request.nextUrl.pathname.match(/^\/(in|bd)\/product(?:\/|$)/i);
-  const routeCountry = pathMatch?.[1]?.toUpperCase() === 'IN' ? 'IN' : pathMatch?.[1]?.toUpperCase() === 'BD' ? 'BD' : null;
+  const routeCountry = getRouteCountry(request.nextUrl.pathname);
   const forwardedHeaders = new Headers(request.headers);
   if (routeCountry) forwardedHeaders.set('x-gazi-route-country', routeCountry);
 
@@ -43,8 +54,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Keep the selected branch available to checkout and client data requests
-  // after navigation leaves the branch-specific product URL.
+  // Keep the route-selected branch available to client data requests and
+  // subsequent navigation across India and country-specific category pages.
   if (routeCountry) {
     response.cookies.set('gazi_route_country', routeCountry, {
       path: '/',
