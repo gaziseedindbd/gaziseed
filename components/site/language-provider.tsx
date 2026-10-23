@@ -75,17 +75,31 @@ const LangContext = createContext<LangContextType>({
 
 const LANG_KEY = 'gazi_lang';
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>('en');
+export function LanguageProvider({
+  children,
+  initialLang = 'en',
+  initialCountry = 'BD',
+}: {
+  children: ReactNode;
+  initialLang?: Lang;
+  initialCountry?: 'BD' | 'IN';
+}) {
+  const [lang, setLangState] = useState<Lang>(initialLang);
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem(LANG_KEY) as Lang | null;
-      if (saved === 'bn' || saved === 'en' || saved === 'hi') setLangState(saved);
-    } catch { /* Keep English when browser storage is unavailable. */ }
+      if (saved === 'bn' || saved === 'en' || saved === 'hi') {
+        setLangState(saved);
+        document.cookie = 'gazi_lang=' + saved + '; Path=/; Max-Age=31536000; SameSite=Lax';
+      }
+    } catch { /* Keep the route language when browser storage is unavailable. */ }
   }, []);
 
-  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
+  useEffect(() => {
+    document.documentElement.lang = lang + '-' + (lang === 'hi' ? 'IN' : initialCountry);
+    document.cookie = 'gazi_lang=' + lang + '; Path=/; Max-Age=31536000; SameSite=Lax';
+  }, [lang, initialCountry]);
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
