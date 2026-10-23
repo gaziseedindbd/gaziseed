@@ -41,7 +41,7 @@ function getEnglishText(value: string | null): string {
 export const metadata: Metadata = {
   title: 'Premium Seeds Online in India | GAZI SEED India',
   description:
-    'Shop quality vegetable, chilli, flower and gardening seeds online in India from GAZI SEED. Explore India-focused seed collections, cultivation guides and convenient delivery.',
+    'Shop vegetable, chilli, flower and gardening seeds online in India from GAZI SEED. Explore India-focused seed collections and cultivation guides. Check delivery and payment availability for your PIN code at checkout.',
   alternates: {
     canonical: BASE_URL + '/india',
   },
