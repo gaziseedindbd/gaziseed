@@ -1,17 +1,21 @@
 import type { Metadata } from 'next';
 import { getSeoCountry, getServerRow, localizedSeoText, pageMetadata, serializeJsonLd, SITE_URL } from '@/lib/seo-metadata';
 
+function hasIndicScript(value: string): boolean {
+  return Array.from(value).some((character) => {
+    const codePoint = character.codePointAt(0) || 0;
+    return codePoint >= 0x0900 && codePoint <= 0x09ff;
+  });
+}
+
 function categoryDescription(value: unknown, country: 'BD' | 'IN', name: string): string {
-  const fallback = `Seeds and growing products in ${name} — GAZI SEED`;
+  const categoryLabel = country === 'IN' && hasIndicScript(name) ? 'garden seeds' : name;
+  const fallback = country === 'IN'
+    ? `Browse ${categoryLabel} and gardening products from GAZI SEED India.`
+    : `Seeds and growing products in ${name} — GAZI SEED`;
   const localized = localizedSeoText(value, country, fallback);
   // India category pages are presented in English; don't label Bengali or Hindi as en-IN.
-  if (country === 'IN') {
-    const hasIndicScript = Array.from(localized).some((character) => {
-      const codePoint = character.codePointAt(0) || 0;
-      return codePoint >= 0x0900 && codePoint <= 0x09ff;
-    });
-    if (hasIndicScript) return fallback;
-  }
+  if (country === 'IN' && hasIndicScript(localized)) return fallback;
   return localized;
 }
 
@@ -27,7 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const country = slug.endsWith('-in') || slug.endsWith('-india') ? 'IN' : slug.endsWith('-bd') ? 'BD' : await getSeoCountry();
   const category = await getServerRow('categories', 'slug', slug, country);
-  const title = country === 'IN' ? category?.name_en || category?.name_bn || slug.replace(/-/g, ' ') : category?.name_bn || category?.name_en || slug.replace(/-/g, ' ');
+  const title = country === 'IN' ? category?.name_en || slug.replace(/-/g, ' ') : category?.name_bn || category?.name_en || slug.replace(/-/g, ' ');
   const description = categoryDescription(category?.meta_description || category?.description, country, title);
   const image = category?.banner || category?.image || null;
   const metadata = pageMetadata({ title: title + ' | GAZI SEED', description, image, path: '/category/' + slug, locale: country === 'IN' ? 'en_IN' : 'bn_BD' });
@@ -66,7 +70,7 @@ export default async function CategorySlugLayout({
   const category = await getServerRow('categories', 'slug', slug, country);
   if (!category || category.is_active === false) return <>{children}</>;
 
-  const countryName = country === 'IN' ? category.name_en || category.name_bn : category.name_bn || category.name_en;
+  const countryName = country === 'IN' ? category.name_en : category.name_bn || category.name_en;
   const name = countryName || slug.replace(/-/g, ' ');
   const description = categoryDescription(category.meta_description || category.description, country, name).slice(0, 500);
   const url = `${SITE_URL}/category/${encodeURIComponent(slug)}`;
