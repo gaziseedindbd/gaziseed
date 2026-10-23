@@ -902,12 +902,20 @@
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-image-wrap {
     position: relative !important;
     inset: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     width: 100% !important;
-    height: min(calc((100vw - 20px) * 1.5), 1100px) !important;
-    min-height: min(calc((100vw - 20px) * 1.5), 1100px) !important;
-    aspect-ratio: 2 / 3 !important;
+    height: min(max(60svh, 360px), 720px) !important;
+    min-height: 360px !important;
+    aspect-ratio: auto !important;
     flex: 0 0 auto !important;
     overflow: hidden !important;
+    background: #f3f8f4 !important;
+  }
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-image-wrap img {
+    object-fit: contain !important;
+    object-position: center center !important;
   }
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-image-wrap picture {
     position: absolute !important;
@@ -923,9 +931,10 @@
     justify-content: center !important;
     width: 100% !important;
     height: auto !important;
-    min-height: 72px !important;
-    padding: 12px 16px !important;
-    background: #fff !important;
+    min-height: 68px !important;
+    padding: 10px 16px !important;
+    background: #f8fbf8 !important;
+    border-top: 1px solid #e6eee8 !important;
     pointer-events: auto !important;
   }
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay > div {
@@ -946,9 +955,17 @@
     color: #173b2d !important;
   }
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn {
+    position: static !important;
     align-self: center !important;
-    min-height: 44px !important;
+    justify-content: center !important;
+    min-width: 190px !important;
+    min-height: 46px !important;
     margin: 0 !important;
+    padding: 0 22px !important;
+    border-radius: 999px !important;
+    background: #087b43 !important;
+    color: #fff !important;
+    box-shadow: 0 8px 18px rgba(8, 123, 67, .18) !important;
   }
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners.hero-has-carousel {
     padding-bottom: 26px !important;
