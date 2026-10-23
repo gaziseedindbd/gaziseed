@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-const BASE_URL = 'https://www.gaziseed.com';
 import { serializeJsonLd } from '@/lib/seo-metadata';
+
+const BASE_URL = 'https://www.gaziseed.com';
 
 export const metadata: Metadata = {
   title: 'India Seed Growing Guides | GAZI SEED',
