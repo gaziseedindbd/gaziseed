@@ -867,3 +867,89 @@
     aspect-ratio: 2 / 3 !important;
   }
 }
+
+
+/* India mobile banner CTA: keep the artwork clear and place the action below it. */
+@media (max-width: 767px) {
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners {
+    aspect-ratio: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    border-radius: 14px !important;
+  }
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners > .hero-inner {
+    position: relative !important;
+    inset: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners > .hero-inner > .hero-carousel-slide:not([hidden]) {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: hidden !important;
+    border-radius: 14px !important;
+  }
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-carousel-slide > .hero-inner {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-image-wrap {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 2 / 3 !important;
+    overflow: hidden !important;
+  }
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-image-wrap picture {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay {
+    position: relative !important;
+    inset: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 72px !important;
+    padding: 12px 16px !important;
+    background: #fff !important;
+    pointer-events: auto !important;
+  }
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay > div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    text-align: center !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+  }
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-title,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-subtitle {
+    align-self: center !important;
+    text-align: center !important;
+    color: #173b2d !important;
+  }
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn {
+    align-self: center !important;
+    min-height: 44px !important;
+    margin: 0 !important;
+  }
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners.hero-has-carousel {
+    padding-bottom: 26px !important;
+  }
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .absolute.bottom-4 {
+    bottom: 4px !important;
+  }
+}
