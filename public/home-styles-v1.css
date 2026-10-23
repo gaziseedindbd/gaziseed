@@ -880,6 +880,7 @@
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners > .hero-inner {
     position: relative !important;
     inset: auto !important;
+    aspect-ratio: auto !important;
     height: auto !important;
     overflow: visible !important;
   }
@@ -894,6 +895,7 @@
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-carousel-slide > .hero-inner {
     display: flex !important;
     flex-direction: column !important;
+    aspect-ratio: auto !important;
     height: auto !important;
     overflow: visible !important;
   }
