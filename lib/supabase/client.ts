@@ -71,15 +71,13 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
   global: { fetch: fetchWithCountry },
 });
 
-export const formatPrice = (price: number): string => {
-  const country = getVisitorCountry();
+export const formatPrice = (price: number, country: 'BD' | 'IN' = getVisitorCountry()): string => {
   return country === 'IN'
     ? '₹ ' + Number(price).toLocaleString('en-IN')
     : '৳ ' + Number(price).toLocaleString('bn-BD');
 };
 
-export const formatPriceEn = (price: number): string => {
-  const country = getVisitorCountry();
+export const formatPriceEn = (price: number, country: 'BD' | 'IN' = getVisitorCountry()): string => {
   return country === 'IN'
     ? '₹ ' + Number(price).toLocaleString('en-IN')
     : '৳ ' + Number(price).toLocaleString('en-US');
