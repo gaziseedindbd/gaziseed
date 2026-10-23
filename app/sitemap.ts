@@ -78,11 +78,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/contact`, changeFrequency: 'monthly', priority: 0.4 },
   ];
 
-  const countryRows = <T,>(table: string, country: Country) => fetchRows<T>(
+  const activeCountryRows = <T,>(table: string, country: Country) => fetchRows<T>(
     table,
     {
       select: 'slug,updated_at,created_at',
       is_active: 'eq.true',
+      country_code: 'eq.' + country,
+    },
+    country,
+  );
+
+  const activeAnimatedRows = <T,>(country: Country) => fetchRows<T>(
+    'animated_landing_pages',
+    {
+      select: 'slug,updated_at,created_at',
+      status: 'eq.active',
       country_code: 'eq.' + country,
     },
     country,
@@ -104,8 +114,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('products', 'IN'),
     fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('categories', 'BD'),
     fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('categories', 'IN'),
-    countryRows<{ slug: string; updated_at?: string; created_at?: string }>('combo_packs', 'BD'),
-    countryRows<{ slug: string; updated_at?: string; created_at?: string }>('combo_packs', 'IN'),
+    activeCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('combo_packs', 'BD'),
+    activeCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('combo_packs', 'IN'),
     fetchRows<{ slug: string; updated_at?: string; created_at?: string }>(
       'blog_posts',
       { select: 'slug,updated_at,created_at', is_published: 'eq.true' },
@@ -114,8 +124,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       'pages',
       { select: 'slug,updated_at,created_at', is_published: 'eq.true' },
     ),
-    countryRows<{ slug: string; updated_at?: string; created_at?: string }>('animated_landing_pages', 'BD'),
-    countryRows<{ slug: string; updated_at?: string; created_at?: string }>('animated_landing_pages', 'IN'),
+    activeAnimatedRows<{ slug: string; updated_at?: string; created_at?: string }>('BD'),
+    activeAnimatedRows<{ slug: string; updated_at?: string; created_at?: string }>('IN'),
   ]);
 
   const addRows = (
