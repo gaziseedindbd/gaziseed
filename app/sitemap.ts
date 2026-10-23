@@ -1,4 +1,4 @@
-import { MetadataRoute } from 'next';
+import type { MetadataRoute } from 'next';
 
 const BASE_URL = 'https://www.gaziseed.com';
 const FALLBACK_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
@@ -57,90 +57,109 @@ async function fetchCountryRows<T>(
   return fetchRows<T>(table, params, country);
 }
 
+function lastModified(row: { updated_at?: string; created_at?: string }): Date | undefined {
+  const value = row.updated_at || row.created_at;
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [
-    { url: `${BASE_URL}/`, lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
-    { url: `${BASE_URL}/india`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
-    { url: `${BASE_URL}/india/guides`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE_URL}/india/guides/naga-bombay-chili-growing-guide`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${BASE_URL}/india/guides/terrace-gardening-seeds-india`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${BASE_URL}/india/guides/rose-seeds-india-growing-guide`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${BASE_URL}/all-products`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
-    { url: `${BASE_URL}/categories`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${BASE_URL}/blog`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.6 },
-    { url: `${BASE_URL}/contact`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.4 },
-    { url: `${BASE_URL}/track-order`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${BASE_URL}/`, changeFrequency: 'daily', priority: 1 },
+    { url: `${BASE_URL}/india`, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${BASE_URL}/india/guides`, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE_URL}/india/guides/naga-bombay-chili-growing-guide`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE_URL}/india/guides/terrace-gardening-seeds-india`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE_URL}/india/guides/rose-seeds-india-growing-guide`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE_URL}/all-products`, changeFrequency: 'daily', priority: 0.9 },
+    { url: `${BASE_URL}/categories`, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE_URL}/blog`, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${BASE_URL}/contact`, changeFrequency: 'monthly', priority: 0.4 },
   ];
 
-  const [bdProducts, inProducts, bdCategories, inCategories, combos, posts, pages, animatedLandings] =
-    await Promise.all([
-      fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('products', 'BD'),
-      fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('products', 'IN'),
-      fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('categories', 'BD'),
-      fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('categories', 'IN'),
-      fetchRows<{ slug: string; created_at?: string }>('combo_packs', { select: 'slug,created_at', is_active: 'eq.true' }),
-      fetchRows<{ slug: string; updated_at?: string; created_at?: string }>('blog_posts', { select: 'slug,updated_at,created_at', is_published: 'eq.true' }),
-      fetchRows<{ slug: string; updated_at?: string; created_at?: string }>('pages', { select: 'slug,updated_at,created_at', is_published: 'eq.true' }),
-      fetchRows<{ slug: string; updated_at?: string; created_at?: string }>('animated_landing_pages', { select: 'slug,updated_at,created_at', status: 'eq.active' }),
-    ]);
+  const activeCountryRows = <T,>(table: string, country: Country) => fetchRows<T>(
+    table,
+    {
+      select: 'slug,updated_at,created_at',
+      is_active: 'eq.true',
+      country_code: 'eq.' + country,
+    },
+    country,
+  );
 
-  const products = [...bdProducts, ...inProducts];
-  products.forEach((p) => {
+  const activeAnimatedRows = <T,>(country: Country) => fetchRows<T>(
+    'animated_landing_pages',
+    {
+      select: 'slug,updated_at,created_at',
+      status: 'eq.active',
+      country_code: 'eq.' + country,
+    },
+    country,
+  );
+
+  const [
+    bdProducts,
+    inProducts,
+    bdCategories,
+    inCategories,
+    bdCombos,
+    inCombos,
+    posts,
+    pages,
+    bdAnimatedLandings,
+    inAnimatedLandings,
+  ] = await Promise.all([
+    fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('products', 'BD'),
+    fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('products', 'IN'),
+    fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('categories', 'BD'),
+    fetchCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('categories', 'IN'),
+    activeCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('combo_packs', 'BD'),
+    activeCountryRows<{ slug: string; updated_at?: string; created_at?: string }>('combo_packs', 'IN'),
+    fetchRows<{ slug: string; updated_at?: string; created_at?: string }>(
+      'blog_posts',
+      { select: 'slug,updated_at,created_at', is_published: 'eq.true' },
+    ),
+    fetchRows<{ slug: string; updated_at?: string; created_at?: string }>(
+      'pages',
+      { select: 'slug,updated_at,created_at', is_published: 'eq.true' },
+    ),
+    activeAnimatedRows<{ slug: string; updated_at?: string; created_at?: string }>('BD'),
+    activeAnimatedRows<{ slug: string; updated_at?: string; created_at?: string }>('IN'),
+  ]);
+
+  const addRows = (
+    rows: Array<{ slug: string; updated_at?: string; created_at?: string }>,
+    route: string,
+    changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'],
+    priority: number,
+  ) => rows.forEach((row) => {
+    const modified = lastModified(row);
     entries.push({
-      url: `${BASE_URL}/product/${p.slug}`,
-      lastModified: new Date(p.updated_at || p.created_at || new Date()),
-      changeFrequency: 'weekly',
-      priority: 0.7,
+      url: `${BASE_URL}/${route}/${encodeURIComponent(row.slug)}`,
+      ...(modified ? { lastModified: modified } : {}),
+      changeFrequency,
+      priority,
     });
   });
 
-  const categories = [...bdCategories, ...inCategories];
-  categories.forEach((cat) => {
-    entries.push({
-      url: `${BASE_URL}/category/${cat.slug}`,
-      lastModified: new Date(cat.updated_at || cat.created_at || new Date()),
-      changeFrequency: 'weekly',
-      priority: 0.6,
-    });
-  });
-
-  combos.forEach((c) => {
-    entries.push({
-      url: `${BASE_URL}/combo/${c.slug}`,
-      lastModified: new Date(c.created_at || new Date()),
-      changeFrequency: 'weekly',
-      priority: 0.6,
-    });
-  });
-
-  posts.forEach((p) => {
-    entries.push({
-      url: `${BASE_URL}/blog/${p.slug}`,
-      lastModified: new Date(p.updated_at || p.created_at || new Date()),
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    });
-  });
-
-  pages.forEach((p) => {
-    entries.push({
-      url: `${BASE_URL}/page/${p.slug}`,
-      lastModified: new Date(p.updated_at || p.created_at || new Date()),
-      changeFrequency: 'monthly',
-      priority: 0.4,
-    });
-  });
-
-  animatedLandings.forEach((p) => {
-    entries.push({
-      url: `${BASE_URL}/animated-landing/${p.slug}`,
-      lastModified: new Date(p.updated_at || p.created_at || new Date()),
-      changeFrequency: 'weekly',
-      priority: 0.6,
-    });
-  });
+  addRows([...bdProducts, ...inProducts], 'product', 'weekly', 0.7);
+  addRows([...bdCategories, ...inCategories], 'category', 'weekly', 0.6);
+  addRows([...bdCombos, ...inCombos], 'combo', 'weekly', 0.6);
+  addRows(posts, 'blog', 'monthly', 0.5);
+  addRows(pages, 'page', 'monthly', 0.4);
+  addRows([...bdAnimatedLandings, ...inAnimatedLandings], 'animated-landing', 'weekly', 0.6);
 
   const unique = new Map<string, MetadataRoute.Sitemap[number]>();
-  entries.forEach((entry) => unique.set(entry.url, entry));
+  entries.forEach((entry) => {
+    const current = unique.get(entry.url);
+    if (!current) {
+      unique.set(entry.url, entry);
+      return;
+    }
+    const currentTime = current.lastModified instanceof Date ? current.lastModified.getTime() : 0;
+    const nextTime = entry.lastModified instanceof Date ? entry.lastModified.getTime() : 0;
+    if (nextTime > currentTime) unique.set(entry.url, entry);
+  });
   return Array.from(unique.values());
 }

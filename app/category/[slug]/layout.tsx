@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
-import { getServerRow, pageMetadata, SITE_URL } from '@/lib/seo-metadata';
+import { getSeoCountry, getServerRow, localizedSeoText, pageMetadata, SITE_URL } from '@/lib/seo-metadata';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const country = slug.endsWith('-india') ? 'IN' : 'BD';
+  const country = slug.endsWith('-in') || slug.endsWith('-india') ? 'IN' : slug.endsWith('-bd') ? 'BD' : await getSeoCountry();
   const category = await getServerRow('categories', 'slug', slug, country);
-  const title = category?.name_bn || category?.name_en || slug.replace(/-/g, ' ');
-  const description = category?.description || `বীজ ও কৃষি পণ্যের ${title} ক্যাটাগরি — GAZI SEED`;
+  const title = country === 'IN' ? category?.name_en || category?.name_bn || slug.replace(/-/g, ' ') : category?.name_bn || category?.name_en || slug.replace(/-/g, ' ');
+  const description = localizedSeoText(category?.meta_description || category?.description, country, `Seeds and growing products in ${title} — GAZI SEED`);
   const image = category?.banner || category?.image || null;
-  return pageMetadata({ title: `${title} | GAZI SEED`, description, image, path: `/category/${slug}` });
+  return pageMetadata({ title: `${title} | GAZI SEED`, description, image, path: `/category/${slug}`, locale: country === 'IN' ? 'en_IN' : 'bn_BD' });
 }
 
 export default async function CategorySlugLayout({
@@ -19,12 +19,13 @@ export default async function CategorySlugLayout({
   children: React.ReactNode;
 }) {
   const { slug } = await params;
-  const country = slug.endsWith('-india') ? 'IN' : 'BD';
+  const country = slug.endsWith('-in') || slug.endsWith('-india') ? 'IN' : slug.endsWith('-bd') ? 'BD' : await getSeoCountry();
   const category = await getServerRow('categories', 'slug', slug, country);
   if (!category || category.is_active === false) return <>{children}</>;
 
-  const name = category.name_bn || category.name_en || slug.replace(/-/g, ' ');
-  const description = (category.description || `বীজ ও কৃষি পণ্যের ${name} ক্যাটাগরি — GAZI SEED`).slice(0, 500);
+  const countryName = country === 'IN' ? category.name_en || category.name_bn : category.name_bn || category.name_en;
+  const name = countryName || slug.replace(/-/g, ' ');
+  const description = localizedSeoText(category.meta_description || category.description, country, `Seeds and growing products in ${name} — GAZI SEED`).slice(0, 500);
   const url = `${SITE_URL}/category/${encodeURIComponent(slug)}`;
   const image = category.banner || category.image || undefined;
 
@@ -35,6 +36,7 @@ export default async function CategorySlugLayout({
         '@type': 'CollectionPage',
         name,
         description,
+        inLanguage: country === 'IN' ? 'en-IN' : 'bn-BD',
         url,
         image,
         isPartOf: { '@type': 'WebSite', name: 'GAZI SEED', url: SITE_URL },
