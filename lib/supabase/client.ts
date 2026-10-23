@@ -6,6 +6,16 @@ const FALLBACK_KEY = 'sb_publishable_vCaz5OGrHocUTgpOXmE9xg_QVsuUJc0';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || FALLBACK_KEY;
 
+export const getRouteCountryOverride = (): 'BD' | 'IN' | null => {
+  if (typeof window === 'undefined') return null;
+  const pathMatch = window.location.pathname.match(/^\/(in|bd)\/product(?:\/|$)/i);
+  const pathCountry = pathMatch?.[1]?.toUpperCase();
+  if (pathCountry === 'IN' || pathCountry === 'BD') return pathCountry;
+  const cookieMatch = document.cookie.match(/(?:^|;\s*)gazi_route_country=(IN|BD)(?:;|$)/i);
+  const cookieCountry = cookieMatch?.[1]?.toUpperCase();
+  return cookieCountry === 'IN' || cookieCountry === 'BD' ? cookieCountry : null;
+};
+
 export const getManualCountryOverride = (): 'BD' | 'IN' | null => {
   if (typeof window === 'undefined') return null;
   try {
@@ -18,6 +28,8 @@ export const getManualCountryOverride = (): 'BD' | 'IN' | null => {
 
 export const getVisitorCountry = (): 'BD' | 'IN' => {
   if (typeof window === 'undefined') return 'BD';
+  const routeCountry = getRouteCountryOverride();
+  if (routeCountry) return routeCountry;
   const manual = getManualCountryOverride();
   if (manual) return manual;
   const country = (window as typeof window & { __GAZI_COUNTRY__?: string }).__GAZI_COUNTRY__?.toUpperCase();
@@ -27,6 +39,7 @@ export const getVisitorCountry = (): 'BD' | 'IN' => {
 export const setManualCountry = (country: 'BD' | 'IN' | null) => {
   if (typeof window === 'undefined') return;
   try {
+    document.cookie = 'gazi_route_country=; Path=/; Max-Age=0; SameSite=Lax';
     if (country) {
       localStorage.setItem('gazi_country_override', country);
       document.cookie = `gazi_country_override=${country}; Path=/; Max-Age=31536000; SameSite=Lax`;

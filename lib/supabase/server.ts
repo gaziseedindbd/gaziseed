@@ -10,6 +10,8 @@ export async function createServerSupabase(country?: 'BD' | 'IN') {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || FALLBACK_KEY;
 
+  const routeHeaderCountry = headerStore.get('x-gazi-route-country')?.toUpperCase();
+  const routeCookieCountry = cookieStore.get('gazi_route_country')?.value?.toUpperCase();
   const manualOverride = cookieStore.get('gazi_country_override')?.value?.toUpperCase();
   const detectedCountry = (
     headerStore.get('x-vercel-ip-country') ||
@@ -18,9 +20,13 @@ export async function createServerSupabase(country?: 'BD' | 'IN') {
   ).toUpperCase();
   const visitorCountry = country === 'IN' || country === 'BD'
     ? country
-    : manualOverride === 'IN' || manualOverride === 'BD'
-      ? manualOverride
-      : detectedCountry === 'IN' ? 'IN' : 'BD';
+    : routeHeaderCountry === 'IN' || routeHeaderCountry === 'BD'
+      ? routeHeaderCountry
+      : routeCookieCountry === 'IN' || routeCookieCountry === 'BD'
+        ? routeCookieCountry
+        : manualOverride === 'IN' || manualOverride === 'BD'
+          ? manualOverride
+          : detectedCountry === 'IN' ? 'IN' : 'BD';
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {

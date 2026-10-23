@@ -27,9 +27,17 @@ export async function generateMetadata() {
 export default async function Page() {
   const requestHeaders = await headers();
   const cookieStore = await cookies();
+  const routeHeaderCountry = requestHeaders.get('x-gazi-route-country')?.toUpperCase();
+  const routeCookieCountry = cookieStore.get('gazi_route_country')?.value?.toUpperCase();
   const cookieOverride = cookieStore.get('gazi_country_override')?.value?.toUpperCase();
   const detectedCountry = (requestHeaders.get('x-vercel-ip-country') || requestHeaders.get('cf-ipcountry') || 'BD').toUpperCase();
-  const visitorCountry: 'BD' | 'IN' = cookieOverride === 'IN' || cookieOverride === 'BD' ? cookieOverride : detectedCountry === 'IN' ? 'IN' : 'BD';
+  const visitorCountry: 'BD' | 'IN' = routeHeaderCountry === 'IN' || routeHeaderCountry === 'BD'
+    ? routeHeaderCountry
+    : routeCookieCountry === 'IN' || routeCookieCountry === 'BD'
+      ? routeCookieCountry
+      : cookieOverride === 'IN' || cookieOverride === 'BD'
+        ? cookieOverride
+        : detectedCountry === 'IN' ? 'IN' : 'BD';
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey =
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||

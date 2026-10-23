@@ -169,7 +169,7 @@ export function SiteHeader({ initialCountry = 'BD' }: { initialCountry?: 'BD' | 
   const openProduct = (slug: string) => {
     setSearchOpen(false);
     setSearchQuery('');
-    router.push(`/product/${slug}`);
+    router.push(`/${getVisitorCountry().toLowerCase()}/product/${encodeURIComponent(slug)}`);
   };
 
   const navLinks = [
