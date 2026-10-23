@@ -79,7 +79,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const savedLanguage = cookieStore.get('gazi_lang')?.value;
   const initialLang = savedLanguage === 'bn' || savedLanguage === 'hi' || savedLanguage === 'en'
     ? savedLanguage
-    : 'en';
+    : visitorCountry === 'IN' ? 'en' : 'bn';
   const htmlLanguage = initialLang + '-' + (initialLang === 'hi' ? 'IN' : visitorCountry);
 
   const serverSupabase = await createServerSupabase(visitorCountry);
