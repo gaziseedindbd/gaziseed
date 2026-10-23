@@ -76,6 +76,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         ? cookieOverride
         : detectedCountry === 'IN' ? 'IN' : 'BD';
 
+  const savedLanguage = cookieStore.get('gazi_lang')?.value;
+  const initialLang = savedLanguage === 'bn' || savedLanguage === 'hi' || savedLanguage === 'en'
+    ? savedLanguage
+    : 'en';
+  const htmlLanguage = initialLang + '-' + (initialLang === 'hi' ? 'IN' : visitorCountry);
+
   const serverSupabase = await createServerSupabase(visitorCountry);
   const { data: marketingSettings } = await serverSupabase
     .from('marketing_settings')
@@ -96,7 +102,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     || 'G-6RKL3GB80V';
 
   return (
-    <html lang={visitorCountry === 'IN' ? 'en-IN' : 'bn-BD'} className={hind.variable} suppressHydrationWarning>
+    <html lang={htmlLanguage} className={hind.variable} suppressHydrationWarning>
       <head>
         {/* Homepage styles are inlined in app/page.tsx to keep them off the initial render-blocking request path. */}
         {ga4MeasurementId ? (
@@ -126,7 +132,7 @@ gtag('config', ${JSON.stringify(ga4MeasurementId)});
         <MarketingTracker initialSettings={marketingSettingsForClient} />
         <ReferralTracker />
         <BrandNormalizer />
-        <LanguageProvider>
+        <LanguageProvider initialLang={initialLang} initialCountry={visitorCountry as 'BD' | 'IN'}>
           <ToastProvider>
             <CartProvider>
               <AnnouncementBar />
