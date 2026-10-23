@@ -33,6 +33,27 @@ function BannerImage({ banner, priority = false }: { banner: Banner; priority?: 
   );
 }
 
+function BannerCarousel({ banners, currentBanner, onSelect, translateDb }: {
+  banners: Banner[];
+  currentBanner: number;
+  onSelect: (index: number) => void;
+  translateDb: (value: string) => string;
+}) {
+  return (
+    <>
+      {banners.map((banner, idx) => (
+        <div key={banner.id} aria-hidden={idx !== currentBanner} hidden={idx !== currentBanner} className="hero-carousel-slide transition-opacity duration-700">
+          <div className="hero-inner relative block h-full p-0">
+            {banner.desktop_image && <div className="hero-image-wrap block h-full w-full"><BannerImage banner={banner} priority={idx === 0} /></div>}
+            {(banner.title || banner.subtitle || banner.cta_text) && <div className="hero-content-overlay absolute inset-x-0 bottom-0 z-10 p-4 sm:p-6 lg:p-8"><div className="max-w-xl rounded-2xl bg-black/25 p-4 text-white backdrop-blur-[2px] sm:p-5">{banner.title && <h2 className="hero-title">{translateDb(banner.title)}</h2>}{banner.subtitle && <p className="hero-subtitle">{translateDb(banner.subtitle)}</p>}{banner.cta_text && <Link href={banner.cta_url || '/all-products'} className="hero-btn inline-flex">{translateDb(banner.cta_text)}<ChevronRight className="h-4 w-4" /></Link>}</div></div>}
+          </div>
+        </div>
+      ))}
+      {banners.length > 1 && <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">{banners.map((_, idx) => <button key={idx} onClick={() => onSelect(idx)} className={`h-2 rounded-full transition-all ${idx === currentBanner ? 'w-8 bg-primary' : 'w-2 bg-primary/30'}`} aria-label={`Banner ${idx + 1}`}></button>)}</div>}
+    </>
+  );
+}
+
 function prioritizeAvailableProducts(items: Product[], limit = items.length) {
   const available = items.filter((product) => product.stock > 0);
   const unavailable = items.filter((product) => product.stock <= 0);
@@ -144,7 +165,19 @@ export default function Home({ initialBanners = [], initialVisitorCountry }: { i
 
   return (
     <div className={`${themeClass} home-premium-scope`}>
-      {visitorCountry === 'IN' ? (
+      {visitorCountry === 'IN' && isSectionEnabled('hero_slider') && banners.length > 0 ? (
+        <section id="gazi-india-home-hero" className="section-pad home-hero-section home-india-hero-section">
+          <div className="container-custom">
+            <div className={`hero-wrap home-hero-fallback home-india-hero-fallback relative overflow-hidden hero-has-banners ${banners.length > 1 ? 'hero-has-carousel' : 'hero-no-carousel'}`}>
+              <div className="hero-inner relative block h-full w-full p-0">
+                <BannerCarousel banners={banners} currentBanner={currentBanner} onSelect={setCurrentBanner} translateDb={tDb} />
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {visitorCountry === 'IN' && !(isSectionEnabled('hero_slider') && banners.length > 0) ? (
         <section id="gazi-india-home-hero" className="section-pad home-hero-section home-india-hero-section">
           <div className="container-custom">
             <div className="hero-wrap home-hero-fallback home-india-hero-fallback relative overflow-hidden">
