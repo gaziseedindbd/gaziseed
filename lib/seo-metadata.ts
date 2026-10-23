@@ -33,6 +33,16 @@ export function localizedSeoText(value: unknown, country: SeoCountry, fallback =
   return raw;
 }
 
+export function serializeJsonLd(value: unknown): string {
+  return JSON.stringify(value).replace(/[<>&]/g, (character) => {
+    const escapes: Record<string, string> = {
+      '<': '\\u003c',
+      '>': '\\u003e',
+      '&': '\\u0026',
+    };
+    return escapes[character] || character;
+  });
+}
 export function cleanSeoDescription(value: unknown, fallback: string, maxLength = 160): string {
   const text = (typeof value === 'string' ? value : fallback).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   const result = text || fallback;

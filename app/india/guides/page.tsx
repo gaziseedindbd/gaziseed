@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import { serializeJsonLd } from '@/lib/seo-metadata';
+
 const BASE_URL = 'https://www.gaziseed.com';
 
 export const metadata: Metadata = {
@@ -41,8 +43,44 @@ const guides = [
 ];
 
 export default function IndiaGuidesPage() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': BASE_URL + '/india/guides#webpage',
+        url: BASE_URL + '/india/guides',
+        name: 'India Seed Growing Guides',
+        description: 'Practical seed and home-gardening guides for India from GAZI SEED, covering chilli, terrace gardening and flower seed growing.',
+        inLanguage: 'en-IN',
+        isPartOf: { '@id': BASE_URL + '/#website' },
+        mainEntity: {
+          '@type': 'ItemList',
+          itemListOrder: 'https://schema.org/ItemListOrderAscending',
+          numberOfItems: guides.length,
+          itemListElement: guides.map((guide, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            name: guide.title,
+            url: BASE_URL + '/india/guides/' + guide.slug,
+          })),
+        },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: BASE_URL + '/' },
+          { '@type': 'ListItem', position: 2, name: 'India', item: BASE_URL + '/india' },
+          { '@type': 'ListItem', position: 3, name: 'Guides', item: BASE_URL + '/india/guides' },
+        ],
+      },
+    ],
+  };
+
   return (
-    <main className="min-h-screen bg-[hsl(var(--background))]">
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
+      <main className="min-h-screen bg-[hsl(var(--background))]">
       <section className="border-b border-emerald-100 bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-700 text-white">
         <div className="mx-auto max-w-5xl px-5 py-14 sm:px-8 sm:py-20">
           <nav aria-label="Breadcrumb" className="mb-5 text-sm text-emerald-100/80">
@@ -92,6 +130,7 @@ export default function IndiaGuidesPage() {
           </Link>
         </div>
       </section>
-    </main>
+      </main>
+    </>
   );
 }

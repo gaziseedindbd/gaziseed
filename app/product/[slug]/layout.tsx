@@ -1,7 +1,7 @@
 import { cache } from 'react';
 import type { Metadata } from 'next';
 import { createServerSupabase } from '@/lib/supabase/server';
-import { cleanSeoDescription, getSeoCountry, localizedSeoText, pageMetadata, SITE_URL } from '@/lib/seo-metadata';
+import { cleanSeoDescription, getSeoCountry, localizedSeoText, pageMetadata, serializeJsonLd, SITE_URL } from '@/lib/seo-metadata';
 
 type ProductSeo = {
   id: string;
@@ -115,6 +115,8 @@ export default async function ProductSeoLayout({
   const price = possibleSale > 0 && possibleSale < regular ? possibleSale : regular;
   const stock = Number(variant?.stock ?? product.stock ?? 0);
   const priceCurrency = country === 'IN' ? 'INR' : 'BDT';
+  const brand = product.brand?.trim();
+  const hasUsableBrand = Boolean(brand && !/^(?:unspecified|unknown|n\/a|none|null|undefined)$/i.test(brand));
 
   const breadcrumbLd = {
     '@context': 'https://schema.org',
@@ -132,7 +134,7 @@ export default async function ProductSeoLayout({
     name,
     description,
     ...(product.sku ? { sku: product.sku } : {}),
-    ...(product.brand ? { brand: { '@type': 'Brand', name: product.brand } } : {}),
+    ...(hasUsableBrand ? { brand: { '@type': 'Brand', name: brand } } : {}),
     image: imageValues.map(absoluteImage),
     url,
     inLanguage: country === 'IN' ? 'en-IN' : 'bn-BD',
@@ -152,8 +154,8 @@ export default async function ProductSeoLayout({
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(productLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbLd) }} />
       {children}
     </>
   );
