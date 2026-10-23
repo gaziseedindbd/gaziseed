@@ -63,12 +63,13 @@ export async function getAnnouncements(): Promise<Announcement[]> {
   return (data || []) as Announcement[];
 }
 
-export async function getBanners(): Promise<Banner[]> {
+export async function getBanners(country = getVisitorCountry()): Promise<Banner[]> {
   const now = new Date().toISOString();
   const { data } = await supabase
     .from('banners')
     .select('*')
     .eq('is_active', true)
+    .eq('country_code', country)
     .or(`start_date.is.null,start_date.lte.${now}`)
     .or(`end_date.is.null,end_date.gte.${now}`)
     .order('display_order', { ascending: true });
