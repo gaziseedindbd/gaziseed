@@ -143,7 +143,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   });
 
-  addRows([...bdProducts, ...inProducts], 'product', 'weekly', 0.7);
+  const addProductRows = (
+    rows: Array<{ slug: string; updated_at?: string; created_at?: string }>,
+    country: Country,
+  ) => rows.forEach((row) => {
+    const modified = lastModified(row);
+    entries.push({
+      url: `${BASE_URL}/${country.toLowerCase()}/product/${encodeURIComponent(row.slug)}`,
+      ...(modified ? { lastModified: modified } : {}),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    });
+  });
+
+  addProductRows(bdProducts, 'BD');
+  addProductRows(inProducts, 'IN');
   addRows([...bdCategories, ...inCategories], 'category', 'weekly', 0.6);
   addRows([...bdCombos, ...inCombos], 'combo', 'weekly', 0.6);
   addRows(posts, 'blog', 'monthly', 0.5);
