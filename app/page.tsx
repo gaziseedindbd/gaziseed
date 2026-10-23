@@ -5,8 +5,24 @@ import Home from '@/components/site/home';
 import HomeStyleRegistry from '@/components/site/home-style-registry';
 import { getImageProps } from 'next/image';
 import type { Banner } from '@/lib/supabase/types';
+import { getSeoCountry, pageMetadata, SITE_URL } from '@/lib/seo-metadata';
 
 export const revalidate = 60;
+
+export async function generateMetadata() {
+  const country = await getSeoCountry();
+  const isIndia = country === 'IN';
+  return pageMetadata({
+    title: isIndia
+      ? 'Quality Seeds Online in India | GAZI SEED'
+      : 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
+    description: isIndia
+      ? 'Shop quality vegetable, flower and gardening seeds online in India from GAZI SEED, with convenient delivery across India.'
+      : 'GAZI SEED - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। ক্যাশ অন ডেলিভারি সারাদেশে।',
+    path: '/',
+    locale: isIndia ? 'en_IN' : 'bn_BD',
+  });
+}
 
 export default async function Page() {
   const requestHeaders = await headers();
@@ -61,6 +77,42 @@ export default async function Page() {
       clearTimeout(timeoutId);
     }
   }
+  const homeTitle = visitorCountry === 'IN'
+    ? 'Quality Seeds Online in India | GAZI SEED'
+    : 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর';
+  const homeDescription = visitorCountry === 'IN'
+    ? 'Shop quality vegetable, flower and gardening seeds online in India from GAZI SEED, with convenient delivery across India.'
+    : 'GAZI SEED - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। ক্যাশ অন ডেলিভারি সারাদেশে।';
+  const homeLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': SITE_URL + '/#organization',
+        name: 'GAZI SEED',
+        url: SITE_URL + '/',
+        logo: SITE_URL + '/favicon.svg',
+      },
+      {
+        '@type': 'WebSite',
+        '@id': SITE_URL + '/#website',
+        url: SITE_URL + '/',
+        name: 'GAZI SEED',
+        publisher: { '@id': SITE_URL + '/#organization' },
+        inLanguage: visitorCountry === 'IN' ? 'en-IN' : 'bn-BD',
+      },
+      {
+        '@type': 'WebPage',
+        '@id': SITE_URL + '/#webpage',
+        url: SITE_URL + '/',
+        name: homeTitle,
+        description: homeDescription,
+        isPartOf: { '@id': SITE_URL + '/#website' },
+        about: { '@id': SITE_URL + '/#organization' },
+        inLanguage: visitorCountry === 'IN' ? 'en-IN' : 'bn-BD',
+      },
+    ],
+  };
   const firstBanner = initialBanners[0];
   const heroImage = firstBanner?.desktop_image ? {
     desktop: getImageProps({
@@ -82,6 +134,7 @@ export default async function Page() {
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeLd) }} />
       <HomeStyleRegistry css={homeStyles} />
       <Home initialBanners={initialBanners} initialHeroImage={heroImage} initialVisitorCountry={visitorCountry} />
     </>
