@@ -1,12 +1,26 @@
 import type { Metadata } from 'next';
-import { getSeoCountry, getServerRow, localizedSeoText, pageMetadata, SITE_URL } from '@/lib/seo-metadata';
+import { getSeoCountry, getServerRow, localizedSeoText, pageMetadata, serializeJsonLd, SITE_URL } from '@/lib/seo-metadata';
+
+function categoryDescription(value: unknown, country: 'BD' | 'IN', name: string): string {
+  const fallback = `Seeds and growing products in ${name} — GAZI SEED`;
+  const localized = localizedSeoText(value, country, fallback);
+  // India pages are presented in English. Avoid publishing Bengali/Hindi text
+  // under en-IN when a usable English translation is not available.
+  if (country === 'IN' && !/\\p{Script=Latin}/u.test(localized)) return fallback;
+  return localized;
+}
+
+function absoluteCategoryImage(value?: string | null): string | undefined {
+  if (!value) return undefined;
+  return /^https?:\\/\\//i.test(value) ? value : `${SITE_URL}${value.startsWith('/') ? '' : '/'}${value}`;
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const country = slug.endsWith('-in') || slug.endsWith('-india') ? 'IN' : slug.endsWith('-bd') ? 'BD' : await getSeoCountry();
   const category = await getServerRow('categories', 'slug', slug, country);
   const title = country === 'IN' ? category?.name_en || category?.name_bn || slug.replace(/-/g, ' ') : category?.name_bn || category?.name_en || slug.replace(/-/g, ' ');
-  const description = localizedSeoText(category?.meta_description || category?.description, country, 'Seeds and growing products in ' + title + ' — GAZI SEED');
+  const description = categoryDescription(category?.meta_description || category?.description, country, title);
   const image = category?.banner || category?.image || null;
   const metadata = pageMetadata({ title: title + ' | GAZI SEED', description, image, path: '/category/' + slug, locale: country === 'IN' ? 'en_IN' : 'bn_BD' });
 
@@ -46,9 +60,9 @@ export default async function CategorySlugLayout({
 
   const countryName = country === 'IN' ? category.name_en || category.name_bn : category.name_bn || category.name_en;
   const name = countryName || slug.replace(/-/g, ' ');
-  const description = localizedSeoText(category.meta_description || category.description, country, `Seeds and growing products in ${name} — GAZI SEED`).slice(0, 500);
+  const description = categoryDescription(category.meta_description || category.description, country, name).slice(0, 500);
   const url = `${SITE_URL}/category/${encodeURIComponent(slug)}`;
-  const image = category.banner || category.image || undefined;
+  const image = absoluteCategoryImage(category.banner || category.image);
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -65,8 +79,8 @@ export default async function CategorySlugLayout({
       {
         '@type': 'BreadcrumbList',
         itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
-          { '@type': 'ListItem', position: 2, name: 'Categories', item: `${SITE_URL}/categories` },
+          { '@type': 'ListItem', position: 1, name: country === 'IN' ? 'Home' : 'হোম', item: SITE_URL },
+          { '@type': 'ListItem', position: 2, name: country === 'IN' ? 'Categories' : 'ক্যাটাগরি', item: `${SITE_URL}/categories` },
           { '@type': 'ListItem', position: 3, name, item: url },
         ],
       },
@@ -75,7 +89,7 @@ export default async function CategorySlugLayout({
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       {children}
     </>
   );
