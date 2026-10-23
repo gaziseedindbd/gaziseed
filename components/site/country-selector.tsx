@@ -73,7 +73,7 @@ export function CountrySelector({ mobile = false, initialCountry = 'BD' }: { mob
     if (branchProductPath) {
       const target = next === 'AUTO'
         ? branchProductPath[1]
-        : \`/\${next.toLowerCase()}\${branchProductPath[1]}\`;
+        : `/${next.toLowerCase()}${branchProductPath[1]}`;
       window.location.assign(target);
       return;
     }
