@@ -177,7 +177,7 @@ export function SiteHeader({ initialCountry = 'BD' }: { initialCountry?: 'BD' | 
     { label: t('ক্যাটাগরি', 'Categories'), href: '/categories', icon: Grid },
     { label: t('সব পণ্য', 'Products'), href: '/all-products', icon: ShoppingBag },
     { label: t('কম্বো', 'Combo'), href: '/combos', icon: Layers },
-    { label: t('অফার', 'Offers'), href: '/offers', icon: Tag, badge: 'Hot' },
+    { label: t('অফার', 'Offers'), href: '/offers', icon: Tag, badge: t('নতুন', 'New', 'नया') },
     { label: t('চাষাবাদ', 'Guides'), href: '/blog', icon: BookOpen },
     { label: t('ভিডিও', 'Videos'), href: '/videos', icon: Youtube },
     { label: t('ডেলিভারি চার্জ', 'Delivery Charge'), href: '/charges', icon: Truck },
