@@ -141,6 +141,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     .from('products')
     .select('*')
     .eq('slug', slug)
+    .eq('country_code', getVisitorCountry())
     .eq('is_active', true)
     .maybeSingle();
   return data as Product | null;
