@@ -8,9 +8,14 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || proc
 
 export const getRouteCountryOverride = (): 'BD' | 'IN' | null => {
   if (typeof window === 'undefined') return null;
-  const pathMatch = window.location.pathname.match(/^\/(in|bd)\/product(?:\/|$)/i);
+  const pathname = window.location.pathname;
+  const pathMatch = pathname.match(/^\/(in|bd)\/product(?:\/|$)/i);
   const pathCountry = pathMatch?.[1]?.toUpperCase();
   if (pathCountry === 'IN' || pathCountry === 'BD') return pathCountry;
+  if (/^\/india(?:\/|$)/i.test(pathname)) return 'IN';
+  const categorySlug = pathname.match(/^\/category\/([^/]+)\/?$/i)?.[1]?.toLowerCase();
+  if (categorySlug?.endsWith('-in') || categorySlug?.endsWith('-india')) return 'IN';
+  if (categorySlug?.endsWith('-bd')) return 'BD';
   const cookieMatch = document.cookie.match(/(?:^|;\s*)gazi_route_country=(IN|BD)(?:;|$)/i);
   const cookieCountry = cookieMatch?.[1]?.toUpperCase();
   return cookieCountry === 'IN' || cookieCountry === 'BD' ? cookieCountry : null;
@@ -66,15 +71,13 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
   global: { fetch: fetchWithCountry },
 });
 
-export const formatPrice = (price: number): string => {
-  const country = getVisitorCountry();
+export const formatPrice = (price: number, country: 'BD' | 'IN' = getVisitorCountry()): string => {
   return country === 'IN'
     ? '₹ ' + Number(price).toLocaleString('en-IN')
     : '৳ ' + Number(price).toLocaleString('bn-BD');
 };
 
-export const formatPriceEn = (price: number): string => {
-  const country = getVisitorCountry();
+export const formatPriceEn = (price: number, country: 'BD' | 'IN' = getVisitorCountry()): string => {
   return country === 'IN'
     ? '₹ ' + Number(price).toLocaleString('en-IN')
     : '৳ ' + Number(price).toLocaleString('en-US');

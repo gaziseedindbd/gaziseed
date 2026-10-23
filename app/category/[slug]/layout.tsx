@@ -6,9 +6,30 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const country = slug.endsWith('-in') || slug.endsWith('-india') ? 'IN' : slug.endsWith('-bd') ? 'BD' : await getSeoCountry();
   const category = await getServerRow('categories', 'slug', slug, country);
   const title = country === 'IN' ? category?.name_en || category?.name_bn || slug.replace(/-/g, ' ') : category?.name_bn || category?.name_en || slug.replace(/-/g, ' ');
-  const description = localizedSeoText(category?.meta_description || category?.description, country, `Seeds and growing products in ${title} — GAZI SEED`);
+  const description = localizedSeoText(category?.meta_description || category?.description, country, 'Seeds and growing products in ' + title + ' — GAZI SEED');
   const image = category?.banner || category?.image || null;
-  return pageMetadata({ title: `${title} | GAZI SEED`, description, image, path: `/category/${slug}`, locale: country === 'IN' ? 'en_IN' : 'bn_BD' });
+  const metadata = pageMetadata({ title: title + ' | GAZI SEED', description, image, path: '/category/' + slug, locale: country === 'IN' ? 'en_IN' : 'bn_BD' });
+
+  const counterpartSlug = country === 'IN'
+    ? slug.replace(/-(?:in|india)$/i, '-bd')
+    : slug.replace(/-bd$/i, '-in');
+  const counterpartCountry = country === 'IN' ? 'BD' : 'IN';
+  const counterpart = counterpartSlug !== slug
+    ? await getServerRow('categories', 'slug', counterpartSlug, counterpartCountry)
+    : null;
+
+  if (!category || !counterpart || counterpart.is_active === false) return metadata;
+  const currentUrl = SITE_URL + '/category/' + encodeURIComponent(slug);
+  const counterpartUrl = SITE_URL + '/category/' + encodeURIComponent(counterpartSlug);
+  const bdUrl = country === 'BD' ? currentUrl : counterpartUrl;
+  const inUrl = country === 'IN' ? currentUrl : counterpartUrl;
+  return {
+    ...metadata,
+    alternates: {
+      canonical: currentUrl,
+      languages: { 'bn-BD': bdUrl, 'en-IN': inUrl },
+    },
+  };
 }
 
 export default async function CategorySlugLayout({

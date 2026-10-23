@@ -68,12 +68,33 @@ export function CountrySelector({ mobile = false, initialCountry = 'BD' }: { mob
     }
     setValue(next);
 
-    const branchProductPath = window.location.pathname.match(/^\/(?:in|bd)(\/product\/[^/]+)$/i);
+    const pathname = window.location.pathname;
+    const branchProductPath = pathname.match(/^\/(?:in|bd)(\/product\/[^/]+)$/i);
     if (branchProductPath) {
       const target = next === 'AUTO'
         ? branchProductPath[1]
         : `/${next.toLowerCase()}${branchProductPath[1]}`;
       window.location.assign(target);
+      return;
+    }
+
+    if (/^\/india(?:\/|$)/i.test(pathname)) {
+      if (next === 'BD' || next === 'AUTO') window.location.assign('/');
+      else window.location.reload();
+      return;
+    }
+
+    const categoryMatch = pathname.match(/^\/category\/([^/]+)\/?$/i);
+    const categorySlug = categoryMatch?.[1];
+    if (categorySlug && /-(?:bd|in|india)$/i.test(categorySlug)) {
+      if (next === 'AUTO') {
+        window.location.assign('/categories');
+        return;
+      }
+      const targetSlug = next === 'IN'
+        ? categorySlug.replace(/-(?:bd|in|india)$/i, '-in')
+        : categorySlug.replace(/-(?:bd|in|india)$/i, '-bd');
+      window.location.assign('/category/' + targetSlug);
       return;
     }
 
