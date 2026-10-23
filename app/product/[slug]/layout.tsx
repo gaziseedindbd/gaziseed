@@ -116,7 +116,7 @@ export default async function ProductSeoLayout({
   const stock = Number(variant?.stock ?? product.stock ?? 0);
   const priceCurrency = country === 'IN' ? 'INR' : 'BDT';
   const brand = product.brand?.trim();
-  const hasUsableBrand = Boolean(brand && !/^(?:unspecified|unknown|n\\/?a|none|null|undefined)$/i.test(brand));
+  const hasUsableBrand = Boolean(brand && !/^(?:unspecified|unknown|n\/a|none|null|undefined)$/i.test(brand));
 
   const breadcrumbLd = {
     '@context': 'https://schema.org',
