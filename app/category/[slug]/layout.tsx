@@ -4,15 +4,23 @@ import { getSeoCountry, getServerRow, localizedSeoText, pageMetadata, serializeJ
 function categoryDescription(value: unknown, country: 'BD' | 'IN', name: string): string {
   const fallback = `Seeds and growing products in ${name} — GAZI SEED`;
   const localized = localizedSeoText(value, country, fallback);
-  // India pages are presented in English. Avoid publishing Bengali/Hindi text
-  // under en-IN when a usable English translation is not available.
-  if (country === 'IN' && !/\\p{Script=Latin}/u.test(localized)) return fallback;
+  // India category pages are presented in English; don't label Bengali or Hindi as en-IN.
+  if (country === 'IN') {
+    const hasIndicScript = Array.from(localized).some((character) => {
+      const codePoint = character.codePointAt(0) || 0;
+      return codePoint >= 0x0900 && codePoint <= 0x09ff;
+    });
+    if (hasIndicScript) return fallback;
+  }
   return localized;
 }
 
 function absoluteCategoryImage(value?: string | null): string | undefined {
   if (!value) return undefined;
-  return /^https?:\\/\\//i.test(value) ? value : `${SITE_URL}${value.startsWith('/') ? '' : '/'}${value}`;
+  const normalized = value.toLowerCase();
+  if (normalized.startsWith('https://') || normalized.startsWith('http://')) return value;
+  if (value.startsWith('//')) return `https:${value}`;
+  return `${SITE_URL}${value.startsWith('/') ? '' : '/'}${value}`;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
