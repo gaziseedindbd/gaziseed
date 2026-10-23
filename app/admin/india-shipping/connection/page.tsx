@@ -28,6 +28,8 @@ export default function IndiaShiprocketConnectionPage() {
         method: 'POST', body: {},
         headers: { Authorization: 'Bearer ' + session.session.access_token, 'x-gazi-country': 'IN' },
       });
+      if (data?.code === 'sandbox_testing_requires_official_panel')
+        throw new Error('Shiprocket Sandbox API testing must be done in the official Sandbox Panel. No Shiprocket API request was sent from this website.');
       if (error || data?.ok !== true || data?.authenticated !== true)
         throw new Error('Connection could not be verified; check credentials and API access');
       setResult('connected');
