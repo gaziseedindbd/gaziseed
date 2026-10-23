@@ -26,7 +26,8 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
         ? (product.name_en || product.name_bn)
         : (product.name_bn || product.name_en));
   const shortDescription = tDb(translated.short_description || product.short_description || '');
-  const productBranch = (product as Product & { country_code?: string }).country_code === 'IN' ? 'in' : 'bd';
+  const productCountry = (product as Product & { country_code?: string }).country_code === 'IN' ? 'IN' : 'BD';
+  const productBranch = productCountry.toLowerCase();
 
   const badge = product.is_best_seller
     ? t('বেস্ট সেলার', 'Best Seller', 'बेस्ट सेलर')
@@ -193,11 +194,11 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
         <div className="mb-2.5 flex min-w-0 items-end justify-between gap-2 border-t border-slate-100 pt-2.5 sm:mb-3 sm:pt-3.5">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <span className="text-[1.05rem] font-black tracking-tight text-emerald-800 sm:text-[1.4rem]">
-              {formatPrice(price)}
+              {formatPrice(price, productCountry)}
             </span>
             {discount > 0 && (
               <span className="text-[10px] font-semibold text-slate-400 line-through sm:text-xs">
-                {formatPrice(product.regular_price)}
+                {formatPrice(product.regular_price, productCountry)}
               </span>
             )}
           </div>
