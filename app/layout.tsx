@@ -37,7 +37,6 @@ export const metadata: Metadata = {
   title: 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
   description: 'GAZI SEED - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। ক্যাশ অন ডেলিভারি সারাদেশে।',
   metadataBase: new URL(SITE_URL),
-  alternates: { canonical: SITE_URL + '/' },
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [{ url: FAVICON_URL, type: 'image/svg+xml' }],
@@ -47,7 +46,6 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
     description: 'বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
-    url: SITE_URL + '/',
     siteName: 'GAZI SEED',
     type: 'website',
     locale: 'bn_BD',
@@ -91,41 +89,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     || process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim()
     || 'G-6RKL3GB80V';
 
-  const organizationLd = {
-    '@type': 'Organization',
-    '@id': SITE_URL + '/#organization',
-    name: 'GAZI SEED',
-    url: SITE_URL + '/',
-    logo: SITE_URL + '/favicon.svg',
-  };
-
-  const websiteLd = {
-    '@type': 'WebSite',
-    '@id': SITE_URL + '/#website',
-    url: SITE_URL + '/',
-    name: 'GAZI SEED',
-    publisher: { '@id': SITE_URL + '/#organization' },
-    inLanguage: 'bn-BD',
-  };
-
-  const webpageLd = {
-    '@type': 'WebPage',
-    '@id': SITE_URL + '/#webpage',
-    url: SITE_URL + '/',
-    name: 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
-    description: 'GAZI SEED - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। ক্যাশ অন ডেলিভারি সারাদেশে।',
-    isPartOf: { '@id': SITE_URL + '/#website' },
-    about: { '@id': SITE_URL + '/#organization' },
-    inLanguage: 'bn-BD',
-  };
-
-  const homeLd = {
-    '@context': 'https://schema.org',
-    '@graph': [organizationLd, websiteLd, webpageLd],
-  };
-
   return (
-    <html lang="en" className={hind.variable} suppressHydrationWarning>
+    <html lang={visitorCountry === 'IN' ? 'en-IN' : 'bn-BD'} className={hind.variable} suppressHydrationWarning>
       <head>
         {/* Homepage styles are inlined in app/page.tsx to keep them off the initial render-blocking request path. */}
         {ga4MeasurementId ? (
@@ -146,7 +111,6 @@ gtag('config', ${JSON.stringify(ga4MeasurementId)});
             />
           </>
         ) : null}
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeLd) }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p=window.location.pathname;var css=[];if(p==='/checkout')css.push('/checkout-premium-v1.css?v=2');if(p.indexOf('/combo/')===0)css.push('/combo-quick-checkout-v2.css?v=1');for(var i=0;i<css.length;i++){var l=document.createElement('link');l.rel='stylesheet';l.href=css[i];document.head.appendChild(l)}}catch(e){}})()` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){window.__GAZI_COUNTRY__='${visitorCountry}';})();` }} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{const theme=localStorage.getItem('admin_theme');if(theme==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')} }catch(e){}})()` }} />
