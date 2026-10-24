@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const BASE_URL = 'https://www.gaziseed.com';
+const INDIA_SOCIAL_IMAGE = `https://wsrv.nl/?url=${encodeURIComponent(`${BASE_URL}/gazi-seed-official-logo-web.svg`)}&w=1200&h=630&fit=cover&cbg=ffffff&output=jpg&q=88`;
 const FALLBACK_SUPABASE_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
 const FALLBACK_SUPABASE_KEY = 'sb_publishable_vCaz5OGrHocUTgpOXmE9xg_QVsuUJc0';
 type IndiaCategory = {
@@ -44,6 +45,11 @@ export const metadata: Metadata = {
     'Shop vegetable, chilli, flower and gardening seeds online in India from GAZI SEED. Explore India-focused seed collections and cultivation guides. Check delivery and payment availability for your PIN code at checkout.',
   alternates: {
     canonical: BASE_URL + '/india',
+    languages: {
+      'en-IN': BASE_URL + '/india',
+      'bn-BD': BASE_URL + '/',
+      'x-default': BASE_URL + '/',
+    },
   },
   openGraph: {
     title: 'Premium Seeds Online in India | GAZI SEED India',
@@ -53,6 +59,13 @@ export const metadata: Metadata = {
     siteName: 'GAZI SEED',
     type: 'website',
     locale: 'en_IN',
+    images: [{
+      url: INDIA_SOCIAL_IMAGE,
+      width: 1200,
+      height: 630,
+      type: 'image/jpeg',
+      alt: 'GAZI SEED official logo',
+    }],
   },
   robots: {
     index: true,
