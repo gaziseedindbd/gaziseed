@@ -5,6 +5,7 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { cookies, headers } from 'next/headers';
 import { Hind } from 'next/font/google';
+import Script from 'next/script';
 import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
 import { AnnouncementBar } from '@/components/site/announcement-bar';
@@ -107,10 +108,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* Homepage styles are inlined in app/page.tsx to keep them off the initial render-blocking request path. */}
         {ga4MeasurementId ? (
           <>
-            <script
+            <Script
               id="seed-bari-ga4"
-              async
               src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ga4MeasurementId)}`}
+              strategy="lazyOnload"
             />
             <script
               dangerouslySetInnerHTML={{
@@ -118,6 +119,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', ${JSON.stringify(ga4MeasurementId)});
+window.__GAZI_GA4_BOOTSTRAPPED__ = ${JSON.stringify(ga4MeasurementId)};
 `,
               }}
             />

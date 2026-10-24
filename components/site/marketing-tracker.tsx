@@ -24,6 +24,7 @@ type WindowWithPixels = Window & {
   TiktokAnalyticsObject?: string;
   __GAZI_COUNTRY__?: 'BD' | 'IN';
   __GAZI_META_PIXEL_IDS__?: Set<string>;
+  __GAZI_GA4_BOOTSTRAPPED__?: string;
 };
 
 function getTrackingContext() {
@@ -46,6 +47,43 @@ function loadScript(src: string, id: string): Promise<void> {
     script.onerror = () => resolve();
     document.head.appendChild(script);
   });
+}
+
+function loadScriptWhenIdle(src: string, id: string): void {
+  if (typeof window === 'undefined' || document.getElementById(id)) return;
+
+  let started = false;
+  const start = () => {
+    if (started) return;
+    started = true;
+    window.removeEventListener('pointerdown', start);
+    window.removeEventListener('keydown', start);
+    window.removeEventListener('touchstart', start);
+    window.removeEventListener('scroll', start);
+    void loadScript(src, id);
+  };
+
+  // Keep the tracking queue available immediately, but wait until page load
+  // and browser idle before downloading third-party tag code. A user
+  // interaction starts it right away; the timeout prevents indefinite delay.
+  window.addEventListener('pointerdown', start, { once: true, passive: true });
+  window.addEventListener('keydown', start, { once: true });
+  window.addEventListener('touchstart', start, { once: true, passive: true });
+  window.addEventListener('scroll', start, { once: true, passive: true });
+
+  const idleWindow = window as Window & {
+    requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+  };
+  let scheduled = false;
+  const scheduleAfterLoad = () => {
+    if (started || scheduled) return;
+    scheduled = true;
+    if (idleWindow.requestIdleCallback) idleWindow.requestIdleCallback(start, { timeout: 1200 });
+    else window.setTimeout(start, 300);
+  };
+  if (document.readyState === 'complete') scheduleAfterLoad();
+  else window.addEventListener('load', scheduleAfterLoad, { once: true });
+  window.setTimeout(scheduleAfterLoad, 2500);
 }
 
 function initMetaPixel(pixelId: string) {
@@ -78,7 +116,7 @@ function initMetaPixel(pixelId: string) {
     script.src.includes('connect.facebook.net') && script.src.includes('fbevents.js'),
   );
   if (!metaPixelScriptExists) {
-    loadScript('https://connect.facebook.net/en_US/fbevents.js', 'seed-bari-meta-pixel');
+    loadScriptWhenIdle('https://connect.facebook.net/en_US/fbevents.js', 'seed-bari-meta-pixel');
   }
 }
 
@@ -87,6 +125,12 @@ async function initGoogleAnalytics(measurementId: string) {
   w.dataLayer = w.dataLayer || [];
   if (!w.gtag) w.gtag = (...args: unknown[]) => w.dataLayer!.push(args);
   if ((w.gtag as any).__seedBariInitialized === measurementId) return;
+
+  // RootLayout can queue GA4 immediately while its external SDK waits until idle.
+  if (w.__GAZI_GA4_BOOTSTRAPPED__ === measurementId) {
+    (w.gtag as any).__seedBariInitialized = measurementId;
+    return;
+  }
 
   // RootLayout provides the canonical GA4 bootstrap in the server-rendered head.
   // Keep the dynamic fallback for environments where that bootstrap is absent.
@@ -114,7 +158,7 @@ function initGtm(containerId: string) {
   if ((w as any).__seedBariGtmInitialized === containerId) return;
   w.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
   (w as any).__seedBariGtmInitialized = containerId;
-  loadScript(`https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(containerId)}`, 'seed-bari-gtm');
+  loadScriptWhenIdle(`https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(containerId)}`, 'seed-bari-gtm');
 }
 
 function initTikTokPixel(pixelId: string) {
