@@ -78,7 +78,9 @@ Deno.serve(async (req: Request) => {
       method: "GET", headers, cache: "no-store", signal: AbortSignal.timeout(12000),
     });
     if (!pinResponse.ok) return reply(502, {
-      ok: false, code: "delhivery_serviceability_unavailable",
+      ok: false,
+      code: pinResponse.status === 401 || pinResponse.status === 403
+        ? "delhivery_auth_rejected" : "delhivery_serviceability_unavailable",
       diagnostic: { stage: "serviceability", upstreamStatus: pinResponse.status },
     });
 
