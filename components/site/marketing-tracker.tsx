@@ -24,6 +24,7 @@ type WindowWithPixels = Window & {
   TiktokAnalyticsObject?: string;
   __GAZI_COUNTRY__?: 'BD' | 'IN';
   __GAZI_META_PIXEL_IDS__?: Set<string>;
+  __GAZI_GA4_BOOTSTRAPPED__?: string;
 };
 
 function getTrackingContext() {
@@ -62,8 +63,8 @@ function loadScriptWhenIdle(src: string, id: string): void {
     void loadScript(src, id);
   };
 
-  // Keep the tracking queue available immediately, but let the storefront
-  // finish its first render before downloading third-party tag code. A user
+  // Keep the tracking queue available immediately, but wait until page load
+  // and browser idle before downloading third-party tag code. A user
   // interaction starts it right away; the timeout prevents indefinite delay.
   window.addEventListener('pointerdown', start, { once: true, passive: true });
   window.addEventListener('keydown', start, { once: true });
@@ -73,11 +74,16 @@ function loadScriptWhenIdle(src: string, id: string): void {
   const idleWindow = window as Window & {
     requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
   };
-  if (idleWindow.requestIdleCallback) {
-    idleWindow.requestIdleCallback(start, { timeout: 1500 });
-  } else {
-    window.setTimeout(start, 1000);
-  }
+  let scheduled = false;
+  const scheduleAfterLoad = () => {
+    if (started || scheduled) return;
+    scheduled = true;
+    if (idleWindow.requestIdleCallback) idleWindow.requestIdleCallback(start, { timeout: 1200 });
+    else window.setTimeout(start, 300);
+  };
+  if (document.readyState === 'complete') scheduleAfterLoad();
+  else window.addEventListener('load', scheduleAfterLoad, { once: true });
+  window.setTimeout(scheduleAfterLoad, 2500);
 }
 
 function initMetaPixel(pixelId: string) {
@@ -119,6 +125,12 @@ async function initGoogleAnalytics(measurementId: string) {
   w.dataLayer = w.dataLayer || [];
   if (!w.gtag) w.gtag = (...args: unknown[]) => w.dataLayer!.push(args);
   if ((w.gtag as any).__seedBariInitialized === measurementId) return;
+
+  // RootLayout can queue GA4 immediately while its external SDK waits until idle.
+  if (w.__GAZI_GA4_BOOTSTRAPPED__ === measurementId) {
+    (w.gtag as any).__seedBariInitialized = measurementId;
+    return;
+  }
 
   // RootLayout provides the canonical GA4 bootstrap in the server-rendered head.
   // Keep the dynamic fallback for environments where that bootstrap is absent.
