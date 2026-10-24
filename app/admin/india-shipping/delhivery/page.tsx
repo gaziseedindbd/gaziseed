@@ -64,7 +64,7 @@ export default function IndiaDelhiverySetupPage() {
         const code = typeof data?.code === 'string' ? data.code : '';
         const messages: Record<string, string> = {
           delhivery_configuration_unavailable: 'Delhivery staging token is not configured in the server yet.',
-          provider_auth_rejected: 'Delhivery did not accept the configured API token.',
+          delhivery_auth_rejected: 'Delhivery did not accept the configured API token.',
           delhivery_serviceability_unavailable: 'Delhivery PIN serviceability check is unavailable.',
           delhivery_rate_unavailable: 'Delhivery rate estimate is unavailable.',
         };
