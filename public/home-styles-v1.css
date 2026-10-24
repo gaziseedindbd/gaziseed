@@ -991,3 +991,42 @@
     background-size: 100% 100% !important;
   }
 }
+
+
+/* INDIA IMAGE-CTA LOWER-RIGHT FIX — keep image-only banner CTA clear of its artwork text. */
+.home-premium-scope .home-india-hero-fallback .hero-carousel-slide .hero-cta-only-overlay{
+  position:absolute!important;
+  inset:0!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  padding:0!important;
+  pointer-events:none!important;
+}
+.home-premium-scope .home-india-hero-fallback .hero-carousel-slide .hero-cta-only-overlay>div{
+  position:static!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0!important;
+  background:transparent!important;
+  backdrop-filter:none!important;
+}
+.home-premium-scope .home-india-hero-fallback .hero-carousel-slide .hero-cta-only-overlay .hero-btn{
+  position:absolute!important;
+  right:clamp(12px,2.5vw,32px)!important;
+  bottom:clamp(14px,2.5vw,28px)!important;
+  z-index:12!important;
+  margin:0!important;
+  pointer-events:auto!important;
+}
+@media(max-width:767px){
+  .home-premium-scope .home-india-hero-fallback .hero-carousel-slide .hero-cta-only-overlay .hero-btn{
+    right:12px!important;
+    bottom:38px!important;
+    min-height:44px!important;
+    padding:.58rem 1rem!important;
+    font-size:.82rem!important;
+  }
+}
