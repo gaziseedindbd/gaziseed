@@ -103,9 +103,15 @@ Deno.serve(async (req: Request) => {
     const remark = typeof postalCode.remark === "string"
       ? postalCode.remark.trim().toLowerCase()
       : typeof matching.remark === "string" ? matching.remark.trim().toLowerCase() : "";
-    if (remark === "embargo") return reply(200, {
-      ok: true, environment, serviceable: false, reason: "temporarily_embargoed",
-      estimatedCharge: null, quoteOnly: true,
+    // Delhivery documents a blank remark as serviceable and "Embargo" as temporarily non-serviceable.
+    // Fail closed on any other non-empty remark instead of guessing.
+    if (remark !== "") return reply(200, {
+      ok: true,
+      environment,
+      serviceable: false,
+      reason: remark === "embargo" ? "temporarily_embargoed" : "serviceability_remark",
+      estimatedCharge: null,
+      quoteOnly: true,
     });
 
     const chargeUrl = new URL("/api/kinko/v1/invoice/charges/.json", baseUrl);
