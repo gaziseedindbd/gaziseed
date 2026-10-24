@@ -17,6 +17,7 @@ type QuoteResult = {
   quoteOnly?: boolean;
   stagingRatesMayBeZero?: boolean;
   code?: string;
+  diagnostic?: { stage?: string; upstreamStatus?: number };
 };
 
 export default function IndiaDelhiverySetupPage() {
@@ -66,7 +67,17 @@ export default function IndiaDelhiverySetupPage() {
         headers: { Authorization: 'Bearer ' + accessToken, 'x-gazi-country': 'IN' },
       });
       if (invokeError || !data?.ok) {
-        const code = typeof data?.code === 'string' ? data.code : '';
+        let failure: QuoteResult | null = data && typeof data.code === 'string' ? data as QuoteResult : null;
+        const context = (invokeError as { context?: unknown } | null)?.context;
+        if (!failure && context instanceof Response) {
+          try {
+            const parsed = await context.clone().json() as QuoteResult;
+            if (parsed && typeof parsed.code === 'string') failure = parsed;
+          } catch {
+            // Keep the generic error if the response is not safe JSON.
+          }
+        }
+        const code = failure?.code || '';
         const messages: Record<string, string> = {
           delhivery_configuration_unavailable: 'Delhivery staging token is not configured in the server yet.',
           delhivery_auth_rejected: 'Delhivery did not accept the configured API token.',
@@ -74,7 +85,10 @@ export default function IndiaDelhiverySetupPage() {
           delhivery_rate_unavailable: 'Delhivery rate estimate is unavailable.',
           invalid_parcel: 'Check the PIN, parcel values, and COD amount.',
         };
-        throw new Error(messages[code] || 'Delhivery could not complete this read-only check.');
+        const stage = failure?.diagnostic?.stage;
+        const upstreamStatus = failure?.diagnostic?.upstreamStatus;
+        const detail = stage ? ` Stage: ${stage}${upstreamStatus ? ` (HTTP ${upstreamStatus})` : ''}.` : '';
+        throw new Error((messages[code] || 'Delhivery could not complete this read-only check.') + detail);
       }
       setResult(data as QuoteResult);
     } catch (caught) {
