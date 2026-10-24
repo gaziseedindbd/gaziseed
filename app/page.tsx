@@ -1,4 +1,3 @@
-import { cookies, headers } from 'next/headers';
 import { readFileSync } from 'fs';
 import path from 'path';
 import Home from '@/components/site/home';
@@ -18,25 +17,19 @@ export async function generateMetadata() {
     description: isIndia
       ? 'Shop vegetable, flower and gardening seeds online in India from GAZI SEED. Check payment methods and delivery availability for your PIN code at checkout.'
       : 'GAZI SEED - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। আপনার এলাকায় ডেলিভারি ও পেমেন্টের সুবিধা চেক করুন।',
+    image: '/gazi-seed-official-logo-web.svg',
     path: '/',
     locale: isIndia ? 'en_IN' : 'bn_BD',
+    languages: {
+      'en-IN': `${SITE_URL}/india`,
+      'bn-BD': `${SITE_URL}/`,
+      'x-default': `${SITE_URL}/`,
+    },
   });
 }
 
 export default async function Page() {
-  const requestHeaders = await headers();
-  const cookieStore = await cookies();
-  const routeHeaderCountry = requestHeaders.get('x-gazi-route-country')?.toUpperCase();
-  const routeCookieCountry = cookieStore.get('gazi_route_country')?.value?.toUpperCase();
-  const cookieOverride = cookieStore.get('gazi_country_override')?.value?.toUpperCase();
-  const detectedCountry = (requestHeaders.get('x-vercel-ip-country') || requestHeaders.get('cf-ipcountry') || 'BD').toUpperCase();
-  const visitorCountry: 'BD' | 'IN' = routeHeaderCountry === 'IN' || routeHeaderCountry === 'BD'
-    ? routeHeaderCountry
-    : routeCookieCountry === 'IN' || routeCookieCountry === 'BD'
-      ? routeCookieCountry
-      : cookieOverride === 'IN' || cookieOverride === 'BD'
-        ? cookieOverride
-        : detectedCountry === 'IN' ? 'IN' : 'BD';
+  const visitorCountry = await getSeoCountry();
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey =
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
@@ -98,7 +91,7 @@ export default async function Page() {
         '@id': SITE_URL + '/#organization',
         name: 'GAZI SEED',
         url: SITE_URL + '/',
-        logo: SITE_URL + '/favicon.svg',
+        logo: SITE_URL + '/gazi-seed-official-logo-web.svg',
       },
       {
         '@type': 'WebSite',

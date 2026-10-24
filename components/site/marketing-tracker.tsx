@@ -19,9 +19,11 @@ type WindowWithPixels = Window & {
   dataLayer?: unknown[];
   gtag?: (...args: unknown[]) => void;
   fbq?: (...args: unknown[]) => void;
+  _fbq?: (...args: unknown[]) => void;
   ttq?: any;
   TiktokAnalyticsObject?: string;
   __GAZI_COUNTRY__?: 'BD' | 'IN';
+  __GAZI_META_PIXEL_IDS__?: Set<string>;
 };
 
 function getTrackingContext() {
@@ -58,9 +60,24 @@ function initMetaPixel(pixelId: string) {
     fbq.queue = [];
     w.fbq = fbq;
   }
-  if (!(w.fbq as any).__seedBariInitialized) {
+  // Meta's SDK checks that its modern and legacy globals share one queue.
+  // Without this alias it reports a conflicting-version warning even when
+  // the page has a single Pixel loader.
+  if (!w._fbq) w._fbq = w.fbq;
+
+  const initializedPixelIds = w.__GAZI_META_PIXEL_IDS__ || new Set<string>();
+  w.__GAZI_META_PIXEL_IDS__ = initializedPixelIds;
+
+  if (!initializedPixelIds.has(pixelId)) {
+    initializedPixelIds.add(pixelId);
     (w.fbq as any)('init', pixelId);
-    (w.fbq as any).__seedBariInitialized = pixelId;
+  }
+  (w.fbq as any).__seedBariInitialized = pixelId;
+
+  const metaPixelScriptExists = Array.from(document.scripts).some((script) =>
+    script.src.includes('connect.facebook.net') && script.src.includes('fbevents.js'),
+  );
+  if (!metaPixelScriptExists) {
     loadScript('https://connect.facebook.net/en_US/fbevents.js', 'seed-bari-meta-pixel');
   }
 }
@@ -280,7 +297,7 @@ export function MarketingTracker({ initialSettings }: { initialSettings: Marketi
     });
 
     return () => { cancelled = true; };
-  }, [initialSettings]);
+  }, [initialSettings, pathname]);
 
   useEffect(() => {
     if (!readyRef.current || !pathname || lastPathRef.current === pathname) return;
