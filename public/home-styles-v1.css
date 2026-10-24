@@ -958,7 +958,6 @@
     transform: translate3d(-180%,0,0) skewX(-18deg) !important;
     animation: india-mobile-cta-sheen 6.4s cubic-bezier(.4,0,.2,1) infinite !important;
   }
-  }
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay > div {
     position: relative !important;
     z-index: 1 !important;
