@@ -19,6 +19,7 @@ type WindowWithPixels = Window & {
   dataLayer?: unknown[];
   gtag?: (...args: unknown[]) => void;
   fbq?: (...args: unknown[]) => void;
+  _fbq?: (...args: unknown[]) => void;
   ttq?: any;
   TiktokAnalyticsObject?: string;
   __GAZI_COUNTRY__?: 'BD' | 'IN';
@@ -59,6 +60,11 @@ function initMetaPixel(pixelId: string) {
     fbq.queue = [];
     w.fbq = fbq;
   }
+  // Meta's SDK checks that its modern and legacy globals share one queue.
+  // Without this alias it reports a conflicting-version warning even when
+  // the page has a single Pixel loader.
+  if (!w._fbq) w._fbq = w.fbq;
+
   const initializedPixelIds = w.__GAZI_META_PIXEL_IDS__ || new Set<string>();
   w.__GAZI_META_PIXEL_IDS__ = initializedPixelIds;
 
