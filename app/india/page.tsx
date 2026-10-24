@@ -274,7 +274,7 @@ export default async function IndiaLandingPage() {
                   return (
                     <Link
                       key={product.id}
-                      href={`/product/${product.slug}`}
+                      href={`/in/product/${product.slug}`}
                       className="group overflow-hidden rounded-2xl border border-white bg-white shadow-[0_14px_35px_-28px_rgba(4,62,40,.7)] transition hover:-translate-y-1"
                     >
                       <div className="aspect-square overflow-hidden bg-slate-50">
