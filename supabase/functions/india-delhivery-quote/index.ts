@@ -62,12 +62,13 @@ Deno.serve(async (req: Request) => {
 
     const input: unknown = await req.json();
     if (!isRecord(input)) return reply(400, { ok: false, code: "invalid_request" });
-    const { pickupPin, deliveryPin, weightGrams, lengthCm, breadthCm, heightCm, paymentMode, shippingMode } = input;
+    const { pickupPin, deliveryPin, weightGrams, lengthCm, breadthCm, heightCm, paymentMode, shippingMode, codAmount } = input;
     if (!isPin(pickupPin) || !isPin(deliveryPin) ||
         !validPositive(weightGrams, 50000) || !Number.isInteger(weightGrams) ||
         !validPositive(lengthCm, 200) || !validPositive(breadthCm, 200) ||
         !validPositive(heightCm, 200) ||
         (paymentMode !== "cod" && paymentMode !== "prepaid") ||
+        (paymentMode === "cod" && !validPositive(codAmount, 100000)) ||
         (shippingMode !== "surface" && shippingMode !== "express"))
       return reply(400, { ok: false, code: "invalid_parcel" });
 
@@ -121,6 +122,8 @@ Deno.serve(async (req: Request) => {
     chargeUrl.searchParams.set("d_pin", deliveryPin);
     chargeUrl.searchParams.set("cgm", String(weightGrams));
     chargeUrl.searchParams.set("pt", paymentMode === "cod" ? "COD" : "Pre-paid");
+    // Delhivery staging rate calculator expects cod=0 for prepaid requests.
+    chargeUrl.searchParams.set("cod", paymentMode === "cod" ? String(codAmount) : "0");
     chargeUrl.searchParams.set("l", String(lengthCm));
     chargeUrl.searchParams.set("b", String(breadthCm));
     chargeUrl.searchParams.set("h", String(heightCm));
