@@ -48,6 +48,38 @@ function loadScript(src: string, id: string): Promise<void> {
   });
 }
 
+function loadScriptWhenIdle(src: string, id: string): void {
+  if (typeof window === 'undefined' || document.getElementById(id)) return;
+
+  let started = false;
+  const start = () => {
+    if (started) return;
+    started = true;
+    window.removeEventListener('pointerdown', start);
+    window.removeEventListener('keydown', start);
+    window.removeEventListener('touchstart', start);
+    window.removeEventListener('scroll', start);
+    void loadScript(src, id);
+  };
+
+  // Keep the tracking queue available immediately, but let the storefront
+  // finish its first render before downloading third-party tag code. A user
+  // interaction starts it right away; the timeout prevents indefinite delay.
+  window.addEventListener('pointerdown', start, { once: true, passive: true });
+  window.addEventListener('keydown', start, { once: true });
+  window.addEventListener('touchstart', start, { once: true, passive: true });
+  window.addEventListener('scroll', start, { once: true, passive: true });
+
+  const idleWindow = window as Window & {
+    requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+  };
+  if (idleWindow.requestIdleCallback) {
+    idleWindow.requestIdleCallback(start, { timeout: 1500 });
+  } else {
+    window.setTimeout(start, 1000);
+  }
+}
+
 function initMetaPixel(pixelId: string) {
   const w = window as WindowWithPixels;
   if (!w.fbq) {
@@ -78,7 +110,7 @@ function initMetaPixel(pixelId: string) {
     script.src.includes('connect.facebook.net') && script.src.includes('fbevents.js'),
   );
   if (!metaPixelScriptExists) {
-    loadScript('https://connect.facebook.net/en_US/fbevents.js', 'seed-bari-meta-pixel');
+    loadScriptWhenIdle('https://connect.facebook.net/en_US/fbevents.js', 'seed-bari-meta-pixel');
   }
 }
 
@@ -114,7 +146,7 @@ function initGtm(containerId: string) {
   if ((w as any).__seedBariGtmInitialized === containerId) return;
   w.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
   (w as any).__seedBariGtmInitialized = containerId;
-  loadScript(`https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(containerId)}`, 'seed-bari-gtm');
+  loadScriptWhenIdle(`https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(containerId)}`, 'seed-bari-gtm');
 }
 
 function initTikTokPixel(pixelId: string) {
