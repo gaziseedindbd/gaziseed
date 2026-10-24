@@ -27,6 +27,7 @@ export default function IndiaDelhiverySetupPage() {
   const [breadthCm, setBreadthCm] = useState('10');
   const [heightCm, setHeightCm] = useState('5');
   const [paymentMode, setPaymentMode] = useState<'prepaid' | 'cod'>('prepaid');
+  const [codAmount, setCodAmount] = useState('');
   const [shippingMode, setShippingMode] = useState<'surface' | 'express'>('surface');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -44,6 +45,8 @@ export default function IndiaDelhiverySetupPage() {
       const values = [weightGrams, lengthCm, breadthCm, heightCm].map(Number);
       if (values.some((value) => !Number.isFinite(value) || value <= 0))
         throw new Error('Enter valid parcel weight and dimensions.');
+      if (paymentMode === 'cod' && (!Number.isFinite(Number(codAmount)) || Number(codAmount) <= 0))
+        throw new Error('Enter the amount to collect for a COD rate estimate.');
       const { data: session } = await supabase.auth.getSession();
       const accessToken = session.session?.access_token;
       if (!accessToken) throw new Error('India Admin login required.');
@@ -57,6 +60,7 @@ export default function IndiaDelhiverySetupPage() {
           breadthCm: values[2],
           heightCm: values[3],
           paymentMode,
+          codAmount: paymentMode === 'cod' ? Number(codAmount) : 0,
           shippingMode,
         },
         headers: { Authorization: 'Bearer ' + accessToken, 'x-gazi-country': 'IN' },
@@ -68,6 +72,7 @@ export default function IndiaDelhiverySetupPage() {
           delhivery_auth_rejected: 'Delhivery did not accept the configured API token.',
           delhivery_serviceability_unavailable: 'Delhivery PIN serviceability check is unavailable.',
           delhivery_rate_unavailable: 'Delhivery rate estimate is unavailable.',
+          invalid_parcel: 'Check the PIN, parcel values, and COD amount.',
         };
         throw new Error(messages[code] || 'Delhivery could not complete this read-only check.');
       }
@@ -110,6 +115,9 @@ export default function IndiaDelhiverySetupPage() {
               <option value="cod">Cash on delivery</option>
             </select>
           </label>
+          {paymentMode === 'cod' && <label className="space-y-1 text-sm font-medium">COD amount (INR)
+            <input required type="number" min="1" max="100000" value={codAmount} onChange={(e) => setCodAmount(e.target.value)} className="w-full rounded-lg border p-3" />
+          </label>}
           <label className="space-y-1 text-sm font-medium">Length (cm)
             <input required type="number" min="1" max="200" value={lengthCm} onChange={(e) => setLengthCm(e.target.value)} className="w-full rounded-lg border p-3" />
           </label>
@@ -145,8 +153,8 @@ export default function IndiaDelhiverySetupPage() {
       </section>}
 
       <aside className="rounded-lg bg-amber-50 p-4 text-sm text-amber-950">
-        <p className="font-semibold">Credential setup required</p>
-        <p className="mt-1">The server needs a Delhivery staging API token stored as an Edge Function secret. Do not paste the token into this page or into chat. Keep the existing Shiprocket connection separate.</p>
+        <p className="font-semibold">Secure credential handling</p>
+        <p className="mt-1">The Delhivery API token is read only by the server Edge Function. Do not paste the token into this page or into chat. Keep the existing Shiprocket connection separate.</p>
       </aside>
       <a href="https://one.delhivery.com/developer-portal/documents/b2c/" target="_blank" rel="noreferrer" className="text-sm font-medium text-emerald-800 underline">
         Delhivery B2C API documentation
