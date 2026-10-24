@@ -110,7 +110,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
               alt={translated.image_alt || product.image_alt || product.image_alt_bn || name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
-              quality={75}
+              quality={65}
               className="relative z-[1] object-cover object-center p-0 transition-transform duration-500 ease-out group-hover:scale-[1.025]"
             />
           ) : (
