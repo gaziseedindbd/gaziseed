@@ -63,7 +63,7 @@ export default function NagaBombayChiliGuide() {
               seedlings into a larger pot or grow bag once they are established.
             </p>
             <p className="mt-3">
-              See the <Link href="/product/naga-bombay-chili-seeds" className="font-black text-emerald-800 underline decoration-emerald-300 underline-offset-4">
+              See the <Link href="/in/product/naga-bombay-chili-seeds" className="font-black text-emerald-800 underline decoration-emerald-300 underline-offset-4">
                 Naga Bombay Chili Seeds
               </Link> product page for current India availability.
             </p>
