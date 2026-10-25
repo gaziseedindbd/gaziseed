@@ -151,6 +151,7 @@ export default function IndiaShippingDashboard(){
   <div className="space-y-2"><h1 className="text-2xl font-bold">India Shipping Management</h1>
    <p className="text-sm text-gray-600">India-only order preparation drafts. Shiprocket KYC verified. No shipment booking, AWB generation, courier assignment or pickup is enabled.</p></div>
   <div className="flex flex-wrap gap-3"><Link className="rounded-lg bg-emerald-700 px-4 py-3 text-white" href="/admin/india-shipping/rates">Check Courier Rates</Link>
+   <Link className="rounded-lg border px-4 py-3" href="/admin/india-shipping/delhivery">Delhivery Setup & Test</Link>
    <Link className="rounded-lg border px-4 py-3" href="/admin/india-shipping/connection">Test API Connection</Link></div>
   {loading&&<p role="status">Loading India orders…</p>}
   {error&&<p role="alert" className="text-red-700">{error}</p>}
