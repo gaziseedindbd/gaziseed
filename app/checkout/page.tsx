@@ -86,6 +86,25 @@ export default function CheckoutPage() {
   const [deliveryCharge, setDeliveryCharge] = useState(0);
   const [deliveryQuoteReady, setDeliveryQuoteReady] = useState(false);
   const [deliveryQuoteRetry, setDeliveryQuoteRetry] = useState(0);
+  const [indiaPinStatus, setIndiaPinStatus] = useState<'idle' | 'checking' | 'likely_available' | 'unconfirmed' | 'unavailable'>('idle');
+  useEffect(() => {
+    if (country !== 'IN') { setIndiaPinStatus('idle'); return; }
+    const pin = (addrValue.postalCode || '').trim();
+    if (!/^[1-9][0-9]{5}$/.test(pin)) { setIndiaPinStatus('idle'); return; }
+    let active = true;
+    setIndiaPinStatus('checking');
+    const handle = window.setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('india-checkout-pin-check', {
+          method: 'POST', body: { country: 'IN', pin },
+        });
+        if (!active) return;
+        setIndiaPinStatus(!error && data?.ok === true && data?.status === 'likely_available' ? 'likely_available' : 'unconfirmed');
+      } catch { if (active) setIndiaPinStatus('unconfirmed'); }
+    }, 650);
+    return () => { active = false; window.clearTimeout(handle); };
+  }, [country, addrValue.postalCode]);
+
 
   const [showMoreProducts, setShowMoreProducts] = useState(false);
   const [productSearch, setProductSearch] = useState('');
@@ -781,6 +800,17 @@ export default function CheckoutPage() {
 
                 <div className="mt-6 rounded-[22px] border border-border/60 bg-secondary/20 p-4 sm:p-5">
                   <AddressSelector value={addrValue} onChange={setAddrValue} countryCode={country} />
+                  {country === 'IN' && /^[1-9][0-9]{5}$/.test((addrValue.postalCode || '').trim()) && (
+                    <div role="status" aria-live="polite" className="mt-3 rounded-xl border border-border/60 bg-background/80 px-3 py-2 text-xs font-semibold leading-relaxed text-foreground/80">
+                      <Truck className="mr-1 inline h-4 w-4" aria-hidden="true" />
+                      {indiaPinStatus === 'checking'
+                        ? 'Checking Shiprocket coverage for this PIN…'
+                        : indiaPinStatus === 'likely_available'
+                        ? 'Shiprocket couriers may serve this PIN. Final availability depends on packed parcel details and courier approval.'
+                        : 'Shiprocket coverage could not be confirmed for this PIN. You can still place the order using the existing delivery process.'}
+                      <p className="mt-1 font-normal">Informational check only. Checkout delivery fees and payment remain unchanged.</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-5 space-y-1.5">
