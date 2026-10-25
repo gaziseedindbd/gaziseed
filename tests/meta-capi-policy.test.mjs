@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getMetaPurchaseEventId } from '../lib/marketing-event-id.ts';
-import { isMetaCapiOrderSource } from '../lib/meta-capi-policy.ts';
+import {
+  isMetaCapiOrderSource,
+  shouldSuppressMetaCapiUserIdentifiers,
+} from '../lib/meta-capi-policy.ts';
 
 test('website and paid web checkout sources are eligible for Meta CAPI', () => {
   for (const source of [
@@ -38,4 +41,11 @@ test('browser and server Purchase event ID stays deterministic by branch and ord
     getMetaPurchaseEventId('IN', 'GS-IN-TEST001'),
     getMetaPurchaseEventId('BD', 'GS-IN-TEST001'),
   );
+});
+
+test('preview test events suppress client identifiers only while a test code is configured', () => {
+  assert.equal(shouldSuppressMetaCapiUserIdentifiers('preview', 'TEST123'), true);
+  assert.equal(shouldSuppressMetaCapiUserIdentifiers('preview', '  TEST123  '), true);
+  assert.equal(shouldSuppressMetaCapiUserIdentifiers('preview', '  '), false);
+  assert.equal(shouldSuppressMetaCapiUserIdentifiers('production', 'TEST123'), false);
 });

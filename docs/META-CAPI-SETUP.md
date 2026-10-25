@@ -19,6 +19,8 @@ purchase:<country_code>:<order_number>
 
 The browser sends it as Meta Pixel eventID; CAPI sends the same value as event_id. Meta can therefore deduplicate the two copies of the same Purchase event. Keep the event ID stable for the same order. Matching event name and event ID are the key deduplication fields for browser/server copies.
 
+For Vercel Preview deployments with META_CAPI_TEST_EVENT_CODE configured, the server Purchase path omits _fbp, _fbc, client IP and user-agent. This keeps Preview validation focused on event delivery and deduplication without sending those client identifiers.
+
 ## Server payload
 
 The server sends Purchase with website action source, order value/currency, order ID, content IDs/items and normalized hashed customer identifiers. IP address and user agent are sent when the event is triggered from the order-success route.
