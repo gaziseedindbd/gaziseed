@@ -797,3 +797,34 @@ test('detects explicit country in Bengali seed catalog requests', () => {
     null,
   );
 });
+
+
+test('uses saved Hindi product translations for Messenger selection options and falls back safely', () => {
+  const options = getMessengerProductSelectionQuickReplies([
+    {
+      id: '00000000-0000-4000-8000-000000000001',
+      name_bn: 'লাল গোলাপ ফুলের বীজ',
+      name_en: 'Red Rose Flower Seeds',
+      translations: { hi: { name: 'लाल गुलाब के बीज' } },
+      slug: 'lal-golap-fuler-bij',
+    },
+    {
+      id: '00000000-0000-4000-8000-000000000002',
+      name_bn: 'মরিচের বীজ',
+      name_en: 'Chili Seeds',
+      translations: {},
+      slug: 'chili-seeds',
+    },
+  ], 'Hindi');
+
+  assert.deepEqual(options, [
+    {
+      title: 'लाल गुलाब के बीज',
+      payload: 'PRODUCT_SELECT:00000000-0000-4000-8000-000000000001',
+    },
+    {
+      title: 'Chili Seeds',
+      payload: 'PRODUCT_SELECT:00000000-0000-4000-8000-000000000002',
+    },
+  ]);
+});
