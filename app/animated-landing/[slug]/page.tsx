@@ -346,7 +346,7 @@ export default function AnimatedLandingPage() {
         : t('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন', 'Enter a valid 11-digit Bangladesh mobile number', 'मान्य 11 अंकों का बांग्लादेशी मोबाइल नंबर दर्ज करें'));
       return;
     }
-    if (!address.division || !address.district || !address.thana || !address.detail) { setError(t('সম্পূর্ণ ঠিকানা দিন', 'Enter your complete address', 'पूरा पता दर्ज करें')); return; }
+    if (!address.division || !address.district || (country === 'BD' && !address.thana) || !address.detail || (country === 'IN' && !/^[1-9]\d{5}$/.test(address.postalCode || ''))) { setError(t('সম্পূর্ণ ঠিকানা দিন', 'Enter your complete address', 'पूरा पता दर्ज करें')); return; }
     if (indiaDeliveryQuoteLoading || indiaDeliveryQuote === null) { setError(t('ডেলিভারি চার্জ যাচাই করা হচ্ছে। একটু পরে চেষ্টা করুন।', 'Delivery charge is being checked. Please try again shortly.', 'डिलीवरी शुल्क जाँचा जा रहा है। थोड़ी देर बाद फिर कोशिश करें।')); return; }
 
     setSubmitting(true);

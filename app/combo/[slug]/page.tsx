@@ -25,6 +25,7 @@ import {
 import { toast } from '@/components/site/toast-provider';
 import { IndiaPaymentMethodSelector, type IndiaPaymentMethod } from '@/components/site/india-payment-method-selector';
 import { startIndiaCampaignPayment } from '@/lib/india-campaign-payment';
+import { AddressSelector, formatAddressToString, type AddressValue } from '@/components/site/address-selector';
 
 type Country = 'BD' | 'IN';
 
@@ -88,6 +89,7 @@ export default function ComboLandingPage() {
   const [country, setCountry] = useState<Country>('BD');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+  const [indiaAddress, setIndiaAddress] = useState<AddressValue>({ division: '', district: '', thana: '', detail: '', postalCode: '' });
   const [phone, setPhone] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<IndiaPaymentMethod>('online');
@@ -212,11 +214,15 @@ export default function ComboLandingPage() {
     const cleanPhone = phone.replace(/[^0-9]/g, '');
     const phoneValid = country === 'IN' ? /^[6-9][0-9]{9}$/.test(cleanPhone) : /^01[0-9]{9}$/.test(cleanPhone);
 
-    if (!name.trim() || !address.trim() || !cleanPhone) {
+    if (!name.trim() || (country === 'BD' && !address.trim()) || !cleanPhone) {
       return toast(lang === 'hi' ? 'कृपया नाम, पता और फ़ोन नंबर भरें' : lang === 'bn' ? 'দয়া করে নাম, ঠিকানা ও ফোন নাম্বার দিন' : 'Please enter your name, address and phone number', 'error');
     }
     if (!phoneValid) {
       return toast(country === 'IN' ? (lang === 'hi' ? 'मान्य 10 अंकों का भारतीय मोबाइल नंबर डालें' : lang === 'bn' ? 'সঠিক ১০ সংখ্যার ভারতীয় মোবাইল নম্বর দিন' : 'Enter a valid 10-digit Indian mobile number') : 'সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন', 'error');
+    }
+
+    if (country === 'IN' && (!indiaAddress.division || !indiaAddress.district.trim() || !indiaAddress.detail.trim() || !/^[1-9]\d{5}$/.test(indiaAddress.postalCode || ''))) {
+      return toast(copy('Enter a valid PIN and complete delivery address.', 'সঠিক PIN এবং সম্পূর্ণ ঠিকানা দিন।', 'सही पिन और पूरा पता डालें।'), 'error');
     }
 
     setSubmitting(true);
@@ -231,7 +237,7 @@ export default function ComboLandingPage() {
           method: paymentMethod,
           customerName: name.trim(),
           customerPhone: cleanPhone,
-          deliveryAddress: address.trim(),
+          deliveryAddress: formatAddressToString(indiaAddress),
         });
         return;
       }
@@ -467,7 +473,12 @@ export default function ComboLandingPage() {
                 <form onSubmit={submitOrder} className="space-y-4">
                   <div className="space-y-1.5"><label htmlFor="combo-name" className="flex items-center gap-1.5 text-xs font-black text-slate-700"><User className="h-3.5 w-3.5 text-emerald-700" />{copy('Full name', 'পুরো নাম', 'पूरा नाम')} <span className="text-rose-500">*</span></label><input id="combo-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={copy('Your full name', 'আপনার পুরো নাম', 'आपका पूरा नाम')} className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" required /></div>
                   <div className="space-y-1.5"><label htmlFor="combo-phone" className="flex items-center gap-1.5 text-xs font-black text-slate-700"><Phone className="h-3.5 w-3.5 text-emerald-700" />{copy('Mobile number', 'মোবাইল নম্বর', 'मोबाइल नंबर')} <span className="text-rose-500">*</span></label><input id="combo-phone" type="tel" inputMode="tel" maxLength={country === 'IN' ? 10 : 11} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={country === 'IN' ? copy('10-digit mobile number', '১০ সংখ্যার মোবাইল নম্বর', '10 अंकों का मोबाइल नंबर') : '01XXXXXXXXX'} className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" required /></div>
-                  <div className="space-y-1.5"><label htmlFor="combo-address" className="flex items-center gap-1.5 text-xs font-black text-slate-700"><MapPin className="h-3.5 w-3.5 text-emerald-700" />{copy('Delivery address', 'ডেলিভারির ঠিকানা', 'डिलीवरी का पता')} <span className="text-rose-500">*</span></label><textarea id="combo-address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder={copy('House / road / area / city / PIN', 'বাড়ি / রাস্তা / এলাকা / শহর / পিন', 'मकान / सड़क / क्षेत्र / शहर / पिन')} className="min-h-28 w-full resize-y rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" required /></div>
+                  {country === 'IN' ? (
+                    <div className="rounded-2xl border border-emerald-200 bg-white p-4">
+                      <p className="mb-3 text-sm font-bold">{copy('Delivery address', 'ডেলিভারি ঠিকানা', 'डिलीवरी पता')}</p>
+                      <AddressSelector countryCode="IN" value={indiaAddress} onChange={setIndiaAddress} />
+                    </div>
+                  ) : (<div className="space-y-1.5"><label htmlFor="combo-address" className="flex items-center gap-1.5 text-xs font-black text-slate-700"><MapPin className="h-3.5 w-3.5 text-emerald-700" />{copy('Delivery address', 'ডেলিভারির ঠিকানা', 'डिलीवरी का पता')} <span className="text-rose-500">*</span></label><textarea id="combo-address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder={copy('House / road / area / city / PIN', 'বাড়ি / রাস্তা / এলাকা / শহর / পিন', 'मकान / सड़क / क्षेत्र / शहर / पिन')} className="min-h-28 w-full resize-y rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3.5 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-4 focus:ring-emerald-500/10" required /></div>)}
                   {country === 'IN' && <div className="combo-payment-selector"><IndiaPaymentMethodSelector
                     value={paymentMethod}
                     onChange={setPaymentMethod}
