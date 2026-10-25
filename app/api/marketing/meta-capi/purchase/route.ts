@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendMetaPurchaseForOrder } from '@/lib/server/meta-capi';
+import { shouldSuppressMetaCapiUserIdentifiers } from '@/lib/meta-capi-policy';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,8 +30,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const fbp = request.cookies.get('_fbp')?.value?.trim() || undefined;
-    const fbc = request.cookies.get('_fbc')?.value?.trim() || undefined;
+    const isPreviewTestEvent = shouldSuppressMetaCapiUserIdentifiers(
+      process.env.VERCEL_ENV,
+      process.env.META_CAPI_TEST_EVENT_CODE,
+    );
+
+    const fbp = isPreviewTestEvent
+      ? undefined
+      : request.cookies.get('_fbp')?.value?.trim() || undefined;
+    const fbc = isPreviewTestEvent
+      ? undefined
+      : request.cookies.get('_fbc')?.value?.trim() || undefined;
 
     const sourceUrl =
       body?.source_url && typeof body.source_url === 'string'
@@ -41,9 +51,12 @@ export async function POST(request: NextRequest) {
 
     const result = await sendMetaPurchaseForOrder(orderNumber, countryCode, {
       sourceUrl,
-      clientIpAddress:
-        request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined,
-      clientUserAgent: request.headers.get('user-agent') || undefined,
+      clientIpAddress: isPreviewTestEvent
+        ? undefined
+        : request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined,
+      clientUserAgent: isPreviewTestEvent
+        ? undefined
+        : request.headers.get('user-agent') || undefined,
       fbp,
       fbc,
     });
