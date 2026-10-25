@@ -1,0 +1,39 @@
+name: Referral Wallet Summary Security Regression
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/checkout/page.tsx"
+      - "app/admin/settings/page.tsx"
+      - "components/site/referral-section.tsx"
+      - "lib/referral.ts"
+      - "supabase/migrations/*self_scoped_referral_wallet_summary.sql"
+      - "supabase/migrations/*separate_referral_wallets_by_country.sql"
+      - "tests/referral-wallet-summary-security.test.cjs"
+      - "tests/referral-wallet-country-isolation.test.cjs"
+      - ".github/workflows/referral-wallet-summary-security.yml"
+  pull_request:
+    paths:
+      - "app/checkout/page.tsx"
+      - "app/admin/settings/page.tsx"
+      - "components/site/referral-section.tsx"
+      - "lib/referral.ts"
+      - "supabase/migrations/*self_scoped_referral_wallet_summary.sql"
+      - "supabase/migrations/*separate_referral_wallets_by_country.sql"
+      - "tests/referral-wallet-summary-security.test.cjs"
+      - "tests/referral-wallet-country-isolation.test.cjs"
+      - ".github/workflows/referral-wallet-summary-security.yml"
+
+jobs:
+  referral-wallet-security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Test referral wallet security and country isolation
+        run: node --test tests/referral-wallet-summary-security.test.cjs tests/referral-wallet-country-isolation.test.cjs

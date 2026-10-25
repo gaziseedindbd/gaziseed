@@ -1,6 +1,6 @@
 'use client';
 
-import { supabase } from '@/lib/supabase/client';
+import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 
 const REFERRAL_COOKIE_NAME = 'sb_referral_code';
 const REFERRAL_COOKIE_MAX_AGE_DAYS = 30;
@@ -29,9 +29,25 @@ export async function detectAndStoreReferralCode(): Promise<string | null> {
   if (typeof window === 'undefined') return null;
   const refCode = new URLSearchParams(window.location.search).get('ref');
   if (!refCode) return null;
+  const country = getVisitorCountry();
   const stored = getStoredReferralCode();
-  if (stored === refCode) return stored;
-  const { data, error } = await supabase.from('referral_codes').select('code').eq('code', refCode).eq('is_active', true).maybeSingle();
+  if (stored === refCode) {
+    const { data: storedCode, error: storedError } = await supabase
+      .from('referral_codes')
+      .select('code')
+      .eq('code', stored)
+      .eq('country_code', country)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (!storedError && storedCode) return stored;
+  }
+  const { data, error } = await supabase
+    .from('referral_codes')
+    .select('code')
+    .eq('code', refCode)
+    .eq('country_code', country)
+    .eq('is_active', true)
+    .maybeSingle();
   if (error || !data) return null;
   setReferralCookie(refCode);
   return refCode;
