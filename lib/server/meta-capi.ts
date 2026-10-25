@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { getMetaPurchaseEventId } from '@/lib/marketing-event-id';
+import { META_CAPI_ORDER_SOURCES } from '@/lib/meta-capi-policy';
 
 type CountryCode = 'BD' | 'IN';
 
@@ -20,6 +21,7 @@ type MetaCapiOrder = {
   delivery_charge: number | null;
   shipping_fee: number | null;
   coupon_code: string | null;
+  order_source: string;
   created_at: string;
 };
 
@@ -80,11 +82,11 @@ async function getOrder(
   const { data: order, error } = await admin
     .from('orders')
     .select(
-      'id, order_number, user_id, customer_phone, customer_email, customer_name, district, country_code, subtotal, discount_amount, final_amount, grand_total, delivery_charge, shipping_fee, coupon_code, created_at',
+      'id, order_number, user_id, customer_phone, customer_email, customer_name, district, country_code, subtotal, discount_amount, final_amount, grand_total, delivery_charge, shipping_fee, coupon_code, order_source, created_at',
     )
     .eq('country_code', countryCode)
     .eq('order_number', orderNumber)
-    .eq('order_source', 'website')
+    .in('order_source', META_CAPI_ORDER_SOURCES)
     .maybeSingle();
 
   if (error) throw error;
@@ -397,19 +399,74 @@ export async function processMetaCapiPurchases(limit = 20): Promise<{
     .lt('updated_at', staleAt);
 
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const runLimit = Math.max(1, Math.floor(limit));
 
-  const { data: orders, error } = await admin
-    .from('orders')
-    .select(
-      'id, order_number, user_id, customer_phone, customer_email, customer_name, district, country_code, subtotal, discount_amount, final_amount, grand_total, delivery_charge, shipping_fee, coupon_code, created_at',
-    )
-    .eq('order_source', 'website')
-    .in('country_code', ['BD', 'IN'])
-    .gte('created_at', since)
-    .order('created_at', { ascending: false })
-    .limit(limit);
+  // Retry only orders that already have a CAPI delivery record. This lets
+  // newly supported sources recover after transient failures without
+  // backfilling historical ad/landing orders as soon as this code deploys.
+  const { data: retryEvents, error: retryEventsError } = await admin
+    .from('meta_capi_events')
+    .select('order_id')
+    .in('status', ['pending', 'failed'])
+    .not('order_id', 'is', null)
+    .gte('updated_at', since)
+    .order('updated_at', { ascending: true })
+    .limit(runLimit);
 
-  if (error) throw error;
+  if (retryEventsError) throw retryEventsError;
+
+  const retryOrderIds = Array.from(new Set(
+    (retryEvents || [])
+      .map((event) => event.order_id)
+      .filter((id): id is string => typeof id === 'string' && id.length > 0),
+  ));
+
+  let retryOrders: MetaCapiOrder[] = [];
+  if (retryOrderIds.length > 0) {
+    const { data, error: retryOrdersError } = await admin
+      .from('orders')
+      .select(
+        'id, order_number, user_id, customer_phone, customer_email, customer_name, district, country_code, subtotal, discount_amount, final_amount, grand_total, delivery_charge, shipping_fee, coupon_code, order_source, created_at',
+      )
+      .in('id', retryOrderIds)
+      .in('order_source', META_CAPI_ORDER_SOURCES)
+      .in('country_code', ['BD', 'IN'])
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(runLimit);
+
+    if (retryOrdersError) throw retryOrdersError;
+    retryOrders = (data || []) as MetaCapiOrder[];
+  }
+
+  const retryKeys = new Set(
+    retryOrders.map((order) => `${order.country_code}:${order.order_number}`),
+  );
+  const remainingLimit = Math.max(0, runLimit - retryOrders.length);
+
+  let websiteFallbackOrders: MetaCapiOrder[] = [];
+  if (remainingLimit > 0) {
+    const { data, error } = await admin
+      .from('orders')
+      .select(
+        'id, order_number, user_id, customer_phone, customer_email, customer_name, district, country_code, subtotal, discount_amount, final_amount, grand_total, delivery_charge, shipping_fee, coupon_code, order_source, created_at',
+      )
+      .eq('order_source', 'website')
+      .in('country_code', ['BD', 'IN'])
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(remainingLimit);
+
+    if (error) throw error;
+    websiteFallbackOrders = (data || []) as MetaCapiOrder[];
+  }
+
+  const orders = [
+    ...retryOrders,
+    ...websiteFallbackOrders.filter(
+      (order) => !retryKeys.has(`${order.country_code}:${order.order_number}`),
+    ),
+  ].slice(0, runLimit);
 
   const counters = {
     processed: 0,
@@ -420,7 +477,7 @@ export async function processMetaCapiPurchases(limit = 20): Promise<{
     notFound: 0,
   };
 
-  for (const order of (orders || []) as MetaCapiOrder[]) {
+  for (const order of orders) {
     const result = await sendMetaPurchaseForOrder(
       order.order_number,
       order.country_code,

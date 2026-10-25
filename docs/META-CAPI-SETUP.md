@@ -9,6 +9,7 @@ GAZI SEED keeps the browser Pixel as the client-side event source and adds serve
 - META_CAPI_TEST_EVENT_CODE: optional; set temporarily while validating server events in Meta Events Manager Test Events.
 
 The existing marketing_settings.meta_pixel_id remains the source of truth for the Pixel ID in both BD and IN branches.
+Website, Ads, Facebook, Instagram, Google, TikTok, Animated Landing and Combo web orders are eligible for Purchase CAPI. Messenger-origin orders remain excluded.
 
 ## Event deduplication
 
@@ -26,6 +27,6 @@ The integration pins Graph API v26.0 by default; Meta's current Graph API releas
 
 ## Delivery and retries
 
-A service-role-only meta_capi_events table provides idempotency and delivery state. Order-success triggers immediate server delivery. A protected cron route retries pending/failed recent website purchases.
+A service-role-only meta_capi_events table provides idempotency and delivery state. Order-success triggers immediate server delivery. A protected cron route retries recorded pending/failed events for eligible web order sources. Its fallback scan only covers recent website purchases, so deploying the expanded source list does not backfill older Ads, Animated Landing or Combo orders.
 
 No checkout, payment, Messenger, or public order RPC logic is changed by this module.
