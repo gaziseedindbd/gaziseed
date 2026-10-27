@@ -594,9 +594,17 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
                 </div>
               ))}
             </div>
-            <div className="mt-3"><label className="mb-1 block text-sm font-medium">চাষের নির্দেশনা</label><textarea value={form.cultivation_instructions} onChange={(e) => setForm({ ...form, cultivation_instructions: e.target.value })} className="input-bangla min-h-[60px]" /></div>
+            
             <div className="mt-2"><label className="mb-1 block text-sm font-medium">সংরক্ষণ নির্দেশনা</label><textarea value={form.storage_instructions} onChange={(e) => setForm({ ...form, storage_instructions: e.target.value })} className="input-bangla min-h-[60px]" /></div>
           </div>
+
+          <MultilingualFields
+            value={form.translations || {}}
+            onChange={(translations) => setForm({ ...form, translations })}
+            title="🌱 ভাষাভিত্তিক চাষের নির্দেশনা"
+            description="English, বাংলা ও हिन्दी আলাদা করে লিখুন। Product Details page-এ ক্রেতা নির্বাচিত ভাষার নির্দেশনা দেখবেন। পুরোনো এক-ভাষার নির্দেশনা অনুবাদ যোগ না করা পর্যন্ত fallback হিসেবে থাকবে।"
+            fields={[{ key: 'cultivation_instructions', label: 'চাষের নির্দেশনা / Cultivation Instructions / खेती के निर्देश', multiline: true, placeholder: 'বীজ বপন, পরিচর্যা ও ফসল সংগ্রহের ধাপ লিখুন' }]}
+          />
 
           <div className="flex flex-wrap gap-4">
             {[
