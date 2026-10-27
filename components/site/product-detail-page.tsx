@@ -23,6 +23,18 @@ const getProductForRoute = cache(async (slug: string, country: ProductCountry): 
   return data as Product | null;
 });
 
+function isSupabaseProductImage(source: string | undefined): boolean {
+  if (!source) return false;
+  try {
+    const url = new URL(source, SITE_URL);
+    return url.protocol === 'https:' &&
+      url.hostname.endsWith('.supabase.co') &&
+      url.pathname.includes('/storage/v1/object/public/product-images/');
+  } catch {
+    return false;
+  }
+}
+
 function getAbsoluteImageUrl(source: string | undefined): string | undefined {
   if (!source) return undefined;
   try {
@@ -60,7 +72,12 @@ export async function generateProductMetadata(slug: string, country: ProductCoun
     product.description,
   ) || title;
   const imageSource = firstText(...(Array.isArray(product.images) ? product.images : []), product.image);
-  const imageUrl = getAbsoluteImageUrl(imageSource);
+  const generatedJpegImage = isSupabaseProductImage(imageSource);
+  const imageUrl = imageSource
+    ? generatedJpegImage
+      ? new URL(`/api/product-share-image/${country.toLowerCase()}/${encodeURIComponent(slug)}`, SITE_URL).toString()
+      : getAbsoluteImageUrl(imageSource)
+    : undefined;
   const canonicalUrl = new URL(`/${country.toLowerCase()}/product/${encodeURIComponent(slug)}`, SITE_URL).toString();
   const imageAlt = firstText(
     localized.image_alt,
@@ -82,7 +99,13 @@ export async function generateProductMetadata(slug: string, country: ProductCoun
       description,
       url: canonicalUrl,
       locale,
-      ...(imageUrl ? { images: [{ url: imageUrl, alt: imageAlt }] } : {}),
+      ...(imageUrl ? {
+        images: [{
+          url: imageUrl,
+          alt: imageAlt,
+          ...(generatedJpegImage ? { width: 1200, height: 630, type: 'image/jpeg' } : {}),
+        }],
+      } : {}),
     },
     twitter: {
       card: imageUrl ? 'summary_large_image' : 'summary',
