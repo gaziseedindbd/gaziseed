@@ -56,6 +56,7 @@ export type Product = {
   expected_yield: string;
   cultivation_instructions: string;
   storage_instructions: string;
+  translations?: Partial<Record<'en' | 'bn' | 'hi', Record<string, string>>> | null;
   features: string[];
   benefits: string[];
   seo_title: string;
