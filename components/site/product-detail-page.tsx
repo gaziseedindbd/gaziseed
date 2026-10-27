@@ -23,6 +23,16 @@ const getProductForRoute = cache(async (slug: string, country: ProductCountry): 
   return data as Product | null;
 });
 
+function getAbsoluteImageUrl(source: string | undefined): string | undefined {
+  if (!source) return undefined;
+  try {
+    const url = new URL(source, SITE_URL);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function firstText(...values: Array<string | null | undefined>): string | undefined {
   return values.find((value) => typeof value === 'string' && value.trim().length > 0)?.trim();
 }
@@ -50,7 +60,7 @@ export async function generateProductMetadata(slug: string, country: ProductCoun
     product.description,
   ) || title;
   const imageSource = firstText(...(Array.isArray(product.images) ? product.images : []), product.image);
-  const imageUrl = imageSource ? new URL(imageSource, SITE_URL).toString() : undefined;
+  const imageUrl = getAbsoluteImageUrl(imageSource);
   const canonicalUrl = new URL(`/${country.toLowerCase()}/product/${encodeURIComponent(slug)}`, SITE_URL).toString();
   const imageAlt = firstText(
     localized.image_alt,
