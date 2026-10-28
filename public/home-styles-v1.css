@@ -1410,3 +1410,25 @@
     height: 15px !important;
   }
 }
+
+
+/* Anchor the compact mobile CTA to the actual banner frame corner. */
+@media (max-width: 767px) {
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay > div,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay > div {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay .hero-btn,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay .hero-btn {
+    position: absolute !important;
+    right: 12px !important;
+    bottom: 28px !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+}
