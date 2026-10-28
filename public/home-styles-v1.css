@@ -1297,3 +1297,38 @@
     scroll-behavior: auto !important;
   }
 }
+
+
+/* Keep mobile carousel pagination centered regardless of its wrapper nesting. */
+@media (max-width: 767px) {
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel .absolute.bottom-4,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-carousel .absolute.bottom-4 {
+    position: absolute !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: 10px !important;
+    left: 50% !important;
+    z-index: 30 !important;
+    width: max-content !important;
+    transform: translateX(-50%) !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel .absolute.bottom-4 button,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-carousel .absolute.bottom-4 button {
+    width: 8px !important;
+    min-width: 8px !important;
+    height: 8px !important;
+    min-height: 8px !important;
+    padding: 0 !important;
+    border: 1px solid rgba(255, 255, 255, .9) !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, .65) !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel .absolute.bottom-4 button[aria-current="true"],
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-carousel .absolute.bottom-4 button[aria-current="true"] {
+    width: 22px !important;
+    min-width: 22px !important;
+    background: #fff !important;
+  }
+}
