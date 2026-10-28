@@ -1374,3 +1374,39 @@
     pointer-events: auto !important;
   }
 }
+
+
+/* Keep the mobile hero CTA compact in the lower-right corner. */
+@media (max-width: 767px) {
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay {
+    padding: 12px !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn {
+    min-height: 46px !important;
+    max-width: min(calc(100vw - 96px), 210px) !important;
+    gap: 6px !important;
+    padding: 5px 6px 5px 12px !important;
+    font-size: clamp(.78rem, 3vw, .92rem) !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    box-shadow: 0 5px 14px rgba(0, 0, 0, .2) !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg:last-child,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg:last-child {
+    flex: 0 0 30px !important;
+    width: 30px !important;
+    height: 30px !important;
+    padding: 6px !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg.hero-cta-sprout,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg.hero-cta-sprout {
+    flex: 0 0 15px !important;
+    width: 15px !important;
+    height: 15px !important;
+  }
+}
