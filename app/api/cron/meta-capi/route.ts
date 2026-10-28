@@ -16,6 +16,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 
+  if (process.env.META_CAPI_CRON_ENABLED !== 'true') {
+    return NextResponse.json({ ok: true, skipped: 'Meta CAPI retry worker is disabled' });
+  }
+
   try {
     const result = await processMetaCapiPurchases(50);
     return NextResponse.json({ ok: true, ...result });
