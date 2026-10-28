@@ -1374,3 +1374,109 @@
     pointer-events: auto !important;
   }
 }
+
+
+/* Keep the mobile hero CTA compact in the lower-right corner. */
+@media (max-width: 767px) {
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay {
+    padding: 12px !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn {
+    min-height: 46px !important;
+    max-width: min(calc(100vw - 96px), 210px) !important;
+    gap: 6px !important;
+    padding: 5px 6px 5px 12px !important;
+    font-size: clamp(.78rem, 3vw, .92rem) !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    box-shadow: 0 5px 14px rgba(0, 0, 0, .2) !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg:last-child,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg:last-child {
+    flex: 0 0 30px !important;
+    width: 30px !important;
+    height: 30px !important;
+    padding: 6px !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg.hero-cta-sprout,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg.hero-cta-sprout {
+    flex: 0 0 15px !important;
+    width: 15px !important;
+    height: 15px !important;
+  }
+}
+
+
+/* Anchor the compact mobile CTA to the actual banner frame corner. */
+@media (max-width: 767px) {
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay > div,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay > div {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay .hero-btn,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay .hero-btn {
+    position: absolute !important;
+    right: 12px !important;
+    bottom: 28px !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+}
+
+
+/* Let the absolute mobile CTA use the full banner edge as its anchor. */
+@media (max-width: 767px) {
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay {
+    padding: 0 !important;
+  }
+}
+
+
+/* Place the compact CTA closer to the visible image's lower-right edge. */
+@media (max-width: 767px) {
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay .hero-btn,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay .hero-btn {
+    right: -18px !important;
+    bottom: 0 !important;
+  }
+}
+
+
+/* Final mobile CTA sizing and safe inset from the banner edge. */
+@media (max-width: 767px) {
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay .hero-btn,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay .hero-btn {
+    right: -9px !important;
+    max-width: min(calc(100vw - 88px), 190px) !important;
+    min-height: 42px !important;
+    gap: 4px !important;
+    padding: 4px 5px 4px 9px !important;
+    font-size: clamp(.74rem, 2.6vw, .82rem) !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay .hero-btn svg:last-child,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay .hero-btn svg:last-child {
+    flex-basis: 26px !important;
+    width: 26px !important;
+    height: 26px !important;
+    padding: 5px !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay .hero-btn svg.hero-cta-sprout,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay .hero-btn svg.hero-cta-sprout {
+    flex-basis: 13px !important;
+    width: 13px !important;
+    height: 13px !important;
+  }
+}
