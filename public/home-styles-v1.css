@@ -1032,6 +1032,9 @@
 }
 
 
+/* Real carousel controls are mobile-only; desktop keeps its established presentation. */
+.home-premium-scope .hero-carousel-arrow { display: none !important; }
+
 /* Mobile home banner: compact, edge-to-edge carousel with an overlaid CTA.
    Keep original banner assets and desktop layout unchanged. */
 @media (max-width: 767px) {
