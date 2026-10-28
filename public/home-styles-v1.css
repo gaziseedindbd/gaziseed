@@ -1030,3 +1030,248 @@
     font-size:.82rem!important;
   }
 }
+
+
+/* Mobile home banner: compact, edge-to-edge carousel with an overlaid CTA.
+   Keep original banner assets and desktop layout unchanged. */
+@media (max-width: 767px) {
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: 1.85 / 1 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    border-radius: 16px !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners > .hero-inner,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners > .hero-inner {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners > .hero-inner > .hero-carousel-slide:not([hidden]),
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners > .hero-inner > .hero-carousel-slide:not([hidden]) {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    border-radius: 16px !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-carousel-slide > .hero-inner,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-carousel-slide > .hero-inner {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-image-wrap,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-image-wrap {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    background: #123c2a !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-image-wrap picture,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-image-wrap picture {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-image-wrap img,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-image-wrap img {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    object-fit: cover !important;
+    object-position: center center !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: flex-end !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    padding: 12px !important;
+    background: linear-gradient(180deg, transparent 56%, rgba(0, 0, 0, .28) 100%) !important;
+    pointer-events: none !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay > div,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay > div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    width: auto !important;
+    max-width: 78% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #fff !important;
+    text-align: right !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    backdrop-filter: none !important;
+    pointer-events: auto !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-title,
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-subtitle,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-title,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-subtitle {
+    align-self: flex-end !important;
+    max-width: 100% !important;
+    color: #fff !important;
+    text-align: right !important;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, .7) !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 9px !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+    margin: 0 !important;
+    padding: 6px 8px 6px 15px !important;
+    border: 1px solid rgba(255, 255, 255, .72) !important;
+    border-radius: 999px !important;
+    background: rgba(7, 87, 55, .94) !important;
+    color: #fff !important;
+    font-size: .82rem !important;
+    font-weight: 800 !important;
+    line-height: 1.15 !important;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .24) !important;
+    backdrop-filter: blur(8px) !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg {
+    flex: 0 0 30px !important;
+    width: 30px !important;
+    height: 30px !important;
+    padding: 6px !important;
+    border-radius: 999px !important;
+    background: #fff !important;
+    color: #075737 !important;
+  }
+
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay,
+  .home-premium-scope .home-india-hero-fallback .hero-carousel-slide .hero-cta-only-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: flex-end !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 12px !important;
+    pointer-events: none !important;
+  }
+
+  .home-premium-scope .home-india-hero-fallback .hero-carousel-slide .hero-cta-only-overlay > div {
+    position: static !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: flex-end !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: 78% !important;
+    padding: 0 !important;
+    background: transparent !important;
+    pointer-events: auto !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel > .hero-inner > .absolute.bottom-4,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-carousel > .hero-inner > .absolute.bottom-4 {
+    bottom: 9px !important;
+    z-index: 24 !important;
+    gap: 6px !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel > .hero-inner > .absolute.bottom-4 button,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-carousel > .hero-inner > .absolute.bottom-4 button {
+    height: 8px !important;
+    min-width: 8px !important;
+    border: 1px solid rgba(255, 255, 255, .9) !important;
+    background: rgba(255, 255, 255, .64) !important;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, .32) !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel > .hero-inner > .absolute.bottom-4 button:not([class*="bg-primary/30"]),
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-carousel > .hero-inner > .absolute.bottom-4 button:not([class*="bg-primary/30"]) {
+    width: 22px !important;
+    background: #fff !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel .hero-carousel-arrow,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-carousel .hero-carousel-arrow {
+    position: absolute !important;
+    top: 50% !important;
+    z-index: 26 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    transform: translateY(-50%) !important;
+    border: 1px solid rgba(255, 255, 255, .82) !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, .9) !important;
+    color: #075737 !important;
+    box-shadow: 0 5px 18px rgba(0, 0, 0, .2) !important;
+    backdrop-filter: blur(8px) !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel .hero-carousel-arrow-prev,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-carousel .hero-carousel-arrow-prev {
+    left: 9px !important;
+  }
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel .hero-carousel-arrow-next,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-carousel .hero-carousel-arrow-next {
+    right: 9px !important;
+  }
+}
+
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners {
+    scroll-behavior: auto !important;
+  }
+}
