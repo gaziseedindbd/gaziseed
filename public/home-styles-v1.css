@@ -1118,7 +1118,7 @@
     width: 100% !important;
     height: 100% !important;
     min-height: 0 !important;
-    object-fit: cover !important;
+    object-fit: contain !important;
     object-position: center center !important;
     border-radius: 0 !important;
     box-shadow: none !important;
