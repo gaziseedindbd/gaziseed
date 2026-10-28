@@ -1038,6 +1038,9 @@
 /* Mobile home banner: compact, edge-to-edge carousel with an overlaid CTA.
    Keep original banner assets and desktop layout unchanged. */
 @media (max-width: 767px) {
+  .home-premium-scope .home-hero-section { padding: 0 0 24px !important; }
+  .home-premium-scope .home-hero-section .container-custom { width: 100% !important; max-width: none !important; padding-right: 0 !important; padding-left: 0 !important; }
+
   .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners,
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners {
     position: relative !important;
@@ -1045,10 +1048,10 @@
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
-    aspect-ratio: 1.85 / 1 !important;
+    aspect-ratio: 2 / 1 !important;
     overflow: hidden !important;
     padding: 0 !important;
-    border-radius: 16px !important;
+    border-radius: 0 !important;
   }
 
   .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners > .hero-inner,
@@ -1093,7 +1096,7 @@
     height: 100% !important;
     min-height: 0 !important;
     overflow: hidden !important;
-    background: #123c2a !important;
+    background: #f2f7ef !important;
   }
 
   .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-image-wrap picture,
@@ -1128,8 +1131,8 @@
     width: 100% !important;
     height: 100% !important;
     min-height: 0 !important;
-    padding: 12px !important;
-    background: linear-gradient(180deg, transparent 56%, rgba(0, 0, 0, .28) 100%) !important;
+    padding: 18px !important;
+    background: transparent !important;
     pointer-events: none !important;
   }
 
@@ -1168,14 +1171,15 @@
     justify-content: center !important;
     gap: 9px !important;
     min-width: 0 !important;
-    min-height: 44px !important;
+    min-height: 60px !important;
+    max-width: min(calc(100vw - 104px), 330px) !important;
     margin: 0 !important;
-    padding: 6px 8px 6px 15px !important;
+    padding: 8px 9px 8px 20px !important;
     border: 1px solid rgba(255, 255, 255, .72) !important;
     border-radius: 999px !important;
     background: rgba(7, 87, 55, .94) !important;
     color: #fff !important;
-    font-size: .82rem !important;
+    font-size: clamp(.9rem, 3.6vw, 1.15rem) !important;
     font-weight: 800 !important;
     line-height: 1.15 !important;
     box-shadow: 0 8px 22px rgba(0, 0, 0, .24) !important;
@@ -1184,10 +1188,10 @@
 
   .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg,
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg {
-    flex: 0 0 30px !important;
-    width: 30px !important;
-    height: 30px !important;
-    padding: 6px !important;
+    flex: 0 0 42px !important;
+    width: 42px !important;
+    height: 42px !important;
+    padding: 9px !important;
     border-radius: 999px !important;
     background: #fff !important;
     color: #075737 !important;
@@ -1221,7 +1225,7 @@
 
   .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel > .hero-inner > .absolute.bottom-4,
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-carousel > .hero-inner > .absolute.bottom-4 {
-    bottom: 9px !important;
+    bottom: 10px !important;
     z-index: 24 !important;
     gap: 6px !important;
   }
@@ -1249,8 +1253,8 @@
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    width: 36px !important;
-    height: 36px !important;
+    width: 44px !important;
+    height: 44px !important;
     padding: 0 !important;
     transform: translateY(-50%) !important;
     border: 1px solid rgba(255, 255, 255, .82) !important;
@@ -1263,12 +1267,12 @@
 
   .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel .hero-carousel-arrow-prev,
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-carousel .hero-carousel-arrow-prev {
-    left: 9px !important;
+    left: 12px !important;
   }
 
   .home-premium-scope .home-hero-section .hero-wrap.hero-has-carousel .hero-carousel-arrow-next,
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-carousel .hero-carousel-arrow-next {
-    right: 9px !important;
+    right: 12px !important;
   }
 }
 
