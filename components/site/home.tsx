@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ComponentProps, type ComponentType } from 'react';
 import Link from 'next/link';
-import Image, { getImageProps } from 'next/image';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Truck, ShieldCheck, Sprout, Phone, Heart, Users, Headphones, MapPin } from 'lucide-react';
 import { ProductCard } from './product-card';
 import { getBanners, getCategories, getProducts, getServices, getTestimonials, getBlogPosts, getSiteSettings, getHomepageSections, getThisMonthSeeds } from '@/lib/data';
@@ -15,19 +15,9 @@ import type { Banner, Category, Product, Service, Testimonial, BlogPost, SiteSet
 let memoryCache: { country?: 'BD' | 'IN'; banners?: Banner[]; categories?: Category[]; featuredProducts?: Product[]; bestSellers?: Product[]; newArrivals?: Product[]; seasonal?: Product[]; thisMonthSeeds?: Product[]; services?: Service[]; testimonials?: Testimonial[]; blogPosts?: BlogPost[]; settings?: SiteSettings | null; sections?: HomepageSection[]; timestamp?: number } = {};
 
 function BannerImage({ banner, priority = false }: { banner: Banner; priority?: boolean }) {
-  const mobileProps = banner.mobile_image
-    ? getImageProps({
-        src: banner.mobile_image,
-        width: 800,
-        height: 1200,
-        quality: 75,
-        alt: banner.title || 'GAZI SEED',
-      }).props
-    : null;
-
   return (
+    // The mobile carousel is landscape; use the matching landscape artwork instead of cropping the 800×1200 portrait upload.
     <picture className="block h-full w-full">
-      {mobileProps?.srcSet && <source media="(max-width: 767px)" srcSet={mobileProps.srcSet} sizes="100vw" />}
       <Image src={banner.desktop_image} alt={banner.title || 'GAZI SEED'} fill sizes="(max-width: 767px) 100vw, (max-width: 1380px) 100vw, 1380px" quality={75} priority={priority} className="block h-full w-full rounded-2xl object-cover shadow-lg" />
     </picture>
   );
