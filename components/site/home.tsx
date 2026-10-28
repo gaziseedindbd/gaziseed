@@ -3,7 +3,7 @@
 import { useEffect, useState, type ComponentProps, type ComponentType } from 'react';
 import Link from 'next/link';
 import Image, { getImageProps } from 'next/image';
-import { ChevronRight, Truck, ShieldCheck, Sprout, Phone, Heart, Users, Headphones, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Truck, ShieldCheck, Sprout, Phone, Heart, Users, Headphones, MapPin } from 'lucide-react';
 import { ProductCard } from './product-card';
 import { getBanners, getCategories, getProducts, getServices, getTestimonials, getBlogPosts, getSiteSettings, getHomepageSections, getThisMonthSeeds } from '@/lib/data';
 import { detectAndStoreReferralCode } from '@/lib/referral';
@@ -49,7 +49,38 @@ function BannerCarousel({ banners, currentBanner, onSelect, translateDb }: {
           </div>
         </div>
       ))}
-      {banners.length > 1 && <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">{banners.map((_, idx) => <button key={idx} onClick={() => onSelect(idx)} className={`h-2 rounded-full transition-all ${idx === currentBanner ? 'w-8 bg-primary' : 'w-2 bg-primary/30'}`} aria-label={`Banner ${idx + 1}`}></button>)}</div>}
+      {banners.length > 1 && (
+        <>
+          <button
+            type="button"
+            className="hero-carousel-arrow hero-carousel-arrow-prev"
+            aria-label="Previous banner"
+            onClick={() => onSelect((currentBanner - 1 + banners.length) % banners.length)}
+          >
+            <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="hero-carousel-arrow hero-carousel-arrow-next"
+            aria-label="Next banner"
+            onClick={() => onSelect((currentBanner + 1) % banners.length)}
+          >
+            <ChevronRight className="h-5 w-5" aria-hidden="true" />
+          </button>
+          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+            {banners.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => onSelect(idx)}
+                className={`h-2 rounded-full transition-all ${idx === currentBanner ? 'w-8 bg-primary' : 'w-2 bg-primary/30'}`}
+                aria-label={`Banner ${idx + 1}`}
+                aria-current={idx === currentBanner ? 'true' : undefined}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </>
   );
 }
