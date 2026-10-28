@@ -14,6 +14,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 
+  if (process.env.META_ADS_SYNC_ENABLED !== 'true') {
+    return NextResponse.json({ ok: true, skipped: 'Meta Ads sync is disabled' });
+  }
+
   try {
     const result = await syncMetaAdsInsights(30);
     return NextResponse.json({ ok: true, ...result });
