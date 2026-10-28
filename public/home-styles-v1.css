@@ -1074,7 +1074,7 @@
     height: 100% !important;
     min-height: 0 !important;
     overflow: hidden !important;
-    border-radius: 16px !important;
+    border-radius: 0 !important;
   }
 
   .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-carousel-slide > .hero-inner,
@@ -1186,7 +1186,7 @@
     backdrop-filter: blur(8px) !important;
   }
 
-  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg,
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg:last-child,
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg {
     flex: 0 0 42px !important;
     width: 42px !important;
@@ -1195,6 +1195,17 @@
     border-radius: 999px !important;
     background: #fff !important;
     color: #075737 !important;
+  }
+
+
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg:first-child,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg:first-child {
+    flex: 0 0 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    color: #d9f99d !important;
   }
 
   .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay,
@@ -1206,7 +1217,7 @@
     justify-content: flex-end !important;
     width: 100% !important;
     height: 100% !important;
-    padding: 12px !important;
+    padding: 18px !important;
     pointer-events: none !important;
   }
 
