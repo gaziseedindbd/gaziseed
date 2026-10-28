@@ -1432,3 +1432,12 @@
     transform: none !important;
   }
 }
+
+
+/* Let the absolute mobile CTA use the full banner edge as its anchor. */
+@media (max-width: 767px) {
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-cta-only-overlay {
+    padding: 0 !important;
+  }
+}
