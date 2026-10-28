@@ -1035,6 +1035,9 @@
 /* Real carousel controls are mobile-only; desktop keeps its established presentation. */
 .home-premium-scope .hero-carousel-arrow { display: none !important; }
 
+
+/* Keep desktop CTA unchanged; the sprout icon is part of the mobile treatment. */
+.home-premium-scope .hero-cta-sprout { display: none !important; }
 /* Mobile home banner: compact, edge-to-edge carousel with an overlaid CTA.
    Keep original banner assets and desktop layout unchanged. */
 @media (max-width: 767px) {
@@ -1187,7 +1190,7 @@
   }
 
   .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg:last-child,
-  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg {
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg:last-child {
     flex: 0 0 42px !important;
     width: 42px !important;
     height: 42px !important;
@@ -1198,8 +1201,9 @@
   }
 
 
-  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg:first-child,
-  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg:first-child {
+  .home-premium-scope .home-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg.hero-cta-sprout,
+  .home-premium-scope .home-india-hero-section .hero-wrap.hero-has-banners .hero-content-overlay .hero-btn svg.hero-cta-sprout {
+    display: block !important;
     flex: 0 0 18px !important;
     width: 18px !important;
     height: 18px !important;
