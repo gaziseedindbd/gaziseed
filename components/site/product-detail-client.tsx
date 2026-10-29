@@ -374,7 +374,7 @@ export default function ProductDetailClient({
                     <button
                       key={b.id}
                       type="button"
-                      disabled={b.min_quantity > quantityLimit} onClick={() => setQuantity(Math.min(quantityLimit, Math.max(quantity, b.min_quantity)))}
+                      disabled={b.min_quantity > quantityLimit} onClick={() => setQuantity(Math.min(quantityLimit, Math.max(product.min_order_qty || 1, b.min_quantity)))}
                       className={`group relative overflow-hidden rounded-xl border-2 p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${isActive ? 'border-red-400 bg-gradient-to-br from-red-50 to-orange-50 shadow-md ring-2 ring-red-200/70' : 'border-orange-200 bg-white hover:border-orange-300'}`}
                       aria-label={t(
                         b.free_item_text
