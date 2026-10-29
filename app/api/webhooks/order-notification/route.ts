@@ -9,13 +9,20 @@ import {
 export const dynamic = 'force-dynamic';
 
 function isAuthorized(request: NextRequest): boolean {
-  const secret = process.env.SUPABASE_DB_WEBHOOK_SECRET || '';
-  if (!secret) return false;
+  const secrets = [
+    process.env.SUPABASE_DB_WEBHOOK_SECRET,
+    // Temporary overlap lets the database trigger rotate without interrupting
+    // webhook delivery. Remove the previous value after the trigger is moved.
+    process.env.SUPABASE_DB_WEBHOOK_SECRET_NEXT,
+  ].filter((secret): secret is string => Boolean(secret));
+  if (secrets.length === 0) return false;
 
   const authorization = request.headers.get('authorization') || '';
   const headerSecret = request.headers.get('x-supabase-webhook-secret') || '';
 
-  return authorization === `Bearer ${secret}` || headerSecret === secret;
+  return secrets.some((secret) =>
+    authorization === `Bearer ${secret}` || headerSecret === secret,
+  );
 }
 
 export async function POST(request: NextRequest) {
