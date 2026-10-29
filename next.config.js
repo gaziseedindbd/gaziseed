@@ -4,12 +4,17 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    // Keep Next's image optimizer limited to the Supabase Storage projects
+    // currently serving public site media in the BD and IN branches.
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**', // যেকোনো এক্সটার্নাল বা সুপাবেস স্টোরেজ ইমেজ এলাও করার জন্য
-      },
-    ],
+      'ufxsthshyebahkwbmioe.supabase.co',
+      'avnxyrvynqtxbzgffxve.supabase.co',
+      'afwshccobrpdhzcwtgvs.supabase.co',
+    ].map((hostname) => ({
+      protocol: 'https',
+      hostname,
+      pathname: '/storage/v1/object/public/**',
+    })),
   },
   experimental: { cpus: 1, inlineCss: true },
   webpack: (config) => {

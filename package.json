@@ -18,7 +18,7 @@
     "browser-image-compression": "^2.0.2",
     "@hookform/resolvers": "^3.9.0",
     "@netlify/plugin-nextjs": "^5.15.1",
-    "@next/swc-wasm-nodejs": "15.5.25",
+    "@next/swc-wasm-nodejs": "15.5.28",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-aspect-ratio": "^1.1.0",
@@ -58,12 +58,12 @@
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
     "eslint": "8.57.1",
-    "eslint-config-next": "15.5.25",
+    "eslint-config-next": "15.5.28",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.446.0",
-    "next": "15.5.25",
+    "next": "15.5.28",
     "next-themes": "^0.3.0",
-    "postcss": "8.4.30",
+    "postcss": "8.5.32",
     "react": "18.2.0",
     "react-day-picker": "^8.10.1",
     "react-dom": "18.2.0",
@@ -76,13 +76,17 @@
     "tailwindcss-animate": "^1.0.7",
     "typescript": "5.2.2",
     "vaul": "^0.9.9",
-    "zod": "^3.23.8",
-    "sharp": "^0.35.4"
+    "sharp": "0.35.5"
   },
   "browserslist": [
     "chrome 111",
     "edge 111",
     "firefox 111",
     "safari 16.4"
-  ]
+  ],
+  "overrides": {
+    "next": {
+      "postcss": "8.5.32"
+    }
+  }
 }
