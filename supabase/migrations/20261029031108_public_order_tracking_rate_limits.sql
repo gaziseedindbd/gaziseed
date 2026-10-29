@@ -6,7 +6,7 @@ create schema if not exists private;
 create table if not exists private.public_rpc_rate_limits (
   operation text not null check (operation in ('order_create', 'track_order')),
   subject_kind text not null check (subject_kind in ('phone', 'ip')),
-  subject_hash text not null check (subject_hash ~ '^[0-9a-f]{32}$'),
+  subject_hash text not null check (subject_hash ~ '^([0-9a-f]{32}|[0-9a-f]{64})$'),
   minute_window_at timestamptz not null,
   minute_count integer not null default 0 check (minute_count >= 0),
   hour_window_at timestamptz not null,
@@ -25,6 +25,31 @@ revoke all on table private.public_rpc_rate_limits from public, anon, authentica
 
 comment on table private.public_rpc_rate_limits is
   'Short-lived, private counters for public order creation and tracking rate limits.';
+
+create table if not exists private.public_rpc_rate_limit_secret (
+  singleton boolean primary key default true check (singleton),
+  key_material bytea not null check (octet_length(key_material) = 32),
+  created_at timestamptz not null default clock_timestamp()
+);
+
+alter table private.public_rpc_rate_limit_secret enable row level security;
+revoke all on table private.public_rpc_rate_limit_secret from public, anon, authenticated, service_role;
+
+insert into private.public_rpc_rate_limit_secret(singleton, key_material)
+values (true, extensions.gen_random_bytes(32))
+on conflict (singleton) do nothing;
+
+create or replace function private.public_rpc_rate_limit_hash(p_subject text)
+returns text
+language sql
+stable
+security definer
+set search_path = pg_catalog, private, extensions, pg_temp
+as $function$
+  select encode(extensions.hmac(convert_to(p_subject, 'UTF8'), s.key_material, 'sha256'), 'hex')
+  from private.public_rpc_rate_limit_secret s
+  where s.singleton = true;
+$function$;
 
 create or replace function private.current_request_ip()
 returns inet
@@ -113,7 +138,7 @@ begin
     return;
   end if;
 
-  v_subject_hash := md5(v_subject);
+  v_subject_hash := private.public_rpc_rate_limit_hash(v_subject);
   v_lock_key := p_operation || ':' || p_subject_kind || ':' || v_subject_hash;
   perform pg_advisory_xact_lock(hashtextextended(v_lock_key, 0));
 
@@ -226,6 +251,7 @@ as $function$
 $function$;
 
 revoke all on function private.current_request_ip() from public, anon, authenticated, service_role;
+revoke all on function private.public_rpc_rate_limit_hash(text) from public, anon, authenticated, service_role;
 revoke all on function private.consume_public_rpc_rate_limit(text, text, text, integer, integer, integer) from public, anon, authenticated, service_role;
 revoke all on function private.enforce_public_rpc_rate_limit(text, text, inet) from public, anon, authenticated, service_role;
 revoke all on function private.cleanup_public_rpc_rate_limits() from public, anon, authenticated, service_role;
