@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { aggregateCustomers, type CustomerRow, type CustomerTypeFilter, type OrderSummary } from '@/lib/admin/customer-aggregation';
+import { CustomerCrmPanel } from '@/components/admin/customer-crm-panel';
 
 type Branch = 'BD' | 'IN';
 type SortField = 'recent' | 'orders' | 'spend' | 'name';
@@ -468,6 +469,7 @@ function GuestCustomerDetailModal({ customer, branch, onClose }: { customer: Cus
         <DetailSection icon={<Package className="h-4 w-4" />} title="অর্ডার হিস্ট্রি" empty="কোনো অর্ডার নেই" count={customer.orders.length}>
           {customer.orders.map((order) => <article key={order.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background p-3 text-sm"><div className="min-w-0"><p className="truncate font-bold text-foreground">{order.order_number || order.id}</p><p className="mt-1 text-xs text-muted-foreground">{formatDate(order.created_at, true)} · {order.status || 'স্ট্যাটাস নেই'}</p></div><span className="font-bold tabular-nums text-foreground">{formatBranchPrice(numberOrZero(order.grand_total), branch)}</span></article>)}
         </DetailSection>
+        {customer.type !== 'order_only' && <CustomerCrmPanel branch={branch} phone={customer.phone} orderId={customer.orders[0]?.id} orders={customer.orders} />}
         <p className="rounded-xl bg-secondary/60 p-3 text-xs text-muted-foreground">{customer.type === 'order_only' ? 'এই অর্ডারের সঙ্গে গ্রাহক অ্যাকাউন্ট নিরাপদভাবে মেলেনি। তাই অ্যাকাউন্টের ব্যক্তিগত তথ্য বা পাসওয়ার্ড নিয়ন্ত্রণ দেখানো হচ্ছে না; এখানে শুধু অর্ডারের তথ্য আছে।' : 'গেস্ট কাস্টমারের লগইন অ্যাকাউন্ট নেই। তাই এখানে শুধু অর্ডার ও যোগাযোগের তথ্য দেখানো হচ্ছে।'}</p>
       </div>
     </section>
@@ -570,6 +572,7 @@ function CustomerDetailModal({ loading, error, detail, branch, isMasterAdmin, on
             <DetailSection icon={<Package className="h-4 w-4" />} title="অর্ডার হিস্ট্রি" empty="কোনো অর্ডার নেই" count={detail.orders.length}>
               {detail.orders.map((order) => <article key={order.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background p-3 text-sm"><div className="min-w-0"><p className="truncate font-bold text-foreground">{order.order_number || order.id}</p><p className="mt-1 text-xs text-muted-foreground">{formatDate(order.created_at, true)} · {order.status || 'স্ট্যাটাস নেই'}</p></div><span className="font-bold tabular-nums text-foreground">{formatBranchPrice(numberOrZero(order.grand_total), branch)}</span></article>)}
             </DetailSection>
+            <CustomerCrmPanel branch={branch} userId={detail.user.id} phone={phone} orderId={detail.orders[0]?.id} orders={detail.orders} />
             <section className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
               <div className="flex items-start gap-3"><Shield className="mt-0.5 h-5 w-5 text-primary" aria-hidden="true" /><div><h3 className="font-bold text-foreground">অ্যাকাউন্ট সাপোর্ট</h3><p className="mt-1 text-xs text-muted-foreground">সংবেদনশীল অ্যাকাউন্ট পরিবর্তন মাস্টার অ্যাডমিনের অনুমতিতে হয়।</p></div></div>
               {actionMessage && <div role={actionMessage.type === 'error' ? 'alert' : 'status'} aria-live="polite" className={`mt-4 rounded-xl p-3 text-sm font-medium ${actionMessage.type === 'success' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' : 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200'}`}>{actionMessage.text}</div>}

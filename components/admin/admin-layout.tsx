@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { Loader2, LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Tag, Star, Wrench, FileText, Image, Settings, FileBarChart, Menu, X, LogOut, Truck, Megaphone, Layers, BarChart3, Home, ShieldCheck, UserCog, Gift, Bell, Boxes, LifeBuoy, TrendingUp, Sun, Moon, Bot, MessageCircle, Sparkles, Globe2, ChevronDown, Video } from 'lucide-react';
+import { Loader2, LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Tag, Star, Wrench, FileText, Image, Settings, FileBarChart, Menu, X, LogOut, Truck, Megaphone, Layers, BarChart3, Home, ShieldCheck, UserCog, Gift, Bell, Boxes, LifeBuoy, TrendingUp, Sun, Moon, Bot, MessageCircle, Sparkles, Globe2, ChevronDown, Video, Clock3 } from 'lucide-react';
 import Link from 'next/link';
 import { NotificationCenter } from './notification-center';
 
@@ -40,7 +40,12 @@ const navGroups: NavGroup[] = [
     { href: '/admin/ai', label: 'AI Center', icon: Bot },
     { href: '/admin/ai-messenger', label: 'AI Messenger', icon: MessageCircle },
   ] },
-  { label: 'কাস্টমার', items: [{ href: '/admin/customers', label: 'কাস্টমার', icon: Users }] },
+  { label: 'CRM', items: [
+    { href: '/admin/crm', label: 'CRM Dashboard', icon: Users },
+    { href: '/admin/customers', label: 'কাস্টমার ডিরেক্টরি', icon: Users },
+    { href: '/admin/crm/follow-ups', label: 'Follow-up tasks', icon: Clock3 },
+    { href: '/admin/crm/segments', label: 'Customer segments', icon: Layers },
+  ] },
   { label: 'কন্টেন্ট', items: [
     { href: '/admin/homepage', label: 'হোমপেজ', icon: Home },
     { href: '/admin/banners', label: 'ব্যানার', icon: Image },
