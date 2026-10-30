@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 13200)
-Total output lines: 602
-
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -375,7 +372,46 @@ export default function AdminCustomersPage() {
           onAction={callSupportFunction}
           onRefresh={() => {
             if (!selectedCustomerId) return;
-            const customer = customers.find((it…1200 tokens truncated…unction Avatar({ name }: { name: string }) {
+            const customer = customers.find((item) => item.user_id === selectedCustomerId);
+            if (customer) void openCustomer(customer);
+          }}
+        />
+      )}
+    </main>
+  );
+}
+
+function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return <div className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">{icon}<span>{label}</span></div><p className="mt-2 text-2xl font-extrabold tracking-tight text-foreground">{value}</p></div>;
+}
+
+function SortableHeader({ label, field, sortField, direction, onSort }: { label: string; field: SortField; sortField: SortField; direction: 'asc' | 'desc'; onSort: (field: SortField) => void }) {
+  const active = sortField === field;
+  return <th scope="col" aria-sort={active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'} className="px-4 py-3"><button type="button" onClick={() => onSort(field)} className="inline-flex items-center gap-1.5 text-left hover:text-foreground focus-visible:outline-none focus-visible:underline">{label}{active && (direction === 'asc' ? <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" /> : <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />)}</button></th>;
+}
+
+function CustomerTableRow({ customer, branch, onOpen }: { customer: CustomerRow; branch: Branch; onOpen: (customer: CustomerRow) => void }) {
+  const title = customer.name || 'নাম নেই';
+  return <tr className="transition-colors hover:bg-secondary/30 focus-within:bg-secondary/30">
+    <td className="max-w-[280px] px-4 py-3.5"><div className="flex min-w-0 items-center gap-3"><Avatar name={title} /><div className="min-w-0"><p className="truncate font-semibold text-foreground">{title}</p>{customer.email && <p className="truncate text-xs text-muted-foreground">{customer.email}</p>}</div></div></td>
+    <td className="whitespace-nowrap px-4 py-3.5 text-foreground">{customer.phone || '—'}</td>
+    <td className="px-4 py-3.5"><CustomerTypeBadge type={customer.type} /></td>
+    <td className="px-4 py-3.5 tabular-nums text-foreground">{customer.orders.length.toLocaleString('bn-BD')}</td>
+    <td className="whitespace-nowrap px-4 py-3.5 font-bold tabular-nums text-foreground">{formatBranchPrice(customer.totalSpend, branch)}</td>
+    <td className="px-4 py-3.5 text-right"><button type="button" onClick={() => onOpen(customer)} aria-label={`${title} — বিস্তারিত দেখুন`} title="অর্ডার ও যোগাযোগের তথ্য দেখুন" className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"><Eye className="h-4 w-4" aria-hidden="true" /><span>বিস্তারিত</span></button></td>
+  </tr>;
+}
+
+function CustomerMobileCard({ customer, branch, onOpen }: { customer: CustomerRow; branch: Branch; onOpen: (customer: CustomerRow) => void }) {
+  const title = customer.name || 'নাম নেই';
+  return <article className="rounded-xl border border-border bg-background p-4 shadow-sm">
+    <div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><Avatar name={title} /><div className="min-w-0"><h2 className="truncate font-bold text-foreground">{title}</h2>{customer.email && <p className="truncate text-xs text-muted-foreground">{customer.email}</p>}</div></div><CustomerTypeBadge type={customer.type} /></div>
+    <div className="mt-4 grid grid-cols-2 gap-3 text-sm"><div><p className="text-xs text-muted-foreground">ফোন</p><p className="mt-0.5 truncate font-medium text-foreground">{customer.phone || '—'}</p></div><div><p className="text-xs text-muted-foreground">অর্ডার</p><p className="mt-0.5 font-semibold text-foreground">{customer.orders.length.toLocaleString('bn-BD')}</p></div><div><p className="text-xs text-muted-foreground">মোট খরচ</p><p className="mt-0.5 font-bold text-foreground">{formatBranchPrice(customer.totalSpend, branch)}</p></div><div><p className="text-xs text-muted-foreground">সর্বশেষ অর্ডার</p><p className="mt-0.5 text-foreground">{formatDate(customer.latestOrderAt)}</p></div></div>
+    <button type="button" onClick={() => onOpen(customer)} className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-border bg-card text-sm font-semibold text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"><Eye className="h-4 w-4" aria-hidden="true" />কাস্টমার বিস্তারিত</button>
+  </article>;
+}
+
+function Avatar({ name }: { name: string }) {
   return <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-extrabold text-primary">{name.trim().charAt(0).toLocaleUpperCase() || 'ক'}</span>;
 }
 
