@@ -11,8 +11,11 @@ type Event={shipment_id:string;event_status:string|null;received_at:string;event
 type PickupBatch={pickup_location:string;state:string;expected_package_count:number;pickup_date:string|null;pickup_time:string|null;external_pickup_id:string|null;updated_at:string}|null;
 const formatDate=(s:string)=>new Date(s).toLocaleString('en-IN');
 const extractIndiaPin=(address:string|null|undefined)=>{
- const last=(address??'').split(/[,;\n]/).map(part=>part.trim()).filter(Boolean).at(-1)??'';
- return last.match(/^(?:PIN(?:\s*Code)?\s*[:#-]?\s*)?([1-9][0-9]{5})$/i)?.[1]??'';
+ const parts=(address??'').split(/[,;\n]/).map(part=>part.trim()).filter(Boolean);
+ const last=parts.at(-1)??'';
+ const labeled=last.match(/^PIN(?:\s*Code)?\s*[:#-]?\s*([1-9][0-9]{5})$/i)?.[1];
+ if(labeled)return labeled;
+ return parts.length>=5&&/^[1-9][0-9]{5}$/.test(last)?last:'';
 };
 export default function IndiaShippingDashboard(){
  const [orders,setOrders]=useState<Order[]>([]),[orderItems,setOrderItems]=useState<OrderItem[]>([]),[packageProfiles,setPackageProfiles]=useState<PackageProfile[]>([]),[shipments,setShipments]=useState<Shipment[]>([]),[events,setEvents]=useState<Event[]>([]),[pickupBatch,setPickupBatch]=useState<PickupBatch>(null);
