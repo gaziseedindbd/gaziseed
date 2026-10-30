@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase/client';
 type Quote = { courierId: number; name: string; estimatedCost: number };
 export default function IndiaShippingRatesPage() {
  const [pin,setPin]=useState(''); const [pickup,setPickup]=useState('783124');
- const [weight,setWeight]=useState('0.5'); const [length,setLength]=useState('15');
+ const [weight,setWeight]=useState('500'); const [length,setLength]=useState('15');
  const [breadth,setBreadth]=useState('10'); const [height,setHeight]=useState('5');
  const [mode,setMode]=useState<'prepaid'|'cod'>('prepaid');
  const [shipmentValue,setShipmentValue]=useState('500'); const [codAmount,setCodAmount]=useState('500');
@@ -15,12 +15,12 @@ export default function IndiaShippingRatesPage() {
   try {
    if(!/^[1-9][0-9]{5}$/.test(pin)||!/^[1-9][0-9]{5}$/.test(pickup))
     throw new Error('Enter valid 6-digit India PIN codes');
-   const dims=[weight,length,breadth,height].map(Number);
+   const weightGrams=Number(weight); const dims=[weightGrams/1000,Number(length),Number(breadth),Number(height)];
    const declared=Number(shipmentValue),collection=mode==='prepaid'?0:Number(codAmount);
    if(!Number.isFinite(declared)||declared<=0||declared>10000000||!Number.isFinite(collection)||collection<0||collection>declared||
      (mode==='cod'&&collection===0)||!Number.isInteger(declared*100)||!Number.isInteger(collection*100))
     throw new Error('Enter valid shipment value and COD balance. COD balance cannot exceed shipment value.');
-   if(dims.some(n=>!Number.isFinite(n)||n<=0||n>100))throw new Error('Enter valid positive parcel measurements');
+   if(!Number.isInteger(weightGrams)||weightGrams<10||weightGrams>100000||dims.slice(1).some(n=>!Number.isFinite(n)||n<1||n>200))throw new Error('Enter parcel weight in whole grams (10–100000 g) and dimensions in cm (1–200)');
    const {data:session}=await supabase.auth.getSession();
    if(!session.session?.access_token)throw new Error('India Admin login required');
    const [admin,country]=await Promise.all([supabase.rpc('is_admin'),supabase.rpc('current_admin_country')]);
@@ -58,7 +58,7 @@ export default function IndiaShippingRatesPage() {
   <section className="grid gap-4 sm:grid-cols-2">
    {field('Verified pickup PIN',pickup,setPickup,'783124')}
    {field('Delivery PIN (6 digits)',pin,setPin,'110001')}
-   {field('Packed weight (kg)',weight,setWeight,'0.5')}
+   {field('Packed weight (grams)',weight,setWeight,'500')}
    {field('Length (cm)',length,setLength,'15')}
    {field('Breadth (cm)',breadth,setBreadth,'10')}
    {field('Height (cm)',height,setHeight,'5')}
