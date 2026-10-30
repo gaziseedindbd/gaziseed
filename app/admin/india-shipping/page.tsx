@@ -98,7 +98,7 @@ export default function IndiaShippingDashboard(){
     if(invokeError?.context instanceof Response){try{const body=await invokeError.context.clone().json();if(typeof body?.code==='string')code=body.code;}catch{/* Keep safe generic code. */}}
     const messages:Record<string,string>={
      delhivery_booking_not_configured:'Delhivery live booking is disabled or its server configuration is incomplete.',
-     delhivery_tax_defaults_confirmation_required:'Confirm seller GSTIN and HSN defaults with Delhivery before live booking.',
+     delhivery_tax_defaults_confirmation_required:'Confirm the Delhivery seller GST default before live booking.',
      delhivery_destination_details_unavailable:'Delhivery could not return this PIN’s city and state. Correct the delivery PIN/address before booking.',
      order_not_ready_for_delhivery:'This order is not packed, paid/verified, or fully prepared for shipment.',
      cashfree_verification_required:'Cashfree payment verification did not pass. No shipment was sent.',
