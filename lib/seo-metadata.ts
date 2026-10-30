@@ -63,8 +63,8 @@ function absoluteUrl(value?: string | null) {
     : `${SITE_URL}${value.startsWith('/') ? '' : '/'}${value}`;
 
   // Facebook/Meta previews are more reliable with a JPEG/PNG asset.
-  // Keep the actual site image untouched and transcode WebP only for social crawlers.
-  if (/\.webp(?:$|[?#])/i.test(url)) {
+  // Keep the actual site image untouched and transcode WebP/SVG only for social crawlers.
+  if (/\.(?:webp|svg)(?:$|[?#])/i.test(url)) {
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=1200&h=630&fit=cover&cbg=ffffff&output=jpg&q=88`;
   }
 
@@ -80,6 +80,7 @@ export function pageMetadata({
   description,
   image,
   path,
+  languages,
   type = 'website',
   locale = 'bn_BD',
 }: {
@@ -87,6 +88,7 @@ export function pageMetadata({
   description?: string;
   image?: string | null;
   path: string;
+  languages?: Record<string, string>;
   type?: 'website' | 'article';
   locale?: string;
 }): Metadata {
@@ -100,7 +102,10 @@ export function pageMetadata({
     title: cleanTitle,
     description: cleanDescription,
     metadataBase: new URL(SITE_URL),
-    alternates: { canonical: url },
+    alternates: {
+      canonical: url,
+      ...(languages ? { languages } : {}),
+    },
     openGraph: {
       title: cleanTitle,
       description: cleanDescription,

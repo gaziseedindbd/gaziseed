@@ -1,5 +1,6 @@
 import { cache } from 'react';
 import type { Metadata } from 'next';
+import { resolveLegacyProductRoute } from '@/lib/legacy-product-route';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { cleanSeoDescription, getSeoCountry, localizedSeoText, pageMetadata, serializeJsonLd, SITE_URL } from '@/lib/seo-metadata';
 
@@ -57,7 +58,16 @@ function absoluteImage(value: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const country = await getSeoCountry();
+  const preferredCountry = await getSeoCountry();
+  const productRoute = await resolveLegacyProductRoute(slug, preferredCountry);
+  if (!productRoute) {
+    return {
+      title: 'Product unavailable | GAZI SEED',
+      robots: { index: false, follow: true },
+    };
+  }
+
+  const country = productRoute.country;
   const { product, variant } = await getProductSeoData(slug, country);
   const canonicalPath = `/${country.toLowerCase()}/product/${encodeURIComponent(slug)}`;
 
@@ -65,7 +75,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     return {
       title: 'Product unavailable | GAZI SEED',
       robots: { index: false, follow: true },
-      alternates: { canonical: canonicalPath },
     };
   }
 
@@ -104,7 +113,11 @@ export default async function ProductSeoLayout({
   children: React.ReactNode;
 }): Promise<JSX.Element> {
   const { slug } = await params;
-  const country = await getSeoCountry();
+  const preferredCountry = await getSeoCountry();
+  const productRoute = await resolveLegacyProductRoute(slug, preferredCountry);
+  if (!productRoute) return <>{children}</>;
+
+  const country = productRoute.country;
   const { product, variant } = await getProductSeoData(slug, country);
   if (!product) return <>{children}</>;
 

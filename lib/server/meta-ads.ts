@@ -6,6 +6,7 @@ type MetaAdsConfig = {
   countryCode: CountryCode;
   accountId: string;
   campaignIds: string[];
+  campaignNamePrefix: string;
   accessToken: string;
   graphVersion: string;
 };
@@ -51,6 +52,13 @@ function normalizeAccountId(value: string): string {
   return value.trim().replace(/^act_/i, '');
 }
 
+function envCampaignNamePrefix(countryCode: CountryCode): string {
+  const key = countryCode === 'IN'
+    ? 'META_ADS_CAMPAIGN_PREFIX_IN'
+    : 'META_ADS_CAMPAIGN_PREFIX_BD';
+  return (process.env[key] || '').trim();
+}
+
 function getConfig(countryCode: CountryCode): MetaAdsConfig | null {
   const accountKey = countryCode === 'IN'
     ? 'META_ADS_ACCOUNT_ID_IN'
@@ -63,6 +71,7 @@ function getConfig(countryCode: CountryCode): MetaAdsConfig | null {
     countryCode,
     accountId,
     campaignIds: envCampaignIds(countryCode),
+    campaignNamePrefix: envCampaignNamePrefix(countryCode),
     accessToken,
     graphVersion: process.env.META_ADS_GRAPH_VERSION?.trim() || 'v26.0',
   };
@@ -76,10 +85,21 @@ function assertBranchIsolation(configs: MetaAdsConfig[]) {
   if (bd.accountId !== inBranch.accountId) return;
 
   const bdIds = new Set(bd.campaignIds);
-  const overlap = inBranch.campaignIds.filter((id) => bdIds.has(id));
-  if (!bd.campaignIds.length || !inBranch.campaignIds.length || overlap.length) {
+  const overlappingIds = inBranch.campaignIds.some((id) => bdIds.has(id));
+  const bdPrefix = bd.campaignNamePrefix.toLocaleUpperCase();
+  const inPrefix = inBranch.campaignNamePrefix.toLocaleUpperCase();
+  const prefixesAreDistinct =
+    Boolean(bdPrefix && inPrefix) &&
+    !bdPrefix.startsWith(inPrefix) &&
+    !inPrefix.startsWith(bdPrefix);
+  const idsAreDistinct =
+    bd.campaignIds.length > 0 &&
+    inBranch.campaignIds.length > 0 &&
+    !overlappingIds;
+
+  if (!prefixesAreDistinct && !idsAreDistinct) {
     throw new Error(
-      'Meta Ads branch isolation requires distinct ad accounts or explicit non-overlapping campaign ID filters for BD and IN.',
+      'Shared Meta Ads account requires distinct campaign prefixes or non-overlapping campaign ID filters for BD and IN.',
     );
   }
 }
@@ -296,7 +316,19 @@ export async function syncMetaAdsInsights(days = 30): Promise<{
   for (const config of configs) {
     try {
       const rawRows = await fetchCampaignInsights(config, since, until);
+      const prefix = config.campaignNamePrefix.toLocaleUpperCase();
       const mapped = rawRows
+        .filter((row) => {
+          const campaignId = String(row.campaign_id || '');
+          const campaignName = String(row.campaign_name || '').trimStart();
+          if (config.campaignIds.length && !config.campaignIds.includes(campaignId)) {
+            return false;
+          }
+          if (prefix && !campaignName.toLocaleUpperCase().startsWith(prefix)) {
+            return false;
+          }
+          return true;
+        })
         .map((row) => mapInsight(row, config.countryCode, config.accountId))
         .filter((row): row is Record<string, unknown> => Boolean(row));
 

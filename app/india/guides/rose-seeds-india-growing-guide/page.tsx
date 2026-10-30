@@ -87,7 +87,7 @@ export default function RoseSeedsIndiaGuide() {
               The GAZI SEED India catalog currently includes red rose flower seeds for home, pot,
               balcony and terrace gardening.
             </p>
-            <Link href="/product/lal-golap-fuler-bij" className="mt-4 inline-flex rounded-full bg-emerald-800 px-4 py-2.5 text-xs font-black text-white">
+            <Link href="/in/product/lal-golap-fuler-bij" className="mt-4 inline-flex rounded-full bg-emerald-800 px-4 py-2.5 text-xs font-black text-white">
               View Red Rose Seeds
             </Link>
           </section>

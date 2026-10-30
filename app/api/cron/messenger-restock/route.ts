@@ -18,6 +18,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 
+  if (process.env.MESSENGER_NOTIFICATIONS_CRON_ENABLED !== 'true') {
+    return NextResponse.json({ ok: true, skipped: 'Messenger notifications are disabled' });
+  }
+
   try {
     const [restock, orderConfirmation, orderStatus] = await Promise.all([
       processMessengerRestockNotifications(50),

@@ -9,6 +9,7 @@ GAZI SEED keeps the browser Pixel as the client-side event source and adds serve
 - META_CAPI_TEST_EVENT_CODE: optional; set temporarily while validating server events in Meta Events Manager Test Events.
 
 The existing marketing_settings.meta_pixel_id remains the source of truth for the Pixel ID in both BD and IN branches.
+Website, Ads, Facebook, Instagram, Google, TikTok, Animated Landing and Combo web orders are eligible for Purchase CAPI. Messenger-origin orders remain excluded.
 
 ## Event deduplication
 
@@ -18,6 +19,8 @@ purchase:<country_code>:<order_number>
 
 The browser sends it as Meta Pixel eventID; CAPI sends the same value as event_id. Meta can therefore deduplicate the two copies of the same Purchase event. Keep the event ID stable for the same order. Matching event name and event ID are the key deduplication fields for browser/server copies.
 
+For Vercel Preview deployments with META_CAPI_TEST_EVENT_CODE configured, the server Purchase path omits _fbp, _fbc, client IP and user-agent. This keeps Preview validation focused on event delivery and deduplication without sending those client identifiers.
+
 ## Server payload
 
 The server sends Purchase with website action source, order value/currency, order ID, content IDs/items and normalized hashed customer identifiers. IP address and user agent are sent when the event is triggered from the order-success route.
@@ -26,6 +29,6 @@ The integration pins Graph API v26.0 by default; Meta's current Graph API releas
 
 ## Delivery and retries
 
-A service-role-only meta_capi_events table provides idempotency and delivery state. Order-success triggers immediate server delivery. A protected cron route retries pending/failed recent website purchases.
+A service-role-only meta_capi_events table provides idempotency and delivery state. Order-success triggers immediate server delivery. A protected cron route retries recorded pending/failed events for eligible web order sources. Its fallback scan only covers recent website purchases, so deploying the expanded source list does not backfill older Ads, Animated Landing or Combo orders.
 
 No checkout, payment, Messenger, or public order RPC logic is changed by this module.
