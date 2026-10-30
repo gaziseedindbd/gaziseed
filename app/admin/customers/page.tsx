@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 13200)
+Total output lines: 602
+
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -7,6 +10,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { aggregateCustomers, type CustomerRow, type CustomerTypeFilter, type OrderSummary } from '@/lib/admin/customer-aggregation';
+import { CustomerCrmPanel } from '@/components/admin/customer-crm-panel';
 
 type Branch = 'BD' | 'IN';
 type SortField = 'recent' | 'orders' | 'spend' | 'name';
@@ -371,46 +375,7 @@ export default function AdminCustomersPage() {
           onAction={callSupportFunction}
           onRefresh={() => {
             if (!selectedCustomerId) return;
-            const customer = customers.find((item) => item.user_id === selectedCustomerId);
-            if (customer) void openCustomer(customer);
-          }}
-        />
-      )}
-    </main>
-  );
-}
-
-function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return <div className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">{icon}<span>{label}</span></div><p className="mt-2 text-2xl font-extrabold tracking-tight text-foreground">{value}</p></div>;
-}
-
-function SortableHeader({ label, field, sortField, direction, onSort }: { label: string; field: SortField; sortField: SortField; direction: 'asc' | 'desc'; onSort: (field: SortField) => void }) {
-  const active = sortField === field;
-  return <th scope="col" aria-sort={active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'} className="px-4 py-3"><button type="button" onClick={() => onSort(field)} className="inline-flex items-center gap-1.5 text-left hover:text-foreground focus-visible:outline-none focus-visible:underline">{label}{active && (direction === 'asc' ? <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" /> : <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />)}</button></th>;
-}
-
-function CustomerTableRow({ customer, branch, onOpen }: { customer: CustomerRow; branch: Branch; onOpen: (customer: CustomerRow) => void }) {
-  const title = customer.name || 'নাম নেই';
-  return <tr className="transition-colors hover:bg-secondary/30 focus-within:bg-secondary/30">
-    <td className="max-w-[280px] px-4 py-3.5"><div className="flex min-w-0 items-center gap-3"><Avatar name={title} /><div className="min-w-0"><p className="truncate font-semibold text-foreground">{title}</p>{customer.email && <p className="truncate text-xs text-muted-foreground">{customer.email}</p>}</div></div></td>
-    <td className="whitespace-nowrap px-4 py-3.5 text-foreground">{customer.phone || '—'}</td>
-    <td className="px-4 py-3.5"><CustomerTypeBadge type={customer.type} /></td>
-    <td className="px-4 py-3.5 tabular-nums text-foreground">{customer.orders.length.toLocaleString('bn-BD')}</td>
-    <td className="whitespace-nowrap px-4 py-3.5 font-bold tabular-nums text-foreground">{formatBranchPrice(customer.totalSpend, branch)}</td>
-    <td className="px-4 py-3.5 text-right"><button type="button" onClick={() => onOpen(customer)} aria-label={`${title} — বিস্তারিত দেখুন`} title="অর্ডার ও যোগাযোগের তথ্য দেখুন" className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"><Eye className="h-4 w-4" aria-hidden="true" /><span>বিস্তারিত</span></button></td>
-  </tr>;
-}
-
-function CustomerMobileCard({ customer, branch, onOpen }: { customer: CustomerRow; branch: Branch; onOpen: (customer: CustomerRow) => void }) {
-  const title = customer.name || 'নাম নেই';
-  return <article className="rounded-xl border border-border bg-background p-4 shadow-sm">
-    <div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><Avatar name={title} /><div className="min-w-0"><h2 className="truncate font-bold text-foreground">{title}</h2>{customer.email && <p className="truncate text-xs text-muted-foreground">{customer.email}</p>}</div></div><CustomerTypeBadge type={customer.type} /></div>
-    <div className="mt-4 grid grid-cols-2 gap-3 text-sm"><div><p className="text-xs text-muted-foreground">ফোন</p><p className="mt-0.5 truncate font-medium text-foreground">{customer.phone || '—'}</p></div><div><p className="text-xs text-muted-foreground">অর্ডার</p><p className="mt-0.5 font-semibold text-foreground">{customer.orders.length.toLocaleString('bn-BD')}</p></div><div><p className="text-xs text-muted-foreground">মোট খরচ</p><p className="mt-0.5 font-bold text-foreground">{formatBranchPrice(customer.totalSpend, branch)}</p></div><div><p className="text-xs text-muted-foreground">সর্বশেষ অর্ডার</p><p className="mt-0.5 text-foreground">{formatDate(customer.latestOrderAt)}</p></div></div>
-    <button type="button" onClick={() => onOpen(customer)} className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-border bg-card text-sm font-semibold text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"><Eye className="h-4 w-4" aria-hidden="true" />কাস্টমার বিস্তারিত</button>
-  </article>;
-}
-
-function Avatar({ name }: { name: string }) {
+            const customer = customers.find((it…1200 tokens truncated…unction Avatar({ name }: { name: string }) {
   return <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-extrabold text-primary">{name.trim().charAt(0).toLocaleUpperCase() || 'ক'}</span>;
 }
 
@@ -468,6 +433,7 @@ function GuestCustomerDetailModal({ customer, branch, onClose }: { customer: Cus
         <DetailSection icon={<Package className="h-4 w-4" />} title="অর্ডার হিস্ট্রি" empty="কোনো অর্ডার নেই" count={customer.orders.length}>
           {customer.orders.map((order) => <article key={order.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background p-3 text-sm"><div className="min-w-0"><p className="truncate font-bold text-foreground">{order.order_number || order.id}</p><p className="mt-1 text-xs text-muted-foreground">{formatDate(order.created_at, true)} · {order.status || 'স্ট্যাটাস নেই'}</p></div><span className="font-bold tabular-nums text-foreground">{formatBranchPrice(numberOrZero(order.grand_total), branch)}</span></article>)}
         </DetailSection>
+        {customer.type !== 'order_only' && <CustomerCrmPanel branch={branch} phone={customer.phone} orderId={customer.orders[0]?.id} orders={customer.orders} />}
         <p className="rounded-xl bg-secondary/60 p-3 text-xs text-muted-foreground">{customer.type === 'order_only' ? 'এই অর্ডারের সঙ্গে গ্রাহক অ্যাকাউন্ট নিরাপদভাবে মেলেনি। তাই অ্যাকাউন্টের ব্যক্তিগত তথ্য বা পাসওয়ার্ড নিয়ন্ত্রণ দেখানো হচ্ছে না; এখানে শুধু অর্ডারের তথ্য আছে।' : 'গেস্ট কাস্টমারের লগইন অ্যাকাউন্ট নেই। তাই এখানে শুধু অর্ডার ও যোগাযোগের তথ্য দেখানো হচ্ছে।'}</p>
       </div>
     </section>
@@ -570,6 +536,7 @@ function CustomerDetailModal({ loading, error, detail, branch, isMasterAdmin, on
             <DetailSection icon={<Package className="h-4 w-4" />} title="অর্ডার হিস্ট্রি" empty="কোনো অর্ডার নেই" count={detail.orders.length}>
               {detail.orders.map((order) => <article key={order.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background p-3 text-sm"><div className="min-w-0"><p className="truncate font-bold text-foreground">{order.order_number || order.id}</p><p className="mt-1 text-xs text-muted-foreground">{formatDate(order.created_at, true)} · {order.status || 'স্ট্যাটাস নেই'}</p></div><span className="font-bold tabular-nums text-foreground">{formatBranchPrice(numberOrZero(order.grand_total), branch)}</span></article>)}
             </DetailSection>
+            <CustomerCrmPanel branch={branch} userId={detail.user.id} phone={phone} orderId={detail.orders[0]?.id} orders={detail.orders} />
             <section className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
               <div className="flex items-start gap-3"><Shield className="mt-0.5 h-5 w-5 text-primary" aria-hidden="true" /><div><h3 className="font-bold text-foreground">অ্যাকাউন্ট সাপোর্ট</h3><p className="mt-1 text-xs text-muted-foreground">সংবেদনশীল অ্যাকাউন্ট পরিবর্তন মাস্টার অ্যাডমিনের অনুমতিতে হয়।</p></div></div>
               {actionMessage && <div role={actionMessage.type === 'error' ? 'alert' : 'status'} aria-live="polite" className={`mt-4 rounded-xl p-3 text-sm font-medium ${actionMessage.type === 'success' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' : 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200'}`}>{actionMessage.text}</div>}
