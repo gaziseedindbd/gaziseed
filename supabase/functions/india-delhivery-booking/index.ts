@@ -54,7 +54,6 @@ Deno.serve(async(req:Request)=>{
   const enabled=Deno.env.get("DELHIVERY_BOOKING_ENABLED")==="true"||(env==="production"&&Deno.env.get("DELHIVERY_BOOKING_ENABLED")!=="false");
   const location=Deno.env.get("DELHIVERY_PICKUP_LOCATION")??"GAZISEEDB2C-B2C";
   if(!env||configured!==env||!enabled||!url||!publishable||!secrets||!token||!base)return reply(503,{ok:false,code:"delhivery_booking_not_configured"});
-  if(env==="production"&&Deno.env.get("DELHIVERY_ACCOUNT_TAX_DEFAULTS_CONFIRMED")!=="true")return reply(503,{ok:false,code:"delhivery_tax_defaults_confirmation_required"});
   let db:ReturnType<typeof createClient>|null=null;let shipmentId:string|null=null;let claimed=false;
   try{
     const keys:unknown=JSON.parse(publishable),secret:unknown=JSON.parse(secrets);
