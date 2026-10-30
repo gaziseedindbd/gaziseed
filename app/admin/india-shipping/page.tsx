@@ -10,6 +10,10 @@ type PackageProfile={id:string;name:string;package_type:'mailer'|'box'|'custom';
 type Event={shipment_id:string;event_status:string|null;received_at:string;event_occurred_at:string|null};
 type PickupBatch={pickup_location:string;state:string;expected_package_count:number;pickup_date:string|null;pickup_time:string|null;external_pickup_id:string|null;updated_at:string}|null;
 const formatDate=(s:string)=>new Date(s).toLocaleString('en-IN');
+const extractIndiaPin=(address:string|null|undefined)=>{
+ const last=(address??'').split(/[,;\n]/).map(part=>part.trim()).filter(Boolean).at(-1)??'';
+ return last.match(/^(?:PIN(?:\s*Code)?\s*[:#-]?\s*)?([1-9][0-9]{5})$/i)?.[1]??'';
+};
 export default function IndiaShippingDashboard(){
  const [orders,setOrders]=useState<Order[]>([]),[orderItems,setOrderItems]=useState<OrderItem[]>([]),[packageProfiles,setPackageProfiles]=useState<PackageProfile[]>([]),[shipments,setShipments]=useState<Shipment[]>([]),[events,setEvents]=useState<Event[]>([]),[pickupBatch,setPickupBatch]=useState<PickupBatch>(null);
  const [preparations,setPreparations]=useState<Preparation[]>([]);
@@ -39,7 +43,7 @@ export default function IndiaShippingDashboard(){
  if(alive){setOrders(data.orders);setOrderItems(data.orderItems??[]);setPackageProfiles(data.packageProfiles??[]);setShipments(data.shipments??[]);setEvents(data.events??[]);setPreparations(data.preparations??[]);setPickupBatch(data.pickupBatch??null);}
  }catch(e){if(alive)setError(e instanceof Error?e.message:'Unable to load shipping data');}
  finally{if(alive)setLoading(false);}})();return()=>{alive=false};},[]);
-useEffect(()=>{if(!selected)return;const saved=preparations.find(p=>p.order_id===selected);setPin(saved?.delivery_pin??'');setFragile(saved?.fragile_shipment??false);setPackageProfileId(saved?.package_profile_id??'');setProfileSuggestion('');
+useEffect(()=>{if(!selected)return;const saved=preparations.find(p=>p.order_id===selected),selectedOrder=orders.find(o=>o.id===selected);setPin(saved?.delivery_pin??extractIndiaPin(selectedOrder?.delivery_address));setFragile(saved?.fragile_shipment??false);setPackageProfileId(saved?.package_profile_id??'');setProfileSuggestion('');
   if(saved){setWeight(String(Math.round(saved.weight_kg*1000)));setLength(String(saved.length_cm));setBreadth(String(saved.breadth_cm));setHeight(String(saved.height_cm));setNotes(saved.packing_notes??'');return;}
   setWeight('');setLength('');setBreadth('');setHeight('');setNotes('');
   const items=orderItems.filter(item=>item.order_id===selected),itemCount=items.reduce((sum,item)=>sum+Math.max(0,Number(item.quantity)||0),0),names=items.map(item=>item.product_name.toLowerCase());
@@ -47,7 +51,7 @@ useEffect(()=>{if(!selected)return;const saved=preparations.find(p=>p.order_id==
     (!profile.product_keywords.length||names.length>0&&names.every(name=>profile.product_keywords.some(keyword=>name.includes(keyword.toLowerCase())))));
   if(matches.length===1){applyPackageProfile(matches[0]);setProfileSuggestion(`Suggested preset: ${matches[0].name}. Check the packed parcel before saving.`);}
   else if(matches.length>1)setProfileSuggestion(`${matches.length} presets match this order. Choose the correct package size below.`);
- },[selected,preparations,orderItems,packageProfiles,applyPackageProfile]);
+ },[selected,orders,preparations,orderItems,packageProfiles,applyPackageProfile]);
  async function checkPaymentPreflight(){
   if(!selected||preflightLoading)return;
   setPreflightLoading(true);setPreflightResult('');
@@ -295,6 +299,7 @@ useEffect(()=>{if(!selected)return;const saved=preparations.find(p=>p.order_id==
       <p><strong>Order:</strong> {order.order_number||order.id}</p>
       <p><strong>Customer:</strong> {order.customer_name||'Not available'}</p>
       <p><strong>Delivery address:</strong> {order.delivery_address||'Missing — must verify before booking'}</p>
+      <p><strong>PIN from customer address:</strong> {extractIndiaPin(order.delivery_address)||'Not detected — enter and verify manually'}</p>
       <div className="border-t pt-2"><strong>Items in this order:</strong>{orderItems.filter(item=>item.order_id===order.id).length===0?<p className="mt-1 text-amber-700">Product lines are unavailable; verify the order before packing.</p>:<ul className="mt-1 space-y-1">{orderItems.filter(item=>item.order_id===order.id).map(item=><li key={item.id} className="flex justify-between gap-3"><span>{item.product_name} × {item.quantity}</span><span>₹{Number(item.total_price||0).toFixed(2)}</span></li>)}</ul>}</div>
       <p><strong>Order status:</strong> {order.status||'Unknown'}</p>
       <p><strong>Payment status (display only):</strong> {order.payment_status||'Unknown'} — dispatch still requires server-side Cashfree verification</p>
@@ -316,7 +321,7 @@ useEffect(()=>{if(!selected)return;const saved=preparations.find(p=>p.order_id==
       <p className="text-xs font-medium text-gray-700">This check is read-only. It does not create a shipment or approve a pickup; each action needs its own explicit confirmation.</p>
      </div>
      <div className="space-y-3 rounded-lg border p-4"><h3 className="font-semibold">Shipping Preparation · Save Draft</h3>
-      <p className="text-xs text-gray-600">Check the customer address before entering the PIN. Choose a saved package preset to fill the repeated size in one click, then verify it against the packed parcel. A draft does not book a shipment.</p>
+      <p className="text-xs text-gray-600">The customer PIN is filled from the end of the saved address when it is a valid 6-digit PIN; verify it against the order. Choose a saved package preset to fill the repeated size in one click, then check the packed parcel. A draft does not book a shipment.</p>
       <label className="flex flex-col gap-1 text-sm">Quick package preset<select className="rounded-lg border p-3" value={packageProfileId} onChange={e=>{const profile=packageProfiles.find(x=>x.id===e.target.value);setProfileSuggestion('');if(profile)applyPackageProfile(profile);else setPackageProfileId('');}}><option value="">Choose preset or enter custom size</option>{packageProfiles.map(profile=><option key={profile.id} value={profile.id}>{profile.name} · {Math.round(profile.weight_kg*1000)} g · {profile.length_cm}×{profile.breadth_cm}×{profile.height_cm} cm</option>)}</select></label>
       {profileSuggestion&&<p role="status" className="text-xs text-emerald-800">{profileSuggestion}</p>}
       {packageProfiles.length===0&&<p className="text-xs text-amber-800">No reusable package presets yet. Enter one parcel’s measured size, then save it below as a preset.</p>}
