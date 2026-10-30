@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useState} from 'react';
 import Link from 'next/link';
 import {supabase} from '@/lib/supabase/client';
-type Order={id:string;order_number:string|null;customer_name:string|null;delivery_address:string|null;status:string|null;payment_status:string|null;payment_method:string|null;payment_advance_amount:number|null;payment_due_amount:number|null;cashfree_dispatch_verified_at:string|null;grand_total:number|null;created_at:string};
+type Order={id:string;order_number:string|null;customer_name:string|null;delivery_address:string|null;status:string|null;payment_status:string|null;payment_method:string|null;payment_advance_amount:number|null;payment_due_amount:number|null;cashfree_dispatch_verified_at:string|null;final_amount:number|null;grand_total:number|null;created_at:string};
 type OrderItem={id:string;order_id:string;product_name:string;quantity:number;total_price:number};
 type Shipment={id:string;order_id:string;provider:string|null;creation_state:string|null;external_shipment_id:string|null;awb:string|null;courier_company_id:number|null;tracking_status:string|null;pickup_approved_at:string|null;pickup_request_state:string|null;external_pickup_id:string|null;reconcile_reason:string|null};
 type Preparation={order_id:string;delivery_pin:string;weight_kg:number;length_cm:number;breadth_cm:number;height_cm:number;packing_notes:string;package_profile_id:string|null;fragile_shipment:boolean;updated_at:string};
@@ -76,23 +76,27 @@ useEffect(()=>{if(!selected)return;const saved=preparations.find(p=>p.order_id==
    if(!/^[1-9][0-9]{5}$/.test(pickupPin)||!/^[1-9][0-9]{5}$/.test(parcel.delivery_pin))throw new Error('Valid pickup and delivery PINs required');
    const dims=[Number(parcel.weight_kg),Number(parcel.length_cm),Number(parcel.breadth_cm),Number(parcel.height_cm)];
    if(dims.some((n,i)=>!Number.isFinite(n)||n<(i===0?0.01:1)||n>(i===0?100:200)))throw new Error('Saved parcel measurements are invalid');
-   const total=Number(selectedOrder.grand_total);
-   const isCod=selectedOrder.payment_method?.toLowerCase()==='cod';
+   const total=Number(selectedOrder.final_amount??selectedOrder.grand_total);
+   const paymentMethod=String(selectedOrder.payment_method??'').toLowerCase();
+   const paymentStatus=String(selectedOrder.payment_status??'').toLowerCase();
+   const isCod=paymentMethod==='cod';
    const advance=Number(selectedOrder.payment_advance_amount??0);
    const due=Number(selectedOrder.payment_due_amount);
-   const fullCod=isCod&&selectedOrder.payment_status==='unpaid'&&advance===0;
+   const fullCod=isCod&&paymentStatus==='unpaid'&&advance===0;
+   const partialCod=isCod&&paymentStatus==='partially_paid'&&advance>0;
    const collect=isCod?(fullCod?total:due):0;
    if(!Number.isFinite(total)||total<=0||!Number.isFinite(collect)||collect<0||collect>total||
-     (isCod&&collect<=0)||(isCod&&!fullCod&&Math.abs(advance+due-total)>0.01)||
-     (!isCod&&selectedOrder.payment_method!=='cashfree'))throw new Error('Payment collection figures require manual reconciliation before quoting');
+     (isCod&&collect<=0)||
+     (isCod&&(!Number.isFinite(advance)||advance<0||!Number.isFinite(due)||due<=0||Math.abs(advance+due-total)>0.01||(!fullCod&&!partialCod)))||
+     (!isCod&&(paymentMethod!=='cashfree'||paymentStatus!=='paid'||!Number.isFinite(due)||due!==0)))throw new Error('Payment collection figures require manual reconciliation before quoting');
    const {data:session}=await supabase.auth.getSession();
    if(!session.session?.access_token)throw new Error('India Admin login required');
    const {data,error:invokeError}=await supabase.functions.invoke('india-delhivery-quote',{
-    body:{pickupPin,deliveryPin:parcel.delivery_pin,weightGrams:Math.round(dims[0]*1000),lengthCm:dims[1],breadthCm:dims[2],heightCm:dims[3],paymentMode:isCod?'cod':'prepaid',shippingMode:'surface',codAmount:collect},
+    body:{pickupPin,deliveryPin:parcel.delivery_pin,weightGrams:Math.round(dims[0]*1000),lengthCm:dims[1],breadthCm:dims[2],heightCm:dims[3],paymentMode:collect>0?'cod':'prepaid',shippingMode:'surface',codAmount:collect},
     headers:{Authorization:'Bearer '+session.session.access_token,'x-gazi-country':'IN'}});
    if(invokeError||data?.ok!==true||data?.serviceable!==true||!Number.isFinite(Number(data.estimatedCharge)))throw new Error('Delhivery rate quote unavailable or this PIN is not serviceable. No shipment was created.');
    const q={name:'Delhivery Surface',estimatedCost:Number(data.estimatedCharge),environment:String(data.environment??'')};
-   if(orderId===selected){setQuote(q);setQuoteMessage(`Read-only ${q.environment} quote. Booking rechecks serviceability and price before submitting.`+(fullCod?' Full COD must be normalized in the order record before booking.':''));}
+   if(orderId===selected){setQuote(q);setQuoteMessage(`Read-only ${q.environment} quote. COD collection uses the verified order balance (₹${collect.toFixed(2)}); prepaid orders send ₹0 COD. Booking rechecks payment, serviceability and price before submitting.`);}
   }catch(e){if(orderId===selected)setQuoteMessage(e instanceof Error?e.message:'Unable to quote order');}
   finally{setQuoteLoading(false);}
  }
@@ -247,13 +251,15 @@ useEffect(()=>{if(!selected)return;const saved=preparations.find(p=>p.order_id==
  const shipment=shipments.find(x=>x.order_id===selected);
  const history=events.filter(x=>x.shipment_id===shipment?.id);
  const preparation=preparations.find(x=>x.order_id===selected);
- const isCod=order?.payment_method?.toLowerCase()==='cod';
- const total=Number(order?.grand_total??0);
- const isFullCod=Boolean(isCod&&order?.payment_status==='unpaid'&&Number(order?.payment_advance_amount??0)===0);
- const expectedCodAmount=isFullCod?Number(order?.grand_total??0):Number(order?.payment_due_amount);
+ const paymentMethod=String(order?.payment_method??'').toLowerCase();
+ const paymentStatus=String(order?.payment_status??'').toLowerCase();
+ const isCod=paymentMethod==='cod';
+ const total=Number(order?.final_amount??order?.grand_total??0);
+ const isFullCod=Boolean(isCod&&paymentStatus==='unpaid'&&Number(order?.payment_advance_amount??0)===0);
+ const expectedCodAmount=isFullCod?total:Number(order?.payment_due_amount);
  const due=Number(order?.payment_due_amount);
  const advance=Number(order?.payment_advance_amount??0);
- const paymentNeedsVerification=Boolean(order&&(order.payment_method==='cashfree'||(isCod&&advance>0)));
+ const paymentNeedsVerification=Boolean(order&&(paymentMethod==='cashfree'||(isCod&&advance>0)));
  const dispatchVerified=Boolean(order?.cashfree_dispatch_verified_at);
  const preparationMatchesForm=Boolean(preparation&&preparation.delivery_pin===pin&&Math.round(Number(preparation.weight_kg)*1000)===Number(weight)&&Number(preparation.length_cm)===Number(length)&&Number(preparation.breadth_cm)===Number(breadth)&&Number(preparation.height_cm)===Number(height)&&preparation.packing_notes===notes&&preparation.package_profile_id===(packageProfileId||null)&&preparation.fragile_shipment===fragile);
  const preparationReady=Boolean(preparationMatchesForm&&preparation&&/^[1-9][0-9]{5}$/.test(preparation.delivery_pin)&&
@@ -311,7 +317,7 @@ useEffect(()=>{if(!selected)return;const saved=preparations.find(p=>p.order_id==
       <p className="text-sm">Payment mode: <strong>{order.payment_method||'Unknown'}</strong> · Advance recorded: ₹{advance.toFixed(2)} · Database due: ₹{Number.isFinite(due)?due.toFixed(2):'Unknown'} · Calculated COD collection: ₹{isCod&&Number.isFinite(expectedCodAmount)?expectedCodAmount.toFixed(2):'0.00'}</p>
       <p className="text-sm">Server-side Cashfree dispatch verification: <strong>{dispatchVerified?'Recorded (recheck at booking)':'Not recorded'}</strong></p>
       {preflightBlocks.length>0?<ul className="list-disc space-y-1 pl-5 text-sm text-amber-800">{preflightBlocks.map(reason=><li key={reason}>{reason}</li>)}</ul>:<p className="text-sm text-emerald-800">Preliminary data checks pass; live payment re-verification, courier quote, duplicate lock and admin consent still required.</p>}
-      <button type="button" onClick={checkPaymentPreflight} disabled={preflightLoading||saving||!(order.payment_method==='cashfree'||(isCod&&advance>0))} className="rounded-lg border border-emerald-700 px-4 py-3 text-sm font-semibold disabled:opacity-50">{preflightLoading?'Checking Cashfree…':'Verify Cashfree Payment (read only)'}</button>
+      <button type="button" onClick={checkPaymentPreflight} disabled={preflightLoading||saving||!(paymentMethod==='cashfree'||(isCod&&advance>0))} className="rounded-lg border border-emerald-700 px-4 py-3 text-sm font-semibold disabled:opacity-50">{preflightLoading?'Checking Cashfree…':'Verify Cashfree Payment (read only)'}</button>
       {preflightResult&&<p role="status" aria-live="polite" className="rounded-lg border p-3 text-sm">{preflightResult}</p>}
       <p className="text-xs font-medium text-gray-700">This check is read-only. It does not create a shipment or approve a pickup; each action needs its own explicit confirmation.</p>
      </div>

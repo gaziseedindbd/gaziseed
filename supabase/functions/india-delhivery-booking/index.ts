@@ -73,9 +73,17 @@ Deno.serve(async(req:Request)=>{
     const order=snapshot.order,parcel=snapshot.parcel,items=snapshot.items.filter(isRecord);
     const total=num(order.final_amount??order.grand_total),advance=num(order.payment_advance_amount??0),due=num(order.payment_due_amount??0);
     if(!Number.isFinite(total)||total<=0||total>50000)return reply(409,{ok:false,code:total>50000?"ewaybill_required":"invalid_order_total"});
-    const cod=order.payment_method==="cod"?due:0;
-    if(order.payment_method!="cod"&&order.payment_method!="cashfree")return reply(409,{ok:false,code:"unsupported_payment_mode"});
-    if(order.payment_method==="cashfree"||advance>0){
+    const paymentMethod=String(order.payment_method??"").trim().toLowerCase();
+    const paymentStatus=String(order.payment_status??"").trim().toLowerCase();
+    const codOrder=paymentMethod==="cod";
+    if(!Number.isFinite(advance)||advance<0||!Number.isFinite(due)||due<0||Math.abs(advance+due-total)>0.01)return reply(409,{ok:false,code:"payment_balance_mismatch"});
+    if(codOrder){
+      const fullCod=paymentStatus==="unpaid"&&advance===0&&due>0;
+      const partialCod=paymentStatus==="partially_paid"&&advance>0&&due>0;
+      if(!fullCod&&!partialCod)return reply(409,{ok:false,code:"cod_balance_mismatch"});
+    }else if(paymentMethod!=="cashfree"||paymentStatus!=="paid"||due!==0||advance!==0)return reply(409,{ok:false,code:"prepaid_status_mismatch"});
+    const cod=codOrder?due:0;
+    if(paymentMethod==="cashfree"||advance>0){
       const {data:payment,error:paymentError}=await auth.functions.invoke("cashfree-verify-dispatch",{body:{orderId:order.id,status:"verify_only"}});
       if(paymentError||payment?.ok!==true||payment?.verified!==true)return reply(409,{ok:false,code:"cashfree_verification_required"});
     }

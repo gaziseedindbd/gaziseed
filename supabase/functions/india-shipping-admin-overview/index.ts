@@ -16,7 +16,7 @@ Deno.serve(async req=>{
   const [admin,country]=await Promise.all([client.rpc("is_admin"),client.rpc("current_admin_country")]);
   if(admin.error||country.error||admin.data!==true||String(country.data??"").toUpperCase()!=="IN")return reply(403,{ok:false});
   const db=createClient(url,JSON.parse(secret).default,{auth:{persistSession:false,autoRefreshToken:false}});
-  const {data:orders,error:orderError}=await db.from("orders").select("id,order_number,customer_name,delivery_address,status,payment_status,payment_method,payment_advance_amount,payment_due_amount,cashfree_dispatch_verified_at,grand_total,created_at").eq("country_code","IN").order("created_at",{ascending:false}).limit(60);
+  const {data:orders,error:orderError}=await db.from("orders").select("id,order_number,customer_name,delivery_address,status,payment_status,payment_method,payment_advance_amount,payment_due_amount,cashfree_dispatch_verified_at,final_amount,grand_total,created_at").eq("country_code","IN").order("created_at",{ascending:false}).limit(60);
   if(orderError)return reply(503,{ok:false,code:"orders_unavailable"});
   const ids=(orders??[]).map(x=>x.id);
   const [{data:orderItems,error:itemError},{data:packageProfiles,error:profileError}]=await Promise.all([
