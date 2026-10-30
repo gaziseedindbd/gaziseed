@@ -96,9 +96,13 @@ Deno.serve(async(req:Request)=>{
     if(claimError||claimedResult!==true)return reply(409,{ok:false,code:"booking_claim_failed"});
     claimed=true;
     const orderRef=`GZ${String(order.id).replaceAll("-","").slice(0,32)}`;
+    // Delhivery supplies seller GST from this account's Company Details default.
+    // Active India catalog items are vegetable/flower seeds for sowing (CBIC heading 1209).
     const shipment={name:clean(order.customer_name,100),add:clean(order.delivery_address,250),pin:parcel.delivery_pin,
       city:liveQuote.city,state:liveQuote.state,country:"India",phone:String(order.customer_phone).replace(/\D/g,"").slice(-12),order:orderRef,
       payment_mode:cod>0?"COD":"Pre-paid",products_desc:productDesc,quantity:items.reduce((sum:number,i:Record<string,unknown>)=>sum+Math.max(0,Math.trunc(num(i.quantity))),0),
+      hsn_code:"1209",
+      hsn_code:"1209",
       total_amount:total,cod_amount:cod,weight:Math.round(weight*1000),shipment_length:dims[0],shipment_width:dims[1],shipment_height:dims[2]};
     const body=new URLSearchParams({format:"json",data:JSON.stringify({pickup_location:{name:location},shipments:[shipment]})});
     const response=await fetch(new URL("/api/cmu/create.json",base),{method:"POST",headers:{Authorization:`Token ${token}`,Accept:"application/json","Content-Type":"application/x-www-form-urlencoded"},body,cache:"no-store",signal:AbortSignal.timeout(20000)});
