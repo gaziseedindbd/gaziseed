@@ -24,17 +24,32 @@ Deno.serve(async req=>{
    if(typeof data[key]!=="number"||!Number.isFinite(data[key])||data[key]<(key==="weight_kg"?0.01:1)||data[key]>max)return reply(400,{ok:false,code:"invalid_dimensions"});
   }
   if(typeof data.packing_notes!=="string"||data.packing_notes.length>500)return reply(400,{ok:false,code:"invalid_notes"});
+  const profileId=data.package_profile_id===null||data.package_profile_id===undefined||data.package_profile_id===""
+   ?null:data.package_profile_id;
+  if(profileId!==null&&(typeof profileId!=="string"||!/^[a-f0-9-]{36}$/i.test(profileId)))return reply(400,{ok:false,code:"invalid_package_profile"});
+  if(data.fragile_shipment!==undefined&&typeof data.fragile_shipment!=="boolean")return reply(400,{ok:false,code:"invalid_handling_option"});
   const db=createClient(url,JSON.parse(secrets).default,{auth:{persistSession:false,autoRefreshToken:false}});
   const {data:order,error:orderError}=await db.from("orders").select("id").eq("id",data.order_id).eq("country_code","IN").maybeSingle();
   if(orderError)return reply(503,{ok:false});
   if(!order)return reply(404,{ok:false});
+  if(profileId){
+   const {data:profile,error:profileError}=await db.from("india_shipping_package_profiles")
+    .select("id,weight_kg,length_cm,breadth_cm,height_cm,fragile")
+    .eq("id",profileId).eq("country_code","IN").eq("is_active",true).maybeSingle();
+   if(profileError)return reply(503,{ok:false,code:"package_profile_unavailable"});
+   if(!profile)return reply(404,{ok:false,code:"package_profile_not_found"});
+   if(Number(profile.weight_kg)!==Number(data.weight_kg)||Number(profile.length_cm)!==Number(data.length_cm)||
+      Number(profile.breadth_cm)!==Number(data.breadth_cm)||Number(profile.height_cm)!==Number(data.height_cm)||
+      profile.fragile!==(data.fragile_shipment===true))return reply(409,{ok:false,code:"package_profile_changed"});
+  }
   const {data:shipment,error:shipmentError}=await db.from("india_shipping_shipments").select("external_shipment_id,awb").eq("order_id",data.order_id).maybeSingle();
   if(shipmentError)return reply(503,{ok:false});
   if(shipment?.external_shipment_id||shipment?.awb)return reply(409,{ok:false,code:"shipment_already_created"});
   const {error:saveError}=await db.from("india_shipping_preparations").upsert({
    order_id:data.order_id,country_code:"IN",delivery_pin:data.delivery_pin,
    weight_kg:data.weight_kg,length_cm:data.length_cm,breadth_cm:data.breadth_cm,height_cm:data.height_cm,
-   packing_notes:data.packing_notes,updated_by:user.data.user.id,updated_at:new Date().toISOString()
+   packing_notes:data.packing_notes,package_profile_id:profileId,fragile_shipment:data.fragile_shipment===true,
+   updated_by:user.data.user.id,updated_at:new Date().toISOString()
   },{onConflict:"order_id"});
   if(saveError){console.error("India shipping draft save failed",saveError.code);return reply(503,{ok:false,code:"draft_save_failed"});}
   return reply(200,{ok:true,saved:true,bookingCreated:false});

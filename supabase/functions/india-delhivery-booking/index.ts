@@ -85,7 +85,7 @@ Deno.serve(async(req:Request)=>{
     const currentCharge=liveQuote.amount;
     const accepted=num(input.accepted_charge);
     if(currentCharge>accepted+1)return reply(409,{ok:false,code:"delhivery_quote_price_changed",current_charge:currentCharge,currency:"INR",environment:env});
-    const productDesc=clean(items.map((i:Record<string,unknown>)=>clean(i.product_name,120)).join(", "),250);
+    const productDesc=clean(items.map((i:Record<string,unknown>)=>`${clean(i.product_name,100)} x ${Math.max(0,Math.trunc(num(i.quantity)))}`).join(", "),250);
     if(!productDesc)return reply(409,{ok:false,code:"product_description_required"});
     const requestKey=crypto.randomUUID();
     const {data:reserved,error:reserveError}=await db.rpc("reserve_india_delhivery_booking",{p_order:order.id,p_actor:identity.user.id,p_key:requestKey});
@@ -100,10 +100,10 @@ Deno.serve(async(req:Request)=>{
     const shipment={name:clean(order.customer_name,100),add:clean(order.delivery_address,250),pin:parcel.delivery_pin,
       city:liveQuote.city,state:liveQuote.state,country:"India",phone:String(order.customer_phone).replace(/\D/g,"").slice(-12),order:orderRef,
       payment_mode:cod>0?"COD":"Pre-paid",products_desc:productDesc,quantity:items.reduce((sum:number,i:Record<string,unknown>)=>sum+Math.max(0,Math.trunc(num(i.quantity))),0),
-      hsn_code:"1209",
+      invoice_reference:orderRef,
       hsn_code:"1209",
       total_amount:total,cod_amount:cod,weight:Math.round(weight*1000),shipment_length:dims[0],shipment_width:dims[1],shipment_height:dims[2]};
-    const body=new URLSearchParams({format:"json",data:JSON.stringify({pickup_location:{name:location},shipments:[shipment]})});
+    const body=new URLSearchParams({format:"json",data:JSON.stringify({pickup_location:{name:location},shipments:[shipment],...(parcel.fragile_shipment===true?{fragile_shipment:true}:{})})});
     const response=await fetch(new URL("/api/cmu/create.json",base),{method:"POST",headers:{Authorization:`Token ${token}`,Accept:"application/json","Content-Type":"application/x-www-form-urlencoded"},body,cache:"no-store",signal:AbortSignal.timeout(20000)});
     const payload:unknown=await response.json().catch(()=>null);
     if(!response.ok||!isRecord(payload)||payload.success!==true||!Array.isArray(payload.packages)||payload.packages.length!==1||!isRecord(payload.packages[0]))throw new Error("manifest_outcome_uncertain");
