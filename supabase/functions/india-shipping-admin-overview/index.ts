@@ -19,15 +19,22 @@ Deno.serve(async req=>{
   const {data:orders,error:orderError}=await db.from("orders").select("id,order_number,customer_name,delivery_address,status,payment_status,payment_method,payment_advance_amount,payment_due_amount,cashfree_dispatch_verified_at,grand_total,created_at").eq("country_code","IN").order("created_at",{ascending:false}).limit(60);
   if(orderError)return reply(503,{ok:false,code:"orders_unavailable"});
   const ids=(orders??[]).map(x=>x.id);
+  const [{data:orderItems,error:itemError},{data:packageProfiles,error:profileError}]=await Promise.all([
+    ids.length?db.from("order_items").select("id,order_id,product_name,quantity,total_price").in("order_id",ids).gt("quantity",0):{data:[],error:null},
+    db.from("india_shipping_package_profiles").select("id,name,package_type,weight_kg,length_cm,breadth_cm,height_cm,product_keywords,min_item_count,max_item_count,fragile,packing_notes,is_active")
+      .eq("country_code","IN").eq("is_active",true).order("name").limit(200),
+  ]);
+  if(itemError)return reply(503,{ok:false,code:"order_items_unavailable"});
+  if(profileError)return reply(503,{ok:false,code:"package_profiles_unavailable"});
   const {data:shipments,error:shipError}=ids.length?await db.from("india_shipping_shipments").select("id,order_id,provider,creation_state,external_shipment_id,awb,courier_company_id,tracking_status,pickup_approved_at,pickup_request_state,external_pickup_id,reconcile_reason").in("order_id",ids):{data:[],error:null};
   if(shipError)return reply(503,{ok:false,code:"shipments_unavailable"});
   const shipmentIds=(shipments??[]).map(x=>x.id);
   const {data:events,error:eventError}=shipmentIds.length?await db.from("india_shipping_webhook_events").select("shipment_id,event_status,received_at,event_occurred_at").in("shipment_id",shipmentIds).order("received_at",{ascending:false}).limit(180):{data:[],error:null};
   if(eventError)return reply(503,{ok:false,code:"events_unavailable"});
-  const {data:preparations,error:prepError}=ids.length?await db.from("india_shipping_preparations").select("order_id,delivery_pin,weight_kg,length_cm,breadth_cm,height_cm,packing_notes,updated_at").in("order_id",ids):{data:[],error:null};
+  const {data:preparations,error:prepError}=ids.length?await db.from("india_shipping_preparations").select("order_id,delivery_pin,weight_kg,length_cm,breadth_cm,height_cm,packing_notes,package_profile_id,fragile_shipment,updated_at").in("order_id",ids):{data:[],error:null};
   if(prepError)return reply(503,{ok:false,code:"preparations_unavailable"});
   const {data:pickupBatch,error:pickupError}=await db.from("india_delhivery_pickup_batches").select("pickup_location,state,expected_package_count,pickup_date,pickup_time,external_pickup_id,updated_at").eq("pickup_location",Deno.env.get("DELHIVERY_PICKUP_LOCATION")??"GAZISEEDB2C-B2C").maybeSingle();
   if(pickupError)return reply(503,{ok:false,code:"pickup_state_unavailable"});
-  return reply(200,{ok:true,orders:orders??[],shipments:shipments??[],events:events??[],preparations:preparations??[],pickupBatch:pickupBatch??null});
+  return reply(200,{ok:true,orders:orders??[],orderItems:orderItems??[],shipments:shipments??[],events:events??[],preparations:preparations??[],packageProfiles:packageProfiles??[],pickupBatch:pickupBatch??null});
  }catch{return reply(503,{ok:false});}
 });

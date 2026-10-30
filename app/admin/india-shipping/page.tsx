@@ -1,18 +1,23 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useCallback,useEffect,useState} from 'react';
 import Link from 'next/link';
 import {supabase} from '@/lib/supabase/client';
 type Order={id:string;order_number:string|null;customer_name:string|null;delivery_address:string|null;status:string|null;payment_status:string|null;payment_method:string|null;payment_advance_amount:number|null;payment_due_amount:number|null;cashfree_dispatch_verified_at:string|null;grand_total:number|null;created_at:string};
+type OrderItem={id:string;order_id:string;product_name:string;quantity:number;total_price:number};
 type Shipment={id:string;order_id:string;provider:string|null;creation_state:string|null;external_shipment_id:string|null;awb:string|null;courier_company_id:number|null;tracking_status:string|null;pickup_approved_at:string|null;pickup_request_state:string|null;external_pickup_id:string|null;reconcile_reason:string|null};
-type Preparation={order_id:string;delivery_pin:string;weight_kg:number;length_cm:number;breadth_cm:number;height_cm:number;packing_notes:string;updated_at:string};
+type Preparation={order_id:string;delivery_pin:string;weight_kg:number;length_cm:number;breadth_cm:number;height_cm:number;packing_notes:string;package_profile_id:string|null;fragile_shipment:boolean;updated_at:string};
+type PackageProfile={id:string;name:string;package_type:'mailer'|'box'|'custom';weight_kg:number;length_cm:number;breadth_cm:number;height_cm:number;product_keywords:string[];min_item_count:number;max_item_count:number|null;fragile:boolean;packing_notes:string;is_active:boolean};
 type Event={shipment_id:string;event_status:string|null;received_at:string;event_occurred_at:string|null};
 type PickupBatch={pickup_location:string;state:string;expected_package_count:number;pickup_date:string|null;pickup_time:string|null;external_pickup_id:string|null;updated_at:string}|null;
 const formatDate=(s:string)=>new Date(s).toLocaleString('en-IN');
 export default function IndiaShippingDashboard(){
- const [orders,setOrders]=useState<Order[]>([]),[shipments,setShipments]=useState<Shipment[]>([]),[events,setEvents]=useState<Event[]>([]),[pickupBatch,setPickupBatch]=useState<PickupBatch>(null);
+ const [orders,setOrders]=useState<Order[]>([]),[orderItems,setOrderItems]=useState<OrderItem[]>([]),[packageProfiles,setPackageProfiles]=useState<PackageProfile[]>([]),[shipments,setShipments]=useState<Shipment[]>([]),[events,setEvents]=useState<Event[]>([]),[pickupBatch,setPickupBatch]=useState<PickupBatch>(null);
  const [preparations,setPreparations]=useState<Preparation[]>([]);
  const [selected,setSelected]=useState(''),[search,setSearch]=useState(''),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const [pin,setPin]=useState(''),[weight,setWeight]=useState(''),[length,setLength]=useState(''),[breadth,setBreadth]=useState(''),[height,setHeight]=useState(''),[notes,setNotes]=useState('');
+ const [packageProfileId,setPackageProfileId]=useState(''),[fragile,setFragile]=useState(false);
+ const [profileSuggestion,setProfileSuggestion]=useState('');
+ const [profileName,setProfileName]=useState(''),[editingProfileId,setEditingProfileId]=useState(''),[profileType,setProfileType]=useState<'mailer'|'box'|'custom'>('mailer'),[profileKeywords,setProfileKeywords]=useState(''),[profileMinItems,setProfileMinItems]=useState('1'),[profileMaxItems,setProfileMaxItems]=useState(''),[profileSaving,setProfileSaving]=useState(false),[profileMessage,setProfileMessage]=useState('');
  const [saving,setSaving]=useState(false),[saveMessage,setSaveMessage]=useState('');
  const [mobileDetails,setMobileDetails]=useState(false);
  const [preflightLoading,setPreflightLoading]=useState(false),[preflightResult,setPreflightResult]=useState('');
@@ -23,16 +28,26 @@ export default function IndiaShippingDashboard(){
  useEffect(()=>{setPickupDate(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata'}).format(new Date()));},[]);
  function chooseOrder(id:string){if(saving||preflightLoading||quoteLoading)return;setSelected(id);setQuote(null);setQuoteMessage('');setPreflightResult('');setSaveMessage('');setMobileDetails(true);window.scrollTo({top:0,behavior:'smooth'});}
  function backToOrders(){if(saving||preflightLoading||quoteLoading)return;setMobileDetails(false);window.scrollTo({top:0,behavior:'smooth'});}
+ const invalidateParcelQuote=useCallback(()=>{setQuote(null);setQuoteMessage('');},[]);
+ const applyPackageProfile=useCallback((profile:PackageProfile)=>{setPackageProfileId(profile.id);setWeight(String(profile.weight_kg));setLength(String(profile.length_cm));setBreadth(String(profile.breadth_cm));setHeight(String(profile.height_cm));setNotes(profile.packing_notes);setFragile(profile.fragile);setSaveMessage('');invalidateParcelQuote();},[invalidateParcelQuote]);
  useEffect(()=>{let alive=true;(async()=>{try{
  const {data:session}=await supabase.auth.getSession();
  if(!session.session?.access_token)throw new Error('India Admin login required');
  const {data,error:invokeError}=await supabase.functions.invoke('india-shipping-admin-overview',{
  method:'POST',body:{},headers:{Authorization:'Bearer '+session.session.access_token,'x-gazi-country':'IN'}});
  if(invokeError||data?.ok!==true||!Array.isArray(data.orders))throw new Error('Cannot load India shipping data. Verify India Admin access.');
- if(alive){setOrders(data.orders);setShipments(data.shipments??[]);setEvents(data.events??[]);setPreparations(data.preparations??[]);setPickupBatch(data.pickupBatch??null);}
+ if(alive){setOrders(data.orders);setOrderItems(data.orderItems??[]);setPackageProfiles(data.packageProfiles??[]);setShipments(data.shipments??[]);setEvents(data.events??[]);setPreparations(data.preparations??[]);setPickupBatch(data.pickupBatch??null);}
  }catch(e){if(alive)setError(e instanceof Error?e.message:'Unable to load shipping data');}
  finally{if(alive)setLoading(false);}})();return()=>{alive=false};},[]);
- useEffect(()=>{const saved=preparations.find(p=>p.order_id===selected);setPin(saved?.delivery_pin??'');setWeight(saved?String(saved.weight_kg):'');setLength(saved?String(saved.length_cm):'');setBreadth(saved?String(saved.breadth_cm):'');setHeight(saved?String(saved.height_cm):'');setNotes(saved?.packing_notes??'');},[selected,preparations]);
+useEffect(()=>{if(!selected)return;const saved=preparations.find(p=>p.order_id===selected);setPin(saved?.delivery_pin??'');setFragile(saved?.fragile_shipment??false);setPackageProfileId(saved?.package_profile_id??'');setProfileSuggestion('');
+  if(saved){setWeight(String(saved.weight_kg));setLength(String(saved.length_cm));setBreadth(String(saved.breadth_cm));setHeight(String(saved.height_cm));setNotes(saved.packing_notes??'');return;}
+  setWeight('');setLength('');setBreadth('');setHeight('');setNotes('');
+  const items=orderItems.filter(item=>item.order_id===selected),itemCount=items.reduce((sum,item)=>sum+Math.max(0,Number(item.quantity)||0),0),names=items.map(item=>item.product_name.toLowerCase());
+  const matches=packageProfiles.filter(profile=>itemCount>=profile.min_item_count&&(profile.max_item_count===null||itemCount<=profile.max_item_count)&&
+    (!profile.product_keywords.length||names.length>0&&names.every(name=>profile.product_keywords.some(keyword=>name.includes(keyword.toLowerCase())))));
+  if(matches.length===1){applyPackageProfile(matches[0]);setProfileSuggestion(`Suggested preset: ${matches[0].name}. Check the packed parcel before saving.`);}
+  else if(matches.length>1)setProfileSuggestion(`${matches.length} presets match this order. Choose the correct package size below.`);
+ },[selected,preparations,orderItems,packageProfiles,applyPackageProfile]);
  async function checkPaymentPreflight(){
   if(!selected||preflightLoading)return;
   setPreflightLoading(true);setPreflightResult('');
@@ -158,7 +173,7 @@ export default function IndiaShippingDashboard(){
    const {data:session}=await supabase.auth.getSession();
    if(!session.session?.access_token)throw new Error('India Admin login required');
    const {data,error:saveError}=await supabase.functions.invoke('india-shipping-preparation',{method:'POST',
-    body:{order_id:draftOrderId,delivery_pin:pin,weight_kg:dimensions[0],length_cm:dimensions[1],breadth_cm:dimensions[2],height_cm:dimensions[3],packing_notes:notes},
+    body:{order_id:draftOrderId,delivery_pin:pin,weight_kg:dimensions[0],length_cm:dimensions[1],breadth_cm:dimensions[2],height_cm:dimensions[3],packing_notes:notes,package_profile_id:packageProfileId||null,fragile_shipment:fragile},
     headers:{Authorization:'Bearer '+session.session.access_token,'x-gazi-country':'IN'}});
    if(saveError||data?.ok!==true){
     let code:unknown=data?.code;
@@ -167,6 +182,9 @@ export default function IndiaShippingDashboard(){
      invalid_pin:'Delivery PIN must contain six digits.',
      invalid_dimensions:'Check parcel weight and dimensions.',
      invalid_notes:'Packing notes are too long.',
+     invalid_package_profile:'Selected package preset is invalid. Choose it again or save as a custom parcel.',
+     package_profile_changed:'Preset details changed. Re-apply the preset before saving.',
+     package_profile_not_found:'This preset is no longer active. Choose another package preset.',
      shipment_already_created:'This order already has a shipment. Editing is disabled.',
      draft_save_failed:'Database could not save the draft. Please retry or ask admin to check logs.',
     };
@@ -177,14 +195,50 @@ export default function IndiaShippingDashboard(){
    if(refreshError||confirmed?.ok!==true||!Array.isArray(confirmed.preparations)){
     throw new Error('Save response received, but draft could not be rechecked. Refresh the page before making further changes.');
    }
-   setPreparations(confirmed.preparations);
+   setPreparations(confirmed.preparations);setPackageProfiles(confirmed.packageProfiles??packageProfiles);
    const saved=confirmed.preparations.find((p:Preparation)=>p.order_id===draftOrderId);
    const isPersisted=saved&&saved.delivery_pin===pin&&Number(saved.weight_kg)===dimensions[0]&&
     Number(saved.length_cm)===dimensions[1]&&Number(saved.breadth_cm)===dimensions[2]&&Number(saved.height_cm)===dimensions[3]&&
-    saved.packing_notes===notes;
+    saved.packing_notes===notes&&saved.package_profile_id===(packageProfileId||null)&&saved.fragile_shipment===fragile;
    if(!isPersisted)throw new Error('Draft not confirmed in database. Refresh and check the saved values.');
    setSaveMessage('Draft saved and verified from database. No shipment or AWB was created.');
   }catch(e){setSaveMessage(e instanceof Error?e.message:'Unable to save');}finally{setSaving(false);}
+ }
+ async function savePackageProfile(){
+  if(profileSaving)return;setProfileSaving(true);setProfileMessage('');
+  try{
+   const dimensions=[weight,length,breadth,height].map(Number);
+   if(profileName.trim().length<2)throw new Error('Give this package preset a short name, such as “Seed mailer 1–5”.');
+   if(dimensions.some((n,i)=>!Number.isFinite(n)||n<(i===0?0.01:1)||n>(i===0?100:200)))throw new Error('Enter the correct parcel weight and dimensions before saving a preset.');
+   const min=Number(profileMinItems),max=profileMaxItems.trim()?Number(profileMaxItems):null;
+   if(!Number.isInteger(min)||min<1||min>1000||(max!==null&&(!Number.isInteger(max)||max<min||max>1000)))throw new Error('Check the order quantity range for this preset.');
+   const {data:session}=await supabase.auth.getSession();if(!session.session?.access_token)throw new Error('India Admin login required');
+   const {data,error:invokeError}=await supabase.functions.invoke('india-shipping-package-profiles',{method:'POST',body:{action:'save',id:editingProfileId||undefined,name:profileName.trim(),package_type:profileType,
+    weight_kg:dimensions[0],length_cm:dimensions[1],breadth_cm:dimensions[2],height_cm:dimensions[3],product_keywords:profileKeywords.split(',').map(x=>x.trim()).filter(Boolean),
+    min_item_count:min,max_item_count:max,fragile,packing_notes:notes},headers:{Authorization:'Bearer '+session.session.access_token,'x-gazi-country':'IN'}});
+   if(invokeError||data?.ok!==true){const code=String(data?.code??'package_profile_save_failed');throw new Error(code==='package_profile_name_exists'?'A preset with this name already exists. Choose a different name.':'Could not save this package preset. Please review the fields and retry.');}
+   const profile=data.profile as PackageProfile;setPackageProfiles(current=>[...current.filter(x=>x.id!==profile.id),profile].sort((a,b)=>a.name.localeCompare(b.name)));
+   applyPackageProfile(profile);setEditingProfileId('');setProfileMessage(`“${profile.name}” saved. It will be suggested for matching products and quantities.`);
+  }catch(e){setProfileMessage(e instanceof Error?e.message:'Could not save package preset.');}
+  finally{setProfileSaving(false);}
+ }
+ async function archivePackageProfile(id:string){
+  if(profileSaving||!window.confirm('Hide this package preset from future orders? Existing saved shipment drafts will keep their measurements.'))return;
+  setProfileSaving(true);setProfileMessage('');
+  try{
+   const {data:session}=await supabase.auth.getSession();if(!session.session?.access_token)throw new Error('India Admin login required');
+   const {data,error:invokeError}=await supabase.functions.invoke('india-shipping-package-profiles',{method:'POST',body:{action:'archive',id},headers:{Authorization:'Bearer '+session.session.access_token,'x-gazi-country':'IN'}});
+   if(invokeError||data?.ok!==true)throw new Error('Could not hide this preset. Refresh the page and retry.');
+   setPackageProfiles(current=>current.filter(x=>x.id!==id));
+   if(packageProfileId===id)setPackageProfileId('');
+   setProfileMessage('Preset hidden from future orders. Existing drafts are unchanged.');
+  }catch(e){setProfileMessage(e instanceof Error?e.message:'Could not update package preset.');}
+  finally{setProfileSaving(false);}
+ }
+ function editPackageProfile(profile:PackageProfile){
+  setEditingProfileId(profile.id);setProfileName(profile.name);setProfileType(profile.package_type);setProfileKeywords(profile.product_keywords.join(', '));
+  setProfileMinItems(String(profile.min_item_count));setProfileMaxItems(profile.max_item_count===null?'':String(profile.max_item_count));applyPackageProfile(profile);
+  setProfileMessage(`Editing “${profile.name}”. Save to update this preset.`);
  }
  const filtered=orders.filter(x=>([x.order_number,x.customer_name,x.id].join(' ').toLowerCase().includes(search.toLowerCase())));
  const order=orders.find(x=>x.id===selected)??null;
@@ -199,7 +253,8 @@ export default function IndiaShippingDashboard(){
  const advance=Number(order?.payment_advance_amount??0);
  const paymentNeedsVerification=Boolean(order&&(order.payment_method==='cashfree'||(isCod&&advance>0)));
  const dispatchVerified=Boolean(order?.cashfree_dispatch_verified_at);
- const preparationReady=Boolean(preparation&&/^[1-9][0-9]{5}$/.test(preparation.delivery_pin)&&
+ const preparationMatchesForm=Boolean(preparation&&preparation.delivery_pin===pin&&Number(preparation.weight_kg)===Number(weight)&&Number(preparation.length_cm)===Number(length)&&Number(preparation.breadth_cm)===Number(breadth)&&Number(preparation.height_cm)===Number(height)&&preparation.packing_notes===notes&&preparation.package_profile_id===(packageProfileId||null)&&preparation.fragile_shipment===fragile);
+ const preparationReady=Boolean(preparationMatchesForm&&preparation&&/^[1-9][0-9]{5}$/.test(preparation.delivery_pin)&&
   [Number(preparation.weight_kg),Number(preparation.length_cm),Number(preparation.breadth_cm),Number(preparation.height_cm)].every((n,i)=>Number.isFinite(n)&&n>=(i===0?0.01:1)));
  const readyPickupShipments=shipments.filter(s=>s.provider==='delhivery'&&s.creation_state==='awb_assigned'&&Boolean(s.awb)&&s.pickup_request_state==='not_requested');
  const preflightBlocks=order?[
@@ -238,6 +293,7 @@ export default function IndiaShippingDashboard(){
       <p><strong>Order:</strong> {order.order_number||order.id}</p>
       <p><strong>Customer:</strong> {order.customer_name||'Not available'}</p>
       <p><strong>Delivery address:</strong> {order.delivery_address||'Missing — must verify before booking'}</p>
+      <div className="border-t pt-2"><strong>Items in this order:</strong>{orderItems.filter(item=>item.order_id===order.id).length===0?<p className="mt-1 text-amber-700">Product lines are unavailable; verify the order before packing.</p>:<ul className="mt-1 space-y-1">{orderItems.filter(item=>item.order_id===order.id).map(item=><li key={item.id} className="flex justify-between gap-3"><span>{item.product_name} × {item.quantity}</span><span>₹{Number(item.total_price||0).toFixed(2)}</span></li>)}</ul>}</div>
       <p><strong>Order status:</strong> {order.status||'Unknown'}</p>
       <p><strong>Payment status (display only):</strong> {order.payment_status||'Unknown'} — dispatch still requires server-side Cashfree verification</p>
       <p><strong>External shipment:</strong> {shipment?.external_shipment_id||'Not created'}</p>
@@ -258,11 +314,29 @@ export default function IndiaShippingDashboard(){
       <p className="text-xs font-medium text-gray-700">This check is read-only. It does not create a shipment or approve a pickup; each action needs its own explicit confirmation.</p>
      </div>
      <div className="space-y-3 rounded-lg border p-4"><h3 className="font-semibold">Shipping Preparation · Save Draft</h3>
-      <p className="text-xs text-gray-600">Check the customer address before entering the PIN. Minimum parcel weight 0.01 kg and each dimension 1 cm. Draft measurements do not confirm payment or authorize dispatch.</p>
+      <p className="text-xs text-gray-600">Check the customer address before entering the PIN. Choose a saved package preset to fill the repeated size in one click, then verify it against the packed parcel. A draft does not book a shipment.</p>
+      <label className="flex flex-col gap-1 text-sm">Quick package preset<select className="rounded-lg border p-3" value={packageProfileId} onChange={e=>{const profile=packageProfiles.find(x=>x.id===e.target.value);setProfileSuggestion('');if(profile)applyPackageProfile(profile);else setPackageProfileId('');}}><option value="">Choose preset or enter custom size</option>{packageProfiles.map(profile=><option key={profile.id} value={profile.id}>{profile.name} · {profile.weight_kg} kg · {profile.length_cm}×{profile.breadth_cm}×{profile.height_cm} cm</option>)}</select></label>
+      {profileSuggestion&&<p role="status" className="text-xs text-emerald-800">{profileSuggestion}</p>}
+      {packageProfiles.length===0&&<p className="text-xs text-amber-800">No reusable package presets yet. Enter one parcel’s measured size, then save it below as a preset.</p>}
       <div className="grid gap-3 sm:grid-cols-2">
-       {([["Delivery PIN",pin,setPin,"700016"],["Weight (kg)",weight,setWeight,"0.5"],["Length (cm)",length,setLength,"15"],["Breadth (cm)",breadth,setBreadth,"10"],["Height (cm)",height,setHeight,"5"]] as const).map(([title,value,setter,placeholder])=><label key={title} className="flex flex-col gap-1 text-sm">{title}<input className="w-full rounded-lg border p-3" value={value} onChange={e=>setter(e.target.value)} placeholder={placeholder} inputMode={title==="Delivery PIN"?"numeric":"decimal"}/></label>)}
+       {([["Delivery PIN",pin,setPin,"700016"],["Weight (kg)",weight,setWeight,"0.5"],["Length (cm)",length,setLength,"15"],["Breadth (cm)",breadth,setBreadth,"10"],["Height (cm)",height,setHeight,"5"]] as const).map(([title,value,setter,placeholder])=><label key={title} className="flex flex-col gap-1 text-sm">{title}<input className="w-full rounded-lg border p-3" value={value} onChange={e=>{setter(e.target.value);if(title!=="Delivery PIN"){setPackageProfileId('');setProfileSuggestion('');}invalidateParcelQuote();}} placeholder={placeholder} inputMode={title==="Delivery PIN"?"numeric":"decimal"}/></label>)}
       </div>
       <label className="flex flex-col gap-1 text-sm">Packing notes (optional)<textarea className="rounded-lg border p-3" maxLength={500} rows={2} value={notes} onChange={e=>setNotes(e.target.value)} /></label>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={fragile} onChange={e=>{setFragile(e.target.checked);setPackageProfileId('');}} /> Fragile shipment</label>
+      <details className="rounded-lg border p-3"><summary className="cursor-pointer font-semibold">Save or manage reusable presets ({packageProfiles.length})</summary>
+       <div className="mt-3 space-y-4">
+        <p className="text-xs text-gray-600">Create a preset from the measured parcel. Optional product keywords and packet-count range let the page auto-suggest it for matching repeat orders.</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+         <label className="flex flex-col gap-1 text-sm">Preset name<input className="rounded-lg border p-3" value={profileName} onChange={e=>setProfileName(e.target.value)} placeholder="e.g. Seed mailer · 1–5 packets" maxLength={80}/></label>
+         <label className="flex flex-col gap-1 text-sm">Package type<select className="rounded-lg border p-3" value={profileType} onChange={e=>setProfileType(e.target.value as 'mailer'|'box'|'custom')}><option value="mailer">Mailer / flyer</option><option value="box">Box</option><option value="custom">Custom packaging</option></select></label>
+         <label className="flex flex-col gap-1 text-sm">Product keywords (optional, comma separated)<input className="rounded-lg border p-3" value={profileKeywords} onChange={e=>setProfileKeywords(e.target.value)} placeholder="chilli, cucumber, tomato" /></label>
+         <div className="grid grid-cols-2 gap-2"><label className="flex flex-col gap-1 text-sm">Min item quantity<input type="number" min="1" max="1000" className="rounded-lg border p-3" value={profileMinItems} onChange={e=>setProfileMinItems(e.target.value)} /></label><label className="flex flex-col gap-1 text-sm">Max quantity (optional)<input type="number" min="1" max="1000" className="rounded-lg border p-3" value={profileMaxItems} onChange={e=>setProfileMaxItems(e.target.value)} placeholder="No limit" /></label></div>
+        </div>
+        <div className="flex flex-wrap gap-2"><button type="button" onClick={savePackageProfile} disabled={profileSaving||!selected} className="rounded-lg border border-emerald-700 px-4 py-3 text-sm font-semibold disabled:opacity-50">{profileSaving?'Saving preset…':editingProfileId?'Update package preset':'Save current parcel as preset'}</button>{editingProfileId&&<button type="button" onClick={()=>{setEditingProfileId('');setProfileName('');setProfileMessage('Preset edit cancelled.');}} className="rounded-lg border px-4 py-3 text-sm">Cancel edit</button>}</div>
+        {packageProfiles.length>0&&<div className="space-y-2">{packageProfiles.map(profile=><div key={profile.id} className="flex flex-wrap items-center justify-between gap-2 rounded border p-3 text-sm"><span><strong>{profile.name}</strong> · {profile.package_type} · {profile.weight_kg} kg · {profile.length_cm}×{profile.breadth_cm}×{profile.height_cm} cm · {profile.min_item_count}–{profile.max_item_count??'∞'} items{profile.product_keywords.length?` · ${profile.product_keywords.join(', ')}`:''}</span><div className="flex gap-2"><button type="button" onClick={()=>editPackageProfile(profile)} disabled={profileSaving||!selected} className="rounded border px-3 py-2 text-xs font-semibold disabled:opacity-50">Edit</button><button type="button" onClick={()=>archivePackageProfile(profile.id)} disabled={profileSaving} className="rounded border px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-50">Hide</button></div></div>)}</div>}
+        {profileMessage&&<p role="status" aria-live="polite" className="rounded border p-3 text-sm">{profileMessage}</p>}
+       </div>
+      </details>
       <button type="button" onClick={savePreparation} disabled={saving||!selected||Boolean(shipment?.awb||shipment?.external_shipment_id)} className="rounded-lg bg-emerald-700 px-5 py-3 font-semibold text-white disabled:opacity-50">{saving?"Saving…":"Save Preparation Draft"}</button>
       {saveMessage&&<p role="status" aria-live="polite" className="rounded-lg border p-3 text-sm">{saveMessage}</p>}
       {preparations.some(p=>p.order_id===selected)&&<p className="text-xs text-emerald-700">Saved draft available for this India order.</p>}
@@ -270,7 +344,8 @@ export default function IndiaShippingDashboard(){
      </div>
      <div className="rounded-lg border p-4"><h3 className="font-semibold">Courier Selection</h3>
       <p className="mt-2 text-sm">Get a read-only Delhivery quote. Booking rechecks the live price, PIN serviceability, payment, parcel snapshot and duplicate lock.</p>
-      <label className="mt-3 flex flex-col gap-1 text-sm">Verified pickup PIN<input inputMode="numeric" className="rounded-lg border p-3" value={pickupPin} onChange={e=>setPickupPin(e.target.value)} /></label>
+      {preparation&&!preparationMatchesForm&&<p role="status" className="mt-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Parcel details changed. Save the draft again before requesting a fresh quote.</p>}
+      <label className="mt-3 flex flex-col gap-1 text-sm">Verified pickup PIN<input inputMode="numeric" className="rounded-lg border p-3" value={pickupPin} onChange={e=>{setPickupPin(e.target.value);setQuote(null);setQuoteMessage('');}} /></label>
       <button type="button" className="mt-3 rounded-lg border border-emerald-700 px-4 py-3 text-sm font-semibold disabled:opacity-50" onClick={quoteSelectedOrder} disabled={quoteLoading||saving||bookingLoading||!preparationReady}>{quoteLoading?'Checking Delhivery…':'Get Delhivery Quote (read only)'}</button>
       {quote&&<p role="status" className="mt-3 font-semibold">{quote.name} · ₹{quote.estimatedCost.toFixed(2)} · {quote.environment}</p>}
       {quoteMessage&&<p role="status" className="mt-2 text-xs">{quoteMessage}</p>}
