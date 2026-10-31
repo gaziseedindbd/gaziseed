@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Bell, Loader2, Send } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
-import type { OrderSummary } from '@/lib/admin/customer-aggregation';
 
 type Branch = 'BD' | 'IN';
 type Recipient = { id: string; name: string; orders: number };
@@ -26,33 +25,11 @@ export default function CrmMessagesPage() {
         const { data: country, error: branchError } = await supabase.rpc('current_admin_country');
         if (branchError || (country !== 'BD' && country !== 'IN')) throw new Error('Admin branch যাচাই করা যায়নি।');
         const activeBranch = country as Branch;
-        const allOrders: OrderSummary[] = [];
-        for (let from = 0; ; from += 1000) {
-          const { data, error: orderError } = await supabase.from('orders')
-            .select('id,order_number,user_id,customer_name,customer_phone,customer_email,status,grand_total,created_at')
-            .eq('country_code', activeBranch).order('created_at', { ascending: false }).range(from, from + 999);
-          if (orderError) throw orderError;
-          const batch = (data || []) as OrderSummary[];
-          allOrders.push(...batch);
-          if (batch.length < 1000) break;
-        }
-        const userOrders = new Map<string, { name: string; orders: number }>();
-        for (const order of allOrders) {
-          if (!order.user_id) continue;
-          const existing = userOrders.get(order.user_id);
-          if (existing) existing.orders += 1;
-          else userOrders.set(order.user_id, { name: order.customer_name?.trim() || 'নাম নেই', orders: 1 });
-        }
-        const ids = Array.from(userOrders.keys());
-        const adminIds = new Set<string>();
-        for (let from = 0; from < ids.length; from += 100) {
-          const { data, error: adminError } = await supabase.from('admin_users').select('user_id').in('user_id', ids.slice(from, from + 100));
-          if (adminError) throw new Error('Admin account filter করা যায়নি। নিরাপত্তার জন্য recipient তালিকা বন্ধ রাখা হয়েছে।');
-          for (const row of data || []) adminIds.add(row.user_id);
-        }
+        const { data: audience, error: audienceError } = await supabase.rpc('crm_branch_message_recipients', { p_country_code: activeBranch });
+        if (audienceError) throw new Error('Eligible registered customer তালিকা যাচাই করা যায়নি। নিরাপত্তার জন্য recipient তালিকা বন্ধ রাখা হয়েছে.');
         if (!alive) return;
         setBranch(activeBranch);
-        setRecipients(Array.from(userOrders.entries()).filter(([id]) => !adminIds.has(id)).map(([id, v]) => ({ id, ...v })).sort((a, b) => a.name.localeCompare(b.name)));
+        setRecipients((audience || []).map((recipient: { user_id: string; display_name: string }) => ({ id: recipient.user_id, name: recipient.display_name, orders: 0 })).sort((a, b) => a.name.localeCompare(b.name)));
       } catch (e) {
         if (alive) setError(e instanceof Error ? e.message : 'Customer তালিকা লোড করা যায়নি।');
       } finally { if (alive) setLoading(false); }
@@ -87,7 +64,7 @@ export default function CrmMessagesPage() {
         {notice && <p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
         <button type="button" onClick={() => void send()} disabled={loading || sending || !title.trim() || !body.trim() || eligible.length === 0} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 font-bold text-primary-foreground disabled:opacity-50">{sending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Send className="h-4 w-4"/>}{sending ? 'পাঠানো হচ্ছে…' : `${eligible.length.toLocaleString('bn-BD')} জনকে account inbox-এ পাঠান`}</button>
       </section>
-      <aside className="h-fit rounded-2xl border border-border bg-card p-5"><div className="flex items-center gap-2"><Bell className="h-5 w-5 text-primary"/><h2 className="font-extrabold">Recipient</h2></div><p className="mt-2 text-3xl font-black">{loading ? '—' : recipients.length.toLocaleString('bn-BD')}</p><p className="text-sm text-muted-foreground">{branch === 'IN' ? 'India' : branch === 'BD' ? 'Bangladesh' : 'বর্তমান'} branch-এর registered customer, যাদের ওই branch-এ order আছে। Admin account বাদ।</p><p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900">পাঠানোর আগে preview ও recipient সংখ্যা যাচাই করুন। Send করলে নির্বাচিত customer-দের account inbox-এ message সঙ্গে সঙ্গে যোগ হবে।</p></aside>
+      <aside className="h-fit rounded-2xl border border-border bg-card p-5"><div className="flex items-center gap-2"><Bell className="h-5 w-5 text-primary"/><h2 className="font-extrabold">Recipient</h2></div><p className="mt-2 text-3xl font-black">{loading ? '—' : recipients.length.toLocaleString('bn-BD')}</p><p className="text-sm text-muted-foreground">{branch === 'IN' ? 'India' : branch === 'BD' ? 'Bangladesh' : 'বর্তমান'} branch-এর valid registered customer, যাদের ওই branch-এ order আছে। Admin ও account-বিহীন order বাদ।</p><p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900">পাঠানোর আগে preview ও recipient সংখ্যা যাচাই করুন। Send করলে নির্বাচিত customer-দের account inbox-এ message সঙ্গে সঙ্গে যোগ হবে।</p></aside>
     </div>
   </div>;
 }
