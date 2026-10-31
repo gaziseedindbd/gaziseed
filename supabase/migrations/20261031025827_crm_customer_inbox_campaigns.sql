@@ -28,7 +28,7 @@ create policy crm_message_campaign_admin_read on public.crm_customer_message_cam
     (public.is_admin() and public.can_access_country(country_code))
     or exists (
       select 1 from public.crm_customer_message_deliveries d
-      where d.campaign_id = id and d.user_id = (select auth.uid())
+      where d.campaign_id = crm_customer_message_campaigns.id and d.user_id = (select auth.uid())
     )
   );
 
