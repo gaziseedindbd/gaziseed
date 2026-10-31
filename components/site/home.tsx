@@ -114,7 +114,7 @@ export default function Home({ initialBanners = [], initialCategories = [], init
 
     const applyCore = (bannersForCache: Banner[], c: Category[], fp: Product[]) => {
       if (cancelled) return;
-      const rankedFeatured = prioritizeAvailableProducts(fp, 8);
+      const rankedFeatured = prioritizeAvailableProducts(fp);
       setCategories(c); setCategoriesLoaded(true); setFeaturedProducts(rankedFeatured);
       memoryCache = { ...memoryCache, country, banners: bannersForCache, categories: c, featuredProducts: rankedFeatured, timestamp: Date.now() };
     };
