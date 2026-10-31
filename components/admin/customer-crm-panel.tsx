@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Check, Clock3, Loader2, Plus, Tag, Trash2 } from 'lucide-react';
+import { Check, Clock3, Loader2, Plus, Tag, Trash2, UserRound } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { makeCrmCustomerKey } from '@/lib/admin/crm-customer-key';
 import type { OrderSummary } from '@/lib/admin/customer-aggregation';
@@ -10,8 +10,10 @@ import type { OrderSummary } from '@/lib/admin/customer-aggregation';
 type Branch = 'BD' | 'IN';
 type Note = { id: string; note: string; created_at: string };
 type CustomerTag = { id: string; tag: string; created_at: string };
-type FollowUpTask = { id: string; title: string; due_at: string; priority: string; status: string; created_at: string };
+type FollowUpTask = { id: string; title: string; due_at: string; priority: string; status: string; created_at: string; assigned_to: string | null };
+type AdminAssignee = { user_id: string; display_name: string };
 type SupportActivity = { id: string; subject: string; message: string; status: string | null; created_at: string };
+type TimelineKind = 'all' | 'order' | 'support' | 'note' | 'task';
 
 type Props = {
   branch: Branch;
@@ -39,12 +41,16 @@ export function CustomerCrmPanel({ branch, userId, phone, orderId, orders = [] }
   const [notes, setNotes] = useState<Note[]>([]);
   const [tags, setTags] = useState<CustomerTag[]>([]);
   const [tasks, setTasks] = useState<FollowUpTask[]>([]);
+  const [assignees, setAssignees] = useState<AdminAssignee[]>([]);
   const [supportActivity, setSupportActivity] = useState<SupportActivity[]>([]);
   const [noteDraft, setNoteDraft] = useState('');
   const [tagDraft, setTagDraft] = useState('');
   const [taskDraft, setTaskDraft] = useState('');
   const [taskDueAt, setTaskDueAt] = useState(defaultDueInput);
   const [taskPriority, setTaskPriority] = useState('normal');
+  const [taskAssignee, setTaskAssignee] = useState('');
+  const [timelineFilter, setTimelineFilter] = useState<TimelineKind>('all');
+  const [timelineSearch, setTimelineSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -54,13 +60,14 @@ export function CustomerCrmPanel({ branch, userId, phone, orderId, orders = [] }
     setLoading(true);
     setError('');
     const phoneValues = Array.from(new Set([phone, ...orders.map((order) => order.customer_phone)].filter((value): value is string => Boolean(value?.trim())).map((value) => value.trim()))).slice(0, 50);
-    const [notesResult, tagsResult, tasksResult, supportResult] = await Promise.all([
+    const [notesResult, tagsResult, tasksResult, supportResult, assigneesResult] = await Promise.all([
       supabase.from('crm_customer_notes').select('id,note,created_at').eq('country_code', branch).eq('customer_key', key).order('created_at', { ascending: false }).limit(20),
       supabase.from('crm_customer_tags').select('id,tag,created_at').eq('country_code', branch).eq('customer_key', key).order('created_at', { ascending: false }),
-      supabase.from('crm_follow_up_tasks').select('id,title,due_at,priority,status,created_at').eq('country_code', branch).eq('customer_key', key).order('created_at', { ascending: false }).limit(10),
+      supabase.from('crm_follow_up_tasks').select('id,title,due_at,priority,status,created_at,assigned_to').eq('country_code', branch).eq('customer_key', key).order('created_at', { ascending: false }).limit(10),
       phoneValues.length ? supabase.from('support_tickets').select('id,subject,message,status,created_at').eq('country_code', branch).in('customer_phone', phoneValues).order('created_at', { ascending: false }).limit(20) : Promise.resolve({ data: [], error: null }),
+      supabase.rpc('crm_branch_admins'),
     ]);
-    const failure = notesResult.error || tagsResult.error || tasksResult.error;
+    const failure = notesResult.error || tagsResult.error || tasksResult.error || assigneesResult.error;
     if (customerKeyRef.current !== key) return;
     if (failure) {
       setError('CRM তথ্য লোড করা যায়নি। Branch access যাচাই করে আবার চেষ্টা করুন।');
@@ -68,6 +75,12 @@ export function CustomerCrmPanel({ branch, userId, phone, orderId, orders = [] }
       setNotes((notesResult.data || []) as Note[]);
       setTags((tagsResult.data || []) as CustomerTag[]);
       setTasks((tasksResult.data || []) as FollowUpTask[]);
+      const availableAssignees = (assigneesResult.data || []) as AdminAssignee[];
+      setAssignees(availableAssignees);
+      const { data: authData } = await supabase.auth.getUser();
+      setTaskAssignee((current) => current && availableAssignees.some((admin) => admin.user_id === current)
+        ? current
+        : availableAssignees.find((admin) => admin.user_id === authData.user?.id)?.user_id || availableAssignees[0]?.user_id || '');
       setSupportActivity(supportResult.error ? [] : (supportResult.data || []) as SupportActivity[]);
     }
     setLoading(false);
@@ -80,6 +93,7 @@ export function CustomerCrmPanel({ branch, userId, phone, orderId, orders = [] }
     setNotes([]);
     setTags([]);
     setTasks([]);
+    setAssignees([]);
     setSupportActivity([]);
     setLoading(true);
     setError('');
@@ -149,7 +163,7 @@ export function CustomerCrmPanel({ branch, userId, phone, orderId, orders = [] }
       title,
       due_at: new Date(taskDueAt).toISOString(),
       priority: taskPriority,
-      assigned_to: authData.user?.id || null,
+      assigned_to: taskAssignee || authData.user?.id || null,
       created_by: authData.user?.id || null,
     });
     if (insertError) setError('Follow-up task সংরক্ষণ করা যায়নি।');
@@ -172,6 +186,11 @@ export function CustomerCrmPanel({ branch, userId, phone, orderId, orders = [] }
     ...notes.map((note) => ({ id: `note-${note.id}`, kind: 'note' as const, title: 'Internal note', detail: note.note, at: note.created_at })),
     ...tasks.map((task) => ({ id: `task-${task.id}`, kind: 'task' as const, title: task.title, detail: task.status === 'completed' ? 'Follow-up সম্পন্ন' : task.status === 'cancelled' ? 'Follow-up বাতিল' : `Follow-up · due ${formatDate(task.due_at)}`, at: task.created_at })),
   ].sort((left, right) => new Date(right.at).getTime() - new Date(left.at).getTime()).slice(0, 20), [orders, supportActivity, notes, tasks]);
+  const visibleTimeline = useMemo(() => {
+    const query = timelineSearch.trim().toLocaleLowerCase();
+    return timeline.filter((item) => (timelineFilter === 'all' || item.kind === timelineFilter)
+      && (!query || `${item.title} ${item.detail}`.toLocaleLowerCase().includes(query)));
+  }, [timeline, timelineFilter, timelineSearch]);
 
   return <section aria-label="Customer CRM tools" className="rounded-2xl border border-primary/20 bg-primary/[.025] p-4 sm:p-5">
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -194,9 +213,9 @@ export function CustomerCrmPanel({ branch, userId, phone, orderId, orders = [] }
         </div>
         <div className="rounded-xl border border-border bg-background p-3">
           <h4 className="text-sm font-bold">Follow-up task</h4>
-          <form onSubmit={addTask} className="mt-2 space-y-2"><label htmlFor={`crm-task-${customerKey}`} className="sr-only">Follow-up কাজ</label><input id={`crm-task-${customerKey}`} value={taskDraft} onChange={(event) => setTaskDraft(event.target.value)} maxLength={160} placeholder="কাস্টমারকে ফোন করুন…" className="min-h-9 w-full rounded-lg border border-border bg-card px-3 text-xs outline-none focus:border-primary focus:ring-2 focus:ring-primary/15" /><div className="grid grid-cols-2 gap-2"><label className="min-w-0"><span className="sr-only">Due date</span><input type="datetime-local" value={taskDueAt} onChange={(event) => setTaskDueAt(event.target.value)} className="min-h-9 w-full rounded-lg border border-border bg-card px-2 text-[11px]" /></label><label className="min-w-0"><span className="sr-only">Priority</span><select value={taskPriority} onChange={(event) => setTaskPriority(event.target.value)} className="min-h-9 w-full rounded-lg border border-border bg-card px-2 text-xs"><option value="low">কম priority</option><option value="normal">স্বাভাবিক</option><option value="high">জরুরি</option></select></label></div><button type="submit" disabled={saving || !taskDraft.trim() || !taskDueAt} className="inline-flex min-h-9 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-bold text-primary-foreground disabled:opacity-50"><Plus className="h-3.5 w-3.5" aria-hidden="true" />Task তৈরি করুন</button></form>
-          <div className="mt-3 max-h-32 space-y-2 overflow-y-auto">{tasks.map((task) => <article key={task.id} className="flex items-start gap-2 rounded-lg bg-secondary/50 p-2.5">{task.status === 'open' ? <button type="button" onClick={() => void completeTask(task.id)} disabled={saving} aria-label={`${task.title} complete করুন`} className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border bg-background text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"><Check className="h-3 w-3" aria-hidden="true" /></button> : <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-700"><Check className="h-3 w-3" aria-hidden="true" /></span>}<div className="min-w-0 flex-1"><p className="text-xs font-semibold text-foreground">{task.title}</p><p className="mt-0.5 text-[10px] text-muted-foreground">{task.status === 'open' ? `${formatDate(task.due_at)} · ` : `${task.status === 'completed' ? 'সম্পন্ন' : 'বাতিল'} · `}{task.priority === 'high' ? 'জরুরি' : task.priority === 'low' ? 'কম priority' : 'স্বাভাবিক'}</p></div></article>)}{!tasks.length && <p className="text-xs text-muted-foreground">এখনও কোনো task নেই।</p>}</div>
+          <form onSubmit={addTask} className="mt-2 space-y-2"><label htmlFor={`crm-task-${customerKey}`} className="sr-only">Follow-up কাজ</label><input id={`crm-task-${customerKey}`} value={taskDraft} onChange={(event) => setTaskDraft(event.target.value)} maxLength={160} placeholder="কাস্টমারকে ফোন করুন…" className="min-h-9 w-full rounded-lg border border-border bg-card px-3 text-xs outline-none focus:border-primary focus:ring-2 focus:ring-primary/15" /><label className="block"><span className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-muted-foreground"><UserRound className="h-3 w-3" aria-hidden="true" />দায়িত্বে</span><select value={taskAssignee} onChange={(event) => setTaskAssignee(event.target.value)} className="min-h-9 w-full rounded-lg border border-border bg-card px-2 text-xs" disabled={!assignees.length}><option value="">অ্যাডমিন বাছুন</option>{assignees.map((admin) => <option key={admin.user_id} value={admin.user_id}>{admin.display_name}</option>)}</select></label><div className="grid grid-cols-2 gap-2"><label className="min-w-0"><span className="sr-only">Due date</span><input type="datetime-local" value={taskDueAt} onChange={(event) => setTaskDueAt(event.target.value)} className="min-h-9 w-full rounded-lg border border-border bg-card px-2 text-[11px]" /></label><label className="min-w-0"><span className="sr-only">Priority</span><select value={taskPriority} onChange={(event) => setTaskPriority(event.target.value)} className="min-h-9 w-full rounded-lg border border-border bg-card px-2 text-xs"><option value="low">কম priority</option><option value="normal">স্বাভাবিক</option><option value="high">জরুরি</option></select></label></div><button type="submit" disabled={saving || !taskDraft.trim() || !taskDueAt || !taskAssignee} className="inline-flex min-h-9 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-bold text-primary-foreground disabled:opacity-50"><Plus className="h-3.5 w-3.5" aria-hidden="true" />Task তৈরি করুন</button></form>
+          <div className="mt-3 max-h-32 space-y-2 overflow-y-auto">{tasks.map((task) => <article key={task.id} className="flex items-start gap-2 rounded-lg bg-secondary/50 p-2.5">{task.status === 'open' ? <button type="button" onClick={() => void completeTask(task.id)} disabled={saving} aria-label={`${task.title} complete করুন`} className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border bg-background text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"><Check className="h-3 w-3" aria-hidden="true" /></button> : <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-700"><Check className="h-3 w-3" aria-hidden="true" /></span>}<div className="min-w-0 flex-1"><p className="text-xs font-semibold text-foreground">{task.title}</p><p className="mt-0.5 text-[10px] text-muted-foreground">{task.status === 'open' ? `${formatDate(task.due_at)} · ` : `${task.status === 'completed' ? 'সম্পন্ন' : 'বাতিল'} · `}{assignees.find((admin) => admin.user_id === task.assigned_to)?.display_name || 'Admin'} · {task.priority === 'high' ? 'জরুরি' : task.priority === 'low' ? 'কম priority' : 'স্বাভাবিক'}</p></div></article>)}{!tasks.length && <p className="text-xs text-muted-foreground">এখনও কোনো task নেই।</p>}</div>
       </div></div> : null}
-    {!loading && customerKey && <div className="mt-4 rounded-xl border border-border bg-background p-4"><div className="flex items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.12em] text-primary">Customer 360°</p><h4 className="mt-1 text-sm font-extrabold">Activity timeline</h4></div><span className="text-[10px] text-muted-foreground">Order · support · note · follow-up</span></div><div className="mt-3 max-h-72 space-y-2 overflow-y-auto">{timeline.map((item) => <article key={item.id} className="flex gap-3 rounded-lg bg-secondary/40 p-2.5"><span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${item.kind === 'order' ? 'bg-blue-500' : item.kind === 'support' ? 'bg-rose-500' : item.kind === 'note' ? 'bg-violet-500' : 'bg-amber-500'}`} aria-hidden="true" /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center justify-between gap-1"><p className="text-xs font-bold">{item.title}</p><time className="text-[10px] text-muted-foreground">{formatDate(item.at)}</time></div><p className="mt-1 line-clamp-2 whitespace-pre-wrap text-[11px] leading-4 text-muted-foreground">{item.detail}</p></div></article>)}{!timeline.length && <p className="text-xs text-muted-foreground">এখনো কোনো customer activity নেই।</p>}</div></div>}
+    {!loading && customerKey && <div className="mt-4 rounded-xl border border-border bg-background p-4"><div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.12em] text-primary">Customer 360°</p><h4 className="mt-1 text-sm font-extrabold">Activity timeline</h4></div><span className="text-[10px] text-muted-foreground">Order · support · note · follow-up</span></div><div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]"><label className="sr-only" htmlFor={`crm-timeline-search-${customerKey}`}>Timeline খুঁজুন</label><input id={`crm-timeline-search-${customerKey}`} value={timelineSearch} onChange={(event) => setTimelineSearch(event.target.value)} placeholder="Activity খুঁজুন…" className="min-h-9 rounded-lg border border-border bg-card px-3 text-xs" /><div className="flex flex-wrap gap-1">{([['all','সব'],['order','অর্ডার'],['support','সাপোর্ট'],['note','নোট'],['task','Follow-up']] as [TimelineKind,string][]).map(([kind,label]) => <button key={kind} type="button" aria-pressed={timelineFilter === kind} onClick={() => setTimelineFilter(kind)} className={`min-h-9 rounded-lg px-2.5 text-[11px] font-bold ${timelineFilter === kind ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:bg-secondary'}`}>{label}</button>)}</div></div><div className="mt-3 max-h-72 space-y-2 overflow-y-auto">{visibleTimeline.map((item) => <article key={item.id} className="flex gap-3 rounded-lg bg-secondary/40 p-2.5"><span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${item.kind === 'order' ? 'bg-blue-500' : item.kind === 'support' ? 'bg-rose-500' : item.kind === 'note' ? 'bg-violet-500' : 'bg-amber-500'}`} aria-hidden="true" /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center justify-between gap-1"><p className="text-xs font-bold">{item.title}</p><time className="text-[10px] text-muted-foreground">{formatDate(item.at)}</time></div><p className="mt-1 line-clamp-2 whitespace-pre-wrap text-[11px] leading-4 text-muted-foreground">{item.detail}</p></div></article>)}{!visibleTimeline.length && <p className="text-xs text-muted-foreground">এই filter-এ কোনো activity নেই।</p>}</div></div>}
   </section>;
 }

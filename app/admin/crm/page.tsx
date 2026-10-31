@@ -25,6 +25,8 @@ type CrmOverview = {
   orders: OrderSummary[];
   openOrders: number;
   openTickets: number;
+  overdueTasks: number;
+  dueTodayTasks: number;
 };
 
 const PAGE_SIZE = 1000;
@@ -100,15 +102,20 @@ export default function AdminCrmPage() {
         throw new Error('Admin branch নিশ্চিত করা যায়নি। আবার লগইন করে চেষ্টা করুন।');
       }
       const branch = normalized as Branch;
-      const [orders, ticketCountResult] = await Promise.all([
+      const [orders, ticketCountResult, taskResult] = await Promise.all([
         loadBranchOrders(branch),
         supabase
           .from('support_tickets')
           .select('id', { count: 'exact', head: true })
           .eq('country_code', branch)
           .in('status', ['open', 'in_review']),
+        supabase.from('crm_follow_up_tasks').select('due_at').eq('country_code', branch).eq('status', 'open'),
       ]);
       if (ticketCountResult.error) throw new Error('সাপোর্ট summary লোড করা যায়নি।');
+      if (taskResult.error) throw new Error('Follow-up reminder লোড করা যায়নি।');
+      const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+      const startOfTomorrow = new Date(startOfToday); startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+      const taskDueTimes = (taskResult.data || []).map((task) => new Date(task.due_at).getTime());
       const internalIds = await loadInternalAccountIds(orders);
       const customers = aggregateCustomers(orders, internalIds).filter((customer) => customer.type !== 'order_only');
       setOverview({
@@ -117,6 +124,8 @@ export default function AdminCrmPage() {
         orders,
         openOrders: orders.filter((order) => !CLOSED_ORDER_STATUSES.has((order.status || '').toLowerCase())).length,
         openTickets: ticketCountResult.count || 0,
+        overdueTasks: taskDueTimes.filter((dueAt) => dueAt < startOfToday.getTime()).length,
+        dueTodayTasks: taskDueTimes.filter((dueAt) => dueAt >= startOfToday.getTime() && dueAt < startOfTomorrow.getTime()).length,
       });
     } catch (loadError) {
       setOverview(null);
@@ -172,11 +181,12 @@ export default function AdminCrmPage() {
 
       {error && <section role="alert" className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">{error}</section>}
 
-      <section aria-label="CRM summary" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <section aria-label="CRM summary" className="grid grid-cols-2 gap-3 xl:grid-cols-5">
         <MetricCard icon={<Users className="h-4 w-4" />} label="কাস্টমার প্রোফাইল" value={loading ? '—' : (overview?.customers.length || 0).toLocaleString('bn-BD')} detail="Registered ও guest অর্ডার থেকে" />
         <MetricCard icon={<Sparkles className="h-4 w-4" />} label="Repeat customers" value={loading ? '—' : `${repeatRate.toLocaleString('bn-BD')}%`} detail={`${repeatCustomers.toLocaleString('bn-BD')} জনের একাধিক active order`} />
         <MetricCard icon={<ShoppingBag className="h-4 w-4" />} label="চলমান অর্ডার" value={loading ? '—' : (overview?.openOrders || 0).toLocaleString('bn-BD')} detail="Delivery সম্পন্ন বা বাতিল নয়" />
         <MetricCard icon={<LifeBuoy className="h-4 w-4" />} label="খোলা support case" value={loading ? '—' : (overview?.openTickets || 0).toLocaleString('bn-BD')} detail="Open ও review-তে থাকা ticket" />
+        <Link href="/admin/crm/follow-ups?filter=overdue" className="rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-200 sm:p-5"><div className="flex items-center gap-2 text-sm font-semibold text-rose-800"><Clock3 className="h-4 w-4" /><span>Follow-up reminder</span></div><p className="mt-3 text-3xl font-black tracking-tight text-rose-950">{loading ? '—' : (overview?.overdueTasks || 0).toLocaleString('bn-BD')}<span className="ml-2 text-sm font-bold">বাকি</span></p><p className="mt-1 text-xs leading-5 text-rose-800">আজ due: {loading ? '—' : (overview?.dueTodayTasks || 0).toLocaleString('bn-BD')} · খুলে task দেখুন</p></Link>
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[1.25fr_.75fr]">
@@ -216,7 +226,7 @@ export default function AdminCrmPage() {
               <p>Customer directory থেকে internal note, tag এবং follow-up যোগ করুন।</p>
               <p>Follow-up page-এ due task complete বা cancel করুন।</p>
               <p>Saved segment-এ repeat, one-time, inactive ও চলমান order customer group সংরক্ষণ করুন।</p>
-              <p className="text-xs">Support ও Messenger এখনো নিজস্ব page-এ আছে; unified customer timeline আলাদা ভবিষ্যৎ কাজ।</p>
+              <p className="text-xs">Customer detail-এ order, support ticket, note ও follow-up timeline search/filter করুন। Messenger conversation AI Messenger page-এ থাকে।</p>
             </div>
           </section>
         </div>

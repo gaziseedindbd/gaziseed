@@ -48,6 +48,7 @@ const PAGE_SIZE = 20;
 const ORDER_FETCH_SIZE = 1000;
 const FUNCTION_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-customer-support`;
 const normalize = (value: string | null | undefined) => (value || '').trim().toLocaleLowerCase();
+const normalizePhoneForReview = (value: string | null | undefined) => (value || '').replace(/\D/g, '');
 const numberOrZero = (value: number | string | null | undefined) => {
   const result = Number(value);
   return Number.isFinite(result) ? result : 0;
@@ -76,6 +77,7 @@ export default function AdminCustomersPage() {
   const [loadError, setLoadError] = useState('');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<CustomerTypeFilter>('all');
+  const [duplicateOnly, setDuplicateOnly] = useState(false);
   const [sortField, setSortField] = useState<SortField>('recent');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
@@ -213,10 +215,25 @@ export default function AdminCustomersPage() {
     return result;
   };
 
+  const duplicatePhoneCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const customer of customers) {
+      const digits = normalizePhoneForReview(customer.phone);
+      if (digits.length >= 10) counts.set(digits, (counts.get(digits) || 0) + 1);
+    }
+    return counts;
+  }, [customers]);
+  const duplicateProfileCount = useMemo(() => customers.filter((customer) => {
+    const digits = normalizePhoneForReview(customer.phone);
+    return digits.length >= 10 && (duplicatePhoneCounts.get(digits) || 0) > 1;
+  }).length, [customers, duplicatePhoneCounts]);
+
   const filtered = useMemo(() => {
     const query = normalize(search);
     const result = customers.filter((customer) => {
       if (typeFilter !== 'all' && customer.type !== typeFilter) return false;
+      const phoneDigits = normalizePhoneForReview(customer.phone);
+      if (duplicateOnly && (phoneDigits.length < 10 || (duplicatePhoneCounts.get(phoneDigits) || 0) < 2)) return false;
       if (!query) return true;
       return [customer.name, customer.phone, customer.email].some((value) => normalize(value).includes(query));
     });
@@ -227,9 +244,9 @@ export default function AdminCustomersPage() {
       return new Date(a.latestOrderAt).getTime() - new Date(b.latestOrderAt).getTime();
     };
     return result.sort((a, b) => compare(a, b) * (sortDirection === 'asc' ? 1 : -1));
-  }, [customers, search, sortDirection, sortField, typeFilter]);
+  }, [customers, duplicateOnly, duplicatePhoneCounts, search, sortDirection, sortField, typeFilter]);
 
-  useEffect(() => { setPage(1); }, [search, typeFilter, sortField, sortDirection]);
+  useEffect(() => { setPage(1); }, [search, typeFilter, duplicateOnly, sortField, sortDirection]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const visibleCustomers = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const registeredCount = customers.filter((customer) => customer.type === 'registered').length;
@@ -283,6 +300,7 @@ export default function AdminCustomersPage() {
             <StatCard icon={<Package className="h-4 w-4" />} label="মোট অর্ডার" value={orderCount.toLocaleString('bn-BD')} />
             <StatCard icon={<AlertCircle className="h-4 w-4" />} label="অ্যাকাউন্ট মেলেনি" value={orderOnlyCount.toLocaleString('bn-BD')} />
           </section>
+          {duplicateProfileCount > 0 && <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950"><div><p className="font-bold">সম্ভাব্য duplicate customer</p><p className="mt-1 text-sm">{duplicateProfileCount.toLocaleString('bn-BD')}টি profile-এ একই ফোন নম্বর আছে। নম্বর মিললেই account একই হয় না—merge করার আগে যাচাই করুন।</p></div><button type="button" aria-pressed={duplicateOnly} onClick={() => setDuplicateOnly((value) => !value)} className={`min-h-10 rounded-lg px-3 text-sm font-bold ${duplicateOnly ? 'bg-amber-900 text-white' : 'border border-amber-400 bg-white text-amber-950 hover:bg-amber-100'}`}>{duplicateOnly ? 'সব customer দেখান' : 'সম্ভাব্য duplicate দেখুন'}</button></section>}
 
           <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
             <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between">
@@ -300,6 +318,7 @@ export default function AdminCustomersPage() {
                     {label}
                   </button>
                 ))}
+                <button type="button" aria-pressed={duplicateOnly} onClick={() => setDuplicateOnly((value) => !value)} className={`min-h-9 rounded-lg px-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 ${duplicateOnly ? 'bg-amber-800 text-white' : 'border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100'}`}>সম্ভাব্য duplicate · {duplicateProfileCount.toLocaleString('bn-BD')}</button>
                 <label htmlFor="customer-sort" className="sr-only">কাস্টমার সাজান</label>
                 <select id="customer-sort" value={sortField} onChange={(event) => { setSortField(event.target.value as SortField); setSortDirection(event.target.value === 'name' ? 'asc' : 'desc'); }} className="min-h-9 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20">
                   <option value="recent">সাম্প্রতিক অর্ডার</option>
@@ -320,7 +339,7 @@ export default function AdminCustomersPage() {
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Users className="h-6 w-6" aria-hidden="true" /></div>
                 <h2 className="mt-4 font-bold">{search || typeFilter !== 'all' ? 'মিল থাকা কাস্টমার নেই' : 'এখনও কোনো কাস্টমার নেই'}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">{search || typeFilter !== 'all' ? 'অনুসন্ধান বা ধরন পরিবর্তন করে আবার চেষ্টা করুন।' : 'অর্ডার এলে কাস্টমাররা এখানে দেখা যাবে।'}</p>
-                {(search || typeFilter !== 'all') && <button type="button" onClick={() => { setSearch(''); setTypeFilter('all'); }} className="mt-4 rounded-lg border border-border px-3 py-2 text-sm font-semibold hover:bg-secondary">ফিল্টার মুছুন</button>}
+                {(search || typeFilter !== 'all' || duplicateOnly) && <button type="button" onClick={() => { setSearch(''); setTypeFilter('all'); setDuplicateOnly(false); }} className="mt-4 rounded-lg border border-border px-3 py-2 text-sm font-semibold hover:bg-secondary">ফিল্টার মুছুন</button>}
               </div>
             ) : (
               <>
@@ -338,12 +357,12 @@ export default function AdminCustomersPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/70">
-                      {visibleCustomers.map((customer) => <CustomerTableRow key={customer.key} customer={customer} branch={branch} onOpen={openCustomer} />)}
+                      {visibleCustomers.map((customer) => <CustomerTableRow key={customer.key} customer={customer} branch={branch} duplicateCount={duplicatePhoneCounts.get(normalizePhoneForReview(customer.phone)) || 0} onOpen={openCustomer} />)}
                     </tbody>
                   </table>
                 </div>
                 <div className="grid gap-3 p-3 md:hidden">
-                  {visibleCustomers.map((customer) => <CustomerMobileCard key={customer.key} customer={customer} branch={branch} onOpen={openCustomer} />)}
+                  {visibleCustomers.map((customer) => <CustomerMobileCard key={customer.key} customer={customer} branch={branch} duplicateCount={duplicatePhoneCounts.get(normalizePhoneForReview(customer.phone)) || 0} onOpen={openCustomer} />)}
                 </div>
                 <div className="flex flex-col gap-3 border-t border-border px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                   <p aria-live="polite">{filtered.length.toLocaleString('bn-BD')} জনের মধ্যে {Math.min((page - 1) * PAGE_SIZE + 1, filtered.length).toLocaleString('bn-BD')}–{Math.min(page * PAGE_SIZE, filtered.length).toLocaleString('bn-BD')} দেখানো হচ্ছে</p>
@@ -390,10 +409,10 @@ function SortableHeader({ label, field, sortField, direction, onSort }: { label:
   return <th scope="col" aria-sort={active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'} className="px-4 py-3"><button type="button" onClick={() => onSort(field)} className="inline-flex items-center gap-1.5 text-left hover:text-foreground focus-visible:outline-none focus-visible:underline">{label}{active && (direction === 'asc' ? <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" /> : <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />)}</button></th>;
 }
 
-function CustomerTableRow({ customer, branch, onOpen }: { customer: CustomerRow; branch: Branch; onOpen: (customer: CustomerRow) => void }) {
+function CustomerTableRow({ customer, branch, duplicateCount, onOpen }: { customer: CustomerRow; branch: Branch; duplicateCount: number; onOpen: (customer: CustomerRow) => void }) {
   const title = customer.name || 'নাম নেই';
   return <tr className="transition-colors hover:bg-secondary/30 focus-within:bg-secondary/30">
-    <td className="max-w-[280px] px-4 py-3.5"><div className="flex min-w-0 items-center gap-3"><Avatar name={title} /><div className="min-w-0"><p className="truncate font-semibold text-foreground">{title}</p>{customer.email && <p className="truncate text-xs text-muted-foreground">{customer.email}</p>}</div></div></td>
+    <td className="max-w-[280px] px-4 py-3.5"><div className="flex min-w-0 items-center gap-3"><Avatar name={title} /><div className="min-w-0"><p className="truncate font-semibold text-foreground">{title}</p>{duplicateCount > 1 && <p className="text-[10px] font-bold text-amber-800">একই ফোন · {duplicateCount} profile</p>}{customer.email && <p className="truncate text-xs text-muted-foreground">{customer.email}</p>}</div></div></td>
     <td className="whitespace-nowrap px-4 py-3.5 text-foreground">{customer.phone || '—'}</td>
     <td className="px-4 py-3.5"><CustomerTypeBadge type={customer.type} /></td>
     <td className="px-4 py-3.5 tabular-nums text-foreground">{customer.orders.length.toLocaleString('bn-BD')}</td>
@@ -402,10 +421,11 @@ function CustomerTableRow({ customer, branch, onOpen }: { customer: CustomerRow;
   </tr>;
 }
 
-function CustomerMobileCard({ customer, branch, onOpen }: { customer: CustomerRow; branch: Branch; onOpen: (customer: CustomerRow) => void }) {
+function CustomerMobileCard({ customer, branch, duplicateCount, onOpen }: { customer: CustomerRow; branch: Branch; duplicateCount: number; onOpen: (customer: CustomerRow) => void }) {
   const title = customer.name || 'নাম নেই';
   return <article className="rounded-xl border border-border bg-background p-4 shadow-sm">
     <div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><Avatar name={title} /><div className="min-w-0"><h2 className="truncate font-bold text-foreground">{title}</h2>{customer.email && <p className="truncate text-xs text-muted-foreground">{customer.email}</p>}</div></div><CustomerTypeBadge type={customer.type} /></div>
+    {duplicateCount > 1 && <p className="mt-2 text-xs font-bold text-amber-800">সম্ভাব্য একই ফোন · {duplicateCount} profile</p>}
     <div className="mt-4 grid grid-cols-2 gap-3 text-sm"><div><p className="text-xs text-muted-foreground">ফোন</p><p className="mt-0.5 truncate font-medium text-foreground">{customer.phone || '—'}</p></div><div><p className="text-xs text-muted-foreground">অর্ডার</p><p className="mt-0.5 font-semibold text-foreground">{customer.orders.length.toLocaleString('bn-BD')}</p></div><div><p className="text-xs text-muted-foreground">মোট খরচ</p><p className="mt-0.5 font-bold text-foreground">{formatBranchPrice(customer.totalSpend, branch)}</p></div><div><p className="text-xs text-muted-foreground">সর্বশেষ অর্ডার</p><p className="mt-0.5 text-foreground">{formatDate(customer.latestOrderAt)}</p></div></div>
     <button type="button" onClick={() => onOpen(customer)} className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-border bg-card text-sm font-semibold text-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20"><Eye className="h-4 w-4" aria-hidden="true" />কাস্টমার বিস্তারিত</button>
   </article>;
