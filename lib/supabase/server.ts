@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies, headers } from 'next/headers';
+import { normalizeVisitorCountry, resolveVisitorCountry } from '@/lib/visitor-country';
 
 const FALLBACK_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
 const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1ZnhzdGhzaHllYmFoa3dibWlvZSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzg4NDM2NjAwLCJleHAiOjIxMDQwMTI2MDB9.oU3ISPzKV6PQ3G0OXoCLHkrVa6qAEjSYoQF8D2Shf-M';
@@ -10,23 +11,14 @@ export async function createServerSupabase(country?: 'BD' | 'IN') {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || FALLBACK_KEY;
 
-  const routeHeaderCountry = headerStore.get('x-gazi-route-country')?.toUpperCase();
-  const routeCookieCountry = cookieStore.get('gazi_route_country')?.value?.toUpperCase();
-  const manualOverride = cookieStore.get('gazi_country_override')?.value?.toUpperCase();
-  const detectedCountry = (
-    headerStore.get('x-vercel-ip-country') ||
-    headerStore.get('cf-ipcountry') ||
-    'BD'
-  ).toUpperCase();
   const visitorCountry = country === 'IN' || country === 'BD'
     ? country
-    : routeHeaderCountry === 'IN' || routeHeaderCountry === 'BD'
-      ? routeHeaderCountry
-      : routeCookieCountry === 'IN' || routeCookieCountry === 'BD'
-        ? routeCookieCountry
-        : manualOverride === 'IN' || manualOverride === 'BD'
-          ? manualOverride
-          : detectedCountry === 'IN' ? 'IN' : 'BD';
+    : normalizeVisitorCountry(headerStore.get('x-gazi-route-country')) || resolveVisitorCountry({
+      pathname: '/',
+      manualOverride: cookieStore.get('gazi_country_override')?.value,
+      vercelCountry: headerStore.get('x-vercel-ip-country'),
+      cloudflareCountry: headerStore.get('cf-ipcountry'),
+    });
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
