@@ -10,7 +10,7 @@ import {
   Package, MapPin, User, LogOut, LayoutDashboard, Plus, Edit, 
   Trash2, Star, X, Check, Heart, RotateCcw, AlertCircle, Users, 
   Eye, Truck, Calendar, ShoppingBag, Receipt, Printer, MessageCircle, 
-  Award, CheckCircle2, Clock, Box, HelpCircle, PartyPopper, MailCheck
+  Award, CheckCircle2, Clock, Box, HelpCircle, PartyPopper, MailCheck, Bell
 } from 'lucide-react';
 import { AddressSelector, formatAddressToString, type AddressValue } from '@/components/site/address-selector';
 import { toast } from '@/components/site/toast-provider';
@@ -27,7 +27,9 @@ export default function AccountPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'dashboard' | 'orders' | 'addresses' | 'wishlist' | 'profile' | 'referral'>('dashboard');
+  const [tab, setTab] = useState<'dashboard' | 'orders' | 'addresses' | 'wishlist' | 'profile' | 'referral' | 'messages'>('dashboard');
+  const [inboxMessages, setInboxMessages] = useState<Array<{ id: string; read_at: string | null; created_at: string; campaign: Array<{ title: string; body: string; country_code: string }> | null }>>([]);
+  const [inboxLoading, setInboxLoading] = useState(false);
   const [wishlist, setWishlist] = useState<Product[]>([]);
   const [showAddrForm, setShowAddrForm] = useState(false);
   const [editingAddr, setEditingAddr] = useState<CustomerAddress | null>(null);
@@ -79,6 +81,10 @@ export default function AccountPage() {
       ]);
       setOrders((o.data || []) as Order[]);
       setAddresses((a.data || []) as CustomerAddress[]);
+      const { data: inboxData } = await supabase.from('crm_customer_message_deliveries')
+        .select('id,read_at,created_at,campaign:crm_customer_message_campaigns(title,body,country_code)')
+        .eq('user_id', data.session.user.id).order('created_at', { ascending: false }).limit(100);
+      setInboxMessages((inboxData || []) as typeof inboxMessages);
       getWishlist(data.session.user.id).then(setWishlist);
       supabase.from('referral_settings').select('enabled').eq('id', 1).maybeSingle().then(({ data: rs }) => {
         setReferralEnabled(rs?.enabled === true);
@@ -107,6 +113,23 @@ export default function AccountPage() {
   };
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push('/'); };
+
+  const openMessages = async () => {
+    setTab('messages');
+    if (!user?.id) return;
+    setInboxLoading(true);
+    const { data } = await supabase.from('crm_customer_message_deliveries')
+      .select('id,read_at,created_at,campaign:crm_customer_message_campaigns(title,body,country_code)')
+      .eq('user_id', user.id).order('created_at', { ascending: false }).limit(100);
+    setInboxMessages((data || []) as typeof inboxMessages);
+    setInboxLoading(false);
+  };
+
+  const markInboxMessageRead = async (id: string) => {
+    const readAt = new Date().toISOString();
+    const { error } = await supabase.from('crm_customer_message_deliveries').update({ read_at: readAt }).eq('id', id).is('read_at', null);
+    if (!error) setInboxMessages((current) => current.map((message) => message.id === id ? { ...message, read_at: readAt } : message));
+  };
 
   const handleSaveAddress = async (addrData: any) => {
     const isEditing = !!editingAddr;
@@ -275,6 +298,7 @@ export default function AccountPage() {
               {[
                 { key: 'dashboard', label: 'ড্যাশবোর্ড', icon: LayoutDashboard },
                 { key: 'orders', label: 'আমার অর্ডার', icon: Package },
+                { key: 'messages', label: `মেসেজ${inboxMessages.some((m) => !m.read_at) ? ` · ${inboxMessages.filter((m) => !m.read_at).length}` : ''}`, icon: Bell },
                 { key: 'addresses', label: 'সংরক্ষিত ঠিকানা', icon: MapPin },
                 { key: 'wishlist', label: 'উইশলিস্ট', icon: Heart },
                 { key: 'profile', label: 'প্রোফাইল', icon: User },
@@ -415,6 +439,13 @@ export default function AccountPage() {
                 )}
               </div>
             </div>
+          )}
+
+          {tab === 'messages' && (
+            <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-xs">
+              <div><h2 className="font-black text-lg">GAZI SEED-এর মেসেজ</h2><p className="mt-1 text-xs text-muted-foreground">আপনার account-এর জন্য পাঠানো announcement ও offer এখানে থাকবে।</p></div>
+              {inboxLoading ? <p className="py-8 text-center text-sm text-muted-foreground">মেসেজ লোড হচ্ছে…</p> : inboxMessages.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">এখনো কোনো মেসেজ নেই।</p> : <div className="space-y-3">{inboxMessages.map((message) => { const campaign = message.campaign?.[0]; return <article key={message.id} className={`rounded-2xl border p-4 ${message.read_at ? 'border-border bg-background' : 'border-primary/30 bg-primary/[0.04]'}`}><div className="flex items-start justify-between gap-3"><div><h3 className="font-extrabold">{campaign?.title || 'GAZI SEED message'}</h3><p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{campaign?.body}</p></div>{!message.read_at && <button type="button" onClick={() => void markInboxMessageRead(message.id)} className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">পড়া হয়েছে</button>}</div><time className="mt-3 block text-[11px] text-muted-foreground">{new Date(message.created_at).toLocaleString('bn-BD')}</time></article>; })}</div>}
+            </section>
           )}
 
           {/* অর্ডার ট্যাব */}
