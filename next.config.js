@@ -4,6 +4,9 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    // Bypass Vercel's metered image transformations. Uploaded product media is
+    // processed before storage, so serve the source image URLs directly.
+    unoptimized: true,
     // Keep Next's image optimizer limited to the Supabase Storage projects
     // currently serving public site media in the BD and IN branches.
     remotePatterns: [
