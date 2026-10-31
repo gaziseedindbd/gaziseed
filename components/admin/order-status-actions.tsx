@@ -7,8 +7,8 @@ import {nextOrderStatuses, ORDER_STATUS_LABELS, OrderStatus, STATUS_ACTION_LABEL
 
 type History = {id: string; status: string; previous_status: string | null; note: string | null;
   created_at: string | null; actor_label: string | null; source: string};
-export default function OrderStatusActions({orderId, status, disabled, onAction}: {
-  orderId: string; status: string; disabled: boolean;
+export default function OrderStatusActions({orderId, status, disabled, countryCode, onAction}: {
+  orderId: string; status: string; disabled: boolean; countryCode: 'IN' | 'BD';
   onAction: (next: OrderStatus, reason: string) => Promise<boolean>;
 }) {
   const [action,setAction]=useState<OrderStatus | null>(null);
@@ -87,7 +87,7 @@ export default function OrderStatusActions({orderId, status, disabled, onAction}
       <ol className="max-h-64 space-y-2 overflow-y-auto pr-1">
         {history.map(row=><li key={row.id} className="rounded-xl border border-border p-3 text-xs">
           <p className="font-semibold">{row.previous_status?`${ORDER_STATUS_LABELS[row.previous_status]??row.previous_status} → `:''}{ORDER_STATUS_LABELS[row.status]??row.status}</p>
-          <p className="mt-1 text-muted-foreground">{row.created_at?new Date(row.created_at).toLocaleString('bn-BD'):'সময় অজানা'} · {row.actor_label??'পূর্বের রেকর্ড'}
+          <p className="mt-1 text-muted-foreground">{row.created_at?new Date(row.created_at).toLocaleString(countryCode === 'IN' ? 'en-IN' : 'bn-BD'):'সময় অজানা'} · {row.actor_label??'পূর্বের রেকর্ড'}
             {row.source==='admin_manual'?' · Admin update':row.source==='verified_dispatch'?' · Verified dispatch':''}</p>
           {row.note&&<p className="mt-1 whitespace-pre-wrap break-words">{row.note}</p>}
         </li>)}

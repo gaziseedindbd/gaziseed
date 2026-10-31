@@ -8,6 +8,7 @@ import { supabase, cashfreeEnvironmentLabel } from '@/lib/supabase/client';
 import { ORDER_SOURCE_LABELS } from '@/lib/admin-order-display';
 import { OrderPaymentSummary } from '@/components/admin/order-payment-summary';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from '@/components/site/toast-provider';
 import { Search, Eye, X, Printer, AlertTriangle, Package, Calendar, Phone, User, Globe } from 'lucide-react';
 
@@ -15,18 +16,24 @@ const STATUS_OPTIONS = ORDER_STATUSES;
 const STATUS_LABELS = ORDER_STATUS_LABELS;
 
 const SOURCE_FILTERS = ['all', 'website', 'ads', 'facebook', 'instagram', 'google', 'tiktok', 'animated_landing', 'facebook_messenger_ai'];
+const PAGE_SIZE = 25;
 
 export default function AdminOrdersPage() {
   const searchParams = useSearchParams();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
+  const [pageIndex, setPageIndex] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const statusRequestInFlight = useRef(false);
+  const orderRequestId = useRef(0);
   const [settlingDue, setSettlingDue] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [auditRefreshKey, setAuditRefreshKey] = useState(0);
@@ -44,57 +51,83 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     const source = searchParams.get('source');
     setSourceFilter(source && SOURCE_FILTERS.includes(source) ? source : 'all');
+    setPageIndex(0);
   }, [searchParams]);
 
-  useEffect(() => { loadOrders(); }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search.trim().slice(0, 80)), 300);
+    setPageIndex(0);
+    return () => window.clearTimeout(timer);
+  }, [search]);
 
-  const loadOrders = async () => {
-    setLoading(true);
-    const { data: branch, error: branchError } = await supabase.rpc('current_admin_country');
-    const country = String(branch || '').toUpperCase();
-    if (branchError || !['IN', 'BD'].includes(country)) {
-      setOrders([]); setDuplicateOrders({}); setLoading(false);
-      toast('Branch যাচাই করা যায়নি', 'error');
-      return;
-    }
-    setAdminCountry(country as 'BD' | 'IN');
-    const { data, error } = await supabase.from('orders').select('*').eq('country_code', country).order('created_at', { ascending: false });
-    if (error) toast('অর্ডার লোড করা যায়নি', 'error');
-    setOrders(data || []);
-    
-    // ডুপ্লিকেট অর্ডার শনাক্তকরণ
-    const dupMap: Record<string, any[]> = {};
-    (data || []).forEach((o) => {
-      const key = o.customer_phone;
-      if (!dupMap[key]) dupMap[key] = [];
-      dupMap[key].push(o);
-    });
-    Object.keys(dupMap).forEach((key) => {
-      if (dupMap[key].length < 2) delete dupMap[key];
-      else {
-        dupMap[key] = dupMap[key].filter((o, i, arr) => {
-          if (i === 0) return false;
-          const prev = arr[i - 1];
-          return Math.abs(new Date(o.created_at).getTime() - new Date(prev.created_at).getTime()) < 24 * 60 * 60 * 1000;
-        });
-        if (dupMap[key].length === 0) delete dupMap[key];
+  useEffect(() => {
+    let active = true;
+    const requestId = ++orderRequestId.current;
+    const loadOrders = async () => {
+      setLoading(true);
+      try {
+        const { data: branch, error: branchError } = await supabase.rpc('current_admin_country');
+        const country = String(branch || '').toUpperCase();
+        if (branchError || !['IN', 'BD'].includes(country)) throw new Error('Branch যাচাই করা যায়নি');
+        if (!active || requestId !== orderRequestId.current) return;
+        setAdminCountry(country as 'BD' | 'IN');
+
+        // Strip PostgREST filter syntax characters before placing search text in .or().
+        const safeSearch = debouncedSearch.replace(/[^\p{L}\p{N}\s+.#-]/gu, ' ').trim().replace(/\s+/g, ' ');
+        let query = supabase.from('orders').select('*', { count: 'exact' })
+          .eq('country_code', country)
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: false })
+          .range(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE - 1);
+        if (statusFilter !== 'all') query = query.eq('status', statusFilter);
+        if (sourceFilter !== 'all') query = query.eq('order_source', sourceFilter);
+        if (safeSearch) query = query.or(`order_number.ilike.%${safeSearch}%,customer_name.ilike.%${safeSearch}%,customer_phone.ilike.%${safeSearch}%`);
+
+        const { data, error, count } = await query;
+        if (error) throw error;
+        if (!active || requestId !== orderRequestId.current) return;
+        const pageOrders = data || [];
+        setOrders(pageOrders);
+        setTotalCount(count || 0);
+
+        // Keep duplicate warnings across pages by checking nearby orders for only the phones shown here.
+        const phones = Array.from(new Set(pageOrders.map((order) => order.customer_phone).filter(Boolean)));
+        if (phones.length === 0) {
+          setDuplicateOrders({});
+        } else {
+          const timestamps = pageOrders.map((order) => new Date(order.created_at).getTime()).filter(Number.isFinite);
+          const nearbyOrders = timestamps.length ? (await supabase.from('orders').select('id,customer_phone,created_at')
+            .eq('country_code', country).in('customer_phone', phones)
+            .gte('created_at', new Date(Math.min(...timestamps) - 24 * 60 * 60 * 1000).toISOString())
+            .lte('created_at', new Date(Math.max(...timestamps) + 24 * 60 * 60 * 1000).toISOString())
+            .order('created_at', { ascending: false }).limit(500)).data : [];
+          if (!active || requestId !== orderRequestId.current) return;
+          const byPhone: Record<string, any[]> = {};
+          (nearbyOrders || []).forEach((order) => { (byPhone[order.customer_phone] ||= []).push(order); });
+          const dupMap: Record<string, any[]> = {};
+          Object.entries(byPhone).forEach(([phone, matching]) => {
+            const pageIds = new Set(pageOrders.filter((order) => order.customer_phone === phone).map((order) => order.id));
+            const duplicates = matching.filter((order, index) => index > 0 && pageIds.has(order.id) &&
+              Math.abs(new Date(order.created_at).getTime() - new Date(matching[index - 1].created_at).getTime()) < 24 * 60 * 60 * 1000);
+            if (duplicates.length) dupMap[phone] = duplicates;
+          });
+          setDuplicateOrders(dupMap);
+        }
+      } catch (error) {
+        if (active && requestId === orderRequestId.current) {
+          setOrders([]); setDuplicateOrders({}); setTotalCount(0);
+          toast(error instanceof Error && error.message === 'Branch যাচাই করা যায়নি' ? error.message : 'অর্ডার লোড করা যায়নি', 'error');
+        }
+      } finally {
+        if (active && requestId === orderRequestId.current) setLoading(false);
       }
-    });
-    setDuplicateOrders(dupMap);
-    setLoading(false);
-  };
+    };
+    void loadOrders();
+    return () => { active = false; };
+  }, [debouncedSearch, statusFilter, sourceFilter, pageIndex, refreshKey]);
 
-  const filtered = orders.filter((o) => {
-    if (statusFilter !== 'all' && o.status !== statusFilter) return false;
-    if (sourceFilter !== 'all' && o.order_source !== sourceFilter) return false;
-    if (search) {
-      const s = search.toLowerCase();
-      return (o.order_number || '').toLowerCase().includes(s) ||
-        (o.customer_name || '').toLowerCase().includes(s) ||
-        (o.customer_phone || '').includes(s);
-    }
-    return true;
-  });
+  const filtered = orders;
+  const dateLocale = adminCountry === 'IN' ? 'en-IN' : 'bn-BD';
 
   const openOrder = async (order: any) => {
     setSelectedOrder(order);
@@ -199,6 +232,7 @@ export default function AdminOrdersPage() {
       setOrders(current => current.map(order => order.id === selectedOrder.id ? applySavedStatus(order) : order));
       setSelectedOrder((current: any) => current?.id === selectedOrder.id ? applySavedStatus(current) : current);
       setAuditRefreshKey(value => value + 1);
+      setRefreshKey(value => value + 1);
       toast(refreshedOrder ? 'অর্ডারের status ও history সংরক্ষণ হয়েছে' :
         'Status সংরক্ষণ হয়েছে। সর্বশেষ অন্যান্য তথ্য দেখতে পরে order আবার খুলুন।');
       return true;
@@ -242,7 +276,7 @@ export default function AdminOrdersPage() {
       payment_status: 'paid',
       payment_due_amount: 0,
     });
-    loadOrders();
+    setRefreshKey((value) => value + 1);
   };
 
   const [printMode, setPrintMode] = useState<'invoice' | 'packing'>('invoice');
@@ -274,13 +308,13 @@ export default function AdminOrdersPage() {
           />
         </div>
         <div className="sm:col-span-3">
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="input-bangla w-full">
+          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPageIndex(0); }} className="input-bangla w-full">
             <option value="all">সকল স্ট্যাটাস</option>
             {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
           </select>
         </div>
         <div className="sm:col-span-3">
-          <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className="input-bangla w-full">
+          <select value={sourceFilter} onChange={(e) => { setSourceFilter(e.target.value); setPageIndex(0); }} className="input-bangla w-full">
             {SOURCE_FILTERS.map((s) => <option key={s} value={s}>{s === 'all' ? 'সকল সোর্স' : ORDER_SOURCE_LABELS[s] || s}</option>)}
           </select>
         </div>
@@ -301,7 +335,16 @@ export default function AdminOrdersPage() {
               <div 
                 key={o.id} 
                 onClick={() => openOrder(o)}
-                className="rounded-2xl border border-border bg-card p-4 shadow-sm hover:border-primary/40 transition active:scale-[0.99] cursor-pointer"
+                role="button"
+                tabIndex={0}
+                aria-label={`অর্ডার ${o.order_number}, বিস্তারিত দেখুন`}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    void openOrder(o);
+                  }
+                }}
+                className="rounded-2xl border border-border bg-card p-4 shadow-sm hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition active:scale-[0.99] cursor-pointer"
               >
                 <div className="flex items-center justify-between border-b border-border/50 pb-2.5 mb-2.5">
                   <div className="flex items-center gap-1.5">
@@ -341,7 +384,7 @@ export default function AdminOrdersPage() {
                   </div>
                   <div className="flex items-center justify-between pt-1 text-[11px]">
                     <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" /> {new Date(o.created_at).toLocaleDateString('bn-BD')}
+                      <Calendar className="h-3 w-3" /> {new Date(o.created_at).toLocaleDateString(dateLocale)}
                     </span>
                     <span className="text-primary font-semibold flex items-center gap-1">
                       বিস্তারিত দেখুন <Eye className="h-3 w-3" />
@@ -392,7 +435,7 @@ export default function AdminOrdersPage() {
                         {STATUS_LABELS[o.status] || o.status}
                       </span>
                     </td>
-                    <td className="p-3.5 text-muted-foreground whitespace-nowrap">{new Date(o.created_at).toLocaleDateString('bn-BD')}</td>
+                    <td className="p-3.5 text-muted-foreground whitespace-nowrap">{new Date(o.created_at).toLocaleDateString(dateLocale)}</td>
                     <td className="p-3.5 text-center whitespace-nowrap">
                       <button onClick={() => openOrder(o)} className="rounded-lg p-1.5 hover:bg-secondary border border-border" title="বিবরণ দেখুন">
                         <Eye className="h-4 w-4 text-primary" />
@@ -406,6 +449,20 @@ export default function AdminOrdersPage() {
         </>
       )}
 
+      {!loading && totalCount > 0 && (
+        <nav aria-label="Order pages" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-sm">
+          <span aria-live="polite" className="text-muted-foreground">
+            {pageIndex * PAGE_SIZE + 1}–{Math.min((pageIndex + 1) * PAGE_SIZE, totalCount)} / {totalCount}
+          </span>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setPageIndex((page) => Math.max(0, page - 1))} disabled={pageIndex === 0}
+              className="min-h-10 rounded-lg border border-border px-3 disabled:opacity-50">আগের</button>
+            <button type="button" onClick={() => setPageIndex((page) => page + 1)} disabled={(pageIndex + 1) * PAGE_SIZE >= totalCount}
+              className="min-h-10 rounded-lg border border-border px-3 disabled:opacity-50">পরের</button>
+          </div>
+        </nav>
+      )}
+
       {/* Order Detail Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4">
@@ -414,7 +471,7 @@ export default function AdminOrdersPage() {
             <div className="sticky top-0 z-20 mb-4 flex items-center justify-between gap-3 border-b border-border bg-background pt-4 pb-3 sm:pt-6">
               <div>
                 <h2 className="text-base sm:text-xl font-bold break-words">অর্ডার: {selectedOrder.order_number}</h2>
-                <span className="text-xs text-muted-foreground">{new Date(selectedOrder.created_at).toLocaleDateString('bn-BD')}</span>
+                <span className="text-xs text-muted-foreground">{new Date(selectedOrder.created_at).toLocaleDateString(dateLocale)}</span>
               </div>
               <button onClick={() => { if (!updatingStatus && !settlingDue && !verifyingPayment) setSelectedOrder(null); }} aria-label="Close order details" className="shrink-0 p-2 rounded-full hover:bg-secondary"><X className="h-6 w-6" /></button>
             </div>
@@ -449,6 +506,17 @@ export default function AdminOrdersPage() {
               <div><span className="text-muted-foreground">এলাকা: </span><span className="font-semibold">{selectedOrder.delivery_zone_name || selectedOrder.thana || selectedOrder.district || '-'}</span></div>
               {selectedOrder.utm_campaign && <div><span className="text-muted-foreground">ক্যাম্পেইন: </span>{selectedOrder.utm_campaign}</div>}
             </div>
+
+            {selectedOrder.country_code === 'IN' && (
+              <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50/70 p-3 text-sm text-blue-900">
+                <p className="font-semibold">Delhivery shipment প্রস্তুতি</p>
+                <p className="mt-1 text-xs">Shipment screen-এ orderটি আগে থেকে নির্বাচন হবে। মাপ যাচাই ও নিশ্চিত না করা পর্যন্ত booking হবে না।</p>
+                <Link href={`/admin/india-shipping?order_id=${encodeURIComponent(selectedOrder.id)}`}
+                  className="mt-2 inline-flex min-h-10 items-center rounded-lg bg-blue-700 px-3 py-2 font-semibold text-white hover:bg-blue-800">
+                  Shipment-এর জন্য প্রস্তুত করুন
+                </Link>
+              </div>
+            )}
 
             {/* আইটেম তালিকা */}
             <div className="mb-4">
@@ -574,7 +642,7 @@ export default function AdminOrdersPage() {
               <p className="font-semibold">সংরক্ষিত অভ্যন্তরীণ নোট</p>
               <p className="mt-1 whitespace-pre-wrap break-words text-muted-foreground">{selectedOrder.internal_notes}</p>
             </div>}
-            <OrderStatusActions key={selectedOrder.id} orderId={selectedOrder.id} status={selectedOrder.status}
+            <OrderStatusActions key={selectedOrder.id} orderId={selectedOrder.id} status={selectedOrder.status} countryCode={adminCountry}
               disabled={updatingStatus || settlingDue || verifyingPayment} onAction={updateStatus} />
           </div>
         </div>
