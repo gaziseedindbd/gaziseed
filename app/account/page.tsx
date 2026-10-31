@@ -22,7 +22,7 @@ import { useLang } from '@/components/site/language-provider';
 
 export default function AccountPage() {
   const router = useRouter();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [user, setUser] = useState<any>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
@@ -105,7 +105,7 @@ export default function AccountPage() {
 
     if (error) {
       console.error('Error fetching order items:', error);
-      toast('অর্ডারের বিস্তারিত লোড করা সম্ভব হয়নি', 'error');
+      toast(t('অর্ডারের বিস্তারিত লোড করা সম্ভব হয়নি', 'Could not load order details', 'ऑर्डर का विवरण लोड नहीं हो सका'), 'error');
     } else {
       setOrderItems(data || []);
     }
@@ -136,8 +136,8 @@ export default function AccountPage() {
     const payload = { ...addrData, user_id: user.id, country_code: getVisitorCountry() };
     if (isEditing) {
       const { error } = await supabase.from('customer_addresses').update(payload).eq('id', editingAddr!.id);
-      if (error) { toast('আপডেট ব্যর্থ', 'error'); return; }
-      toast('ঠিকানা আপডেট হয়েছে');
+      if (error) { toast(t('আপডেট ব্যর্থ', 'Update failed', 'अपडेट विफल'), 'error'); return; }
+      toast(t('ঠিকানা আপডেট হয়েছে', 'Address updated', 'पता अपडेट हो गया'));
     } else {
       if (payload.is_default) {
         const { error: clearDefaultError } = await supabase
@@ -145,13 +145,13 @@ export default function AccountPage() {
           .update({ is_default: false })
           .eq('user_id', user.id);
         if (clearDefaultError) {
-          toast('ডিফল্ট ঠিকানা পরিবর্তন করা যায়নি', 'error');
+          toast(t('ডিফল্ট ঠিকানা পরিবর্তন করা যায়নি', 'Could not change the default address', 'डिफ़ॉल्ट पता नहीं बदला जा सका'), 'error');
           return;
         }
       }
       const { error } = await supabase.from('customer_addresses').insert(payload);
-      if (error) { toast('যোগ করা ব্যর্থ', 'error'); return; }
-      toast('ঠিকানা যোগ হয়েছে');
+      if (error) { toast(t('যোগ করা ব্যর্থ', 'Could not add address', 'पता नहीं जोड़ा जा सका'), 'error'); return; }
+      toast(t('ঠিকানা যোগ হয়েছে', 'Address added', 'पता जोड़ दिया गया'));
     }
     setShowAddrForm(false);
     setEditingAddr(null);
@@ -159,14 +159,14 @@ export default function AccountPage() {
   };
 
   const handleDeleteAddress = async (id: string) => {
-    if (!confirm('ঠিকানা মুছতে চান?')) return;
+    if (!confirm(t('ঠিকানা মুছতে চান?', 'Delete this address?', 'क्या यह पता हटाना है?'))) return;
     const target = addresses.find((address) => address.id === id);
     const { error } = await supabase.from('customer_addresses').delete().eq('id', id);
     if (error) {
-      toast('ঠিকানা মুছে ফেলা যায়নি', 'error');
+      toast(t('ঠিকানা মুছে ফেলা যায়নি', 'Could not delete address', 'पता नहीं हटाया जा सका'), 'error');
       return;
     }
-    toast('ঠিকানা মুছে ফেলা হয়েছে');
+    toast(t('ঠিকানা মুছে ফেলা হয়েছে', 'Address deleted', 'पता हटा दिया गया'));
     if (target?.is_default) {
       const replacement = addresses.find((address) => address.id !== id);
       if (replacement) {
@@ -175,7 +175,7 @@ export default function AccountPage() {
           .update({ is_default: true })
           .eq('id', replacement.id);
         if (defaultError) {
-          toast('নতুন ডিফল্ট ঠিকানা সেট করা যায়নি', 'error');
+          toast(t('নতুন ডিফল্ট ঠিকানা সেট করা যায়নি', 'Could not set the new default address', 'नया डिफ़ॉल्ट पता सेट नहीं हो सका'), 'error');
         }
       }
     }
@@ -188,7 +188,7 @@ export default function AccountPage() {
       .update({ is_default: false })
       .eq('user_id', user.id);
     if (clearError) {
-      toast('ডিফল্ট ঠিকানা পরিবর্তন করা যায়নি', 'error');
+      toast(t('ডিফল্ট ঠিকানা পরিবর্তন করা যায়নি', 'Could not change the default address', 'डिफ़ॉल्ट पता नहीं बदला जा सका'), 'error');
       return;
     }
     const { error: setError } = await supabase
@@ -197,7 +197,7 @@ export default function AccountPage() {
       .eq('id', id)
       .eq('user_id', user.id);
     if (setError) {
-      toast('নতুন ডিফল্ট ঠিকানা সেট করা যায়নি', 'error');
+      toast(t('নতুন ডিফল্ট ঠিকানা সেট করা যায়নি', 'Could not set the new default address', 'नया डिफ़ॉल्ट पता सेट नहीं हो सका'), 'error');
       return;
     }
     await loadAddresses(user.id);
@@ -205,7 +205,7 @@ export default function AccountPage() {
 
   const handleReorder = async (order: any) => {
     const { data: items } = await supabase.from('order_items').select('*, products(*)').eq('order_id', order.id);
-    if (!items || items.length === 0) { toast('অর্ডার আইটেম পাওয়া যায়নি', 'error'); return; }
+    if (!items || items.length === 0) { toast(t('অর্ডার আইটেম পাওয়া যায়নি', 'No order items found', 'ऑर्डर में कोई उत्पाद नहीं मिला'), 'error'); return; }
     const cart = JSON.parse(localStorage.getItem('gazi_cart') || '[]');
     let added = 0; let skipped = 0;
     for (const item of items) {
@@ -218,8 +218,8 @@ export default function AccountPage() {
     }
     localStorage.setItem('gazi_cart', JSON.stringify(cart));
     window.dispatchEvent(new Event('cart-updated'));
-    if (added > 0) toast(`${added} টি পণ্য কার্টে যোগ করা হয়েছে${skipped > 0 ? `, ${skipped} টি স্টকে নেই` : ''}`);
-    else toast('কোন পণ্য স্টকে নেই', 'error');
+    if (added > 0) toast(t(`${added} টি পণ্য কার্টে যোগ করা হয়েছে${skipped > 0 ? `, ${skipped} টি স্টকে নেই` : ''}`, `${added} product(s) added to cart${skipped > 0 ? `; ${skipped} out of stock` : ''}`, `${added} उत्पाद कार्ट में जोड़े गए${skipped > 0 ? `; ${skipped} स्टॉक में नहीं` : ''}`));
+    else toast(t('কোন পণ্য স্টকে নেই', 'No products are in stock', 'कोई उत्पाद स्टॉक में नहीं है'), 'error');
   };
 
   const handleMoveToCart = async (product: Product) => {
@@ -229,13 +229,13 @@ export default function AccountPage() {
     window.dispatchEvent(new Event('cart-updated'));
     await toggleWishlist(user.id, product.id);
     setWishlist(await getWishlist(user.id));
-    toast('কার্টে যোগ করা হয়েছে');
+    toast(t('কার্টে যোগ করা হয়েছে', 'Added to cart', 'कार्ट में जोड़ दिया गया'));
   };
 
   const handleRemoveWishlist = async (productId: string) => {
     await toggleWishlist(user.id, productId);
     setWishlist(await getWishlist(user.id));
-    toast('উইশলিস্ট থেকে সরানো হয়েছে');
+    toast(t('উইশলিস্ট থেকে সরানো হয়েছে', 'Removed from wishlist', 'इच्छा सूची से हटा दिया गया'));
   };
 
   // লাইটওয়েট ক্যাশ মেমো / ইনভয়েস প্রিন্ট ফাংশন
@@ -272,11 +272,11 @@ export default function AccountPage() {
       <div className="container-custom py-6 max-w-6xl">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black sm:text-3xl text-foreground">আমার অ্যাকাউন্ট</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">অর্ডার স্ট্যাটাস, ঠিকানা ও প্রোফাইল পরিচালনা করুন</p>
+          <h1 className="text-2xl font-black sm:text-3xl text-foreground">{t('আমার অ্যাকাউন্ট', 'My Account', 'मेरा खाता')}</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">{t('অর্ডার স্ট্যাটাস, ঠিকানা ও প্রোফাইল পরিচালনা করুন', 'Manage your order status, addresses, and profile', 'अपने ऑर्डर की स्थिति, पते और प्रोफ़ाइल प्रबंधित करें')}</p>
         </div>
         <button onClick={handleLogout} className="flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-bold hover:bg-secondary transition cursor-pointer">
-          <LogOut className="h-4 w-4" /> লগআউট
+          <LogOut className="h-4 w-4" /> {t('লগআউট', 'Log out', 'लॉग आउट')}
         </button>
       </div>
 
@@ -296,13 +296,13 @@ export default function AccountPage() {
 
             <nav className="space-y-1">
               {[
-                { key: 'dashboard', label: 'ড্যাশবোর্ড', icon: LayoutDashboard },
-                { key: 'orders', label: 'আমার অর্ডার', icon: Package },
-                { key: 'messages', label: `মেসেজ${inboxMessages.some((m) => !m.read_at) ? ` · ${inboxMessages.filter((m) => !m.read_at).length}` : ''}`, icon: Bell },
-                { key: 'addresses', label: 'সংরক্ষিত ঠিকানা', icon: MapPin },
-                { key: 'wishlist', label: 'উইশলিস্ট', icon: Heart },
-                { key: 'profile', label: 'প্রোফাইল', icon: User },
-                ...(referralEnabled ? [{ key: 'referral', label: 'রেফারেল', icon: Users }] : []),
+                { key: 'dashboard', label: t('ড্যাশবোর্ড', 'Dashboard', 'डैशबोर्ड'), icon: LayoutDashboard },
+                { key: 'orders', label: t('আমার অর্ডার', 'My orders', 'मेरे ऑर्डर'), icon: Package },
+                { key: 'messages', label: `${t('মেসেজ', 'Messages', 'संदेश')}${inboxMessages.some((m) => !m.read_at) ? ` · ${inboxMessages.filter((m) => !m.read_at).length}` : ''}`, icon: Bell },
+                { key: 'addresses', label: t('সংরক্ষিত ঠিকানা', 'Saved addresses', 'सहेजे गए पते'), icon: MapPin },
+                { key: 'wishlist', label: t('উইশলিস্ট', 'Wishlist', 'इच्छा सूची'), icon: Heart },
+                { key: 'profile', label: t('প্রোফাইল', 'Profile', 'प्रोफ़ाइल'), icon: User },
+                ...(referralEnabled ? [{ key: 'referral', label: t('রেফারেল', 'Referrals', 'रेफ़रल'), icon: Users }] : []),
               ].map((item) => (
                 <button 
                   key={item.key} 
@@ -319,16 +319,16 @@ export default function AccountPage() {
             {/* হেল্পডেস্ক / সাপোর্ট বক্স */}
             <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3.5 text-xs space-y-2">
               <p className="font-bold text-foreground flex items-center gap-1.5">
-                <HelpCircle className="h-4 w-4 text-primary" /> কোনো সহায়তা লাগবে?
+                <HelpCircle className="h-4 w-4 text-primary" /> {t('কোনো সহায়তা লাগবে?', 'Need help?', 'मदद चाहिए?')}
               </p>
-              <p className="text-[11px] text-muted-foreground">অর্ডার বা পণ্য সম্পর্কিত যেকোনো তথ্যের জন্য সরাসরি যোগাযোগ করুন।</p>
+              <p className="text-[11px] text-muted-foreground">{t('অর্ডার বা পণ্য সম্পর্কিত যেকোনো তথ্যের জন্য সরাসরি যোগাযোগ করুন।', 'Contact us directly for help with an order or product.', 'ऑर्डर या उत्पाद से जुड़ी मदद के लिए सीधे संपर्क करें।')}</p>
               <a 
                 {...{href: country === 'BD' ? 'https://wa.me/8801818838394' : '/contact'}} 
                 target="_blank" 
                 rel="noreferrer"
                 className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-white font-bold text-xs hover:bg-emerald-700 transition"
               >
-                <MessageCircle className="h-3.5 w-3.5" /> হোয়াটসঅ্যাপ সাপোর্ট
+                <MessageCircle className="h-3.5 w-3.5" /> {t('হোয়াটসঅ্যাপ সাপোর্ট', 'WhatsApp support', 'WhatsApp सहायता')}
               </a>
             </div>
           </div>
@@ -343,24 +343,24 @@ export default function AccountPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="rounded-2xl border border-border bg-card p-4 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold text-muted-foreground">মোট অর্ডার</p>
+                    <p className="text-xs font-bold text-muted-foreground">{t('মোট অর্ডার', 'Total orders', 'कुल ऑर्डर')}</p>
                     <Package className="h-4 w-4 text-primary" />
                   </div>
-                  <p className="mt-2 text-2xl font-black text-foreground">{orders.length} টি</p>
+                  <p className="mt-2 text-2xl font-black text-foreground">{orders.length} {t('টি অর্ডার', 'orders', 'ऑर्डर')}</p>
                 </div>
                 <div className="rounded-2xl border border-border bg-card p-4 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold text-muted-foreground">মোট খরচ</p>
+                    <p className="text-xs font-bold text-muted-foreground">{t('মোট খরচ', 'Total spent', 'कुल खर्च')}</p>
                     <ShoppingBag className="h-4 w-4 text-primary" />
                   </div>
                   <p className="mt-2 text-2xl font-black text-foreground">{formatPrice(totalSpend)}</p>
                 </div>
                 <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold text-amber-700">রিওয়ার্ড পয়েন্ট</p>
+                    <p className="text-xs font-bold text-amber-700">{t('রিওয়ার্ড পয়েন্ট', 'Reward points', 'रिवॉर्ड पॉइंट')}</p>
                     <Award className="h-4 w-4 text-amber-500" />
                   </div>
-                  <p className="mt-2 text-2xl font-black text-amber-600">{loyaltyPoints} <span className="text-xs font-normal">পয়েন্ট</span></p>
+                  <p className="mt-2 text-2xl font-black text-amber-600">{loyaltyPoints} <span className="text-xs font-normal">{t('পয়েন্ট', 'points', 'पॉइंट')}</span></p>
                 </div>
               </div>
 
@@ -369,14 +369,14 @@ export default function AccountPage() {
                 <div className="rounded-3xl border border-border bg-card p-5 shadow-xs space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
                     <div>
-                      <span className="text-[11px] font-bold text-primary uppercase tracking-wider">রানিং অর্ডার ট্র্যাকিং</span>
-                      <h3 className="text-base font-black text-foreground">অর্ডার #{latestActiveOrder.order_number}</h3>
+                      <span className="text-[11px] font-bold text-primary uppercase tracking-wider">{t('রানিং অর্ডার ট্র্যাকিং', 'Active order tracking', 'चल रहे ऑर्डर की ट्रैकिंग')}</span>
+                      <h3 className="text-base font-black text-foreground">{t('অর্ডার', 'Order', 'ऑर्डर')} #{latestActiveOrder.order_number}</h3>
                     </div>
                     <button 
                       onClick={() => handleViewOrderDetails(latestActiveOrder)}
                       className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
                     >
-                      বিস্তারিত দেখুন →
+                      {t('বিস্তারিত দেখুন', 'View details', 'विवरण देखें')} →
                     </button>
                   </div>
 
@@ -386,25 +386,25 @@ export default function AccountPage() {
                       <div className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${activeStep >= 1 ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}>
                         <Clock className="h-4 w-4" />
                       </div>
-                      <p className="text-[11px] font-bold">অর্ডার প্লেসড</p>
+                      <p className="text-[11px] font-bold">{t('অর্ডার প্লেসড', 'Order placed', 'ऑर्डर दिया गया')}</p>
                     </div>
                     <div className="space-y-1">
                       <div className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${activeStep >= 2 ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}>
                         <Box className="h-4 w-4" />
                       </div>
-                      <p className="text-[11px] font-bold">প্যাকিং</p>
+                      <p className="text-[11px] font-bold">{t('প্যাকিং', 'Packing', 'पैकिंग')}</p>
                     </div>
                     <div className="space-y-1">
                       <div className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${activeStep >= 3 ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}>
                         <Truck className="h-4 w-4" />
                       </div>
-                      <p className="text-[11px] font-bold">ডেলিভারিতে</p>
+                      <p className="text-[11px] font-bold">{t('ডেলিভারিতে', 'On the way', 'रास्ते में')}</p>
                     </div>
                     <div className="space-y-1">
                       <div className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${activeStep >= 4 ? 'bg-emerald-600 text-white' : 'bg-secondary text-muted-foreground'}`}>
                         <CheckCircle2 className="h-4 w-4" />
                       </div>
-                      <p className="text-[11px] font-bold">সম্পন্ন</p>
+                      <p className="text-[11px] font-bold">{t('সম্পন্ন', 'Delivered', 'डिलीवर हो गया')}</p>
                     </div>
                   </div>
                 </div>
@@ -412,9 +412,9 @@ export default function AccountPage() {
 
               {/* সাম্প্রতিক অর্ডার তালিকা */}
               <div className="rounded-3xl border border-border bg-card p-5 shadow-xs">
-                <h2 className="mb-3.5 font-black text-foreground text-sm sm:text-base">সাম্প্রতিক অর্ডার</h2>
+                <h2 className="mb-3.5 font-black text-foreground text-sm sm:text-base">{t('সাম্প্রতিক অর্ডার', 'Recent orders', 'हाल के ऑर्डर')}</h2>
                 {orders.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-4 text-center">এখনো কোনো অর্ডার করা হয়নি।</p>
+                  <p className="text-xs text-muted-foreground py-4 text-center">{t('এখনো কোনো অর্ডার করা হয়নি।', 'You have not placed an order yet.', 'आपने अभी तक कोई ऑर्डर नहीं किया है।')}</p>
                 ) : (
                   <div className="space-y-2.5">
                     {orders.slice(0, 5).map((o: any) => (
@@ -425,7 +425,7 @@ export default function AccountPage() {
                       >
                         <div>
                           <p className="font-extrabold text-primary">{o.order_number}</p>
-                          <p className="text-[11px] text-muted-foreground mt-0.5">{new Date(o.created_at).toLocaleDateString('bn-BD')}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{new Date(o.created_at).toLocaleDateString(lang === 'bn' ? 'bn-BD' : lang === 'hi' ? 'hi-IN' : country === 'IN' ? 'en-IN' : 'en-BD')}</p>
                         </div>
                         <div className="text-right">
                           <p className="font-black text-foreground">{formatPrice(o.final_amount ?? o.grand_total ?? o.total_amount ?? 0)}</p>
@@ -443,17 +443,17 @@ export default function AccountPage() {
 
           {tab === 'messages' && (
             <section className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-xs">
-              <div><h2 className="font-black text-lg">GAZI SEED-এর মেসেজ</h2><p className="mt-1 text-xs text-muted-foreground">আপনার account-এর জন্য পাঠানো announcement ও offer এখানে থাকবে।</p></div>
-              {inboxLoading ? <p className="py-8 text-center text-sm text-muted-foreground">মেসেজ লোড হচ্ছে…</p> : inboxMessages.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">এখনো কোনো মেসেজ নেই।</p> : <div className="space-y-3">{inboxMessages.map((message) => { const campaign = message.campaign?.[0]; return <article key={message.id} className={`rounded-2xl border p-4 ${message.read_at ? 'border-border bg-background' : 'border-primary/30 bg-primary/[0.04]'}`}><div className="flex items-start justify-between gap-3"><div><h3 className="font-extrabold">{campaign?.title || 'GAZI SEED message'}</h3><p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{campaign?.body}</p></div>{!message.read_at && <button type="button" onClick={() => void markInboxMessageRead(message.id)} className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">পড়া হয়েছে</button>}</div><time className="mt-3 block text-[11px] text-muted-foreground">{new Date(message.created_at).toLocaleString('bn-BD')}</time></article>; })}</div>}
+              <div><h2 className="font-black text-lg">{t('GAZI SEED-এর মেসেজ', 'Messages from GAZI SEED', 'GAZI SEED के संदेश')}</h2><p className="mt-1 text-xs text-muted-foreground">{t('আপনার account-এর জন্য পাঠানো announcement ও offer এখানে থাকবে।', 'Announcements and offers sent to your account will appear here.', 'आपके खाते के लिए भेजे गए घोषणाएँ और ऑफ़र यहाँ दिखेंगे।')}</p></div>
+              {inboxLoading ? <p className="py-8 text-center text-sm text-muted-foreground">{t('মেসেজ লোড হচ্ছে…', 'Loading messages…', 'संदेश लोड हो रहे हैं…')}</p> : inboxMessages.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">{t('এখনো কোনো মেসেজ নেই।', 'No messages yet.', 'अभी कोई संदेश नहीं है।')}</p> : <div className="space-y-3">{inboxMessages.map((message) => { const campaign = message.campaign?.[0]; return <article key={message.id} className={`rounded-2xl border p-4 ${message.read_at ? 'border-border bg-background' : 'border-primary/30 bg-primary/[0.04]'}`}><div className="flex items-start justify-between gap-3"><div><h3 className="font-extrabold">{campaign?.title || 'GAZI SEED message'}</h3><p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{campaign?.body}</p></div>{!message.read_at && <button type="button" onClick={() => void markInboxMessageRead(message.id)} className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">{t('পড়া হয়েছে', 'Mark as read', 'पढ़ा हुआ चिह्नित करें')}</button>}</div><time className="mt-3 block text-[11px] text-muted-foreground">{new Date(message.created_at).toLocaleString(lang === 'bn' ? 'bn-BD' : lang === 'hi' ? 'hi-IN' : country === 'IN' ? 'en-IN' : 'en-BD')}</time></article>; })}</div>}
             </section>
           )}
 
           {/* অর্ডার ট্যাব */}
           {tab === 'orders' && (
             <div className="rounded-3xl border border-border bg-card p-5 shadow-xs space-y-4">
-              <h2 className="font-black text-base sm:text-lg">আমার সব অর্ডার ({orders.length})</h2>
+              <h2 className="font-black text-base sm:text-lg">{t('আমার সব অর্ডার', 'All my orders', 'मेरे सभी ऑर्डर')} ({orders.length})</h2>
               {orders.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-6 text-center">কোনো অর্ডার হিস্ট্রি নেই</p>
+                <p className="text-xs text-muted-foreground py-6 text-center">{t('কোনো অর্ডার হিস্ট্রি নেই', 'No order history yet', 'ऑर्डर इतिहास उपलब्ध नहीं है')}</p>
               ) : (
                 <div className="space-y-3">
                   {orders.map((o: any) => (
@@ -463,11 +463,11 @@ export default function AccountPage() {
                           <div className="flex items-center gap-2">
                             <p className="font-black text-primary text-sm">{o.order_number}</p>
                             <span className="text-[11px] bg-secondary text-foreground font-semibold px-2 py-0.5 rounded-md">
-                              {new Date(o.created_at).toLocaleDateString('bn-BD')}
+                              {new Date(o.created_at).toLocaleDateString(lang === 'bn' ? 'bn-BD' : lang === 'hi' ? 'hi-IN' : country === 'IN' ? 'en-IN' : 'en-BD')}
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                            ঠিকানা: {o.delivery_address}
+                            {t('ঠিকানা', 'Address', 'पता')}: {o.delivery_address}
                           </p>
                         </div>
 
@@ -487,16 +487,16 @@ export default function AccountPage() {
                             <button 
                               onClick={() => handleViewOrderDetails(o)} 
                               className="flex items-center gap-1 rounded-xl border border-border px-3 py-1.5 text-xs font-bold hover:bg-secondary transition cursor-pointer"
-                              title="ইনভয়েস ও বিবরণ"
+                              title={t('ইনভয়েস ও বিবরণ', 'Invoice and details', 'इनवॉइस और विवरण')}
                             >
-                              <Eye className="h-3.5 w-3.5" /> বিবরণ
+                              <Eye className="h-3.5 w-3.5" /> {t('বিবরণ', 'Details', 'विवरण')}
                             </button>
                             <button 
                               onClick={() => handleReorder(o)} 
                               className="flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition cursor-pointer"
-                              title="পুনরায় অর্ডার করুন"
+                              title={t('পুনরায় অর্ডার করুন', 'Order again', 'फिर से ऑर्डर करें')}
                             >
-                              <RotateCcw className="h-3.5 w-3.5" /> রি-অর্ডার
+                              <RotateCcw className="h-3.5 w-3.5" /> {t('রি-অর্ডার', 'Order again', 'फिर से ऑर्डर करें')}
                             </button>
                           </div>
                         </div>
@@ -512,14 +512,14 @@ export default function AccountPage() {
           {tab === 'addresses' && (
             <div className="rounded-3xl border border-border bg-card p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="font-black text-base sm:text-lg">সংরক্ষিত ঠিকানা</h2>
+                <h2 className="font-black text-base sm:text-lg">{t('সংরক্ষিত ঠিকানা', 'Saved addresses', 'सहेजे गए पते')}</h2>
                 <button onClick={() => { setEditingAddr(null); setShowAddrForm(true); }} className="flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition cursor-pointer">
-                  <Plus className="h-4 w-4" /> নতুন ঠিকানা
+                  <Plus className="h-4 w-4" /> {t('নতুন ঠিকানা', 'Add address', 'नया पता')}
                 </button>
               </div>
 
               {addresses.length === 0 && !showAddrForm ? (
-                <p className="text-xs text-muted-foreground py-6 text-center">কোনো ঠিকানা সংরক্ষিত নেই। নতুন ঠিকানা যোগ করুন।</p>
+                <p className="text-xs text-muted-foreground py-6 text-center">{t('কোনো ঠিকানা সংরক্ষিত নেই। নতুন ঠিকানা যোগ করুন।', 'No saved addresses yet. Add an address to get started.', 'अभी कोई पता सहेजा नहीं गया है। शुरू करने के लिए पता जोड़ें।')}</p>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {addresses.map((a) => (
@@ -528,14 +528,14 @@ export default function AccountPage() {
                         <div>
                           <div className="flex items-center gap-2">
                             <p className="font-extrabold text-sm text-foreground">{a.name}</p>
-                            {a.is_default && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">ডিফল্ট</span>}
+                            {a.is_default && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{t('ডিফল্ট', 'Default', 'डिफ़ॉल्ट')}</span>}
                           </div>
                           <p className="text-xs font-semibold text-muted-foreground mt-0.5">{a.phone}</p>
                         </div>
                         <div className="flex gap-1">
-                          {!a.is_default && <button onClick={() => handleSetDefault(a.id)} className="rounded-lg p-1.5 hover:bg-secondary text-muted-foreground hover:text-primary" title="ডিফল্ট করুন"><Star className="h-4 w-4" /></button>}
-                          <button onClick={() => { setEditingAddr(a); setShowAddrForm(true); }} className="rounded-lg p-1.5 hover:bg-secondary text-muted-foreground" title="এডিট"><Edit className="h-4 w-4" /></button>
-                          <button onClick={() => handleDeleteAddress(a.id)} className="rounded-lg p-1.5 text-destructive hover:bg-destructive/10" title="মুছুন"><Trash2 className="h-4 w-4" /></button>
+                          {!a.is_default && <button onClick={() => handleSetDefault(a.id)} className="rounded-lg p-1.5 hover:bg-secondary text-muted-foreground hover:text-primary" title={t('ডিফল্ট করুন', 'Set as default', 'डिफ़ॉल्ट सेट करें')}><Star className="h-4 w-4" /></button>}
+                          <button onClick={() => { setEditingAddr(a); setShowAddrForm(true); }} className="rounded-lg p-1.5 hover:bg-secondary text-muted-foreground" title={t('এডিট', 'Edit', 'संपादित करें')}><Edit className="h-4 w-4" /></button>
+                          <button onClick={() => handleDeleteAddress(a.id)} className="rounded-lg p-1.5 text-destructive hover:bg-destructive/10" title={t('মুছুন', 'Delete', 'हटाएँ')}><Trash2 className="h-4 w-4" /></button>
                         </div>
                       </div>
                       <p className="text-xs text-muted-foreground border-t border-border pt-2">{a.address}</p>
@@ -553,9 +553,9 @@ export default function AccountPage() {
           {/* উইশলিস্ট ট্যাব */}
           {tab === 'wishlist' && (
             <div className="rounded-3xl border border-border bg-card p-5 shadow-xs space-y-4">
-              <h2 className="flex items-center gap-2 font-black text-base sm:text-lg"><Heart className="h-5 w-5 text-primary" /> আমার উইশলিস্ট</h2>
+              <h2 className="flex items-center gap-2 font-black text-base sm:text-lg"><Heart className="h-5 w-5 text-primary" /> {t('আমার উইশলিস্ট', 'My wishlist', 'मेरी इच्छा सूची')}</h2>
               {wishlist.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-6 text-center">উইশলিস্টে কোনো পণ্য নেই</p>
+                <p className="text-xs text-muted-foreground py-6 text-center">{t('উইশলিস্টে কোনো পণ্য নেই', 'Your wishlist is empty', 'आपकी इच्छा सूची खाली है')}</p>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {wishlist.map((p) => (
@@ -565,7 +565,7 @@ export default function AccountPage() {
                         <p className="font-bold text-xs sm:text-sm truncate text-foreground">{p.name_bn}</p>
                         <p className="text-xs font-black text-primary mt-0.5">{formatPrice(getEffectivePrice(p))}</p>
                         <div className="flex gap-2 mt-2">
-                          <button onClick={() => handleMoveToCart(p)} className="rounded-xl bg-primary px-3 py-1.5 text-[11px] font-bold text-primary-foreground hover:bg-primary/90 transition">কার্টে নিন</button>
+                          <button onClick={() => handleMoveToCart(p)} className="rounded-xl bg-primary px-3 py-1.5 text-[11px] font-bold text-primary-foreground hover:bg-primary/90 transition">{t('কার্টে নিন', 'Add to cart', 'कार्ट में जोड़ें')}</button>
                           <button onClick={() => handleRemoveWishlist(p.id)} className="rounded-xl p-1.5 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></button>
                         </div>
                       </div>
@@ -579,11 +579,11 @@ export default function AccountPage() {
           {/* প্রোফাইল ট্যাব */}
           {tab === 'profile' && (
             <div className="rounded-3xl border border-border bg-card p-5 shadow-xs space-y-4">
-              <h2 className="font-black text-base sm:text-lg">আমার প্রোফাইল</h2>
+              <h2 className="font-black text-base sm:text-lg">{t('আমার প্রোফাইল', 'My profile', 'मेरी प्रोफ़ाइल')}</h2>
               <div className="space-y-3 text-xs sm:text-sm">
-                <div className="p-3 rounded-xl bg-secondary/30"><label className="text-muted-foreground block text-xs">নাম</label><p className="font-bold text-foreground mt-0.5">{user?.user_metadata?.name || '-'}</p></div>
-                <div className="p-3 rounded-xl bg-secondary/30"><label className="text-muted-foreground block text-xs">ইমেইল</label><p className="font-bold text-foreground mt-0.5">{user?.email}</p></div>
-                <div className="p-3 rounded-xl bg-secondary/30"><label className="text-muted-foreground block text-xs">মোবাইল</label><p className="font-bold text-foreground mt-0.5">{user?.user_metadata?.phone || '-'}</p></div>
+                <div className="p-3 rounded-xl bg-secondary/30"><label className="text-muted-foreground block text-xs">{t('নাম', 'Name', 'नाम')}</label><p className="font-bold text-foreground mt-0.5">{user?.user_metadata?.name || '-'}</p></div>
+                <div className="p-3 rounded-xl bg-secondary/30"><label className="text-muted-foreground block text-xs">{t('ইমেইল', 'Email', 'ईमेल')}</label><p className="font-bold text-foreground mt-0.5">{user?.email}</p></div>
+                <div className="p-3 rounded-xl bg-secondary/30"><label className="text-muted-foreground block text-xs">{t('মোবাইল', 'Mobile', 'मोबाइल')}</label><p className="font-bold text-foreground mt-0.5">{user?.user_metadata?.phone || '-'}</p></div>
               </div>
             </div>
           )}
@@ -602,23 +602,23 @@ export default function AccountPage() {
           <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-card p-5 sm:p-6 shadow-2xl border border-border text-foreground">
             
             {/* ইনভয়েস হেডার */}
-            <div className="flex items-center justify-between border-b border-border pb-4">
+              <div className="flex items-center justify-between border-b border-border pb-4">
               <div>
-                <span className="text-[10px] font-black uppercase text-primary bg-primary/10 px-2 py-0.5 rounded">অফিসিয়াল ইনভয়েস স্লিপ</span>
+                <span className="text-[10px] font-black uppercase text-primary bg-primary/10 px-2 py-0.5 rounded">{t('অফিসিয়াল ইনভয়েস স্লিপ', 'Official invoice', 'आधिकारिक इनवॉइस')}</span>
                 <h3 className="text-lg font-black text-foreground mt-1">
-                  অর্ডার #{selectedOrder.order_number}
+                  {t('অর্ডার', 'Order', 'ऑर्डर')} #{selectedOrder.order_number}
                 </h3>
                 <p className="text-[11px] text-muted-foreground">
-                  তারিখ: {new Date(selectedOrder.created_at).toLocaleString('bn-BD')}
+                  {t('তারিখ', 'Date', 'तारीख')}: {new Date(selectedOrder.created_at).toLocaleString(lang === 'bn' ? 'bn-BD' : lang === 'hi' ? 'hi-IN' : country === 'IN' ? 'en-IN' : 'en-BD')}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <button 
                   onClick={handlePrintInvoice} 
                   className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-bold hover:bg-secondary transition cursor-pointer"
-                  title="মেমো প্রিন্ট করুন"
+                  title={t('মেমো প্রিন্ট করুন', 'Print invoice', 'इनवॉइस प्रिंट करें')}
                 >
-                  <Printer className="h-3.5 w-3.5 text-primary" /> প্রিন্ট
+                  <Printer className="h-3.5 w-3.5 text-primary" /> {t('প্রিন্ট', 'Print', 'प्रिंट करें')}
                 </button>
                 <button 
                   onClick={() => setSelectedOrder(null)} 
@@ -633,15 +633,15 @@ export default function AccountPage() {
             <div className="py-4 space-y-4 text-xs sm:text-sm">
               <div className="grid grid-cols-2 gap-3 bg-secondary/30 p-3.5 rounded-2xl">
                 <div>
-                  <span className="text-muted-foreground block text-[11px]">ডেলিভারি স্ট্যাটাস</span>
+                  <span className="text-muted-foreground block text-[11px]">{t('ডেলিভারি স্ট্যাটাস', 'Delivery status', 'डिलीवरी स्थिति')}</span>
                   <span className="font-black text-primary capitalize">{selectedOrder.status}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-[11px]">পেমেন্ট মেথড</span>
+                  <span className="text-muted-foreground block text-[11px]">{t('পেমেন্ট মেথড', 'Payment method', 'भुगतान का तरीका')}</span>
                   <span className="font-black uppercase">{selectedOrder.payment_method || 'COD'} ({selectedOrder.payment_status || 'unpaid'})</span>
                 </div>
                 <div className="col-span-2 border-t border-border/50 pt-2">
-                  <span className="text-muted-foreground block text-[11px]">ডেলিভারি প্রাপকের তথ্য</span>
+                  <span className="text-muted-foreground block text-[11px]">{t('ডেলিভারি প্রাপকের তথ্য', 'Delivery recipient', 'डिलीवरी प्राप्तकर्ता')}</span>
                   <p className="font-bold text-foreground">{selectedOrder.customer_name} ({selectedOrder.customer_phone})</p>
                   <p className="text-muted-foreground text-xs mt-0.5">{selectedOrder.delivery_address}</p>
                 </div>
@@ -650,7 +650,7 @@ export default function AccountPage() {
               {/* আইটেমস */}
               <div>
                 <h4 className="font-black text-xs text-foreground mb-2 flex items-center gap-1.5">
-                  <ShoppingBag className="h-4 w-4 text-primary" /> অর্ডার করা পণ্যসমূহ:
+                  <ShoppingBag className="h-4 w-4 text-primary" /> {t('অর্ডার করা পণ্যসমূহ:', 'Items in this order:', 'इस ऑर्डर के उत्पाद:')}
                 </h4>
 
                 {loadingDetails ? (
@@ -659,7 +659,7 @@ export default function AccountPage() {
                     <div className="h-10 bg-secondary rounded-xl animate-pulse" />
                   </div>
                 ) : orderItems.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-2">কোন পণ্যের বিবরণ পাওয়া যায়নি।</p>
+                  <p className="text-xs text-muted-foreground py-2">{t('কোন পণ্যের বিবরণ পাওয়া যায়নি।', 'No product details found.', 'उत्पाद का विवरण नहीं मिला।')}</p>
                 ) : (
                   <div className="divide-y divide-border border border-border rounded-2xl overflow-hidden">
                     {orderItems.map((item, idx) => (
@@ -678,7 +678,7 @@ export default function AccountPage() {
                           )}
                           <div>
                             <p className="font-bold text-xs sm:text-sm text-foreground line-clamp-1">
-                              {item.product_name || item.products?.name_bn || 'পণ্য'}
+                              {item.product_name || item.products?.name_en || item.products?.name_bn || t('পণ্য', 'Product', 'उत्पाद')}
                             </p>
                             <p className="text-[11px] text-muted-foreground">
                               {formatPrice(item.unit_price)} × {item.quantity}
@@ -697,21 +697,21 @@ export default function AccountPage() {
               {/* সামারি */}
               <div className="bg-secondary/40 p-4 rounded-2xl space-y-1.5 border border-border">
                 <div className="flex justify-between text-muted-foreground">
-                  <span>সাবটোটাল</span>
+                  <span>{t('সাবটোটাল', 'Subtotal', 'उप-योग')}</span>
                   <span>{formatPrice(selectedOrder.total_amount ?? selectedOrder.grand_total ?? 0)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
-                  <span>ডেলিভারি চার্জ</span>
+                  <span>{t('ডেলিভারি চার্জ', 'Delivery charge', 'डिलीवरी शुल्क')}</span>
                   <span>{formatPrice(selectedOrder.delivery_charge ?? 0)}</span>
                 </div>
                 {Number(selectedOrder.discount_amount) > 0 && (
                   <div className="flex justify-between text-primary font-bold">
-                    <span>ডিসকাউন্ট</span>
+                    <span>{t('ডিসকাউন্ট', 'Discount', 'छूट')}</span>
                     <span>- {formatPrice(selectedOrder.discount_amount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-black text-sm sm:text-base text-foreground border-t border-border pt-2 mt-2">
-                  <span>সর্বমোট বিল</span>
+                  <span>{t('সর্বমোট বিল', 'Total', 'कुल बिल')}</span>
                   <span className="text-primary text-base sm:text-lg">{formatPrice(selectedOrder.final_amount ?? selectedOrder.grand_total ?? selectedOrder.total_amount ?? 0)}</span>
                 </div>
               </div>
@@ -723,7 +723,7 @@ export default function AccountPage() {
                 onClick={() => setSelectedOrder(null)}
                 className="rounded-xl bg-primary text-primary-foreground px-5 py-2 text-xs font-bold hover:bg-primary/90 transition cursor-pointer"
               >
-                ঠিক আছে
+                {t('ঠিক আছে', 'Done', 'ठीक है')}
               </button>
             </div>
           </div>
@@ -788,6 +788,7 @@ export default function AccountPage() {
 }
 
 function AddressForm({ address, onSave, onClose }: { address: CustomerAddress | null; onSave: (data: any) => void; onClose: () => void }) {
+  const { t } = useLang();
   const [label, setLabel] = useState(address?.label || 'Home');
   const [name, setName] = useState(address?.name || '');
   const [phone, setPhone] = useState(address?.phone || '');
@@ -799,7 +800,7 @@ function AddressForm({ address, onSave, onClose }: { address: CustomerAddress | 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !phone || !addrValue.division || !addrValue.district || !addrValue.thana || !addrValue.detail) {
-      toast('সব প্রয়োজনীয় তথ্য পূরণ করুন', 'error'); return;
+      toast(t('সব প্রয়োজনীয় তথ্য পূরণ করুন', 'Please complete all required fields', 'कृपया सभी ज़रूरी जानकारी भरें'), 'error'); return;
     }
     onSave({
       label, name, phone,
@@ -815,24 +816,24 @@ function AddressForm({ address, onSave, onClose }: { address: CustomerAddress | 
   return (
     <div className="mt-4 rounded-2xl border-2 border-primary/20 bg-secondary/20 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-bold text-sm">{address ? 'ঠিকানা এডিট করুন' : 'নতুন ঠিকানা যোগ করুন'}</h3>
+        <h3 className="font-bold text-sm">{address ? t('ঠিকানা এডিট করুন', 'Edit address', 'पता संपादित करें') : t('নতুন ঠিকানা যোগ করুন', 'Add a new address', 'नया पता जोड़ें')}</h3>
         <button onClick={onClose}><X className="h-5 w-5" /></button>
       </div>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">লেবেল</label>
+          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">{t('লেবেল', 'Label', 'लेबल')}</label>
             <select value={label} onChange={(e) => setLabel(e.target.value)} className="input-bangla">
               <option value="Home">Home</option><option value="Office">Office</option><option value="Other">Other</option>
             </select>
           </div>
-          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">নাম *</label><input value={name} onChange={(e) => setName(e.target.value)} className="input-bangla" required /></div>
-          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">ফোন *</label><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-bangla" required /></div>
+          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">{t('নাম', 'Name', 'नाम')} *</label><input value={name} onChange={(e) => setName(e.target.value)} className="input-bangla" required /></div>
+          <div><label className="mb-1 block text-xs font-bold text-muted-foreground">{t('ফোন', 'Phone', 'फ़ोन')} *</label><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-bangla" required /></div>
         </div>
         <AddressSelector value={addrValue} onChange={setAddrValue} />
-        <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer"><input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} className="accent-primary" /> ডিফল্ট ঠিকানা হিসেবে সেট করুন</label>
+        <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer"><input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} className="accent-primary" /> {t('ডিফল্ট ঠিকানা হিসেবে সেট করুন', 'Set as default address', 'डिफ़ॉल्ट पता सेट करें')}</label>
         <div className="flex gap-2">
-          <button type="submit" className="flex-1 rounded-xl bg-primary py-3 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition cursor-pointer">সেভ করুন</button>
-          <button type="button" onClick={onClose} className="rounded-xl border border-border px-6 py-3 text-xs font-bold hover:bg-secondary transition cursor-pointer">বাতিল</button>
+          <button type="submit" className="flex-1 rounded-xl bg-primary py-3 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition cursor-pointer">{t('সেভ করুন', 'Save address', 'पता सेव करें')}</button>
+          <button type="button" onClick={onClose} className="rounded-xl border border-border px-6 py-3 text-xs font-bold hover:bg-secondary transition cursor-pointer">{t('বাতিল', 'Cancel', 'रद्द करें')}</button>
         </div>
       </form>
     </div>
