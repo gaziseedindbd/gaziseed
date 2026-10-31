@@ -29,7 +29,8 @@ export default function CrmMessagesPage() {
         if (audienceError) throw new Error('Eligible registered customer তালিকা যাচাই করা যায়নি। নিরাপত্তার জন্য recipient তালিকা বন্ধ রাখা হয়েছে.');
         if (!alive) return;
         setBranch(activeBranch);
-        setRecipients((audience || []).map((recipient: { user_id: string; display_name: string }) => ({ id: recipient.user_id, name: recipient.display_name, orders: 0 })).sort((a, b) => a.name.localeCompare(b.name)));
+        const eligibleRecipients: Recipient[] = (audience || []).map((recipient: { user_id: string; display_name: string }) => ({ id: recipient.user_id, name: recipient.display_name, orders: 0 }));
+        setRecipients(eligibleRecipients.sort((a, b) => a.name.localeCompare(b.name)));
       } catch (e) {
         if (alive) setError(e instanceof Error ? e.message : 'Customer তালিকা লোড করা যায়নি।');
       } finally { if (alive) setLoading(false); }
