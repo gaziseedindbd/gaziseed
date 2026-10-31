@@ -45,6 +45,7 @@ const navGroups: NavGroup[] = [
     { href: '/admin/customers', label: 'কাস্টমার ডিরেক্টরি', icon: Users },
     { href: '/admin/crm/follow-ups', label: 'Follow-up tasks', icon: Clock3 },
     { href: '/admin/crm/segments', label: 'Customer segments', icon: Layers },
+    { href: '/admin/crm/messages', label: 'Customer inbox messages', icon: MessageCircle },
   ] },
   { label: 'কন্টেন্ট', items: [
     { href: '/admin/homepage', label: 'হোমপেজ', icon: Home },
