@@ -1,6 +1,7 @@
 'use client';
-import {useCallback,useEffect,useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
+import {useSearchParams} from 'next/navigation';
 import {supabase} from '@/lib/supabase/client';
 type Order={id:string;order_number:string|null;customer_name:string|null;delivery_address:string|null;status:string|null;payment_status:string|null;payment_method:string|null;payment_advance_amount:number|null;payment_due_amount:number|null;cashfree_dispatch_verified_at:string|null;final_amount:number|null;grand_total:number|null;created_at:string};
 type OrderItem={id:string;order_id:string;product_name:string;quantity:number;total_price:number};
@@ -18,6 +19,7 @@ const extractIndiaPin=(address:string|null|undefined)=>{
  return parts.length>=5&&/^[1-9][0-9]{5}$/.test(last)?last:'';
 };
 export default function IndiaShippingDashboard(){
+ const searchParams=useSearchParams(),initialOrderSelectionApplied=useRef(false);
  const [orders,setOrders]=useState<Order[]>([]),[orderItems,setOrderItems]=useState<OrderItem[]>([]),[packageProfiles,setPackageProfiles]=useState<PackageProfile[]>([]),[shipments,setShipments]=useState<Shipment[]>([]),[events,setEvents]=useState<Event[]>([]),[pickupBatch,setPickupBatch]=useState<PickupBatch>(null);
  const [preparations,setPreparations]=useState<Preparation[]>([]);
  const [selected,setSelected]=useState(''),[search,setSearch]=useState(''),[loading,setLoading]=useState(true),[error,setError]=useState('');
@@ -33,7 +35,7 @@ export default function IndiaShippingDashboard(){
  const [bookingLoading,setBookingLoading]=useState(false),[bookingMessage,setBookingMessage]=useState('');
  const [pickupIds,setPickupIds]=useState<string[]>([]),[pickupDate,setPickupDate]=useState(''),[pickupTime,setPickupTime]=useState('10:00'),[pickupLoading,setPickupLoading]=useState(false),[pickupMessage,setPickupMessage]=useState('');
  useEffect(()=>{setPickupDate(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata'}).format(new Date()));},[]);
- function chooseOrder(id:string){if(saving||preflightLoading||quoteLoading)return;setSelected(id);setQuote(null);setQuoteMessage('');setPreflightResult('');setSaveMessage('');setMobileDetails(true);window.scrollTo({top:0,behavior:'smooth'});}
+ const chooseOrder=useCallback((id:string)=>{if(saving||preflightLoading||quoteLoading)return;setSelected(id);setQuote(null);setQuoteMessage('');setPreflightResult('');setSaveMessage('');setMobileDetails(true);window.scrollTo({top:0,behavior:'smooth'});},[saving,preflightLoading,quoteLoading]);
  function backToOrders(){if(saving||preflightLoading||quoteLoading)return;setMobileDetails(false);window.scrollTo({top:0,behavior:'smooth'});}
  const invalidateParcelQuote=useCallback(()=>{setQuote(null);setQuoteMessage('');},[]);
  const applyPackageProfile=useCallback((profile:PackageProfile)=>{setPackageProfileId(profile.id);setWeight(String(Math.round(profile.weight_kg*1000)));setLength(String(profile.length_cm));setBreadth(String(profile.breadth_cm));setHeight(String(profile.height_cm));setNotes(profile.packing_notes);setFragile(profile.fragile);setSaveMessage('');invalidateParcelQuote();},[invalidateParcelQuote]);
@@ -46,6 +48,12 @@ export default function IndiaShippingDashboard(){
  if(alive){setOrders(data.orders);setOrderItems(data.orderItems??[]);setPackageProfiles(data.packageProfiles??[]);setShipments(data.shipments??[]);setEvents(data.events??[]);setPreparations(data.preparations??[]);setPickupBatch(data.pickupBatch??null);}
  }catch(e){if(alive)setError(e instanceof Error?e.message:'Unable to load shipping data');}
  finally{if(alive)setLoading(false);}})();return()=>{alive=false};},[]);
+useEffect(()=>{
+ if(loading||initialOrderSelectionApplied.current)return;
+ initialOrderSelectionApplied.current=true;
+ const orderId=searchParams.get('order_id');
+ if(orderId&&orders.some(order=>order.id===orderId))chooseOrder(orderId);
+},[loading,orders,searchParams,chooseOrder]);
 useEffect(()=>{if(!selected)return;const saved=preparations.find(p=>p.order_id===selected),selectedOrder=orders.find(o=>o.id===selected);setPin(saved?.delivery_pin??extractIndiaPin(selectedOrder?.delivery_address));setFragile(saved?.fragile_shipment??false);setPackageProfileId(saved?.package_profile_id??'');setProfileSuggestion('');
   if(saved){setWeight(String(Math.round(saved.weight_kg*1000)));setLength(String(saved.length_cm));setBreadth(String(saved.breadth_cm));setHeight(String(saved.height_cm));setNotes(saved.packing_notes??'');return;}
   setWeight('');setLength('');setBreadth('');setHeight('');setNotes('');
