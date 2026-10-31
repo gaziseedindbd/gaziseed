@@ -1,19 +1,18 @@
 import type { Metadata } from 'next';
 import { cookies, headers } from 'next/headers';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { normalizeVisitorCountry, resolveVisitorCountry } from '@/lib/visitor-country';
 
 export type SeoCountry = 'BD' | 'IN';
 
 export async function getSeoCountry(): Promise<SeoCountry> {
   const [cookieStore, requestHeaders] = await Promise.all([cookies(), headers()]);
-  const routeHeader = requestHeaders.get('x-gazi-route-country')?.toUpperCase();
-  if (routeHeader === 'IN' || routeHeader === 'BD') return routeHeader;
-  const routeCookie = cookieStore.get('gazi_route_country')?.value?.toUpperCase();
-  if (routeCookie === 'IN' || routeCookie === 'BD') return routeCookie;
-  const override = cookieStore.get('gazi_country_override')?.value?.toUpperCase();
-  if (override === 'IN' || override === 'BD') return override;
-  const detected = (requestHeaders.get('x-vercel-ip-country') || requestHeaders.get('cf-ipcountry') || 'BD').toUpperCase();
-  return detected === 'IN' ? 'IN' : 'BD';
+  return normalizeVisitorCountry(requestHeaders.get('x-gazi-route-country')) || resolveVisitorCountry({
+    pathname: '/',
+    manualOverride: cookieStore.get('gazi_country_override')?.value,
+    vercelCountry: requestHeaders.get('x-vercel-ip-country'),
+    cloudflareCountry: requestHeaders.get('cf-ipcountry'),
+  });
 }
 
 export function localizedSeoText(value: unknown, country: SeoCountry, fallback = ''): string {

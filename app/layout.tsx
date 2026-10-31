@@ -24,6 +24,7 @@ import HomePromoSync from '@/components/site/home-promo-sync';
 import IndiaHomeCountry from '@/components/site/india-home-country';
 import DeferredHomeWidgets from '@/components/site/deferred-home-widgets';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { normalizeVisitorCountry, resolveVisitorCountry } from '@/lib/visitor-country';
 
 const hind = Hind({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'], variable: '--font-hind', display: 'swap' });
 
@@ -61,21 +62,12 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const requestHeaders = await headers();
   const cookieStore = await cookies();
-  const routeHeaderCountry = requestHeaders.get('x-gazi-route-country')?.toUpperCase();
-  const routeCookieCountry = cookieStore.get('gazi_route_country')?.value?.toUpperCase();
-  const cookieOverride = cookieStore.get('gazi_country_override')?.value?.toUpperCase();
-  const detectedCountry = (
-    requestHeaders.get('x-vercel-ip-country') ||
-    requestHeaders.get('cf-ipcountry') ||
-    'BD'
-  ).toUpperCase();
-  const visitorCountry = routeHeaderCountry === 'IN' || routeHeaderCountry === 'BD'
-    ? routeHeaderCountry
-    : routeCookieCountry === 'IN' || routeCookieCountry === 'BD'
-      ? routeCookieCountry
-      : cookieOverride === 'IN' || cookieOverride === 'BD'
-        ? cookieOverride
-        : detectedCountry === 'IN' ? 'IN' : 'BD';
+  const visitorCountry = normalizeVisitorCountry(requestHeaders.get('x-gazi-route-country')) || resolveVisitorCountry({
+    pathname: '/',
+    manualOverride: cookieStore.get('gazi_country_override')?.value,
+    vercelCountry: requestHeaders.get('x-vercel-ip-country'),
+    cloudflareCountry: requestHeaders.get('cf-ipcountry'),
+  });
 
   const savedLanguage = cookieStore.get('gazi_lang')?.value;
   const initialLang = savedLanguage === 'bn' || savedLanguage === 'hi' || savedLanguage === 'en'

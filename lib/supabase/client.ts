@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
+import { getPathVisitorCountry } from '@/lib/visitor-country';
 
 const FALLBACK_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
 const FALLBACK_KEY = 'sb_publishable_vCaz5OGrHocUTgpOXmE9xg_QVsuUJc0';
@@ -8,17 +9,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || proc
 
 export const getRouteCountryOverride = (): 'BD' | 'IN' | null => {
   if (typeof window === 'undefined') return null;
-  const pathname = window.location.pathname;
-  const pathMatch = pathname.match(/^\/(in|bd)\/product(?:\/|$)/i);
-  const pathCountry = pathMatch?.[1]?.toUpperCase();
-  if (pathCountry === 'IN' || pathCountry === 'BD') return pathCountry;
-  if (/^\/india(?:\/|$)/i.test(pathname)) return 'IN';
-  const categorySlug = pathname.match(/^\/category\/([^/]+)\/?$/i)?.[1]?.toLowerCase();
-  if (categorySlug?.endsWith('-in') || categorySlug?.endsWith('-india')) return 'IN';
-  if (categorySlug?.endsWith('-bd')) return 'BD';
-  const cookieMatch = document.cookie.match(/(?:^|;\s*)gazi_route_country=(IN|BD)(?:;|$)/i);
-  const cookieCountry = cookieMatch?.[1]?.toUpperCase();
-  return cookieCountry === 'IN' || cookieCountry === 'BD' ? cookieCountry : null;
+  return getPathVisitorCountry(window.location.pathname);
 };
 
 export const getManualCountryOverride = (): 'BD' | 'IN' | null => {

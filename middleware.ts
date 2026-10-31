@@ -1,22 +1,18 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-
-function getRouteCountry(pathname: string): 'BD' | 'IN' | null {
-  const productMatch = pathname.match(/^\/(in|bd)\/product(?:\/|$)/i);
-  if (productMatch?.[1]?.toUpperCase() === 'IN') return 'IN';
-  if (productMatch?.[1]?.toUpperCase() === 'BD') return 'BD';
-  if (/^\/india(?:\/|$)/i.test(pathname)) return 'IN';
-
-  const categorySlug = pathname.match(/^\/category\/([^/]+)\/?$/i)?.[1]?.toLowerCase();
-  if (categorySlug?.endsWith('-in') || categorySlug?.endsWith('-india')) return 'IN';
-  if (categorySlug?.endsWith('-bd')) return 'BD';
-  return null;
-}
+import { resolveVisitorCountry } from '@/lib/visitor-country';
 
 export async function middleware(request: NextRequest) {
-  const routeCountry = getRouteCountry(request.nextUrl.pathname);
+  const visitorCountry = resolveVisitorCountry({
+    pathname: request.nextUrl.pathname,
+    manualOverride: request.cookies.get('gazi_country_override')?.value,
+    vercelCountry: request.headers.get('x-vercel-ip-country'),
+    cloudflareCountry: request.headers.get('cf-ipcountry'),
+  });
   const forwardedHeaders = new Headers(request.headers);
-  if (routeCountry) forwardedHeaders.set('x-gazi-route-country', routeCountry);
+  // Use one edge-resolved country for server rendering and server data calls.
+  // Middleware overwrites any client-supplied value.
+  forwardedHeaders.set('x-gazi-route-country', visitorCountry);
 
   let response = NextResponse.next({ request: { headers: forwardedHeaders } });
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -35,7 +31,7 @@ export async function middleware(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           const updatedHeaders = new Headers(request.headers);
-          if (routeCountry) updatedHeaders.set('x-gazi-route-country', routeCountry);
+          updatedHeaders.set('x-gazi-route-country', visitorCountry);
           response = NextResponse.next({ request: { headers: updatedHeaders } });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options),
@@ -52,15 +48,6 @@ export async function middleware(request: NextRequest) {
       // Public pages, including the Messenger payment handoff, must remain
       // available if the Auth service is temporarily unreachable.
     }
-  }
-
-  // Keep the route-selected branch available to client data requests and
-  // subsequent navigation across India and country-specific category pages.
-  if (routeCountry) {
-    response.cookies.set('gazi_route_country', routeCountry, {
-      path: '/',
-      sameSite: 'lax',
-    });
   }
 
   return response;
