@@ -1,3 +1,4 @@
+import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
 import { notFound } from 'next/navigation';
 import CategoryPageClient from '@/components/site/category-page-client';
 import { getSeoCountry } from '@/lib/seo-metadata';
@@ -32,7 +33,7 @@ export default async function CategoryPage({
       .order('display_order', { ascending: true }),
     supabase
       .from('products')
-      .select('*')
+      .select(PRODUCT_SAFE_SELECT)
       .eq('category_id', category.id)
       .eq('country_code', country)
       .eq('is_active', true)

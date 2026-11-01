@@ -1,5 +1,7 @@
 'use client';
 
+import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
+
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { adminPrice } from '@/lib/admin-order-display';
@@ -194,7 +196,7 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
 
   useEffect(() => {
     if (mode === 'existing') {
-      supabase.from('products').select('*').eq('country_code', countryCode).eq('is_active', true).eq('is_ads_only', false).order('name_bn').then(({ data }) => setProducts(data || []));
+      supabase.from('products').select(PRODUCT_SAFE_SELECT).eq('country_code', countryCode).eq('is_active', true).eq('is_ads_only', false).order('name_bn').then(({ data }) => setProducts(data || []));
     }
   }, [mode, countryCode]);
 

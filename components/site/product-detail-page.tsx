@@ -1,3 +1,4 @@
+import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { cache } from 'react';
@@ -13,7 +14,7 @@ const getProductForRoute = cache(async (slug: string, country: ProductCountry): 
   const supabase = await createServerSupabase(country);
   const { data, error } = await supabase
     .from('products')
-    .select('*')
+    .select(PRODUCT_SAFE_SELECT)
     .eq('slug', slug)
     .eq('country_code', country)
     .eq('is_active', true)

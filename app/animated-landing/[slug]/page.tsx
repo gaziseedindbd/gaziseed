@@ -1,5 +1,7 @@
 'use client';
 
+import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
+
 import { useEffect, useMemo, useState } from 'react';
 import { useLang } from '@/components/site/language-provider';
 import { useParams, useSearchParams } from 'next/navigation';
@@ -182,7 +184,7 @@ export default function AnimatedLandingPage() {
       }
 
       const [{ data: prod }, { data: pkg }] = await Promise.all([
-        supabase.from('products').select('*').eq('id', landing.product_id).eq('is_active', true).eq('country_code', getVisitorCountry()).maybeSingle(),
+        supabase.from('products').select(PRODUCT_SAFE_SELECT).eq('id', landing.product_id).eq('is_active', true).eq('country_code', getVisitorCountry()).maybeSingle(),
         supabase.from('animated_landing_packages')
           .select('*')
           .eq('landing_page_id', landing.id)

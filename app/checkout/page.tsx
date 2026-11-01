@@ -1,5 +1,7 @@
 'use client';
 
+import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
+
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -99,7 +101,7 @@ export default function CheckoutPage() {
       setMoreProductsLoading(true);
       setMoreProductsError('');
       const term = productSearch.trim().replace(/[%_,]/g, ' ').slice(0, 55);
-      let query = supabase.from('products').select('*').eq('country_code', country).eq('is_active', true).gt('stock', 0).order('created_at', { ascending: false }).limit(12);
+      let query = supabase.from('products').select(PRODUCT_SAFE_SELECT).eq('country_code', country).eq('is_active', true).gt('stock', 0).order('created_at', { ascending: false }).limit(12);
       if (term) query = query.or(`name_en.ilike.%${term}%,name_bn.ilike.%${term}%`);
       const { data, error: productError } = await query;
       if (!active) return;

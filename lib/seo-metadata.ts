@@ -1,3 +1,4 @@
+import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
 import type { Metadata } from 'next';
 import { cookies, headers } from 'next/headers';
 import { createServerSupabase } from '@/lib/supabase/server';
@@ -138,6 +139,6 @@ export async function getServerRow(table: string, slugColumn: string, slug: stri
 export async function getServerProductById(id?: string | null, country?: SeoCountry) {
   if (!id) return null;
   const supabase = await createServerSupabase(country);
-  const { data } = await supabase.from('products').select('*').eq('id', id).maybeSingle();
+  const { data } = await supabase.from('products').select(PRODUCT_SAFE_SELECT).eq('id', id).maybeSingle();
   return data as any;
 }

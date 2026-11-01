@@ -1,5 +1,7 @@
 'use client';
 
+import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { MultilingualFields } from '@/components/admin/multilingual-fields';
@@ -189,13 +191,13 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data, error } = await supabase.from('products').select('*').eq('country_code', countryCode);
+      const { data, error } = await supabase.from('products').select(PRODUCT_SAFE_SELECT).eq('country_code', countryCode);
       if (!error && data) setAllProducts(data);
     };
     fetchProducts();
 
     if (combo?.id) {
-      supabase.from('combo_items').select('*, products(*)').eq('combo_id', combo.id).then(({ data }) => {
+      supabase.from('combo_items').select(`*, products(${PRODUCT_SAFE_SELECT})` as any).eq('combo_id', combo.id).then(({ data }) => {
         setItems((data || []).map((it: any) => ({
           product_id: it.product_id,
           quantity: it.quantity,
