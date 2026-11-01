@@ -99,8 +99,8 @@ export default function AdminComboPacksPage() {
       tier_pricing: rawPayload.tier_pricing || [],
       manual_items_list: JSON.stringify((rawPayload.manual_items_list || []).map((item: any) => ({
         ...item,
-        name: item.translations?.bn?.name || item.name || '',
-        qty: item.translations?.bn?.qty || item.qty || '',
+        name: item.translations?.bn?.name || item.name || item.name_bn || item.translations?.en?.name || item.translations?.hi?.name || '',
+        qty: item.translations?.bn?.qty || item.qty || item.quantity || item.qty_en || item.translations?.en?.qty || item.qty_hi || item.translations?.hi?.qty || '',
       }))),
       is_active: rawPayload.is_active,
       is_featured: rawPayload.is_featured === true,
