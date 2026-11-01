@@ -170,12 +170,16 @@ export default function ComboLandingPage() {
   const tiers = Array.isArray(combo?.tier_pricing) ? (combo?.tier_pricing ?? []) : [];
   const items: ComboItem[] = Array.isArray(combo?.combo_items) ? (combo?.combo_items ?? []) : [];
   const manualItems = useMemo(() => {
+    const hasDisplayContent = (item: any) => item && (
+      item.name || item.name_bn || item.image_url || item.image ||
+      item.translations?.bn?.name || item.translations?.en?.name || item.translations?.hi?.name
+    );
     const value = combo?.manual_items_list;
-    if (Array.isArray(value)) return value.filter((item: any) => item && (item.name || item.image_url || item.image));
+    if (Array.isArray(value)) return value.filter(hasDisplayContent);
     if (typeof value === 'string') {
       try {
         const parsed = JSON.parse(value);
-        return Array.isArray(parsed) ? parsed.filter((item: any) => item && (item.name || item.image_url || item.image)) : [];
+        return Array.isArray(parsed) ? parsed.filter(hasDisplayContent) : [];
       } catch {
         return [];
       }
