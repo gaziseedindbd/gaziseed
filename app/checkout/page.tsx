@@ -17,6 +17,7 @@ import {
   Loader2,
   Lock,
   MapPin,
+  MessageCircle,
   PackageCheck,
   Plus,
   Minus,
@@ -63,7 +64,7 @@ declare global {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
   const [cart, setCart] = useState<CartItemWithDiscount[]>([]);
   const [loading, setLoading] = useState(false);
@@ -86,6 +87,8 @@ export default function CheckoutPage() {
   const [deliveryCharge, setDeliveryCharge] = useState(0);
   const [deliveryQuoteReady, setDeliveryQuoteReady] = useState(false);
   const [deliveryQuoteRetry, setDeliveryQuoteRetry] = useState(0);
+  const [messengerLinkLoading, setMessengerLinkLoading] = useState(false);
+  const [messengerLinkError, setMessengerLinkError] = useState('');
 
   const [showMoreProducts, setShowMoreProducts] = useState(false);
   const [productSearch, setProductSearch] = useState('');
@@ -408,6 +411,32 @@ export default function CheckoutPage() {
 
     return t('প্রযোজ্য ডেলিভারি চার্জ যোগ হয়েছে', 'Applicable delivery charge added');
   }, [country, subtotal, deliveryCharge, deliveryRules, freeDeliveryProductIds, t]);
+
+  const openMessengerWithCart = async () => {
+    if (messengerLinkLoading || cart.length === 0) return;
+    setMessengerLinkLoading(true);
+    setMessengerLinkError('');
+    try {
+      const response = await fetch('/api/messenger/cart-context', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          country,
+          language: lang,
+          items: cart.map(({ product_id, quantity, unit_price, variant_id, bundle_id }) => ({ product_id, quantity, unit_price, variant_id, bundle_id })),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || typeof result.url !== 'string') {
+        throw new Error(typeof result.error === 'string' ? result.error : 'Could not open Messenger right now.');
+      }
+      window.location.assign(result.url);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not open Messenger right now.';
+      setMessengerLinkError(message);
+      setMessengerLinkLoading(false);
+    }
+  };
 
   const applyCoupon = async () => {
     const normalizedCode = couponCode.trim().toUpperCase();
@@ -1022,6 +1051,17 @@ export default function CheckoutPage() {
                     <div className="h-2.5 w-full overflow-hidden rounded-full bg-primary/15" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={freeDeliveryPercent} aria-label="Free delivery progress">
                       <div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${freeDeliveryPercent}%` }} />
                     </div>
+                  </div>}
+
+                  {cart.length > 0 && <div className="space-y-2">
+                    <button type="button" onClick={openMessengerWithCart} disabled={messengerLinkLoading}
+                      className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-background px-3 py-2 text-sm font-bold text-primary transition hover:bg-primary/5 disabled:cursor-wait disabled:opacity-60">
+                      {messengerLinkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+                      {messengerLinkLoading
+                        ? t('Messenger খোলা হচ্ছে…', 'Opening Messenger…', 'Messenger खोला जा रहा है…')
+                        : t('Messenger-এ AI-কে জিজ্ঞেস করুন', 'Ask AI on Messenger about this cart', 'इस cart के बारे में Messenger AI से पूछें')}
+                    </button>
+                    {messengerLinkError && <p role="alert" className="text-xs text-rose-600">{messengerLinkError}</p>}
                   </div>}
 
                   <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('সাবটোটাল', 'Subtotal')}</span><span className="font-bold">{formatPrice(subtotal)}</span></div>
