@@ -350,7 +350,7 @@ export async function getActivePromotions(): Promise<{ promotion: Promotion; gif
 }
 
 export async function getComboPacks(): Promise<{ combo: ComboPack; items: { product: Product; quantity: number }[] }[]> {
-  const { data: combos } = await supabase.from('combo_packs').select('*').eq('is_active', true).order('display_order');
+  const { data: combos } = await supabase.from('combo_packs').select('*').eq('is_active', true).eq('landing_type', 'combo').order('display_order');
   if (!combos || combos.length === 0) return [];
   const results: { combo: ComboPack; items: { product: Product; quantity: number }[] }[] = [];
   for (const c of combos as ComboPack[]) {
