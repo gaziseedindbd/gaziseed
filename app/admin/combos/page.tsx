@@ -177,17 +177,18 @@ function ComboForm({ combo, countryCode, isSeedLanding, onSave, onClose }: { com
 
   const [manualItems, setManualItems] = useState<any[]>(
     Array.isArray(combo?.manual_items_list) && combo.manual_items_list.length > 0 
-      ? combo.manual_items_list 
-      : [{ name: '', qty: '' }]
+      ? combo.manual_items_list.map((item: any) => ({ ...item, image_url: item.image_url || item.image || '' }))
+      : [{ name: '', qty: '', image_url: '' }]
   );
 
-  const addManualRow = () => setManualItems([...manualItems, { name: '', qty: '' }]);
+  const addManualRow = () => setManualItems([...manualItems, { name: '', qty: '', image_url: '' }]);
   const removeManualRow = (index: number) => setManualItems(manualItems.filter((_, i) => i !== index));
   const updateManualRow = (index: number, field: string, value: string) => {
     const updated = [...manualItems];
     updated[index][field] = value;
     setManualItems(updated);
   };
+  const [manualImageUploading, setManualImageUploading] = useState<number | null>(null);
 
   const [tiers, setTiers] = useState<any[]>(combo?.tier_pricing || [
     { qty: 1, regular: 500, offer: 300, badge: 'BEST', freeDelivery: true },
@@ -241,6 +242,23 @@ function ComboForm({ combo, countryCode, isSeedLanding, onSave, onClose }: { com
       toast(`আপলোড ব্যর্থ: ${err.message}`, 'error');
     } finally {
       setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleManualImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setManualImageUploading(index);
+    try {
+      const processed = await processLocalImage(file, { maxWidth: 800, maxHeight: 800 });
+      const url = await uploadProcessedFile(processed, 'product-images', supabase);
+      updateManualRow(index, 'image_url', url);
+      toast('আইটেমের ছোট ছবি আপলোড হয়েছে');
+    } catch (err: any) {
+      toast(`ছবি আপলোড ব্যর্থ: ${err.message}`, 'error');
+    } finally {
+      setManualImageUploading(null);
       e.target.value = '';
     }
   };
@@ -337,7 +355,7 @@ function ComboForm({ combo, countryCode, isSeedLanding, onSave, onClose }: { com
 
           <div className="rounded-2xl border p-4 bg-secondary/10">
             <label className="mb-2 block text-sm font-semibold flex items-center gap-2"><ImageIcon className="h-4 w-4" /> প্রধান প্যাকেজ ছবি ও গ্যালারি (ওয়াটারমার্ক সহ)</label>
-            <p className="mb-3 text-xs leading-5 text-muted-foreground">প্রথম ছবিটি landing page-এ বড় প্রধান ছবি হবে। অন্য ছবিতে “প্রধান করুন” চাপলে সেটি সামনে যাবে। প্রতিটি বীজের ছোট ছবি নির্বাচিত product-এর ছবি থেকে আসবে।</p>
+            <p className="mb-3 text-xs leading-5 text-muted-foreground">প্রথম ছবিটি landing page-এ বড় প্রধান ছবি হবে। অন্য ছবিতে “প্রধান করুন” চাপলে সেটি সামনে যাবে। ম্যানুয়াল লিস্টের প্রতিটি বীজের ছোট ছবিও আলাদাভাবে যোগ করতে পারবেন।</p>
             <div className="flex gap-2 mb-3">
               <input value={imageInput} onChange={(e) => setImageInput(e.target.value)} className="input-bangla border p-2.5 flex-1 rounded-xl bg-background" placeholder="Image URL দিন" />
               <button type="button" onClick={importFromUrl} disabled={uploading} className="rounded-xl bg-secondary px-4 font-semibold flex items-center gap-1 disabled:opacity-50">
@@ -417,12 +435,24 @@ function ComboForm({ combo, countryCode, isSeedLanding, onSave, onClose }: { com
               </button>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               {manualItems.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-2 bg-background p-2.5 border rounded-xl shadow-sm">
-                  <input type="text" value={item.name} onChange={(e) => updateManualRow(idx, 'name', e.target.value)} placeholder="বীজের নাম (যেমন: তরমুজ বীজ)" aria-label="Manual item name" className="min-w-0 flex-1 border rounded-lg p-2 text-sm bg-secondary/30 input-bangla" />
-                  <input type="text" value={item.qty} onChange={(e) => updateManualRow(idx, 'qty', e.target.value)} aria-label="Manual item quantity" placeholder="যেমন: ১০ পিস" className="w-44 shrink-0 border rounded-lg p-2 text-sm bg-secondary/30 input-bangla" />
-                  {manualItems.length > 1 && <button type="button" onClick={() => removeManualRow(idx)} className="text-destructive p-1.5 hover:bg-destructive/10 rounded-lg"><X className="h-4 w-4" /></button>}
+                <div key={idx} className="rounded-xl bg-background p-3 border shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <input type="text" value={item.name} onChange={(e) => updateManualRow(idx, 'name', e.target.value)} placeholder="বীজের নাম (যেমন: তরমুজ বীজ)" aria-label="Manual item name" className="min-w-0 flex-1 border rounded-lg p-2 text-sm bg-secondary/30 input-bangla" />
+                    <input type="text" value={item.qty} onChange={(e) => updateManualRow(idx, 'qty', e.target.value)} aria-label="Manual item quantity" placeholder="যেমন: ১০ পিস" className="w-32 sm:w-44 shrink-0 border rounded-lg p-2 text-sm bg-secondary/30 input-bangla" />
+                    {manualItems.length > 1 && <button type="button" aria-label="আইটেম মুছুন" onClick={() => removeManualRow(idx)} className="text-destructive p-1.5 hover:bg-destructive/10 rounded-lg"><X className="h-4 w-4" /></button>}
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {item.image_url && <img src={item.image_url} alt={item.name || 'বীজের ছোট ছবি'} className="h-12 w-12 rounded-lg border bg-white object-contain p-1" />}
+                    <input type="url" value={item.image_url || ''} onChange={(e) => updateManualRow(idx, 'image_url', e.target.value)} placeholder="এই বীজের ছবির URL (ঐচ্ছিক)" aria-label="Manual item image URL" className="min-w-[180px] flex-1 border rounded-lg p-2 text-xs bg-secondary/30" />
+                    <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold hover:bg-secondary ${manualImageUploading === idx ? 'pointer-events-none opacity-50' : ''}`}>
+                      {manualImageUploading === idx ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                      {manualImageUploading === idx ? 'আপলোড হচ্ছে...' : 'ছবি আপলোড'}
+                      <input type="file" accept="image/*" onChange={(e) => handleManualImageUpload(idx, e)} className="hidden" disabled={manualImageUploading !== null} />
+                    </label>
+                    {item.image_url && <button type="button" onClick={() => updateManualRow(idx, 'image_url', '')} className="text-xs text-destructive underline">ছবি সরান</button>}
+                  </div>
                 </div>
               ))}
             </div>
