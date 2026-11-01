@@ -169,6 +169,20 @@ export default function ComboLandingPage() {
 
   const tiers = Array.isArray(combo?.tier_pricing) ? (combo?.tier_pricing ?? []) : [];
   const items: ComboItem[] = Array.isArray(combo?.combo_items) ? (combo?.combo_items ?? []) : [];
+  const manualItems = useMemo(() => {
+    const value = combo?.manual_items_list;
+    if (Array.isArray(value)) return value.filter((item: any) => item && (item.name || item.image_url || item.image));
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed.filter((item: any) => item && (item.name || item.image_url || item.image)) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  }, [combo?.manual_items_list]);
+  const displayItems: any[] = combo?.landing_type === 'seed_landing' && manualItems.length > 0 ? manualItems : items;
   const getQty = (tier: any) => Number(tier?.qty ?? tier?.quantity ?? 1);
   const currentTier = useMemo(
     () => tiers.find((tier: any) => getQty(tier) === Number(selectedQty)) || tiers[0] || {},
@@ -221,17 +235,17 @@ export default function ComboLandingPage() {
   const mainComboImage = combo ? getComboMainImage(combo) : '';
   const seedImages = useMemo(() => {
     const seen = new Set<string>();
-    return items.flatMap((item) => {
+    return displayItems.flatMap((item: any) => {
       const product = item.products || {};
-      const image = getProductImage(product);
+      const image = getProductImage(product) || item.image_url || item.image || '';
       if (!image || seen.has(image)) return [];
       seen.add(image);
       return [{
         image,
-        name: product.translations?.[lang]?.name || (lang === 'en' ? product.name_en : product.name_bn) || product.name_en || 'Seed',
+        name: product.translations?.[lang]?.name || (lang === 'en' ? product.name_en : product.name_bn) || product.name_en || item.name || 'Seed',
       }];
     });
-  }, [items, lang]);
+  }, [displayItems, lang]);
 
   const submitOrder = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -358,7 +372,7 @@ export default function ComboLandingPage() {
               </p>
 
               <div className="mt-6 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm"><Leaf className="h-4 w-4 text-lime-300" /><p className="mt-2 text-lg font-black">{items.length}</p><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100/65">{copy('Varieties', 'বীজের জাত', 'किस्में')}</p></div>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm"><Leaf className="h-4 w-4 text-lime-300" /><p className="mt-2 text-lg font-black">{displayItems.length}</p><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100/65">{copy('Varieties', 'বীজের জাত', 'किस्में')}</p></div>
                 <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm"><Gift className="h-4 w-4 text-lime-300" /><p className="mt-2 text-lg font-black">{selectedQty}×</p><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100/65">{copy('Pack', 'প্যাক', 'पैक')}</p></div>
                 <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm"><Zap className="h-4 w-4 text-amber-300" /><p className="mt-2 text-lg font-black">{formatPrice(savings)}</p><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100/65">{copy('You save', 'সাশ্রয়', 'बचत')}</p></div>
                 <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3.5 backdrop-blur-sm"><Truck className="h-4 w-4 text-sky-300" /><p className="mt-2 text-lg font-black">{freeDelivery ? 'FREE' : formatPrice(delivery)}</p><p className="text-[10px] font-bold uppercase tracking-wider text-emerald-100/65">{copy('Delivery', 'ডেলিভারি', 'डिलीवरी')}</p></div>
@@ -434,7 +448,7 @@ export default function ComboLandingPage() {
 
       <section className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="-mt-6 grid gap-4 sm:grid-cols-3">
-          {[{ icon: PackageCheck, title: copy('Combo contents','প্যাকেজে থাকছে','कॉम्बो में शामिल'), value: `${items.length} ${copy('seed varieties', 'ধরনের বীজ', 'बीज की किस्में')}`, tone: 'emerald' }, { icon: Zap, title: copy('Smart saving','স্মার্ট সাশ্রয়','बेहतर बचत'), value: `${formatPrice(savings)} ${copy('saved', 'সাশ্রয়', 'बचत')}`, tone: 'amber' }, { icon: Truck, title: copy('Delivery','ডেলিভারি','डिलीवरी'), value: freeDelivery ? (country === 'IN' ? 'Free delivery' : 'ফ্রি ডেলিভারি') : formatPrice(delivery), tone: 'sky' }].map(({ icon: Icon, title, value, tone }) => (
+          {[{ icon: PackageCheck, title: copy('Combo contents','প্যাকেজে থাকছে','कॉम्बो में शामिल'), value: `${displayItems.length} ${copy('seed varieties', 'ধরনের বীজ', 'बीज की किस्में')}`, tone: 'emerald' }, { icon: Zap, title: copy('Smart saving','স্মার্ট সাশ্রয়','बेहतर बचत'), value: `${formatPrice(savings)} ${copy('saved', 'সাশ্রয়', 'बचत')}`, tone: 'amber' }, { icon: Truck, title: copy('Delivery','ডেলিভারি','डिलीवरी'), value: freeDelivery ? (country === 'IN' ? 'Free delivery' : 'ফ্রি ডেলিভারি') : formatPrice(delivery), tone: 'sky' }].map(({ icon: Icon, title, value, tone }) => (
             <div key={title} className="group rounded-[28px] border border-white bg-white p-5 shadow-[0_18px_40px_rgba(15,23,42,.09)] transition hover:-translate-y-1 hover:shadow-[0_24px_48px_rgba(15,23,42,.12)]"><div className="flex items-center gap-4"><span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tone === 'emerald' ? 'bg-emerald-100 text-emerald-800' : tone === 'amber' ? 'bg-amber-100 text-amber-700' : 'bg-sky-100 text-sky-700'}`}><Icon className="h-5 w-5" /></span><div className="min-w-0"><p className={`text-[10px] font-black uppercase tracking-[.16em] ${tone === 'emerald' ? 'text-emerald-700' : tone === 'amber' ? 'text-amber-700' : 'text-sky-700'}`}>{title}</p><p className="mt-1 text-lg font-black tracking-tight text-slate-900">{value}</p></div></div></div>
           ))}
         </div>
@@ -444,23 +458,24 @@ export default function ComboLandingPage() {
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_430px]">
           <div className="space-y-8">
             <section className="rounded-[34px] border border-emerald-100 bg-white p-5 shadow-sm sm:p-8">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[11px] font-black uppercase tracking-[.2em] text-emerald-700">{copy('WHAT’S INSIDE', 'ভেতরে যা থাকছে', 'पैक में क्या है')}</p><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{copy('What you get', 'এই প্যাকেজে যা পাবেন', 'इस पैक में क्या मिलेगा')}</h2><p className="mt-2 text-sm leading-6 text-slate-500">{copy('Three useful seed varieties in one pack.', 'এক প্যাকে তিন ধরনের প্রয়োজনীয় বীজ।', 'एक पैक में तीन उपयोगी बीज किस्में।')}</p></div><span className="inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-800">{items.length} {copy('items', 'টি পণ্য', 'आइटम')}</span></div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[11px] font-black uppercase tracking-[.2em] text-emerald-700">{copy('WHAT’S INSIDE', 'ভেতরে যা থাকছে', 'पैक में क्या है')}</p><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{copy('What you get', 'এই প্যাকেজে যা পাবেন', 'इस पैक में क्या मिलेगा')}</h2><p className="mt-2 text-sm leading-6 text-slate-500">{copy('The seed varieties included in this package.', 'এই প্যাকেজে থাকা বীজের জাতগুলো।', 'इस पैक में शामिल बीजों की किस्में।')}</p></div><span className="inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-800">{displayItems.length} {copy('items', 'টি পণ্য', 'आइटम')}</span></div>
               <div className="mt-7 grid gap-4 md:grid-cols-3">
-                {items.map((item, index) => {
+                {displayItems.map((item: any, index: number) => {
                   const product = item.products || {};
-                  const image = getProductImage(product);
+                  const image = getProductImage(product) || item.image_url || item.image || '';
                   const per = Number(item.quantity) || 1;
                   const totalQty = per * Number(selectedQty || 1);
+                  const itemName = product.translations?.[lang]?.name || (lang === 'en' ? product.name_en : product.name_bn) || product.name_en || item.name || copy('Seed', 'বীজ', 'बीज');
                   return (
-                    <article key={item.product_id || index} className="group overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fbf7] transition duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl">
+                    <article key={item.product_id || `${item.name || 'manual'}-${index}`} className="group overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fbf7] transition duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl">
                       <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_35%,#ffffff,#eef7f0)]">
                         {image ? <img src={image} alt={product.name_bn || product.name_en || 'Seed'} className="h-full w-full object-contain p-4 transition duration-500 group-hover:scale-105" loading="lazy" /> : <Leaf className="h-14 w-14 text-emerald-700/25" />}
                         <span className="absolute left-3 top-3 rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-black text-emerald-900 shadow-sm">0{index + 1}</span>
                         {index === items.length - 1 && <span className="absolute right-3 top-3 rounded-full bg-emerald-800 px-2.5 py-1 text-[9px] font-black text-white">FEATURED</span>}
                       </div>
                       <div className="p-4">
-                        <h3 className="line-clamp-2 text-[15px] font-black leading-6 text-slate-900">{product.translations?.[lang]?.name || (lang === 'en' ? product.name_en : product.name_bn) || product.name_en || copy('Seed', 'বীজ', 'बीज')}</h3>
-                        <p className="mt-1 text-xs text-slate-500">{per} {copy('packet in combo', 'প্যাকেট / কম্বো', 'पैकेट प्रति कॉम्बो')}</p>
+                        <h3 className="line-clamp-2 text-[15px] font-black leading-6 text-slate-900">{itemName}</h3>
+                        <p className="mt-1 text-xs text-slate-500">{item.qty || `${per} ${copy('packet in combo', 'প্যাকেট / কম্বো', 'पैकेट प्रति कॉम्बो')}`}</p>
                         {(product.translations?.[lang]?.short_description || product.short_description || product.translations?.[lang]?.description || product.description) && <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-600">{product.translations?.[lang]?.short_description || product.short_description || product.translations?.[lang]?.description || product.description}</p>}
                         <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-200 pt-3"><span className="text-xs font-semibold text-slate-500">{copy('In your pack', 'বর্তমান প্যাকে', 'आपके पैक में')}</span><span className="rounded-full bg-emerald-800 px-2.5 py-1 text-[10px] font-black text-white">{totalQty} {copy('packs', 'প্যাকেট', 'पैकेट')}</span></div>
                       </div>
