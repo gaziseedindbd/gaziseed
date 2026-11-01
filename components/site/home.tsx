@@ -5,14 +5,14 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Truck, ShieldCheck, Sprout, Phone, Heart, Users, Headphones, MapPin } from 'lucide-react';
 import { ProductCard } from './product-card';
-import { getBanners, getCategories, getProducts, getServices, getTestimonials, getBlogPosts, getSiteSettings, getHomepageSections, getThisMonthSeeds } from '@/lib/data';
+import { getBanners, getCategories, getProducts, getServices, getTestimonials, getBlogPosts, getSiteSettings, getHomepageSections, getThisMonthSeeds, getSeedComboLandings, formatPrice } from '@/lib/data';
 import { detectAndStoreReferralCode } from '@/lib/referral';
 import { getVisitorCountry } from '@/lib/supabase/client';
 import { useLang } from './language-provider';
 import { getStoredTheme, type HomePageTheme } from './theme-switcher';
-import type { Banner, Category, Product, Service, Testimonial, BlogPost, SiteSettings, HomepageSection } from '@/lib/supabase/types';
+import type { Banner, Category, Product, Service, Testimonial, BlogPost, SiteSettings, HomepageSection, ComboPack } from '@/lib/supabase/types';
 
-let memoryCache: { country?: 'BD' | 'IN'; banners?: Banner[]; categories?: Category[]; featuredProducts?: Product[]; bestSellers?: Product[]; newArrivals?: Product[]; seasonal?: Product[]; thisMonthSeeds?: Product[]; services?: Service[]; testimonials?: Testimonial[]; blogPosts?: BlogPost[]; settings?: SiteSettings | null; sections?: HomepageSection[]; timestamp?: number } = {};
+let memoryCache: { country?: 'BD' | 'IN'; banners?: Banner[]; categories?: Category[]; featuredProducts?: Product[]; bestSellers?: Product[]; newArrivals?: Product[]; seasonal?: Product[]; seedComboLandings?: ComboPack[]; thisMonthSeeds?: Product[]; services?: Service[]; testimonials?: Testimonial[]; blogPosts?: BlogPost[]; settings?: SiteSettings | null; sections?: HomepageSection[]; timestamp?: number } = {};
 
 function BannerImage({ banner, priority = false }: { banner: Banner; priority?: boolean }) {
   return (
@@ -94,6 +94,7 @@ export default function Home({ initialBanners = [], initialCategories = [], init
   const [bestSellers, setBestSellers] = useState<Product[]>(cached.bestSellers || []);
   const [newArrivals, setNewArrivals] = useState<Product[]>(cached.newArrivals || []);
   const [seasonal, setSeasonal] = useState<Product[]>(cached.seasonal || []);
+  const [seedComboLandings, setSeedComboLandings] = useState<ComboPack[]>(cached.seedComboLandings || []);
   const [thisMonthSeeds, setThisMonthSeeds] = useState<Product[]>(cached.thisMonthSeeds || []);
   const [services, setServices] = useState<Service[]>(cached.services || []);
   const [testimonials, setTestimonials] = useState<Testimonial[]>(cached.testimonials || []);
@@ -118,14 +119,15 @@ export default function Home({ initialBanners = [], initialCategories = [], init
       setCategories(c); setCategoriesLoaded(true); setFeaturedProducts(rankedFeatured);
       memoryCache = { ...memoryCache, country, banners: bannersForCache, categories: c, featuredProducts: rankedFeatured, timestamp: Date.now() };
     };
-    const applySecondary = (bs: Product[], na: Product[], ss: Product[], tms: Product[]) => {
+    const applySecondary = (bs: Product[], na: Product[], ss: Product[], tms: Product[], seedLandings: ComboPack[]) => {
       if (cancelled) return;
       const rankedBestSellers = prioritizeAvailableProducts(bs, 8);
       const rankedNewArrivals = prioritizeAvailableProducts(na, 8);
       const rankedSeasonal = prioritizeAvailableProducts(ss, 8);
       const rankedThisMonth = prioritizeAvailableProducts(tms);
       setBestSellers(rankedBestSellers); setNewArrivals(rankedNewArrivals); setSeasonal(rankedSeasonal); setThisMonthSeeds(rankedThisMonth);
-      memoryCache = { ...memoryCache, bestSellers: rankedBestSellers, newArrivals: rankedNewArrivals, seasonal: rankedSeasonal, thisMonthSeeds: rankedThisMonth, timestamp: Date.now() };
+      setSeedComboLandings(seedLandings);
+      memoryCache = { ...memoryCache, bestSellers: rankedBestSellers, newArrivals: rankedNewArrivals, seasonal: rankedSeasonal, seedComboLandings: seedLandings, thisMonthSeeds: rankedThisMonth, timestamp: Date.now() };
     };
     const loadHomepageData = async () => {
       try {
@@ -144,17 +146,19 @@ export default function Home({ initialBanners = [], initialCategories = [], init
           ? (window as Window & { requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number }).requestIdleCallback
           : null;
         const loadSecondary = async () => {
-          const [bsRes, naRes, ssRes, tmsRes] = await Promise.allSettled([
+          const [bsRes, naRes, ssRes, tmsRes, seedLandingsRes] = await Promise.allSettled([
             getProducts({ is_best_seller: true }),
             getProducts({ is_new_arrival: true }),
             getProducts({ is_seasonal: true }),
             getThisMonthSeeds(),
+            getSeedComboLandings(country),
           ]);
           applySecondary(
             bsRes.status === 'fulfilled' ? bsRes.value : [],
             naRes.status === 'fulfilled' ? naRes.value : [],
             ssRes.status === 'fulfilled' ? ssRes.value : [],
             tmsRes.status === 'fulfilled' ? tmsRes.value : [],
+            seedLandingsRes.status === 'fulfilled' ? seedLandingsRes.value : [],
           );
 
           const loadContent = async () => {
@@ -255,11 +259,15 @@ export default function Home({ initialBanners = [], initialCategories = [], init
 
       <section className="home-trust-strip"><div className="container-custom home-trust-grid"><TrustItem icon={Sprout} title={t('বীজের সংগ্রহ', 'Seed Collection', 'बीजों का संग्रह')} text={t('বিভিন্ন জাত দেখুন', 'Explore available varieties', 'उपलब्ध किस्में देखें')} /><TrustItem icon={Truck} title={t('ডেলিভারি সুবিধা', 'Delivery Options', 'डिलीवरी विकल्प')} text={t('এলাকাভেদে উপলভ্যতা দেখুন', 'Availability varies by location', 'स्थान के अनुसार उपलब्धता देखें')} /><TrustItem icon={ShieldCheck} title={t('পেমেন্টের বিকল্প', 'Payment Options', 'भुगतान विकल्प')} text={t('অর্ডারের সময় উপলভ্য পদ্ধতি দেখুন', 'See available methods at checkout', 'चेकआउट पर उपलब्ध तरीके देखें')} /><TrustItem icon={Headphones} title={t('কাস্টমার সাপোর্ট', 'Customer Support', 'ग्राहक सहायता')} text={t('ফোন বা WhatsApp-এ যোগাযোগ করুন', 'Contact us by phone or WhatsApp', 'फोन या WhatsApp पर संपर्क करें')} /></div></section>
       {isSectionEnabled('featured_products') && featuredProducts.length > 0 && <ProductSection title={t('জনপ্রিয় পণ্য', 'Popular Products', 'लोकप्रिय उत्पाद')} subtitle={t('কৃষকদের পছন্দের বীজ', 'Farmers’ favorite seeds', 'किसानों के पसंदीदा बीज')} products={featuredProducts} theme={theme} />}
+      {isSectionEnabled('featured_products') && <SeedComboHomeSection combos={seedComboLandings.filter((combo) => combo.is_featured)} country={visitorCountry} title={t('ফিচার্ড Seed Combo', 'Featured Seed Combos', 'फ़ीचर्ड सीड कॉम्बो')} />}
       {(promoImage1 || promoImage2) && <section className="section-pad home-promo-section"><div className="container-custom home-promo-grid"><PromoCard image={promoImage1} title={t('চাষাবাদ গাইড', 'Growing Guide', 'खेती गाइड')} text={t('বীজ বাছাই ও চাষের কাজে সহায়ক টিপস', 'Practical tips for choosing seeds and growing them well', 'बीज चुनने और अच्छी तरह उगाने के व्यावहारिक सुझाव')} href="/blog" button={t('বিস্তারিত দেখুন', 'Explore Guide', 'विस्तार से देखें')} /><PromoCard image={promoImage2} title={t('বীজ ও চাষাবাদের লেখা', 'Seed & Growing Articles', 'बीज और खेती के लेख')} text={t('বীজ নির্বাচন ও পরিচর্যার ব্যবহারিক তথ্য পড়ুন', 'Read practical information about seed selection and care', 'बीज चुनने और देखभाल की व्यावहारिक जानकारी पढ़ें')} href="/blog" button={t('লেখাগুলো দেখুন', 'Read Articles', 'लेख पढ़ें')} /></div></section>}
       <section className="home-stats-strip"><div className="container-custom home-stats-grid"><StatItem icon={Sprout} title={t('বীজের সংগ্রহ', 'Seed Collection', 'बीजों का संग्रह')} text={t('উপলভ্য জাতগুলো দেখুন', 'Browse available varieties', 'उपलब्ध किस्में देखें')} /><StatItem icon={Sprout} title={t('পণ্যের তথ্য', 'Product Information', 'उत्पाद जानकारी')} text={t('বীজ ও চাষের বিবরণ পড়ুন', 'Read seed and growing details', 'बीज और उगाने की जानकारी पढ़ें')} /><StatItem icon={MapPin} title={t('ডেলিভারি সুবিধা', 'Delivery Options', 'डिलीवरी विकल्प')} text={t('এলাকা ও চার্জ চেকআউটে দেখুন', 'Check area and charges at checkout', 'चेकआउट पर क्षेत्र और शुल्क देखें')} /><StatItem icon={ShieldCheck} title={t('পেমেন্টের বিকল্প', 'Payment Options', 'भुगतान विकल्प')} text={t('অর্ডারের সময় পদ্ধতি দেখুন', 'See methods available for your order', 'अपने ऑर्डर के लिए उपलब्ध तरीके देखें')} /></div></section>
       {isSectionEnabled('best_selling') && bestSellers.length > 0 && <ProductSection title={t('বেস্ট সেলিং বীজ', 'Best Selling Seeds', 'सबसे अधिक बिकने वाले बीज')} subtitle={t('গ্রাহকদের প্রিয় পছন্দ', 'Customer favorites', 'ग्राहकों की पसंद')} products={bestSellers} theme={theme} />}
+      {isSectionEnabled('best_selling') && <SeedComboHomeSection combos={seedComboLandings.filter((combo) => combo.is_best_seller)} country={visitorCountry} title={t('বেস্ট সেলার Seed Combo', 'Best Seller Seed Combos', 'बेस्ट सेलर सीड कॉम्बो')} />}
       {isSectionEnabled('new_arrivals') && newArrivals.length > 0 && <ProductSection title={t('নতুন এসেছে', 'New Arrivals', 'नए आए उत्पाद')} subtitle={t('সর্বশেষ যোগ হওয়া বীজ', 'Latest additions', 'नवीनतम जोड़े गए बीज')} products={newArrivals} theme={theme} />}
+      {isSectionEnabled('new_arrivals') && <SeedComboHomeSection combos={seedComboLandings.filter((combo) => combo.is_new_arrival)} country={visitorCountry} title={t('নতুন Seed Combo', 'New Seed Combos', 'नए सीड कॉम्बो')} />}
       {isSectionEnabled('seasonal') && seasonal.length > 0 && <ProductSection title={t('মৌসুমি বীজ', 'Seasonal Seeds', 'मौसमी बीज')} subtitle={t('এই মৌসুমের জন্য সেরা', 'Best for this season', 'इस मौसम के लिए सबसे अच्छे')} products={seasonal} theme={theme} />}
+      {isSectionEnabled('seasonal') && <SeedComboHomeSection combos={seedComboLandings.filter((combo) => combo.is_seasonal)} country={visitorCountry} title={t('মৌসুমি Seed Combo', 'Seasonal Seed Combos', 'मौसमी सीड कॉम्बो')} />}
       {thisMonthSeeds.length > 0 && <ProductSection title={t('এই মাসে যে বীজগুলো লাগাতে পারেন', 'Seeds to Plant This Month', 'इस महीने लगाए जा सकने वाले बीज')} subtitle={t('এখনই লাগানোর উপযুক্ত', 'Perfect for planting now', 'अभी लगाने के लिए उपयुक्त')} products={thisMonthSeeds} theme={theme} />}
       {isSectionEnabled('why_choose_us') && <section className="section-pad feature-section-bg legacy-feature-section"><div className="container-custom"><h2 className="mb-8 text-center section-heading">{t('কেন বেছে নেবেন গাজী সিড?', 'Why Choose GAZI SEED?', 'GAZI SEED को क्यों चुनें?')}</h2><div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">{[{ icon: Sprout, title: t('বীজের সংগ্রহ', 'Seed Collection', 'बीजों का संग्रह'), desc: t('উপলভ্য বীজের জাতগুলো দেখুন', 'Explore available seed varieties', 'उपलब्ध बीजों की किस्में देखें') },{ icon: Truck, title: t('ডেলিভারি সুবিধা', 'Delivery Options', 'डिलीवरी विकल्प'), desc: t('এলাকা ও চার্জ চেকআউটে দেখুন', 'Check service area and charges at checkout', 'चेकआउट पर क्षेत्र और शुल्क देखें') },{ icon: ShieldCheck, title: t('পেমেন্টের বিকল্প', 'Payment Options', 'भुगतान विकल्प'), desc: t('অর্ডারের সময় উপলভ্য পদ্ধতি দেখুন', 'See available methods at checkout', 'चेकआउट पर उपलब्ध तरीके देखें') },{ icon: Phone, title: t('কাস্টমার সাপোর্ট', 'Customer Support', 'ग्राहक सहायता'), desc: t('ফোন বা WhatsApp-এ যোগাযোগ করুন', 'Contact us by phone or WhatsApp', 'फोन या WhatsApp पर संपर्क करें') }].map((item, idx) => <div key={idx} className="why-card"><div className="why-icon-wrap"><item.icon className="h-7 w-7" /></div><h3 className="why-title">{item.title}</h3><p className="why-desc">{item.desc}</p></div>)}</div></div></section>}
       {isSectionEnabled('services') && services.length > 0 && <section className="section-pad"><div className="container-custom"><h2 className="mb-8 text-center section-heading">{t('আমাদের সার্ভিসসমূহ', 'Our Services', 'हमारी सेवाएँ')}</h2><div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">{services.map((svc) => <div key={svc.id} className="service-card"><div className="service-icon-wrap"><Sprout className="h-6 w-6" /></div><h3 className="mb-2 font-semibold text-foreground">{svc.title}</h3><p className="text-sm text-muted-foreground">{svc.short_description}</p></div>)}</div></div></section>}
@@ -275,3 +283,45 @@ function TrustItem({ icon: Icon, title, text }: { icon: ComponentType<{ classNam
 function StatItem({ icon: Icon, title, text }: { icon: ComponentType<{ className?: string }>; title: string; text: string }) { return <div className="home-stat-item"><div className="home-stat-icon"><Icon className="h-6 w-6" /></div><div><strong>{title}</strong><span>{text}</span></div></div>; }
 function PromoCard({ image, title, text, href, button }: { image: string; title: string; text: string; href: string; button: string }) { return <Link href={href} className="home-promo-card group">{image && <Image src={image} alt="" width={640} height={360} sizes="(max-width: 767px) 100vw, 50vw" quality={65} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />}<div className="home-promo-overlay" /><div className="home-promo-content"><h3>{title}</h3><p>{text}</p><span>{button}<ChevronRight className="h-4 w-4" /></span></div></Link>; }
 function ProductSection({ title, subtitle, products, theme }: { title: string; subtitle?: string; products: Product[]; theme: HomePageTheme }) { const { t } = useLang(); if (products.length === 0) return null; return <section className="section-pad home-product-section"><div className="container-custom"><div className="mb-6 flex items-center justify-between"><div><h2 className="section-heading">{title}</h2>{subtitle && <p className="section-subheading">{subtitle}</p>}</div><Link href="/all-products" className="view-all-link">{t('সব দেখুন →', 'View All →', 'सभी देखें →')}</Link></div><div className="product-grid">{products.map((product) => <ProductCard key={product.id} product={product} stackedActions />)}</div></div></section>; }
+
+function SeedComboHomeSection({ combos, country, title }: { combos: ComboPack[]; country: 'BD' | 'IN'; title: string }) {
+  const { lang, t } = useLang();
+  if (combos.length === 0) return null;
+  return (
+    <section className="section-pad home-product-section">
+      <div className="container-custom">
+        <div className="mb-6 flex items-center justify-between gap-3">
+          <div><h2 className="section-heading">{title}</h2><p className="section-subheading">{t('একসাথে বাছাই করা বীজের প্যাকেজ দেখুন', 'Explore curated seed bundles', 'चुने हुए बीजों के पैक देखें')}</p></div>
+          <Link href="/combos" className="view-all-link">{t('সব দেখুন →', 'View All →', 'सभी देखें →')}</Link>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
+          {combos.map((combo) => {
+            const translated = combo.translations?.[lang] || {};
+            const name = translated.title || (lang === 'en' ? combo.title_en : combo.title_bn) || combo.title_bn || combo.name_bn || combo.title_en || combo.name_en || 'Seed Combo';
+            const description = translated.description || (lang === 'en' ? combo.description_en : combo.description_bn) || combo.description_bn || combo.description_en || '';
+            const tier = Array.isArray(combo.tier_pricing) ? combo.tier_pricing[0] : undefined;
+            const offer = Number(tier?.offer) || Number(combo.combo_price) || 0;
+            const regular = Number(tier?.regular) || Number(combo.regular_total) || 0;
+            const image = Array.isArray(combo.images) ? combo.images[0] : '';
+            return (
+              <Link key={combo.id} href={`/combo/${combo.slug}`} className="group overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm transition hover:-translate-y-1 hover:border-emerald-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">
+                <div className="relative aspect-[4/3] overflow-hidden bg-emerald-50">
+                  {image ? <img src={image} alt={name} loading="lazy" className="h-full w-full object-contain p-3 transition duration-300 group-hover:scale-105" /> : <div className="flex h-full items-center justify-center text-4xl">🌱</div>}
+                  <span className="absolute left-2 top-2 rounded-full bg-emerald-800 px-2.5 py-1 text-[9px] font-black text-white">Seed Combo</span>
+                </div>
+                <div className="p-3 sm:p-4">
+                  <h3 className="line-clamp-2 min-h-10 text-sm font-extrabold text-emerald-950 sm:text-base">{name}</h3>
+                  {description && <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{description}</p>}
+                  <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-emerald-100 pt-3">
+                    <span className="text-lg font-black text-emerald-800">{formatPrice(offer, country)}</span>
+                    {regular > offer && <span className="text-xs text-slate-400 line-through">{formatPrice(regular, country)}</span>}
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
