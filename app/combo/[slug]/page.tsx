@@ -78,7 +78,7 @@ function getComboHeroImages(combo: Record<string, any>, items: ComboItem[]): str
 
   // Admin's first combo image is the campaign's main image. Keep it ahead of
   // seed pack shots so a three-product combo cannot push it out of the hero.
-  return Array.from(new Set([...comboImages, ...productImages]));
+  return Array.from(new Set([...productImages, ...comboImages]));
 }
 
 function getComboMainImage(combo: Record<string, any>): string {
