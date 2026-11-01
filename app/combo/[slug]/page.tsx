@@ -1,5 +1,7 @@
 'use client';
 
+import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
+
 import { useEffect, useMemo, useState } from 'react';
 import { useLang } from '@/components/site/language-provider';
 import { supabase, getVisitorCountry } from '@/lib/supabase/client';
@@ -132,7 +134,7 @@ export default function ComboLandingPage() {
 
       const { data: items } = await supabase
         .from('combo_items')
-        .select('product_id, quantity, unit_type, products(*)')
+        .select(`product_id, quantity, unit_type, products(${PRODUCT_SAFE_SELECT})` as any)
         .eq('combo_id', data.id);
 
       const productIds = (items || []).map((item: any) => item.product_id).filter(Boolean);

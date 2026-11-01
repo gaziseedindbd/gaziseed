@@ -1,3 +1,4 @@
+import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
@@ -201,7 +202,7 @@ export async function POST(req: NextRequest) {
     } else if (moduleName === 'seo_aeo_assistant') {
       const productId = String(body.product_id || '').trim();
       if (productId) {
-        const { data, error } = await supabase.from('products').select('*').eq('id', productId).eq('country_code', countryCode).maybeSingle();
+        const { data, error } = await supabase.from('products').select(PRODUCT_SAFE_SELECT).eq('id', productId).eq('country_code', countryCode).maybeSingle();
         if (error) return NextResponse.json({ success: false, message: 'Product data could not be loaded' }, { status: 500 });
         context = { branch: countryCode, product: data || null };
       } else {

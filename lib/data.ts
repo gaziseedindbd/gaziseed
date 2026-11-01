@@ -1,5 +1,7 @@
 'use client';
 
+import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
+
 import { supabase } from './supabase/client';
 import { formatPrice, formatPriceEn, getVisitorCountry } from './supabase/client';
 export { formatPrice, formatPriceEn };
@@ -110,7 +112,7 @@ export async function getProducts(filters?: {
   const country = getVisitorCountry();
   let query = supabase
     .from('products')
-    .select('*')
+    .select(PRODUCT_SAFE_SELECT)
     .eq('country_code', country)
     .eq('is_active', true)
     .eq('is_ads_only', false)
@@ -145,7 +147,7 @@ export async function getProducts(filters?: {
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   const { data } = await supabase
     .from('products')
-    .select('*')
+    .select(PRODUCT_SAFE_SELECT)
     .eq('slug', slug)
     .eq('country_code', getVisitorCountry())
     .eq('is_active', true)
@@ -156,7 +158,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 export async function getProductById(id: string): Promise<Product | null> {
   const { data } = await supabase
     .from('products')
-    .select('*')
+    .select(PRODUCT_SAFE_SELECT)
     .eq('id', id)
     .maybeSingle();
   return data as Product | null;
@@ -269,7 +271,7 @@ export async function getLandingPageBySlug(landingSlug: string, includeAllStatus
   if (!landing) return { landing: null, product: null };
   const { data: product } = await supabase
     .from('products')
-    .select('*')
+    .select(PRODUCT_SAFE_SELECT)
     .eq('id', landing.product_id)
     .maybeSingle();
   return { landing: landing as LandingPage, product: product as Product };
@@ -297,7 +299,7 @@ export async function getOfferProducts(): Promise<{ product: Product; landing: L
   const productIds = landings.map((l) => l.product_id);
   const { data: products } = await supabase
     .from('products')
-    .select('*')
+    .select(PRODUCT_SAFE_SELECT)
     .in('id', productIds)
     .eq('is_active', true);
   const productMap = new Map((products || []).map((p) => [p.id, p]));
@@ -322,7 +324,7 @@ export function getDiscountPercent(product: Product): number {
 
 export async function getRelatedProducts(productId: string, relatedIds: string[]): Promise<Product[]> {
   if (!relatedIds || relatedIds.length === 0) return [];
-  const { data } = await supabase.from('products').select('*').in('id', relatedIds).eq('is_active', true);
+  const { data } = await supabase.from('products').select(PRODUCT_SAFE_SELECT).in('id', relatedIds).eq('is_active', true);
   return (data || []) as Product[];
 }
 
@@ -341,7 +343,7 @@ export async function getActivePromotions(): Promise<{ promotion: Promotion; gif
     const giftList = (gifts || []) as PromotionGift[];
     if (giftList.length === 0) continue;
     const productIds = giftList.map((g) => g.product_id);
-    const { data: products } = await supabase.from('products').select('*').in('id', productIds).eq('is_active', true).gt('stock', 0);
+    const { data: products } = await supabase.from('products').select(PRODUCT_SAFE_SELECT).in('id', productIds).eq('is_active', true).gt('stock', 0);
     const giftProducts = (products || []) as Product[];
     if (giftProducts.length === 0) continue;
     results.push({ promotion: p, gifts: giftList, giftProducts });
@@ -354,7 +356,7 @@ export async function getComboPacks(): Promise<{ combo: ComboPack; items: { prod
   if (!combos || combos.length === 0) return [];
   const results: { combo: ComboPack; items: { product: Product; quantity: number }[] }[] = [];
   for (const c of combos as ComboPack[]) {
-    const { data: items } = await supabase.from('combo_items').select('*, products(*)').eq('combo_id', c.id);
+    const { data: items } = await supabase.from('combo_items').select(`*, products(${PRODUCT_SAFE_SELECT})` as any).eq('combo_id', c.id);
     const comboItems = (items || []).map((item: any) => ({ product: item.products as Product, quantity: item.quantity })).filter((item: any) => item.product);
     if (comboItems.length === 0) continue;
     results.push({ combo: c, items: comboItems });
@@ -379,7 +381,7 @@ export async function getSeedComboLandings(country = getVisitorCountry()): Promi
 export async function getComboPackBySlug(slug: string): Promise<{ combo: ComboPack; items: { product: Product; quantity: number }[] } | null> {
   const { data: combo } = await supabase.from('combo_packs').select('*').eq('slug', slug).eq('is_active', true).maybeSingle();
   if (!combo) return null;
-  const { data: items } = await supabase.from('combo_items').select('*, products(*)').eq('combo_id', (combo as ComboPack).id);
+  const { data: items } = await supabase.from('combo_items').select(`*, products(${PRODUCT_SAFE_SELECT})` as any).eq('combo_id', (combo as ComboPack).id);
   const comboItems = (items || []).map((item: any) => ({ product: item.products as Product, quantity: item.quantity })).filter((item: any) => item.product);
   return { combo: combo as ComboPack, items: comboItems };
 }
@@ -408,7 +410,7 @@ export async function getWishlist(userId: string): Promise<Product[]> {
   const country = getVisitorCountry();
   const { data } = await supabase
     .from('wishlists')
-    .select('product_id, products(*)')
+    .select(`product_id, products(${PRODUCT_SAFE_SELECT})` as any)
     .eq('user_id', userId)
     .eq('country_code', country);
   return (data || [])
@@ -441,7 +443,7 @@ export async function getSupportTickets(userId?: string): Promise<SupportTicket[
 }
 
 export async function getSeasonalProducts(month: string, growingType?: string): Promise<Product[]> {
-  let query = supabase.from('products').select('*').eq('is_active', true).eq('is_ads_only', false).contains('suitable_months', [month]);
+  let query = supabase.from('products').select(PRODUCT_SAFE_SELECT).eq('is_active', true).eq('is_ads_only', false).contains('suitable_months', [month]);
   if (growingType) query = query.eq('growing_type', growingType);
   const { data } = await query.limit(12);
   return (data || []) as Product[];

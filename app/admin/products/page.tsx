@@ -1,5 +1,6 @@
 'use client';
 
+
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/data';
@@ -67,7 +68,13 @@ export default function AdminProductsPage() {
   };
 
   const loadProducts = async () => {
-    const { data } = await supabase.from('products').select('*').eq('is_ads_only', false).eq('country_code', adminBranch).order('created_at', { ascending: false });
+    const { data, error } = await supabase.rpc('admin_list_products', { p_country_code: adminBranch });
+    if (error) {
+      console.error('Admin products load failed:', error);
+      toast('প্রোডাক্ট লোড ব্যর্থ', 'error');
+      setLoading(false);
+      return;
+    }
     setProducts(data || []);
     setLoading(false);
   };

@@ -1,5 +1,7 @@
 'use client';
 
+import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
+
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
@@ -36,7 +38,7 @@ export default function AdsLandingEditorPage() {
     const { data: lp } = await supabase.from('landing_pages').select('*').eq('id', id).eq('country_code', countryCode).maybeSingle();
     if (!lp) { window.location.href = '/admin/ads-landing'; return; }
     setLanding(lp);
-    const { data: prod } = await supabase.from('products').select('*').eq('id', lp.product_id).eq('country_code', countryCode).maybeSingle();
+    const { data: prod } = await supabase.from('products').select(PRODUCT_SAFE_SELECT).eq('id', lp.product_id).eq('country_code', countryCode).maybeSingle();
     setProduct(prod);
     const { data: b } = await supabase.from('bundle_offers').select('*').eq('product_id', lp.product_id).eq('country_code', countryCode).order('display_order');
     setBundles(b || []);

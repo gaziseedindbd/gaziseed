@@ -1,5 +1,7 @@
 'use client';
 
+import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
+
 import { useEffect, useState, useCallback } from 'react';
 import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -99,7 +101,7 @@ export default function AccountPage() {
     setLoadingDetails(true);
     const { data, error } = await supabase
       .from('order_items')
-      .select('*, products(*)')
+      .select(`*, products(${PRODUCT_SAFE_SELECT})` as any)
       .eq('order_id', order.id)
       .eq('country_code', getVisitorCountry());
 
@@ -204,7 +206,8 @@ export default function AccountPage() {
   };
 
   const handleReorder = async (order: any) => {
-    const { data: items } = await supabase.from('order_items').select('*, products(*)').eq('order_id', order.id);
+    const { data: rawItems } = await supabase.from('order_items').select(`*, products(${PRODUCT_SAFE_SELECT})` as any).eq('order_id', order.id);
+    const items = rawItems as unknown as any[] | null;
     if (!items || items.length === 0) { toast(t('অর্ডার আইটেম পাওয়া যায়নি', 'No order items found', 'ऑर्डर में कोई उत्पाद नहीं मिला'), 'error'); return; }
     const cart = JSON.parse(localStorage.getItem('gazi_cart') || '[]');
     let added = 0; let skipped = 0;
