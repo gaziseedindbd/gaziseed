@@ -242,7 +242,7 @@ export default function ComboLandingPage() {
       seen.add(image);
       return [{
         image,
-        name: product.translations?.[lang]?.name || (lang === 'en' ? product.name_en : product.name_bn) || product.name_en || item.name || 'Seed',
+        name: product.translations?.[lang]?.name || (lang === 'en' ? product.name_en : product.name_bn) || product.name_en || item.translations?.[lang]?.name || item.translations?.bn?.name || item.name || 'Seed',
       }];
     });
   }, [displayItems, lang]);
@@ -465,7 +465,8 @@ export default function ComboLandingPage() {
                   const image = getProductImage(product) || item.image_url || item.image || '';
                   const per = Number(item.quantity) || 1;
                   const totalQty = per * Number(selectedQty || 1);
-                  const itemName = product.translations?.[lang]?.name || (lang === 'en' ? product.name_en : product.name_bn) || product.name_en || item.name || copy('Seed', 'বীজ', 'बीज');
+                  const itemName = product.translations?.[lang]?.name || (lang === 'en' ? product.name_en : product.name_bn) || product.name_en || item.translations?.[lang]?.name || item.translations?.bn?.name || item.name || copy('Seed', 'বীজ', 'बीज');
+                  const itemQuantity = item.translations?.[lang]?.qty || item.translations?.bn?.qty || item.qty;
                   return (
                     <article key={item.product_id || `${item.name || 'manual'}-${index}`} className="group overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fbf7] transition duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl">
                       <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_35%,#ffffff,#eef7f0)]">
@@ -475,7 +476,7 @@ export default function ComboLandingPage() {
                       </div>
                       <div className="p-4">
                         <h3 className="line-clamp-2 text-[15px] font-black leading-6 text-slate-900">{itemName}</h3>
-                        <p className="mt-1 text-xs text-slate-500">{item.qty || `${per} ${copy('packet in combo', 'প্যাকেট / কম্বো', 'पैकेट प्रति कॉम्बो')}`}</p>
+                        <p className="mt-1 text-xs text-slate-500">{itemQuantity || `${per} ${copy('packet in combo', 'প্যাকেট / কম্বো', 'पैकेट प्रति कॉम्बो')}`}</p>
                         {(product.translations?.[lang]?.short_description || product.short_description || product.translations?.[lang]?.description || product.description) && <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-600">{product.translations?.[lang]?.short_description || product.short_description || product.translations?.[lang]?.description || product.description}</p>}
                         <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-200 pt-3"><span className="text-xs font-semibold text-slate-500">{copy('In your pack', 'বর্তমান প্যাকে', 'आपके पैक में')}</span><span className="rounded-full bg-emerald-800 px-2.5 py-1 text-[10px] font-black text-white">{totalQty} {copy('packs', 'প্যাকেট', 'पैकेट')}</span></div>
                       </div>
