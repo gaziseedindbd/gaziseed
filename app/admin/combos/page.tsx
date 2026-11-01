@@ -6,8 +6,53 @@ import { MultilingualFields } from '@/components/admin/multilingual-fields';
 import { Plus, Edit, Trash2, X, Search, Upload, Loader2, Image as ImageIcon, FileText, Link as LinkIcon } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
 import { processLocalImage, processUrlImage, uploadProcessedFile } from '@/lib/image-processing';
+import { usePathname } from 'next/navigation';
+
+function getAdminProductImage(product: any): string {
+  const candidates = [
+    product?.image_url,
+    product?.featured_image,
+    product?.primary_image,
+    product?.image,
+    ...(Array.isArray(product?.images) ? product.images : []),
+  ];
+  return candidates.find((value) => typeof value === 'string' && value.trim() && !value.includes('placehold.co'))?.trim() || '';
+}
+
+const MANUAL_ITEM_LANGUAGES = [
+  { key: 'bn', label: 'বাংলা', namePlaceholder: 'বীজের নাম', qtyPlaceholder: 'পরিমাণ' },
+  { key: 'en', label: 'English', namePlaceholder: 'Seed name', qtyPlaceholder: 'Quantity' },
+  { key: 'hi', label: 'हिन्दी', namePlaceholder: 'बीज का नाम', qtyPlaceholder: 'मात्रा' },
+] as const;
+
+function readManualItems(value: unknown): any[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value !== 'string' || !value.trim()) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return value.split('\n').map((line) => line.trim()).filter(Boolean).map((name) => ({ name, qty: '' }));
+  }
+}
+
+function normalizeManualItem(item: any) {
+  const translations = item?.translations || {};
+  const legacyName = item?.name || item?.name_bn || '';
+  const legacyQty = item?.qty || item?.quantity || '';
+  return {
+    image_url: item?.image_url || item?.image || '',
+    translations: {
+      bn: { name: translations.bn?.name || legacyName, qty: translations.bn?.qty || legacyQty },
+      en: { name: translations.en?.name || item?.name_en || '', qty: translations.en?.qty || item?.qty_en || '' },
+      hi: { name: translations.hi?.name || item?.name_hi || '', qty: translations.hi?.qty || item?.qty_hi || '' },
+    },
+  };
+}
 
 export default function AdminComboPacksPage() {
+  const pathname = usePathname();
+  const isSeedLanding = pathname === '/admin/seed-combo-landing';
   const [combos, setCombos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -28,10 +73,10 @@ export default function AdminComboPacksPage() {
     const handleBranchChange = () => { setShowForm(false); setEditing(null); init(); };
     window.addEventListener('gazi-branch-change', handleBranchChange);
     return () => window.removeEventListener('gazi-branch-change', handleBranchChange);
-  }, []);
+  }, [isSeedLanding]);
 
   const loadCombos = async (branch: 'BD' | 'IN' = adminBranch) => {
-    const { data, error } = await supabase.from('combo_packs').select('*').eq('country_code', branch);
+    const { data, error } = await supabase.from('combo_packs').select('*').eq('country_code', branch).eq('landing_type', isSeedLanding ? 'seed_landing' : 'combo');
     if (error) { toast('কম্বো লোড ব্যর্থ: ' + error.message, 'error'); setCombos([]); }
     else setCombos(data || []);
     setLoading(false);
@@ -52,9 +97,18 @@ export default function AdminComboPacksPage() {
       regular_total: Number(rawPayload.regular_total) || 0,
       combo_price: Number(rawPayload.combo_price) || 0,
       tier_pricing: rawPayload.tier_pricing || [],
-      manual_items_list: rawPayload.manual_items_list || [],
+      manual_items_list: JSON.stringify((rawPayload.manual_items_list || []).map((item: any) => ({
+        ...item,
+        name: item.translations?.bn?.name || item.name || '',
+        qty: item.translations?.bn?.qty || item.qty || '',
+      }))),
       is_active: rawPayload.is_active,
+      is_featured: rawPayload.is_featured === true,
+      is_best_seller: rawPayload.is_best_seller === true,
+      is_new_arrival: rawPayload.is_new_arrival === true,
+      is_seasonal: rawPayload.is_seasonal === true,
       images: rawPayload.images || [],
+      landing_type: isSeedLanding ? 'seed_landing' : 'combo',
       country_code: adminBranch,
     };
 
@@ -102,9 +156,9 @@ export default function AdminComboPacksPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">কম্বো প্যাক</h1>
+        <h1 className="text-2xl font-bold">{isSeedLanding ? 'Seed Combo Landing' : 'কম্বো প্যাক'}</h1>
         <button onClick={() => { setEditing(null); setShowForm(true); }} className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 font-semibold text-primary-foreground hover:bg-primary/90">
-          <Plus className="h-5 w-5" /> নতুন কম্বো
+          <Plus className="h-5 w-5" /> {isSeedLanding ? 'নতুন Seed Combo Landing' : 'নতুন কম্বো'}
         </button>
       </div>
 
@@ -139,15 +193,15 @@ export default function AdminComboPacksPage() {
             </div>
           );
         })}
-        {combos.length === 0 && <p className="col-span-full p-8 text-center text-muted-foreground">কোন কম্বো প্যাক নেই</p>}
+        {combos.length === 0 && <p className="col-span-full p-8 text-center text-muted-foreground">{isSeedLanding ? 'এখনো কোনো Seed Combo Landing তৈরি করা হয়নি' : 'কোন কম্বো প্যাক নেই'}</p>}
       </div>
 
-      {showForm && <ComboForm combo={editing} countryCode={adminBranch} onSave={handleSave} onClose={() => { setShowForm(false); setEditing(null); }} />}
+      {showForm && <ComboForm combo={editing} countryCode={adminBranch} isSeedLanding={isSeedLanding} onSave={handleSave} onClose={() => { setShowForm(false); setEditing(null); }} />}
     </div>
   );
 }
 
-function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countryCode: 'BD' | 'IN'; onSave: (data: any) => void; onClose: () => void }) {
+function ComboForm({ combo, countryCode, isSeedLanding, onSave, onClose }: { combo: any; countryCode: 'BD' | 'IN'; isSeedLanding: boolean; onSave: (data: any) => void; onClose: () => void }) {
   const currencySymbol = countryCode === 'IN' ? '₹' : '৳';
   const [form, setForm] = useState({
     country_code: combo?.country_code || countryCode,
@@ -158,21 +212,28 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
     combo_price: combo?.combo_price || 0,
     is_active: combo?.is_active ?? true,
     translations: combo?.translations || {},
+    is_featured: combo?.is_featured ?? false,
+    is_best_seller: combo?.is_best_seller ?? false,
+    is_new_arrival: combo?.is_new_arrival ?? false,
+    is_seasonal: combo?.is_seasonal ?? false,
   });
 
-  const [manualItems, setManualItems] = useState<any[]>(
-    Array.isArray(combo?.manual_items_list) && combo.manual_items_list.length > 0 
-      ? combo.manual_items_list 
-      : [{ name: '', qty: '' }]
-  );
+  const [manualItems, setManualItems] = useState<any[]>(() => {
+    const saved = readManualItems(combo?.manual_items_list).map(normalizeManualItem);
+    return saved.length > 0 ? saved : [normalizeManualItem({})];
+  });
 
-  const addManualRow = () => setManualItems([...manualItems, { name: '', qty: '' }]);
+  const addManualRow = () => setManualItems([...manualItems, normalizeManualItem({})]);
   const removeManualRow = (index: number) => setManualItems(manualItems.filter((_, i) => i !== index));
-  const updateManualRow = (index: number, field: string, value: string) => {
-    const updated = [...manualItems];
-    updated[index][field] = value;
-    setManualItems(updated);
+  const updateManualTranslation = (index: number, language: 'bn' | 'en' | 'hi', field: 'name' | 'qty', value: string) => {
+    setManualItems((current) => current.map((item, itemIndex) => itemIndex === index
+      ? { ...item, translations: { ...item.translations, [language]: { ...item.translations?.[language], [field]: value } } }
+      : item));
   };
+  const updateManualImage = (index: number, value: string) => {
+    setManualItems((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, image_url: value } : item));
+  };
+  const [manualImageUploading, setManualImageUploading] = useState<number | null>(null);
 
   const [tiers, setTiers] = useState<any[]>(combo?.tier_pricing || [
     { qty: 1, regular: 500, offer: 300, badge: 'BEST', freeDelivery: true },
@@ -181,7 +242,7 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
   ]);
 
   const [images, setImages] = useState<string[]>(combo?.images || []);
-  const [items, setItems] = useState<{ product_id: string; quantity: number; name?: string; price: number; unit_type: 'packet' | 'piece' }[]>([]);
+  const [items, setItems] = useState<{ product_id: string; quantity: number; name?: string; image?: string; price: number; unit_type: 'packet' | 'piece' }[]>([]);
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [imageInput, setImageInput] = useState('');
@@ -201,6 +262,7 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
           quantity: it.quantity,
           unit_type: it.unit_type === 'packet' ? 'packet' : 'piece',
           name: it.products?.name_bn || it.products?.name_en || 'প্রোডাক্ট',
+          image: getAdminProductImage(it.products),
           price: it.products?.regular_price || it.products?.sale_price || 0
         })));
       });
@@ -229,6 +291,23 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
     }
   };
 
+  const handleManualImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setManualImageUploading(index);
+    try {
+      const processed = await processLocalImage(file, { maxWidth: 800, maxHeight: 800 });
+      const url = await uploadProcessedFile(processed, 'product-images', supabase);
+      updateManualImage(index, url);
+      toast('আইটেমের ছোট ছবি আপলোড হয়েছে');
+    } catch (err: any) {
+      toast(`ছবি আপলোড ব্যর্থ: ${err.message}`, 'error');
+    } finally {
+      setManualImageUploading(null);
+      e.target.value = '';
+    }
+  };
+
   const importFromUrl = async () => {
     if (!imageInput.trim()) return;
     setUploading(true);
@@ -247,13 +326,14 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
 
   const addProduct = (p: any) => {
     if (items.find((it) => it.product_id === p.id)) return;
-    setItems([...items, { product_id: p.id, quantity: 1, unit_type: 'piece', name: p.name_bn || p.name_en || 'প্রোডাক্ট', price: p.regular_price || p.sale_price || 0 }]);
+    setItems([...items, { product_id: p.id, quantity: 1, unit_type: 'piece', name: p.name_bn || p.name_en || 'প্রোডাক্ট', image: getAdminProductImage(p), price: p.regular_price || p.sale_price || 0 }]);
     setSearch('');
   };
 
   const updateQty = (idx: number, qty: number) => setItems(items.map((it, i) => i === idx ? { ...it, quantity: Math.max(1, qty) } : it));
   const updateUnitType = (idx: number, unit_type: 'packet' | 'piece') => setItems(items.map((it, i) => i === idx ? { ...it, unit_type } : it));
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
+  const setMainImage = (index: number) => setImages((current) => [current[index], ...current.filter((_, imageIndex) => imageIndex !== index)]);
 
   const updateTier = (index: number, field: string, value: any) => {
     const newTiers = [...tiers];
@@ -294,7 +374,7 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
       <div className="relative z-10 flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-background shadow-2xl border border-border">
         
         <div className="shrink-0 flex items-center justify-between gap-3 border-b border-border bg-background p-6">
-          <h3 className="text-xl font-bold">{combo ? 'কম্বো প্যাক এডিট করুন' : 'নতুন কম্বো প্যাক তৈরি করুন'}</h3>
+          <h3 className="text-xl font-bold">{isSeedLanding ? (combo ? 'Seed Combo Landing সম্পাদনা' : 'নতুন Seed Combo Landing তৈরি করুন') : (combo ? 'কম্বো প্যাক এডিট করুন' : 'নতুন কম্বো প্যাক তৈরি করুন')}</h3>
           <button aria-label="Close combo form" onClick={onClose} className="shrink-0 rounded-full p-2 hover:bg-secondary"><X className="h-5 w-5" /></button>
         </div>
 
@@ -319,7 +399,8 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
           </div>
 
           <div className="rounded-2xl border p-4 bg-secondary/10">
-            <label className="mb-2 block text-sm font-semibold flex items-center gap-2"><ImageIcon className="h-4 w-4" /> প্যাকেজ ছবি (ওয়াটারমার্ক সহ)</label>
+            <label className="mb-2 block text-sm font-semibold flex items-center gap-2"><ImageIcon className="h-4 w-4" /> প্রধান প্যাকেজ ছবি ও গ্যালারি (ওয়াটারমার্ক সহ)</label>
+            <p className="mb-3 text-xs leading-5 text-muted-foreground">প্রথম ছবিটি landing page-এ বড় প্রধান ছবি হবে। অন্য ছবিতে “প্রধান করুন” চাপলে সেটি সামনে যাবে। ম্যানুয়াল লিস্টের প্রতিটি বীজের ছোট ছবিও আলাদাভাবে যোগ করতে পারবেন।</p>
             <div className="flex gap-2 mb-3">
               <input value={imageInput} onChange={(e) => setImageInput(e.target.value)} className="input-bangla border p-2.5 flex-1 rounded-xl bg-background" placeholder="Image URL দিন" />
               <button type="button" onClick={importFromUrl} disabled={uploading} className="rounded-xl bg-secondary px-4 font-semibold flex items-center gap-1 disabled:opacity-50">
@@ -334,9 +415,10 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
             {images.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {images.map((img, idx) => (
-                  <div key={idx} className="relative">
-                    <img src={img} alt="" className="h-16 w-16 rounded-xl object-cover border" />
-                    <button type="button" onClick={() => setImages(images.filter((_, i) => i !== idx))} className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-1 text-destructive-foreground"><X className="h-3 w-3" /></button>
+                  <div key={`${img}-${idx}`} className="relative flex flex-col items-center gap-1.5">
+                    <img src={img} alt={idx === 0 ? 'প্রধান প্যাকেজ ছবি' : 'প্যাকেজ গ্যালারি ছবি'} className={`h-16 w-16 rounded-xl object-cover border ${idx === 0 ? 'ring-2 ring-primary ring-offset-2' : ''}`} />
+                    {idx === 0 ? <span className="text-[10px] font-bold text-primary">প্রধান</span> : <button type="button" onClick={() => setMainImage(idx)} className="text-[10px] font-semibold text-primary underline underline-offset-2">প্রধান করুন</button>}
+                    <button type="button" aria-label="ছবি মুছুন" onClick={() => setImages(images.filter((_, i) => i !== idx))} className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-1 text-destructive-foreground"><X className="h-3 w-3" /></button>
                   </div>
                 ))}
               </div>
@@ -349,6 +431,7 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
               {items.map((it, idx) => (
                 <div key={idx} className="rounded-xl bg-background p-3 border space-y-2">
                   <div className="flex items-center gap-2">
+                    {it.image && <img src={it.image} alt="" className="h-12 w-12 shrink-0 rounded-lg border bg-white object-contain p-1" />}
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold truncate">{it.name}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">পণ্যের মূল্য: <span className="font-semibold text-foreground">{currencySymbol}{it.price}</span></div>
@@ -397,12 +480,33 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
               </button>
             </div>
 
-            <div className="space-y-2">
+            <p className="mb-2 text-xs text-muted-foreground">প্রতিটি আইটেমের নাম ও পরিমাণ বাংলা, English ও हिन्दी-তে লিখুন। যেকোনো ভাষার ছোট ছবি একই থাকবে।</p>
+            <div className="space-y-3">
               {manualItems.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-2 bg-background p-2.5 border rounded-xl shadow-sm">
-                  <input type="text" value={item.name} onChange={(e) => updateManualRow(idx, 'name', e.target.value)} placeholder="বীজের নাম (যেমন: তরমুজ বীজ)" aria-label="Manual item name" className="min-w-0 flex-1 border rounded-lg p-2 text-sm bg-secondary/30 input-bangla" />
-                  <input type="text" value={item.qty} onChange={(e) => updateManualRow(idx, 'qty', e.target.value)} aria-label="Manual item quantity" placeholder="যেমন: ১০ পিস" className="w-44 shrink-0 border rounded-lg p-2 text-sm bg-secondary/30 input-bangla" />
-                  {manualItems.length > 1 && <button type="button" onClick={() => removeManualRow(idx)} className="text-destructive p-1.5 hover:bg-destructive/10 rounded-lg"><X className="h-4 w-4" /></button>}
+                <div key={idx} className="rounded-xl bg-background p-3 border shadow-sm">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-muted-foreground">আইটেম {idx + 1} — নাম ও পরিমাণ</span>
+                    {manualItems.length > 1 && <button type="button" aria-label="আইটেম মুছুন" onClick={() => removeManualRow(idx)} className="text-destructive p-1.5 hover:bg-destructive/10 rounded-lg"><X className="h-4 w-4" /></button>}
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {MANUAL_ITEM_LANGUAGES.map((language) => (
+                      <div key={language.key} className="rounded-lg border bg-secondary/10 p-2">
+                        <span className="mb-1.5 block text-[11px] font-bold">{language.label}</span>
+                        <input type="text" value={item.translations?.[language.key]?.name || ''} onChange={(e) => updateManualTranslation(idx, language.key, 'name', e.target.value)} placeholder={language.namePlaceholder} aria-label={`${language.label} manual item name`} className="mb-1.5 w-full min-w-0 rounded-lg border bg-background p-2 text-sm input-bangla" />
+                        <input type="text" value={item.translations?.[language.key]?.qty || ''} onChange={(e) => updateManualTranslation(idx, language.key, 'qty', e.target.value)} placeholder={language.qtyPlaceholder} aria-label={`${language.label} manual item quantity`} className="w-full min-w-0 rounded-lg border bg-background p-2 text-sm input-bangla" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {item.image_url && <img src={item.image_url} alt={item.name || 'বীজের ছোট ছবি'} className="h-12 w-12 rounded-lg border bg-white object-contain p-1" />}
+                    <input type="url" value={item.image_url || ''} onChange={(e) => updateManualImage(idx, e.target.value)} placeholder="এই বীজের ছবির URL (ঐচ্ছিক)" aria-label="Manual item image URL" className="min-w-[180px] flex-1 border rounded-lg p-2 text-xs bg-secondary/30" />
+                    <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold hover:bg-secondary ${manualImageUploading === idx ? 'pointer-events-none opacity-50' : ''}`}>
+                      {manualImageUploading === idx ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                      {manualImageUploading === idx ? 'আপলোড হচ্ছে...' : 'ছবি আপলোড'}
+                      <input type="file" accept="image/*" onChange={(e) => handleManualImageUpload(idx, e)} className="hidden" disabled={manualImageUploading !== null} />
+                    </label>
+                    {item.image_url && <button type="button" onClick={() => updateManualImage(idx, '')} className="text-xs text-destructive underline">ছবি সরান</button>}
+                  </div>
                 </div>
               ))}
             </div>
@@ -433,7 +537,28 @@ function ComboForm({ combo, countryCode, onSave, onClose }: { combo: any; countr
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-2"><label className="flex items-center gap-2 text-sm font-semibold cursor-pointer"><input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} className="rounded h-4 w-4 text-primary" /> ওয়েবসাইটে সক্রিয় রাখুন</label></div>
+          {isSeedLanding ? (
+            <section className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-4">
+              <h4 className="font-bold text-sm">হোমপেজে দেখানোর অপশন</h4>
+              <p className="mt-1 mb-3 text-xs leading-5 text-muted-foreground">সক্রিয় থাকলে landing page খোলা যাবে। Featured, Best Seller, New বা Seasonal বাছলে সেটি হোমপেজের সংশ্লিষ্ট বীজের section-এ দেখাবে।</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {[
+                  { key: 'is_active', label: 'সক্রিয় (Active)', checked: form.is_active },
+                  { key: 'is_featured', label: 'ফিচার্ড (Featured)', checked: form.is_featured },
+                  { key: 'is_best_seller', label: 'বেস্ট সেলার (Best Seller)', checked: form.is_best_seller },
+                  { key: 'is_new_arrival', label: 'নতুন (New)', checked: form.is_new_arrival },
+                  { key: 'is_seasonal', label: 'মৌসুমি (Seasonal)', checked: form.is_seasonal },
+                ].map((option) => (
+                  <label key={option.key} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border bg-background px-3 py-2 text-sm font-semibold">
+                    <input type="checkbox" checked={option.checked} onChange={(e) => setForm({ ...form, [option.key]: e.target.checked })} className="h-4 w-4 rounded accent-primary" />
+                    {option.label}
+                  </label>
+                ))}
+              </div>
+            </section>
+          ) : (
+            <div className="flex items-center gap-2 pt-2"><label className="flex items-center gap-2 text-sm font-semibold cursor-pointer"><input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} className="rounded h-4 w-4 text-primary" /> ওয়েবসাইটে সক্রিয় রাখুন</label></div>
+          )}
 
         </form>
           <div className="shrink-0 flex gap-3 border-t border-border bg-background p-6">

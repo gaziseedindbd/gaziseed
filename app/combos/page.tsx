@@ -103,9 +103,9 @@ export default function CombosPage() {
           <div className="inline-flex items-center gap-2 rounded-full bg-amber-400/10 px-4 py-1.5 text-amber-400 border border-amber-400/20 text-xs font-bold uppercase tracking-wider mb-3">
             <Sparkles className="h-3.5 w-3.5" /> {t('স্পেশাল ডিসকাউন্ট অফার', 'Special Discount Offer')}
           </div>
-          <h1 className="text-3xl md:text-4xl font-black text-amber-400">{t('এক্সক্লুসিভ কম্বো প্যাক', 'Exclusive Combo Packs')}</h1>
+          <h1 className="text-3xl md:text-4xl font-black text-amber-400">{t('কম্বো ও Seed Combo অফার', 'Combo & Seed Combo Offers')}</h1>
           <p className="text-sm md:text-base text-emerald-200/80 mt-2 max-w-lg mx-auto">
-            {t('সাশ্রয়ী মূল্যে সেরা কম্বো প্যাকগুলো লুফে নিন। সারা দেশে ক্যাশ অন হোম ডেলিভারি!', 'Grab the best combo packs at affordable prices. Cash on home delivery nationwide!')}
+            {t('সাধারণ কম্বো ও Seed Combo Landing—সব সক্রিয় অফার এক জায়গায় দেখুন।', 'Browse active combo packs and Seed Combo Landing offers in one place.')}
           </p>
         </div>
 
@@ -116,7 +116,9 @@ export default function CombosPage() {
             const regularPrice = Number(firstTier.regular) || Number(combo.regular_total) || 0;
             const savings = regularPrice - offerPrice;
             const totalItems = getItemsCount(combo);
-            const badge = firstTier.badge || 'SPECIAL OFFER';
+            const badge = combo.landing_type === 'seed_landing'
+              ? t('Seed Combo', 'Seed Combo')
+              : firstTier.badge || 'SPECIAL OFFER';
 
             const translated = combo.translations?.[lang] || {};
             const comboTitle = translated.title || (lang === 'en' ? combo.title_en : combo.title_bn) || combo.title_bn || combo.title_en || 'Combo';

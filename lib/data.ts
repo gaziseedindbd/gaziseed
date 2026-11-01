@@ -350,7 +350,7 @@ export async function getActivePromotions(): Promise<{ promotion: Promotion; gif
 }
 
 export async function getComboPacks(): Promise<{ combo: ComboPack; items: { product: Product; quantity: number }[] }[]> {
-  const { data: combos } = await supabase.from('combo_packs').select('*').eq('is_active', true).order('display_order');
+  const { data: combos } = await supabase.from('combo_packs').select('*').eq('is_active', true).eq('landing_type', 'combo').order('display_order');
   if (!combos || combos.length === 0) return [];
   const results: { combo: ComboPack; items: { product: Product; quantity: number }[] }[] = [];
   for (const c of combos as ComboPack[]) {
@@ -360,6 +360,20 @@ export async function getComboPacks(): Promise<{ combo: ComboPack; items: { prod
     results.push({ combo: c, items: comboItems });
   }
   return results;
+}
+
+export async function getSeedComboLandings(country = getVisitorCountry()): Promise<ComboPack[]> {
+  const { data, error } = await supabase
+    .from('combo_packs')
+    .select('*')
+    .eq('country_code', country)
+    .eq('landing_type', 'seed_landing')
+    .eq('is_active', true)
+    .or('is_featured.eq.true,is_best_seller.eq.true,is_new_arrival.eq.true,is_seasonal.eq.true')
+    .order('created_at', { ascending: false })
+    .limit(12);
+  if (error) return [];
+  return (data || []) as ComboPack[];
 }
 
 export async function getComboPackBySlug(slug: string): Promise<{ combo: ComboPack; items: { product: Product; quantity: number }[] } | null> {
