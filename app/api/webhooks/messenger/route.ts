@@ -14,15 +14,21 @@ import {
   serializeMessengerProducts,
 } from '@/lib/ai/messenger-product-tool';
 import {
+  findMessengerOrderSubtotal,
   formatMessengerDeliveryPolicyReply,
+  formatMessengerFreeDeliveryProgressReply,
+  getMessengerDeliveryProgress,
   getMessengerDeliveryPolicy,
   isMessengerDeliveryChargeQuestion,
+  isMessengerFreeDeliveryProgressQuestion,
   isMessengerDeliveryPolicyQuestion,
   isMessengerDeliveryTimeQuestion,
   serializeMessengerDeliveryPolicy,
 } from '@/lib/ai/messenger-delivery-tool';
+import { verifyMessengerCartContext } from '@/lib/ai/messenger-cart-context';
 import {
   addPendingMessengerOrderToCart,
+  createMessengerOrderClient,
   formatMessengerCartSummary,
   getMessengerOrderResumeReply,
   handleMessengerOrderFlow,
@@ -550,14 +556,18 @@ type MessengerEvent = {
   timestamp?: number;
   message?: {
     mid?: string;
-    text?: string;    quick_reply?: {
+    text?: string;
+    referral?: { ref?: string };
+    quick_reply?: {
       payload?: string;
     };
   };
+  referral?: { ref?: string };
   postback?: {
     mid?: string;
     title?: string;
     payload?: string;
+    referral?: { ref?: string };
   };
 };
 
@@ -1021,10 +1031,20 @@ async function getRecentMessages(
 
 async function processMessengerEvent(event: MessengerEvent) {
   const senderId = event.sender?.id;
-  const messageId = event.message?.mid || event.postback?.mid;
+  const inboundMessageId = event.message?.mid || event.postback?.mid;
+  const referralToken = event.referral?.ref || event.message?.referral?.ref || event.postback?.referral?.ref || '';
+  const eventWebsiteCartContext = verifyMessengerCartContext(referralToken);
+  const referralOnly = !event.message?.text?.trim() && !event.postback && Boolean(eventWebsiteCartContext);
+  const messageId = inboundMessageId || (referralOnly && eventWebsiteCartContext ? `website-cart-ref-${eventWebsiteCartContext.nonce}` : '');
   const quickReplyPayload = event.message?.quick_reply?.payload || event.postback?.payload || '';
   const text =
-    event.message?.text?.trim() ||    (event.postback
+    event.message?.text?.trim() || (referralOnly && eventWebsiteCartContext
+      ? eventWebsiteCartContext.language === 'hi'
+        ? 'मेरे website cart पर free delivery के लिए कितना और चाहिए?'
+        : eventWebsiteCartContext.language === 'en'
+          ? 'How much more does my website cart need for free delivery?'
+          : 'আমার website cart-এ free delivery পেতে আর কত লাগবে?'
+      : event.postback
       ? event.postback.title || event.postback.payload || ''
       : '');
 
@@ -1037,6 +1057,10 @@ async function processMessengerEvent(event: MessengerEvent) {
           ? 'add another product'
           : quickReplyPayload === 'CART_CHECKOUT'
             ? 'checkout'
+            : quickReplyPayload === 'CART_VIEW'
+              ? 'cart'
+            : quickReplyPayload === 'BROWSE_PRODUCTS'
+              ? 'show available products'
             : quickReplyPayload === 'ORDER_USE_SAVED_DETAILS'
               ? 'হ্যাঁ'
               : quickReplyPayload === 'ORDER_CHANGE_DETAILS'
@@ -1069,7 +1093,9 @@ async function processMessengerEvent(event: MessengerEvent) {
     return;
   }
 
-  const currentCountry = getVerifiedCountry(conversation);
+  const storedWebsiteCartContext = verifyMessengerCartContext(conversation.metadata?.website_cart_context_token);
+  const websiteCartContext = eventWebsiteCartContext || storedWebsiteCartContext;
+  const currentCountry = websiteCartContext?.country || getVerifiedCountry(conversation);
   const detectedCountry = quickReplyCountry || detectExplicitCountry(normalizedActionText);
   const rateLimitCountry = resolveMessengerRateLimitCountry({
     quickReplyCountry,
@@ -1109,7 +1135,14 @@ async function processMessengerEvent(event: MessengerEvent) {
   await markConversation(sb, conversation.id, conversation.status, {
     last_sender_id: senderId,
     last_event_at: new Date().toISOString(),
-  });
+    ...(eventWebsiteCartContext ? {
+      website_cart_context_token: referralToken,
+      country_code: eventWebsiteCartContext.country,
+      country_verified: true,
+      country_source: 'website_checkout_referral',
+      country_confirmed_at: new Date().toISOString(),
+    } : {}),
+  }, eventWebsiteCartContext?.country);
 
   const resolvedCountry = detectedCountry || currentCountry;
 
@@ -1134,7 +1167,10 @@ async function processMessengerEvent(event: MessengerEvent) {
 
   if (savedUserMessage.duplicate) return;
 
-  const conversationMetadata = conversation.metadata || {};
+  const conversationMetadata = {
+    ...(conversation.metadata || {}),
+    ...(eventWebsiteCartContext ? { website_cart_context_token: referralToken } : {}),
+  };
   let humanTakeoverActive = conversationMetadata.human_takeover === true;
   let conversationStatus = conversation.status;
   let humanSupportClosed = conversationMetadata.human_support_state === 'closed';
@@ -2606,18 +2642,52 @@ async function processMessengerEvent(event: MessengerEvent) {
     isMessengerDeliveryPolicyQuestion(normalizedActionText) &&
     !shouldUseExistingBangladeshPaymentReply
   ) {
-    const deliveryLanguage = detectMessengerReplyLanguage(normalizedActionText);
+    const deliveryLanguage = websiteCartContext && referralOnly
+      ? websiteCartContext.language === 'hi' ? 'Hindi' : websiteCartContext.language === 'en' ? 'English' : 'Bengali'
+      : detectMessengerReplyLanguage(normalizedActionText);
     let deliveryReply: string | null = null;
     let deliveryLookupFailed = false;
+    let deliveryProgress: Awaited<ReturnType<typeof getMessengerDeliveryProgress>> = null;
+    const pendingDeliveryOrder = parsePendingMessengerOrder(
+      conversation.metadata?.pending_messenger_order,
+    );
+    const messengerDeliveryCartItems = pendingDeliveryOrder?.quantity
+      ? addPendingMessengerOrderToCart(messengerCartItems, pendingDeliveryOrder)
+      : messengerCartItems;
+    const deliveryCartItems = websiteCartContext ? [] : messengerDeliveryCartItems;
 
     try {
       const verifiedPolicy = await getMessengerDeliveryPolicy(sb, activeCountry);
-      deliveryReply = formatMessengerDeliveryPolicyReply(
-        verifiedPolicy,
-        activeCountry,
-        normalizedActionText,
-        deliveryLanguage,
-      );
+      if (isMessengerFreeDeliveryProgressQuestion(normalizedActionText)) {
+        deliveryProgress = await getMessengerDeliveryProgress({
+          // The RPC selects branch policy from this header; a plain admin
+          // client has no branch context and could quote the wrong country.
+          supabase: createMessengerOrderClient(activeCountry),
+          country: activeCountry,
+          cartItems: deliveryCartItems.length
+            ? deliveryCartItems.map(({ product_id, quantity, unit_price }) => ({ product_id, quantity, unit_price }))
+            : undefined,
+          suppliedSubtotal: websiteCartContext?.subtotal ?? (deliveryCartItems.length
+            ? null
+            : findMessengerOrderSubtotal(normalizedActionText)),
+          suppliedHasFreeDeliveryProduct: websiteCartContext?.hasFreeDeliveryProduct,
+        });
+        deliveryReply = formatMessengerFreeDeliveryProgressReply({
+          policy: verifiedPolicy,
+          country: activeCountry,
+          progress: deliveryProgress,
+          language: deliveryLanguage,
+          hasMessengerCart: websiteCartContext ? false : deliveryCartItems.length > 0,
+          hasWebsiteCart: Boolean(websiteCartContext),
+        });
+      } else {
+        deliveryReply = formatMessengerDeliveryPolicyReply(
+          verifiedPolicy,
+          activeCountry,
+          normalizedActionText,
+          deliveryLanguage,
+        );
+      }
     } catch (error) {
       deliveryLookupFailed = true;
       console.error(
@@ -2643,10 +2713,34 @@ async function processMessengerEvent(event: MessengerEvent) {
         database_first: true,
         ai_call_skipped: true,
         database_lookup_failed: deliveryLookupFailed,
-        source_tables: ['delivery_country_settings', 'delivery_charge_rules'],
+        free_delivery_progress: isMessengerFreeDeliveryProgressQuestion(normalizedActionText),
+        verified_delivery_quote: deliveryProgress !== null,
+        source_tables: isMessengerFreeDeliveryProgressQuestion(normalizedActionText)
+          ? ['products', 'delivery_country_settings', 'delivery_charge_rules', 'calculate_delivery_charge']
+          : ['delivery_country_settings', 'delivery_charge_rules'],
       },
     });
-    await sendMessengerText(senderId, deliveryReply);
+    await sendMessengerText(
+      senderId,
+      deliveryReply,
+      deliveryProgress && deliveryProgress.deliveryCharge > 0 && deliveryCartItems.length > 0 && !websiteCartContext
+        ? [
+            {
+              title: deliveryLanguage === 'Hindi' ? '➕ Product जोड़ें' : deliveryLanguage === 'English' ? '➕ Add product' : '➕ পণ্য যোগ করুন',
+              payload: 'CART_ADD_PRODUCT',
+            },
+            {
+              title: deliveryLanguage === 'Hindi' ? '🛒 Cart देखें' : deliveryLanguage === 'English' ? '🛒 View cart' : '🛒 কার্ট দেখুন',
+              payload: 'CART_VIEW',
+            },
+          ]
+        : isMessengerFreeDeliveryProgressQuestion(normalizedActionText) && deliveryCartItems.length === 0
+          ? [{
+              title: deliveryLanguage === 'Hindi' ? '🌱 Product देखें' : deliveryLanguage === 'English' ? '🌱 Browse products' : '🌱 পণ্য দেখুন',
+              payload: 'BROWSE_PRODUCTS',
+            }]
+        : undefined,
+    );
     return;
   }
 

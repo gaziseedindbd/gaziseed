@@ -80,6 +80,14 @@ export function isMessengerDeliveryChargeQuestion(text: string): boolean {
   return /(?:charge|fee|cost|how much|কত টাকা|চার্জ|ফি|খরচ|মূল্য|शुल्क|कितना|कितनी|खर्च)/i.test(normalized);
 }
 
+export function isMessengerFreeDeliveryProgressQuestion(text: string): boolean {
+  const normalized = normalizeMessengerIntentText(text);
+  const mentionsFreeDelivery = /(?:free\s*delivery|ফ্রি\s*ডেলিভারি|বিনামূল্যে\s*ডেলিভারি|मुफ़्त\s*डिलीवरी|मुफ्त\s*डिलीवरी|फ्री\s*डिलीवरी)/i.test(normalized);
+  const asksProgress = /(?:how\s*much|how\s*many|more|remaining|left|away|qualif|eligible|need|আর\s*কত|কত\s*(?:টাকা|রুপি)|আরও\s*(?:কত|কিছু)|বাকি|পূরণ|কত\s*হলে|কितना|कितनी|और\s*कितना|कितने\s*और|बाकी|पूरा)/i.test(normalized);
+  const alsoAsksEligibility = /(?:\bget\b|already|\bwill\b|পাব|পাবে|হবে|मिलेगा|मिलेगी|होगी)/i.test(normalized);
+  return mentionsFreeDelivery && (asksProgress || alsoAsksEligibility);
+}
+
 export function isMessengerDeliveryTimeQuestion(text: string): boolean {
   const normalized = normalizeMessengerIntentText(text);
   return /(?:delivery time|shipping time|how long|how many days|when.*arrive|কত দিনে|কখন পাব|কবে পৌঁছাবে|ডেলিভারির সময়|ডেলিভারি.*কতদিন|कितने दिन|कब पहुंचेगा|डिलीवरी समय)/i.test(normalized);
@@ -176,6 +184,183 @@ function findOrderValue(text: string): number | null {
     }
   }
   return null;
+}
+
+export function findMessengerOrderSubtotal(text: string): number | null {
+  const normalized = normalizeDigits(text);
+  const patterns = [
+    /(?:cart|basket|subtotal|sub\s*total|order\s+(?:total|value|amount)|my\s+order|আমার\s*কার্ট|কার্টের\s*(?:মোট|সাবটোটাল)|অর্ডারের\s*(?:মোট|সাবটোটাল)|मेरा\s*कार्ट|ऑर्डर\s*(?:का\s*)?(?:कुल|सबटोटल))[^0-9]{0,28}(?:৳|₹|\bBDT\b|\bINR\b)?\s*([0-9][0-9,]*(?:\.[0-9]+)?)/i,
+    /(?:৳|₹|\bBDT\b|\bINR\b)\s*([0-9][0-9,]*(?:\.[0-9]+)?)[^\n]{0,24}(?:cart|basket|subtotal|sub\s*total|order\s+(?:total|value|amount)|কার্ট|অর্ডার|कार्ट|ऑर्डर)/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    if (!match) continue;
+    const amount = Number(match[1].replace(/,/g, ''));
+    if (Number.isFinite(amount) && amount >= 0 && amount <= 1_000_000) return amount;
+  }
+
+  return null;
+}
+
+export type MessengerDeliveryProgress = {
+  subtotal: number;
+  deliveryCharge: number;
+  hasFreeDeliveryProduct: boolean;
+};
+
+export async function getMessengerDeliveryProgress(args: {
+  supabase: SupabaseClient;
+  country: MessengerDeliveryCountry;
+  cartItems?: Array<{ product_id: string; quantity: number; unit_price: number }>;
+  suppliedSubtotal?: number | null;
+  suppliedHasFreeDeliveryProduct?: boolean;
+}): Promise<MessengerDeliveryProgress | null> {
+  let subtotal = args.suppliedSubtotal ?? null;
+  let hasFreeDeliveryProduct = args.suppliedHasFreeDeliveryProduct === true;
+
+  if (args.cartItems?.length) {
+    const uniqueIds = Array.from(new Set(args.cartItems.map((item) => item.product_id)));
+    if (uniqueIds.length !== args.cartItems.length) return null;
+
+    const { data, error } = await args.supabase
+      .from('products')
+      .select('id,country_code,is_active,stock,regular_price,sale_price,offer_price,price,free_delivery')
+      .in('id', uniqueIds)
+      .eq('country_code', args.country)
+      .eq('is_active', true);
+
+    if (error) throw error;
+    const products = new Map((data || []).map((product) => [product.id, product]));
+    if (products.size !== uniqueIds.length) return null;
+
+    subtotal = 0;
+    for (const item of args.cartItems) {
+      const product = products.get(item.product_id);
+      if (!product || Number(product.stock || 0) < item.quantity) return null;
+      const price = [product.offer_price, product.sale_price, product.price, product.regular_price]
+        .find((value) => typeof value === 'number' && value > 0);
+      if (typeof price !== 'number') return null;
+      // Do not quote against a stale Messenger cart whose saved price no
+      // longer matches the current catalog. The existing checkout can refresh it.
+      const savedItem = args.cartItems.find((cartItem) => cartItem.product_id === item.product_id);
+      if (!savedItem || price !== savedItem.unit_price) return null;
+      subtotal += price * item.quantity;
+      hasFreeDeliveryProduct ||= product.free_delivery === true;
+    }
+  }
+
+  if (subtotal == null || !Number.isFinite(subtotal) || subtotal < 0) return null;
+
+  const { data, error } = await args.supabase.rpc('calculate_delivery_charge', {
+    p_order_value: subtotal,
+    p_free_delivery: hasFreeDeliveryProduct,
+  });
+  if (error) throw error;
+  const deliveryCharge = Number(data);
+  if (!Number.isFinite(deliveryCharge) || deliveryCharge < 0) return null;
+
+  return { subtotal, deliveryCharge, hasFreeDeliveryProduct };
+}
+
+function formatProgressMoney(
+  amount: number,
+  symbol: string,
+  country: MessengerDeliveryCountry,
+  language: MessengerReplyLanguage,
+): string {
+  const locale = language === 'Bengali' ? 'bn-BD' : language === 'Hindi' ? 'hi-IN' : country === 'IN' ? 'en-IN' : 'en-US';
+  const formatted = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(amount);
+  return symbol + formatted;
+}
+
+export function formatMessengerFreeDeliveryProgressReply(args: {
+  policy: MessengerDeliveryPolicy;
+  country: MessengerDeliveryCountry;
+  progress: MessengerDeliveryProgress | null;
+  language: MessengerReplyLanguage;
+  hasMessengerCart: boolean;
+  hasWebsiteCart?: boolean;
+}): string {
+  const { policy, country, progress, language, hasMessengerCart, hasWebsiteCart = false } = args;
+  if (!progress) {
+    if (language === 'Hindi') {
+      return hasMessengerCart
+        ? 'मैं अभी आपके cart का सही delivery quote नहीं निकाल पा रहा हूँ। कृपया cart को दोबारा देखें या checkout में अंतिम delivery charge जाँचें।'
+        : 'मैं इस Messenger chat से आपकी website cart नहीं देख सकता। अपना cart subtotal भेजें या Messenger में product चुनें; फिर मैं सही free-delivery जानकारी बता दूँगा।';
+    }
+    if (language === 'English') {
+      return hasMessengerCart
+        ? 'I could not verify the current delivery quote for your cart. Please refresh your cart or check the final delivery charge at checkout.'
+        : 'I can’t see your website cart from this Messenger chat. Send your cart subtotal or choose products here, and I can check the free-delivery amount accurately.';
+    }
+    return hasMessengerCart
+      ? 'আপনার কার্টের বর্তমান delivery quote যাচাই করতে পারিনি। কার্টটি আবার দেখুন বা checkout-এ চূড়ান্ত delivery charge মিলিয়ে নিন।'
+      : 'এই Messenger chat থেকে আপনার website-এর cart দেখা যাচ্ছে না। cart subtotal লিখে পাঠান বা Messenger-এ product বেছে নিন—তাহলে free delivery-এর সঠিক হিসাব জানাতে পারব।';
+  }
+
+  const currency = country === 'IN' ? '₹' : '৳';
+  const subtotal = formatProgressMoney(progress.subtotal, currency, country, language);
+  if (progress.deliveryCharge === 0) {
+    if (hasWebsiteCart) {
+      if (language === 'Hindi') return `आपके website checkout cart का subtotal ${subtotal} है। इस cart पर delivery अपने-आप free लागू है। अंतिम राशि checkout में देख लें।`;
+      if (language === 'English') return `Your website checkout cart subtotal is ${subtotal}. Free delivery is already applied automatically to this cart. Please confirm the final amount at checkout.`;
+      return `আপনার website checkout cart-এর subtotal ${subtotal}। এই cart-এ delivery অটোমেটিক ফ্রি প্রযোজ্য হয়েছে। checkout-এ চূড়ান্ত পরিমাণ দেখে নিন।`;
+    }
+    if (!hasMessengerCart) {
+      if (language === 'Hindi') {
+        return `आपके बताए subtotal ${subtotal} के आधार पर मौजूदा नियम में free delivery मिलनी चाहिए। मैं आपके products को verify नहीं कर सकता; checkout में अंतिम पुष्टि करें।`;
+      }
+      if (language === 'English') {
+        return `Based on the subtotal you shared (${subtotal}), the current rule should give free delivery. I can’t verify the products in your website cart from Messenger, so please confirm the final amount at checkout.`;
+      }
+      return `আপনার জানানো subtotal ${subtotal} অনুযায়ী বর্তমান নিয়মে ফ্রি ডেলিভারি হওয়ার কথা। Messenger থেকে website cart-এর product যাচাই করতে পারছি না—checkout-এ চূড়ান্ত পরিমাণ নিশ্চিত করুন।`;
+    }
+    if (language === 'Hindi') {
+      return `आपके cart का subtotal ${subtotal} है। आपके cart पर delivery अपने-आप free लागू है। अंतिम पुष्टि checkout में होगी।`;
+    }
+    if (language === 'English') {
+      return `Your cart subtotal is ${subtotal}. Free delivery is already applied automatically to this cart. Checkout will confirm the final amount.`;
+    }
+    return `আপনার কার্টের subtotal ${subtotal}। এই কার্টে ডেলিভারি অটোমেটিক ফ্রি প্রযোজ্য হয়েছে। checkout-এ চূড়ান্ত পরিমাণ নিশ্চিত হবে।`;
+  }
+
+  const nextFreeRule = policy.charge_rules
+    .filter((rule) => rule.is_free === true && Number(rule.min_order) > 0 && progress.subtotal < Number(rule.min_order))
+    .sort((a, b) => Number(a.min_order) - Number(b.min_order))[0];
+  if (!nextFreeRule) {
+    if (language === 'Hindi') {
+      return `आपके cart का subtotal ${subtotal} है। अभी उपलब्ध delivery नियमों में इस cart के लिए free-delivery सीमा नहीं मिली। कृपया checkout में अंतिम charge देखें।`;
+    }
+    if (language === 'English') {
+      return `Your cart subtotal is ${subtotal}. I couldn’t verify an active free-delivery threshold for this cart, so please check the final delivery charge at checkout.`;
+    }
+    return `আপনার কার্টের subtotal ${subtotal}। এই কার্টের জন্য চালু free-delivery threshold যাচাই করা যায়নি; checkout-এ চূড়ান্ত charge দেখে নিন।`;
+  }
+
+  const remaining = Math.max(0, Number(nextFreeRule.min_order) - progress.subtotal);
+  const remainingMoney = formatProgressMoney(remaining, currency, country, language);
+  if (hasWebsiteCart) {
+    if (language === 'Hindi') return `आपके website checkout cart का subtotal ${subtotal} है। Free delivery पाने के लिए ${remainingMoney} और जोड़ें। उत्पाद जोड़ने के लिए website checkout पर वापस जाएँ; अंतिम charge वहीं देख लें।`;
+    if (language === 'English') return `Your website checkout cart subtotal is ${subtotal}. Add ${remainingMoney} more to qualify for free delivery. Return to website checkout to add a product and confirm the final delivery charge there.`;
+    return `আপনার website checkout cart-এর subtotal ${subtotal}। Free delivery পেতে আরও ${remainingMoney} যোগ করুন। পণ্য যোগ করতে website checkout-এ ফিরে যান এবং সেখানে চূড়ান্ত delivery charge দেখে নিন।`;
+  }
+  if (!hasMessengerCart) {
+    if (language === 'Hindi') {
+      return `आपके बताए subtotal ${subtotal} के आधार पर free delivery के लिए ${remainingMoney} और चाहिए। website cart से जुड़े products की पुष्टि मैं Messenger में नहीं कर सकता; checkout में अंतिम charge देखें।`;
+    }
+    if (language === 'English') {
+      return `Based on the subtotal you shared (${subtotal}), add ${remainingMoney} more to reach the current free-delivery threshold. I can’t verify your website cart from Messenger; check the final charge at checkout.`;
+    }
+    return `আপনার জানানো subtotal ${subtotal} অনুযায়ী ফ্রি ডেলিভারি পেতে আরও ${remainingMoney} লাগবে। Messenger থেকে website cart-এর product যাচাই করা যাচ্ছে না—checkout-এ চূড়ান্ত charge দেখুন।`;
+  }
+  if (language === 'Hindi') {
+    return `आपके cart का subtotal ${subtotal} है। Free delivery पाने के लिए ${remainingMoney} और जोड़ें। चाहें तो Messenger में एक और product चुनें।`;
+  }
+  if (language === 'English') {
+    return `Your cart subtotal is ${subtotal}. Add ${remainingMoney} more to qualify for free delivery. You can choose another product here in Messenger.`;
+  }
+  return `আপনার কার্টের subtotal ${subtotal}। ফ্রি ডেলিভারি পেতে আরও ${remainingMoney}-এর পণ্য যোগ করুন। চাইলে Messenger-এ আরেকটি product বেছে নিতে পারেন।`;
 }
 
 export function formatMessengerDeliveryPolicyReply(
