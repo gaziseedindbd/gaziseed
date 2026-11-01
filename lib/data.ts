@@ -77,9 +77,11 @@ export async function getBanners(country = getVisitorCountry()): Promise<Banner[
 }
 
 export async function getCategories(): Promise<Category[]> {
+  const country = getVisitorCountry();
   const { data } = await supabase
     .from('categories')
     .select('*')
+    .eq('country_code', country)
     .eq('is_active', true)
     .order('display_order', { ascending: true });
   return (data || []) as Category[];
@@ -90,6 +92,7 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
     .from('categories')
     .select('*')
     .eq('slug', slug)
+    .eq('country_code', getVisitorCountry())
     .eq('is_active', true)
     .maybeSingle();
   return data as Category | null;
@@ -104,9 +107,11 @@ export async function getProducts(filters?: {
   is_seasonal?: boolean;
   limit?: number;
 }): Promise<Product[]> {
+  const country = getVisitorCountry();
   let query = supabase
     .from('products')
     .select('*')
+    .eq('country_code', country)
     .eq('is_active', true)
     .eq('is_ads_only', false)
     .order('created_at', { ascending: false });
