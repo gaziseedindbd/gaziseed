@@ -14,15 +14,20 @@ import {
   serializeMessengerProducts,
 } from '@/lib/ai/messenger-product-tool';
 import {
+  findMessengerOrderSubtotal,
   formatMessengerDeliveryPolicyReply,
+  formatMessengerFreeDeliveryProgressReply,
+  getMessengerDeliveryProgress,
   getMessengerDeliveryPolicy,
   isMessengerDeliveryChargeQuestion,
+  isMessengerFreeDeliveryProgressQuestion,
   isMessengerDeliveryPolicyQuestion,
   isMessengerDeliveryTimeQuestion,
   serializeMessengerDeliveryPolicy,
 } from '@/lib/ai/messenger-delivery-tool';
 import {
   addPendingMessengerOrderToCart,
+  createMessengerOrderClient,
   formatMessengerCartSummary,
   getMessengerOrderResumeReply,
   handleMessengerOrderFlow,
@@ -1037,6 +1042,10 @@ async function processMessengerEvent(event: MessengerEvent) {
           ? 'add another product'
           : quickReplyPayload === 'CART_CHECKOUT'
             ? 'checkout'
+            : quickReplyPayload === 'CART_VIEW'
+              ? 'cart'
+            : quickReplyPayload === 'BROWSE_PRODUCTS'
+              ? 'show available products'
             : quickReplyPayload === 'ORDER_USE_SAVED_DETAILS'
               ? 'হ্যাঁ'
               : quickReplyPayload === 'ORDER_CHANGE_DETAILS'
@@ -2609,15 +2618,44 @@ async function processMessengerEvent(event: MessengerEvent) {
     const deliveryLanguage = detectMessengerReplyLanguage(normalizedActionText);
     let deliveryReply: string | null = null;
     let deliveryLookupFailed = false;
+    let deliveryProgress: Awaited<ReturnType<typeof getMessengerDeliveryProgress>> = null;
+    const pendingDeliveryOrder = parsePendingMessengerOrder(
+      conversation.metadata?.pending_messenger_order,
+    );
+    const deliveryCartItems = pendingDeliveryOrder?.quantity
+      ? addPendingMessengerOrderToCart(messengerCartItems, pendingDeliveryOrder)
+      : messengerCartItems;
 
     try {
       const verifiedPolicy = await getMessengerDeliveryPolicy(sb, activeCountry);
-      deliveryReply = formatMessengerDeliveryPolicyReply(
-        verifiedPolicy,
-        activeCountry,
-        normalizedActionText,
-        deliveryLanguage,
-      );
+      if (isMessengerFreeDeliveryProgressQuestion(normalizedActionText)) {
+        deliveryProgress = await getMessengerDeliveryProgress({
+          // The RPC selects branch policy from this header; a plain admin
+          // client has no branch context and could quote the wrong country.
+          supabase: createMessengerOrderClient(activeCountry),
+          country: activeCountry,
+          cartItems: deliveryCartItems.length
+            ? deliveryCartItems.map(({ product_id, quantity, unit_price }) => ({ product_id, quantity, unit_price }))
+            : undefined,
+          suppliedSubtotal: deliveryCartItems.length
+            ? null
+            : findMessengerOrderSubtotal(normalizedActionText),
+        });
+        deliveryReply = formatMessengerFreeDeliveryProgressReply({
+          policy: verifiedPolicy,
+          country: activeCountry,
+          progress: deliveryProgress,
+          language: deliveryLanguage,
+          hasMessengerCart: deliveryCartItems.length > 0,
+        });
+      } else {
+        deliveryReply = formatMessengerDeliveryPolicyReply(
+          verifiedPolicy,
+          activeCountry,
+          normalizedActionText,
+          deliveryLanguage,
+        );
+      }
     } catch (error) {
       deliveryLookupFailed = true;
       console.error(
@@ -2643,10 +2681,34 @@ async function processMessengerEvent(event: MessengerEvent) {
         database_first: true,
         ai_call_skipped: true,
         database_lookup_failed: deliveryLookupFailed,
-        source_tables: ['delivery_country_settings', 'delivery_charge_rules'],
+        free_delivery_progress: isMessengerFreeDeliveryProgressQuestion(normalizedActionText),
+        verified_delivery_quote: deliveryProgress !== null,
+        source_tables: isMessengerFreeDeliveryProgressQuestion(normalizedActionText)
+          ? ['products', 'delivery_country_settings', 'delivery_charge_rules', 'calculate_delivery_charge']
+          : ['delivery_country_settings', 'delivery_charge_rules'],
       },
     });
-    await sendMessengerText(senderId, deliveryReply);
+    await sendMessengerText(
+      senderId,
+      deliveryReply,
+      deliveryProgress && deliveryProgress.deliveryCharge > 0 && deliveryCartItems.length > 0
+        ? [
+            {
+              title: deliveryLanguage === 'Hindi' ? '➕ Product जोड़ें' : deliveryLanguage === 'English' ? '➕ Add product' : '➕ পণ্য যোগ করুন',
+              payload: 'CART_ADD_PRODUCT',
+            },
+            {
+              title: deliveryLanguage === 'Hindi' ? '🛒 Cart देखें' : deliveryLanguage === 'English' ? '🛒 View cart' : '🛒 কার্ট দেখুন',
+              payload: 'CART_VIEW',
+            },
+          ]
+        : isMessengerFreeDeliveryProgressQuestion(normalizedActionText) && deliveryCartItems.length === 0
+          ? [{
+              title: deliveryLanguage === 'Hindi' ? '🌱 Product देखें' : deliveryLanguage === 'English' ? '🌱 Browse products' : '🌱 পণ্য দেখুন',
+              payload: 'BROWSE_PRODUCTS',
+            }]
+        : undefined,
+    );
     return;
   }
 
