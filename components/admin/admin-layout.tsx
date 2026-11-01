@@ -31,6 +31,7 @@ const navGroups: NavGroup[] = [
   ] },
   { label: 'Ads ও মার্কেটিং', items: [
     { href: '/admin/ads-landing', label: 'Ads Landing Pages', icon: Megaphone },
+    { href: '/admin/seed-combo-landing', label: 'Seed Combo Landing', icon: Boxes },
     { href: '/admin/animated-landing', label: 'Animated Landing Pages', icon: Sparkles },
     { href: '/admin/campaigns', label: 'ক্যাম্পেইন ট্র্যাকিং', icon: BarChart3 },
     { href: '/admin/meta-ads', label: 'Meta Ads রিপোর্ট', icon: BarChart3 },

@@ -27,6 +27,7 @@ export default function CombosPage() {
         .select('*')
         .eq('is_active', true)
         .eq('country_code', country)
+        .eq('landing_type', 'combo')
         .order('created_at', { ascending: false });
 
       if (error) setLoadError(true);

@@ -76,7 +76,19 @@ function getComboHeroImages(combo: Record<string, any>, items: ComboItem[]): str
     .map((item) => getProductImage(item.products))
     .filter((value) => value && !value.includes('placehold.co'));
 
-  return Array.from(new Set([...productImages, ...comboImages]));
+  // Admin's first combo image is the campaign's main image. Keep it ahead of
+  // seed pack shots so a three-product combo cannot push it out of the hero.
+  return Array.from(new Set([...comboImages, ...productImages]));
+}
+
+function getComboMainImage(combo: Record<string, any>): string {
+  const candidates = [
+    ...(Array.isArray(combo?.images) ? combo.images : []),
+    combo?.image_url,
+    combo?.featured_image,
+    combo?.image,
+  ];
+  return candidates.find((value) => typeof value === 'string' && value.trim() && !value.includes('placehold.co'))?.trim() || '';
 }
 
 export default function ComboLandingPage() {
@@ -206,6 +218,20 @@ export default function ComboLandingPage() {
     return () => { active = false; };
   }, [country, offer, freeDelivery]);
   const heroImages = useMemo(() => (combo ? getComboHeroImages(combo, items) : []), [combo, items]);
+  const mainComboImage = combo ? getComboMainImage(combo) : '';
+  const seedImages = useMemo(() => {
+    const seen = new Set<string>();
+    return items.flatMap((item) => {
+      const product = item.products || {};
+      const image = getProductImage(product);
+      if (!image || seen.has(image)) return [];
+      seen.add(image);
+      return [{
+        image,
+        name: product.translations?.[lang]?.name || (lang === 'en' ? product.name_en : product.name_bn) || product.name_en || 'Seed',
+      }];
+    });
+  }, [items, lang]);
 
   const submitOrder = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -353,7 +379,21 @@ export default function ComboLandingPage() {
                   <div className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full border border-emerald-900/10 bg-emerald-100/40" />
                   <div className="pointer-events-none absolute -bottom-16 left-8 h-36 w-36 rounded-full bg-lime-100/70 blur-xl" />
 
-                  {heroImages.length > 0 ? (
+                  {mainComboImage ? (
+                    <div className="relative min-h-[300px] sm:min-h-[405px]">
+                      <img src={mainComboImage} alt={comboTitle} className="absolute inset-0 h-full w-full object-contain p-5 pb-24 sm:p-8 sm:pb-28" loading="eager" />
+                      {seedImages.length > 0 && (
+                        <div className="absolute inset-x-3 bottom-3 z-30 flex items-center justify-center gap-2 overflow-x-auto rounded-2xl border border-white/80 bg-white/90 p-2 shadow-lg backdrop-blur sm:inset-x-6 sm:bottom-5 sm:gap-3 sm:p-2.5">
+                          {seedImages.map((seed: any, index: number) => (
+                            <div key={`${seed.image}-${index}`} className="flex shrink-0 items-center gap-2 rounded-xl bg-emerald-50 px-2 py-1.5 sm:px-3">
+                              {seed.image ? <img src={seed.image} alt={seed.name} className="h-9 w-9 rounded-lg bg-white object-contain p-0.5 sm:h-11 sm:w-11" loading="lazy" /> : <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-emerald-700"><Leaf className="h-4 w-4" /></span>}
+                              <span className="max-w-[100px] text-[10px] font-black leading-4 text-emerald-950 sm:max-w-[130px] sm:text-xs">{seed.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : heroImages.length > 0 ? (
                     <div className="relative flex min-h-[300px] items-center justify-center sm:min-h-[405px]">
                       {heroImages.slice(0, 3).map((image, index) => {
                         const positions = [
@@ -421,6 +461,7 @@ export default function ComboLandingPage() {
                       <div className="p-4">
                         <h3 className="line-clamp-2 text-[15px] font-black leading-6 text-slate-900">{product.translations?.[lang]?.name || (lang === 'en' ? product.name_en : product.name_bn) || product.name_en || copy('Seed', 'বীজ', 'बीज')}</h3>
                         <p className="mt-1 text-xs text-slate-500">{per} {copy('packet in combo', 'প্যাকেট / কম্বো', 'पैकेट प्रति कॉम्बो')}</p>
+                        {(product.translations?.[lang]?.short_description || product.short_description || product.translations?.[lang]?.description || product.description) && <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-600">{product.translations?.[lang]?.short_description || product.short_description || product.translations?.[lang]?.description || product.description}</p>}
                         <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-200 pt-3"><span className="text-xs font-semibold text-slate-500">{copy('In your pack', 'বর্তমান প্যাকে', 'आपके पैक में')}</span><span className="rounded-full bg-emerald-800 px-2.5 py-1 text-[10px] font-black text-white">{totalQty} {copy('packs', 'প্যাকেট', 'पैकेट')}</span></div>
                       </div>
                     </article>
