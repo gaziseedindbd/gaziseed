@@ -4,7 +4,7 @@ import './globals.css';
 
 import type { Metadata, Viewport } from 'next';
 import { cookies, headers } from 'next/headers';
-import { Hind } from 'next/font/google';
+import { Hind, Noto_Sans_Bengali } from 'next/font/google';
 import Script from 'next/script';
 import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
@@ -27,6 +27,7 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { normalizeVisitorCountry, resolveVisitorCountry } from '@/lib/visitor-country';
 
 const hind = Hind({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'], variable: '--font-hind', display: 'swap' });
+const notoSansBengali = Noto_Sans_Bengali({ subsets: ['bengali'], weight: 'variable', variable: '--font-bengali', display: 'swap' });
 
 const FAVICON_URL = '/favicon.svg?v=3';
 const SITE_URL = 'https://www.gaziseed.com';
@@ -95,7 +96,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     || 'G-6RKL3GB80V';
 
   return (
-    <html lang={htmlLanguage} className={hind.variable} suppressHydrationWarning>
+    <html lang={htmlLanguage} className={`${hind.variable} ${notoSansBengali.variable}`} suppressHydrationWarning>
       <head>
         {/* Homepage styles are inlined in app/page.tsx to keep them off the initial render-blocking request path. */}
         {ga4MeasurementId ? (
