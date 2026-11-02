@@ -217,7 +217,7 @@ export default function Home({ initialBanners = [], initialCategories = [], init
   const promoImage1 = blogPosts[0]?.featured_image || banners[0]?.desktop_image || '';
   const promoImage2 = blogPosts[1]?.featured_image || banners[1]?.desktop_image || banners[0]?.desktop_image || '';
   const activeBanner = banners[currentBanner];
-  const hasBannerCopy = Boolean(activeBanner?.title?.trim() || activeBanner?.subtitle?.trim() || activeBanner?.cta_text?.trim());
+  const hasBannerCopy = Boolean(activeBanner?.title?.trim() || activeBanner?.subtitle?.trim());
   const imageOnlyBannerClass = banners.length > 0 && !hasBannerCopy ? 'hero-image-only' : '';
 
   return (
