@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ComponentProps, type ComponentType } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentProps, type ComponentType } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Truck, ShieldCheck, Sprout, Phone, Heart, Users, Headphones, MapPin } from 'lucide-react';
@@ -102,6 +102,7 @@ export default function Home({ initialBanners = [], initialCategories = [], init
   const [settings, setSettings] = useState<SiteSettings | null>(cached.settings || null);
   const [sections, setSections] = useState<HomepageSection[]>(cached.sections || []);
   const [currentBanner, setCurrentBanner] = useState(0);
+  const bannerSelectionId = useRef(0);
   const [theme, setTheme] = useState<HomePageTheme>('theme1');
 
   useEffect(() => { setTheme(getStoredTheme()); const handler = () => setTheme(getStoredTheme()); window.addEventListener('sb-theme-change', handler); return () => window.removeEventListener('sb-theme-change', handler); }, []);
@@ -185,21 +186,48 @@ export default function Home({ initialBanners = [], initialCategories = [], init
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => { if (banners.length <= 1) return; const interval = setInterval(() => setCurrentBanner((prev) => (prev + 1) % banners.length), 5000); return () => clearInterval(interval); }, [banners.length]);
+  const selectBanner = useCallback((index: number) => {
+    const selectionId = ++bannerSelectionId.current;
+    const imageUrl = banners[index]?.desktop_image;
+    if (!imageUrl) {
+      setCurrentBanner(index);
+      return;
+    }
+
+    // Keep the current slide visible until the next banner is ready. Hidden
+    // carousel images may remain lazy on slower connections.
+    const preload = new window.Image();
+    preload.decoding = 'async';
+    preload.onload = () => {
+      if (selectionId === bannerSelectionId.current) setCurrentBanner(index);
+    };
+    preload.onerror = () => undefined;
+    preload.src = imageUrl;
+    if (preload.complete && preload.naturalWidth > 0 && selectionId === bannerSelectionId.current) setCurrentBanner(index);
+  }, [banners]);
+
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const interval = setInterval(() => selectBanner((currentBanner + 1) % banners.length), 5000);
+    return () => clearInterval(interval);
+  }, [banners.length, currentBanner, selectBanner]);
 
   const isSectionEnabled = (key: string) => sections.length === 0 || sections.find((s) => s.section_key === key)?.is_enabled !== false;
   const themeClass = theme === 'theme1' ? 'theme-premium' : theme === 'theme2' ? 'theme-farm' : 'theme-marketplace';
   const promoImage1 = blogPosts[0]?.featured_image || banners[0]?.desktop_image || '';
   const promoImage2 = blogPosts[1]?.featured_image || banners[1]?.desktop_image || banners[0]?.desktop_image || '';
+  const activeBanner = banners[currentBanner];
+  const hasBannerCopy = Boolean(activeBanner?.title?.trim() || activeBanner?.subtitle?.trim() || activeBanner?.cta_text?.trim());
+  const imageOnlyBannerClass = banners.length > 0 && !hasBannerCopy ? 'hero-image-only' : '';
 
   return (
     <div className={`${themeClass} home-premium-scope`}>
       {visitorCountry === 'IN' && isSectionEnabled('hero_slider') && banners.length > 0 ? (
         <section id="gazi-india-home-hero" className="section-pad home-hero-section home-india-hero-section">
           <div className="container-custom">
-            <div className={`hero-wrap home-hero-fallback home-india-hero-fallback relative overflow-hidden hero-has-banners ${banners.length > 1 ? 'hero-has-carousel' : 'hero-no-carousel'}`}>
+            <div className={`hero-wrap home-hero-fallback home-india-hero-fallback relative overflow-hidden hero-has-banners ${banners.length > 1 ? 'hero-has-carousel' : 'hero-no-carousel'} ${hasBannerCopy ? 'hero-has-copy' : imageOnlyBannerClass}`}>
               <div className="hero-inner relative block h-full w-full p-0">
-                <BannerCarousel banners={banners} currentBanner={currentBanner} onSelect={setCurrentBanner} translateDb={tDb} previousLabel={t('আগের ব্যানার', 'Previous banner', 'पिछला बैनर')} nextLabel={t('পরের ব্যানার', 'Next banner', 'अगला बैनर')} />
+                <BannerCarousel banners={banners} currentBanner={currentBanner} onSelect={selectBanner} translateDb={tDb} previousLabel={t('আগের ব্যানার', 'Previous banner', 'पिछला बैनर')} nextLabel={t('পরের ব্যানার', 'Next banner', 'अगला बैनर')} />
               </div>
             </div>
           </div>
@@ -237,10 +265,10 @@ export default function Home({ initialBanners = [], initialCategories = [], init
         </section>
       ) : null}
 
-      {visitorCountry !== 'IN' && isSectionEnabled('hero_slider') && <section className="section-pad home-hero-section"><div className="container-custom"><div className={`hero-wrap home-hero-fallback relative overflow-hidden ${banners.length > 1 ? 'hero-has-carousel' : 'hero-no-carousel'} ${banners.length > 0 ? 'hero-has-banners' : ''}`}><div className="hero-inner relative block h-full w-full p-0">{banners.length > 0 ? banners.map((banner, idx) => <div key={banner.id} aria-hidden={idx !== currentBanner} hidden={idx !== currentBanner} className="hero-carousel-slide transition-opacity duration-700"><div className="hero-inner relative block h-full p-0">{banner.desktop_image && <div className="hero-image-wrap block h-full w-full"><BannerImage banner={banner} priority={idx === 0} /></div>}{(banner.title || banner.subtitle || banner.cta_text) && <div className="hero-content-overlay absolute inset-x-0 bottom-0 z-10 p-4 sm:p-6 lg:p-8"><div className="max-w-xl rounded-2xl bg-black/25 p-4 text-white backdrop-blur-[2px] sm:p-5">{banner.title && <h2 className="hero-title">{tDb(banner.title)}</h2>}{banner.subtitle && <p className="hero-subtitle">{tDb(banner.subtitle)}</p>}{banner.cta_text && <Link href={banner.cta_url || '/all-products'} className="hero-btn inline-flex"><Sprout className="hero-cta-sprout h-4 w-4" aria-hidden="true" />{tDb(banner.cta_text)}<ChevronRight className="h-4 w-4" aria-hidden="true" /></Link>}</div></div>}</div></div>) : <div className="hero-fallback-shell"><div className="hero-fallback-content"><span className="hero-fallback-badge">GAZI SEED BANGLADESH</span><h1>{t('বাগানের জন্য বীজ বেছে নিন', 'Choose Seeds for Your Garden', 'अपने बगीचे के लिए बीज चुनें')}</h1><p>{t('বাগান ও চাষের জন্য বীজ দেখুন—বাংলাদেশজুড়ে ডেলিভারি ও সহজ পেমেন্টের সুবিধাসহ।', 'Explore seeds for gardens and growing, with delivery across Bangladesh and convenient payment options.', 'बागवानी और खेती के लिए बीज देखें—बांग्लादेश में डिलीवरी और आसान भुगतान विकल्पों के साथ।')}</p><div className="hero-fallback-payment-pills" aria-label={t('পেমেন্ট পদ্ধতি', 'Payment methods', 'भुगतान के तरीके')}><span>bKash</span><span>Nagad</span><span>COD</span><span>{t('কার্ড', 'Cards', 'कार्ड')}</span></div><Link href="/all-products" className="hero-btn inline-flex">{t('সব পণ্য দেখুন', 'Shop Seeds', 'बीज देखें')}<ChevronRight className="h-4 w-4" /></Link></div><div className="hero-fallback-visual" aria-label={t('গাজী সিড বাংলাদেশের বীজ সংগ্রহ ও সেবার সুবিধা', 'GAZI SEED Bangladesh seed collection and service highlights', 'GAZI SEED बांग्लादेश बीज संग्रह और सेवा विशेषताएँ')}><div className="hero-fallback-media-grid">{[0, 1, 2].map((categoryIndex) => { const category = categories[categoryIndex]; return <div key={categoryIndex} className="hero-fallback-media-card">{category?.image ? <Image src={category.image} alt={tCategoryName(category.name_bn, category.name_en)} fill sizes="(max-width: 767px) 88vw, 220px" quality={65} priority={categoryIndex === 0} className="object-cover" /> : <div className="hero-fallback-media-placeholder"><Sprout className="h-10 w-10" aria-hidden="true" /></div>}</div>; })}</div><div className="hero-fallback-service-card"><div className="hero-fallback-seed-mark"><Sprout className="h-7 w-7" aria-hidden="true" /></div><div className="hero-fallback-proof-grid"><div><ShieldCheck className="h-4 w-4" aria-hidden="true" /><span>{t('বীজের সংগ্রহ', 'Seed Collection', 'बीजों का संग्रह')}</span></div><div><Truck className="h-4 w-4" aria-hidden="true" /><span>{t('ডেলিভারির সুবিধা', 'Delivery Options', 'डिलीवरी विकल्प')}</span></div><div><Heart className="h-4 w-4" aria-hidden="true" /><span>{t('পেমেন্ট সুবিধা', 'Order Information', 'ऑर्डर की जानकारी')}</span></div></div></div></div></div>}{banners.length > 1 && <>
-          <button type="button" className="hero-carousel-arrow hero-carousel-arrow-prev" aria-label={t('আগের ব্যানার', 'Previous banner', 'पिछला बैनर')} onClick={() => setCurrentBanner((currentBanner - 1 + banners.length) % banners.length)}><ChevronLeft className="h-5 w-5" aria-hidden="true" /></button>
-          <button type="button" className="hero-carousel-arrow hero-carousel-arrow-next" aria-label={t('পরের ব্যানার', 'Next banner', 'अगला बैनर')} onClick={() => setCurrentBanner((currentBanner + 1) % banners.length)}><ChevronRight className="h-5 w-5" aria-hidden="true" /></button>
-          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">{banners.map((_, idx) => <button key={idx} type="button" onClick={() => setCurrentBanner(idx)} className={`h-2 rounded-full transition-all ${idx === currentBanner ? 'w-8 bg-primary' : 'w-2 bg-primary/30'}`} aria-label={`Banner ${idx + 1}`} aria-current={idx === currentBanner ? 'true' : undefined}></button>)}</div>
+      {visitorCountry !== 'IN' && isSectionEnabled('hero_slider') && <section className="section-pad home-hero-section"><div className="container-custom"><div className={`hero-wrap home-hero-fallback relative overflow-hidden ${banners.length > 1 ? 'hero-has-carousel' : 'hero-no-carousel'} ${banners.length > 0 ? 'hero-has-banners' : ''} ${hasBannerCopy ? 'hero-has-copy' : imageOnlyBannerClass}`}><div className="hero-inner relative block h-full w-full p-0">{banners.length > 0 ? banners.map((banner, idx) => <div key={banner.id} aria-hidden={idx !== currentBanner} hidden={idx !== currentBanner} className="hero-carousel-slide transition-opacity duration-700"><div className="hero-inner relative block h-full p-0">{banner.desktop_image && <div className="hero-image-wrap block h-full w-full"><BannerImage banner={banner} priority={idx === 0} /></div>}{(banner.title || banner.subtitle || banner.cta_text) && <div className="hero-content-overlay absolute inset-x-0 bottom-0 z-10 p-4 sm:p-6 lg:p-8"><div className="max-w-xl rounded-2xl bg-black/25 p-4 text-white backdrop-blur-[2px] sm:p-5">{banner.title && <h2 className="hero-title">{tDb(banner.title)}</h2>}{banner.subtitle && <p className="hero-subtitle">{tDb(banner.subtitle)}</p>}{banner.cta_text && <Link href={banner.cta_url || '/all-products'} className="hero-btn inline-flex"><Sprout className="hero-cta-sprout h-4 w-4" aria-hidden="true" />{tDb(banner.cta_text)}<ChevronRight className="h-4 w-4" aria-hidden="true" /></Link>}</div></div>}</div></div>) : <div className="hero-fallback-shell"><div className="hero-fallback-content"><span className="hero-fallback-badge">GAZI SEED BANGLADESH</span><h1>{t('বাগানের জন্য বীজ বেছে নিন', 'Choose Seeds for Your Garden', 'अपने बगीचे के लिए बीज चुनें')}</h1><p>{t('বাগান ও চাষের জন্য বীজ দেখুন—বাংলাদেশজুড়ে ডেলিভারি ও সহজ পেমেন্টের সুবিধাসহ।', 'Explore seeds for gardens and growing, with delivery across Bangladesh and convenient payment options.', 'बागवानी और खेती के लिए बीज देखें—बांग्लादेश में डिलीवरी और आसान भुगतान विकल्पों के साथ।')}</p><div className="hero-fallback-payment-pills" aria-label={t('পেমেন্ট পদ্ধতি', 'Payment methods', 'भुगतान के तरीके')}><span>bKash</span><span>Nagad</span><span>COD</span><span>{t('কার্ড', 'Cards', 'कार्ड')}</span></div><Link href="/all-products" className="hero-btn inline-flex">{t('সব পণ্য দেখুন', 'Shop Seeds', 'बीज देखें')}<ChevronRight className="h-4 w-4" /></Link></div><div className="hero-fallback-visual" aria-label={t('গাজী সিড বাংলাদেশের বীজ সংগ্রহ ও সেবার সুবিধা', 'GAZI SEED Bangladesh seed collection and service highlights', 'GAZI SEED बांग्लादेश बीज संग्रह और सेवा विशेषताएँ')}><div className="hero-fallback-media-grid">{[0, 1, 2].map((categoryIndex) => { const category = categories[categoryIndex]; return <div key={categoryIndex} className="hero-fallback-media-card">{category?.image ? <Image src={category.image} alt={tCategoryName(category.name_bn, category.name_en)} fill sizes="(max-width: 767px) 88vw, 220px" quality={65} priority={categoryIndex === 0} className="object-cover" /> : <div className="hero-fallback-media-placeholder"><Sprout className="h-10 w-10" aria-hidden="true" /></div>}</div>; })}</div><div className="hero-fallback-service-card"><div className="hero-fallback-seed-mark"><Sprout className="h-7 w-7" aria-hidden="true" /></div><div className="hero-fallback-proof-grid"><div><ShieldCheck className="h-4 w-4" aria-hidden="true" /><span>{t('বীজের সংগ্রহ', 'Seed Collection', 'बीजों का संग्रह')}</span></div><div><Truck className="h-4 w-4" aria-hidden="true" /><span>{t('ডেলিভারির সুবিধা', 'Delivery Options', 'डिलीवरी विकल्प')}</span></div><div><Heart className="h-4 w-4" aria-hidden="true" /><span>{t('পেমেন্ট সুবিধা', 'Order Information', 'ऑर्डर की जानकारी')}</span></div></div></div></div></div>}{banners.length > 1 && <>
+          <button type="button" className="hero-carousel-arrow hero-carousel-arrow-prev" aria-label={t('আগের ব্যানার', 'Previous banner', 'पिछला बैनर')} onClick={() => selectBanner((currentBanner - 1 + banners.length) % banners.length)}><ChevronLeft className="h-5 w-5" aria-hidden="true" /></button>
+          <button type="button" className="hero-carousel-arrow hero-carousel-arrow-next" aria-label={t('পরের ব্যানার', 'Next banner', 'अगला बैनर')} onClick={() => selectBanner((currentBanner + 1) % banners.length)}><ChevronRight className="h-5 w-5" aria-hidden="true" /></button>
+          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">{banners.map((_, idx) => <button key={idx} type="button" onClick={() => selectBanner(idx)} className={`h-2 rounded-full transition-all ${idx === currentBanner ? 'w-8 bg-primary' : 'w-2 bg-primary/30'}`} aria-label={`Banner ${idx + 1}`} aria-current={idx === currentBanner ? 'true' : undefined}></button>)}</div>
         </>}</div></div></div></section>}
       {isSectionEnabled('featured_categories') && <section className="section-pad home-category-section">
         <div className="container-custom">

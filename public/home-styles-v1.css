@@ -1480,3 +1480,10 @@
     height: 13px !important;
   }
 }
+/* Image-only hero artwork already carries its own text and colors. */
+.home-premium-scope .hero-wrap.hero-image-only::before,
+.home-premium-scope .hero-wrap.hero-image-only::after {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+}
