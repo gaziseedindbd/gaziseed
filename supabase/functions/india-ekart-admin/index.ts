@@ -79,11 +79,11 @@ Deno.serve(async(req:Request)=>{
       const ids=(orders??[]).map((o:any)=>o.id);
       const [s,p,profiles,items]=await Promise.all([
         db.from("india_shipping_shipments").select("id,order_id,provider,creation_state,external_shipment_id,external_order_id,awb,tracking_status,tracking_occurred_at,pickup_request_state,ekart_pickup_alias,ekart_manifest_number,ekart_manifest_url,ekart_tracking_payload,ekart_last_synced_at,ekart_picked_up_at,ekart_delivered_at,reconcile_reason,created_at,updated_at").eq("country_code","IN").order("updated_at",{ascending:false}).limit(300),
-        ids.length?db.from("india_shipping_preparations").select("order_id,delivery_pin,weight_kg,length_cm,breadth_cm,height_cm,package_profile_id,packing_notes,fragile_shipment").in("order_id",ids):Promise.resolve({data:[],error:null}),
-        db.from("india_shipping_package_profiles").select("id,name,weight_kg,length_cm,breadth_cm,height_cm,product_keywords,min_item_count,max_item_count,is_active").eq("country_code","IN").eq("is_active",true).order("name").limit(150),
+        ids.length?db.from("india_shipping_preparations").select("order_id,delivery_pin,weight_kg,length_cm,breadth_cm,height_cm,packing_notes").in("order_id",ids):Promise.resolve({data:[],error:null}),
+        Promise.resolve({data:[],error:null}),
         ids.length?db.from("order_items").select("id,order_id,product_name,quantity,total_price").in("order_id",ids).gt("quantity",0):Promise.resolve({data:[],error:null}),
       ]);
-      if(s.error||p.error||profiles.error||items.error)return reply(503,{ok:false,code:"shipping_data_unavailable"});
+      if(s.error||p.error||items.error)return reply(503,{ok:false,code:"shipping_data_unavailable"});
       const gstin=Deno.env.get("EKART_SELLER_GSTIN")??"";
       const sellerConfigured=!!Deno.env.get("EKART_SELLER_NAME")?.trim()&&!!Deno.env.get("EKART_SELLER_ADDRESS")?.trim(); // Ekart account accepts shipments without GSTIN; keep the payload field blank when unset.
       return reply(200,{ok:true,orders:orders??[],shipments:s.data??[],preparations:p.data??[],packageProfiles:profiles.data??[],items:items.data??[],credentialsConfigured:!!Deno.env.get("EKART_CLIENT_ID")&&!!Deno.env.get("EKART_USERNAME")&&!!Deno.env.get("EKART_PASSWORD"),sellerConfigured,pickupPin:Deno.env.get("EKART_PICKUP_PIN")??""});
@@ -111,7 +111,7 @@ Deno.serve(async(req:Request)=>{
       if(!uuid(input.orderId)||!isRecord(input.consignee)||!pinOk(input.consignee.pin)||!clean(input.consignee.name,100)||!clean(input.consignee.phone,20)||!clean(input.consignee.address,500)||!clean(input.consignee.city,100)||!clean(input.consignee.state,100)||!Number.isInteger(input.weightGrams)||input.weightGrams<1||input.weightGrams>50000||![input.lengthCm,input.widthCm,input.heightCm].every(x=>Number.isInteger(x)&&x>0&&x<=200)||input.taxValue===null||input.taxValue===undefined||String(input.taxValue).trim()===""||!Number.isFinite(Number(input.taxValue))||Number(input.taxValue)<0)return reply(400,{ok:false,code:"invalid_booking_request"});
       const seller={name:Deno.env.get("EKART_SELLER_NAME")??"",address:Deno.env.get("EKART_SELLER_ADDRESS")??"",gst:Deno.env.get("EKART_SELLER_GSTIN")??""};
       if(!Deno.env.get("EKART_CLIENT_ID")||!Deno.env.get("EKART_USERNAME")||!Deno.env.get("EKART_PASSWORD"))return reply(503,{ok:false,code:"ekart_credentials_missing"});
-      if(!seller.name||!seller.address||!seller.gst||!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(seller.gst))return reply(503,{ok:false,code:"ekart_seller_configuration_incomplete"});
+      if(!seller.name||!seller.address)return reply(503,{ok:false,code:"ekart_seller_configuration_incomplete"});
       const pickup=await resolvePickup(input);
       const {data:order,error:orderError}=await db.from("orders").select("*").eq("id",input.orderId).eq("country_code","IN").maybeSingle();
       if(orderError||!order)return reply(404,{ok:false,code:"india_order_not_found"});
@@ -124,9 +124,7 @@ Deno.serve(async(req:Request)=>{
       if(!cod||advance>0){const {data:v,error:e}=await auth.functions.invoke("cashfree-verify-dispatch",{body:{orderId:order.id,status:"verify_only"}});if(e||v?.ok!==true||v?.verified!==true)return reply(409,{ok:false,code:"cashfree_verification_required"});}
       const {data:existing}=await db.from("india_shipping_shipments").select("provider,awb,tracking_status,creation_state").eq("order_id",order.id).maybeSingle();
       if(existing)return reply(409,{ok:false,code:"shipment_already_exists",existing});
-      const profileId=uuid(input.packageProfileId)?input.packageProfileId:null;
-      if(profileId){const {data:profile,error:profileError}=await db.from("india_shipping_package_profiles").select("id").eq("id",profileId).eq("country_code","IN").eq("is_active",true).maybeSingle();if(profileError||!profile)return reply(400,{ok:false,code:"invalid_package_profile"});}
-      const {error:prepSaveError}=await db.from("india_shipping_preparations").upsert({order_id:order.id,country_code:"IN",delivery_pin:input.consignee.pin,weight_kg:Number(input.weightGrams)/1000,length_cm:input.lengthCm,breadth_cm:input.widthCm,height_cm:input.heightCm,package_profile_id:profileId,fragile_shipment:false,packing_notes:clean(input.packingNotes,500),updated_by:identity.user.id,updated_at:new Date().toISOString()},{onConflict:"order_id"});
+      const {error:prepSaveError}=await db.from("india_shipping_preparations").upsert({order_id:order.id,country_code:"IN",delivery_pin:input.consignee.pin,weight_kg:Number(input.weightGrams)/1000,length_cm:input.lengthCm,breadth_cm:input.widthCm,height_cm:input.heightCm,packing_notes:clean(input.packingNotes,500),updated_by:identity.user.id,updated_at:new Date().toISOString()},{onConflict:"order_id"});
       if(prepSaveError)return reply(409,{ok:false,code:"parcel_preparation_save_failed"});
       const lineItemsResult=await db.from("order_items").select("product_name,quantity").eq("order_id",order.id).gt("quantity",0);
       const lines=(lineItemsResult.data??[]).filter(isRecord);if(lineItemsResult.error||!lines.length)return reply(409,{ok:false,code:"order_items_missing"});
