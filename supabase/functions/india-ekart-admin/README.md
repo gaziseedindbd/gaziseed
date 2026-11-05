@@ -11,7 +11,7 @@ Set these in Supabase Project Settings → Edge Functions → Secrets before ena
 - `EKART_PASSWORD`
 - `EKART_SELLER_NAME`
 - `EKART_SELLER_ADDRESS`
-- `EKART_SELLER_GSTIN` (valid 15-character GSTIN; do not use `N/A`)
+- `EKART_SELLER_GSTIN` (optional; leave unset when the Ekart account ships without GSTIN. The integration sends an empty string, never a fabricated value.)
 - `EKART_PICKUP_ADDRESS` (optional fallback only when using one Ekart pickup address without selecting a saved alias)
 - `EKART_PICKUP_PHONE` (optional fallback)
 - `EKART_PICKUP_PIN` (optional fallback)
