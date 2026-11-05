@@ -1,3 +1,29 @@
+-- Parcel profiles are shared by India shipping providers. Keep direct browser access
+-- closed; the authenticated Edge Function uses service_role after admin checks.
+CREATE TABLE IF NOT EXISTS public.india_shipping_package_profiles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  country_code text NOT NULL DEFAULT 'IN' CHECK (country_code = 'IN'),
+  name text NOT NULL CHECK (length(trim(name)) BETWEEN 1 AND 80),
+  weight_kg numeric NOT NULL CHECK (weight_kg BETWEEN 0.01 AND 50),
+  length_cm numeric NOT NULL CHECK (length_cm BETWEEN 1 AND 200),
+  breadth_cm numeric NOT NULL CHECK (breadth_cm BETWEEN 1 AND 200),
+  height_cm numeric NOT NULL CHECK (height_cm BETWEEN 1 AND 200),
+  product_keywords text[] NOT NULL DEFAULT '{}',
+  min_item_count integer NOT NULL DEFAULT 1 CHECK (min_item_count >= 1),
+  max_item_count integer NOT NULL DEFAULT 999 CHECK (max_item_count >= min_item_count),
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (country_code, name)
+);
+ALTER TABLE public.india_shipping_package_profiles ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.india_shipping_package_profiles FROM PUBLIC, anon, authenticated;
+GRANT ALL ON TABLE public.india_shipping_package_profiles TO service_role;
+
+ALTER TABLE public.india_shipping_preparations
+  ADD COLUMN IF NOT EXISTS package_profile_id uuid REFERENCES public.india_shipping_package_profiles(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS fragile_shipment boolean NOT NULL DEFAULT false;
+
 -- Ekart Elite integration adds provider-scoped tracking/manifest metadata to the
 -- existing India shipment ledger. The order_id unique key is the cross-courier
 -- duplicate guard: one order cannot be booked with Delhivery and Ekart together.
