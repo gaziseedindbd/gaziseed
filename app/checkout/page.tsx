@@ -80,6 +80,7 @@ export default function CheckoutPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
+  const [bdCouponsEnabled, setBdCouponsEnabled] = useState(false);
   const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null);
   const [useWallet, setUseWallet] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
@@ -97,6 +98,26 @@ export default function CheckoutPage() {
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const [moreProductsLoading, setMoreProductsLoading] = useState(false);
   const [moreProductsError, setMoreProductsError] = useState('');
+  useEffect(() => {
+    if (country !== 'BD') {
+      setBdCouponsEnabled(false);
+      return;
+    }
+
+    let active = true;
+    setBdCouponsEnabled(false);
+    void supabase
+      .from('site_settings')
+      .select('enable_coupons')
+      .eq('country_code', 'BD')
+      .maybeSingle()
+      .then(({ data, error: settingsError }) => {
+        if (active) setBdCouponsEnabled(!settingsError && data?.enable_coupons === true);
+      });
+
+    return () => { active = false; };
+  }, [country]);
+
   useEffect(() => {
     if (!showMoreProducts || cart.length === 0) return;
     let active = true;
@@ -710,7 +731,9 @@ export default function CheckoutPage() {
               </div>
               <h1 className="mt-2 text-2xl font-black tracking-tight sm:mt-3 sm:text-4xl">{t('চেকআউট সম্পন্ন করুন', 'Complete your checkout')}</h1>
               <p className="mt-1 max-w-xl text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-base sm:leading-6">
-                {t('ঠিকানা নিশ্চিত করুন, প্রয়োজনে কুপন বা ওয়ালেট ব্যবহার করুন, তারপর অর্ডার কনফার্ম করুন।', 'Confirm your delivery details, apply any coupon or wallet credit, then place your order.')}
+                {country === 'BD'
+                  ? t('ঠিকানা নিশ্চিত করুন, তারপর ক্যাশ অন ডেলিভারিতে অর্ডার কনফার্ম করুন।', 'Confirm your address, then place your cash-on-delivery order.')
+                  : t('ঠিকানা নিশ্চিত করুন, প্রয়োজনে কুপন বা ওয়ালেট ব্যবহার করুন, তারপর অর্ডার কনফার্ম করুন।', 'Confirm your delivery details, apply any coupon or wallet credit, then place your order.')}
               </p>
             </div>
 
@@ -828,7 +851,7 @@ export default function CheckoutPage() {
                 </div>
               </section>
 
-              <section className="rounded-[2rem] border border-border/70 bg-card p-5 shadow-sm sm:p-7">
+              {(country !== 'BD' || bdCouponsEnabled) && <section className="rounded-[2rem] border border-border/70 bg-card p-5 shadow-sm sm:p-7">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">{t('আরও সাশ্রয়', 'SAVE MORE', 'और बचत')}</p>
@@ -874,7 +897,7 @@ export default function CheckoutPage() {
                     </button>
                   </div>
                 )}
-              </section>
+              </section>}
 
               {walletSummary?.enabled && (
                 <section className="rounded-[2rem] border border-emerald-200/60 bg-gradient-to-br from-emerald-500/[0.08] via-card to-card p-5 shadow-sm sm:p-7 dark:border-emerald-900/60">
