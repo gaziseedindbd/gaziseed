@@ -296,6 +296,26 @@ Deno.serve(async(req:Request)=>{
       const {payload}=await ekart(`/data/serviceability/bulk/${encodeURIComponent(type)}?format=JSON`);return reply(200,{ok:true,result:payload});
     }
 
+    if(input.action==="webhook_add"){
+      const webhookSecret=Deno.env.get("EKART_WEBHOOK_SECRET")??"";
+      if(webhookSecret.length<6||webhookSecret.length>30)return reply(503,{ok:false,code:"ekart_webhook_secret_missing"});
+      const endpoint=url.replace(/\/+$/,"")+"/functions/v1/india-ekart-webhook";
+      const {payload:registered}=await ekart("/api/v2/webhook");
+      if(!Array.isArray(registered))return reply(502,{ok:false,code:"ekart_webhook_list_invalid"});
+      const matches=registered.filter((w:unknown)=>isRecord(w)&&String(w.url??"")===endpoint);
+      if(matches.length>1)return reply(409,{ok:false,code:"duplicate_ekart_webhook_endpoint"});
+      const current=matches[0] as Record<string,any>|undefined;
+      const topics=[...new Set([...(Array.isArray(current?.topics)?current!.topics.filter((x:unknown)=>typeof x==="string"):[]),"track_updated"])];
+      const requestBody={url:endpoint,secret:webhookSecret,topics,active:true};
+      const created=current&&typeof current.id==="string"
+        ?await ekart("/api/v2/webhook/"+encodeURIComponent(current.id),"PUT",undefined,requestBody)
+        :await ekart("/api/v2/webhook","POST",undefined,requestBody);
+      const payload=created.payload;
+      if(!isRecord(payload)||payload.active!==true||!Array.isArray(payload.topics)||!payload.topics.includes("track_updated")||String(payload.url??"")!==endpoint)return reply(502,{ok:false,code:"ekart_webhook_registration_unconfirmed"});
+      const {secret:_secret,...safe}=payload;
+      return reply(200,{ok:true,created:!current,webhook:safe});
+    }
+
     if(input.action==="webhooks"){
       const {payload}=await ekart("/api/v2/webhook");
       const safe=Array.isArray(payload)?payload.map((w:unknown)=>{if(!isRecord(w))return null;const {secret:_secret,...rest}=w;return rest;}).filter(Boolean):payload;
