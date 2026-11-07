@@ -169,15 +169,37 @@ Deno.serve(async(req:Request)=>{
 
     if(input.action==="track"){
       if(!uuid(input.shipmentId))return reply(400,{ok:false,code:"invalid_shipment_id"});
-      const {data:s,error}=await db.from("india_shipping_shipments").select("id,order_id,provider,awb,creation_state").eq("id",input.shipmentId).eq("provider","ekart").eq("country_code","IN").maybeSingle();
+      const {data:s,error}=await db.from("india_shipping_shipments").select("id,order_id,provider,awb,creation_state,tracking_occurred_at,ekart_picked_up_at,ekart_delivered_at").eq("id",input.shipmentId).eq("provider","ekart").eq("country_code","IN").maybeSingle();
       if(error||!s?.awb)return reply(404,{ok:false,code:"ekart_shipment_not_found"});
       const {payload}=await ekart(`/data/v1/elite/track/${encodeURIComponent(s.awb)}`);
-      const root=isRecord(payload)&&isRecord(payload.wbn)?payload.wbn:{};
-      const status=clean(root.status??(Array.isArray(root.shipments)?root.shipments[0]?.status:"")??"Status unavailable",120);
-      const history=Array.isArray(root.history)?root.history.slice(0,80).map((row:unknown)=>isRecord(row)?{status:clean(row.status,80),timestamp:clean(row.timestamp??row.time??"",40),location:clean(row.location,100),description:clean(row.description??row.remark??"",200)}:null).filter(Boolean):[];
-      const normalized=status.trim().toLowerCase();const picked=/^(picked up|in transit|out for delivery|delivered|rto in transit|rto out for delivery|rto delivered)$/.test(normalized),delivered=normalized==="delivered";
-      await db.from("india_shipping_shipments").update({tracking_status:status,tracking_occurred_at:new Date().toISOString(),ekart_tracking_payload:{status,history},ekart_last_synced_at:new Date().toISOString(),...(picked?{ekart_picked_up_at:new Date().toISOString()}:{}),...(delivered?{ekart_delivered_at:new Date().toISOString()}:{}),updated_at:new Date().toISOString()}).eq("id",s.id).eq("provider","ekart");
-      return reply(200,{ok:true,status,history});
+      const response=isRecord(payload)?payload:{};
+      let root:Record<string,any>|null=isRecord(response.wbn)?response.wbn:null;
+      if(!root&&isRecord(response[s.awb]))root=response[s.awb];
+      if(!root){
+        const matches=Object.values(response).filter((value:unknown)=>isRecord(value)&&(value.shipment_id===s.awb||value.external_tracking_id===s.awb));
+        if(matches.length===1&&isRecord(matches[0]))root=matches[0];
+      }
+      if(!root)return reply(502,{ok:false,code:"ekart_tracking_payload_invalid"});
+      const rawHistory=Array.isArray(root.history)?root.history.filter(isRecord):[];
+      const history=rawHistory.slice(-80).map((row:any)=>({status:clean(row.status,80),timestamp:clean(row.event_date_iso8601??row.timestamp??row.updated_datetime??row.event_date??row.time??"",50),location:clean(row.location??row.city??row.hub_name??"",100),description:clean(row.public_description??row.description??row.remark??row.hub_notes??row.cs_notes??"",200)}));
+      const latestRaw=rawHistory.at(-1)??null;
+      const historyStatus=clean(latestRaw?.status??"",120);
+      const shipmentStatus=Array.isArray(root.shipments)&&isRecord(root.shipments[0])?clean(root.shipments[0].status??"",120):"";
+      const status=clean(root.status??shipmentStatus??(root.delivered===true?"Delivered":historyStatus||"Status unavailable"),120);
+      const normalized=status.trim().toLowerCase();
+      const picked=/^(picked up|picked-up|in transit|out for delivery|delivered|rto in transit|rto out for delivery|rto delivered)$/.test(normalized)||root.mh_inscanned===true;
+      const delivered=root.delivered===true||normalized==="delivered";
+      const pickupEvent=rawHistory.find((row:any)=>/picked.?up|in transit|out for delivery|delivered|rto/i.test(String(row.status??"")));
+      const pickupTimeRaw=pickupEvent?.event_date_iso8601??pickupEvent?.timestamp??pickupEvent?.updated_datetime??pickupEvent?.event_date??null;
+      const eventTimeRaw=latestRaw?.event_date_iso8601??latestRaw?.timestamp??latestRaw?.updated_datetime??latestRaw?.event_date??null;
+      const parsedEventTime=eventTimeRaw?Date.parse(String(eventTimeRaw)):NaN;
+      const syncedAt=new Date().toISOString();
+      const occurredAt=Number.isFinite(parsedEventTime)?new Date(parsedEventTime).toISOString():s.tracking_occurred_at;
+      const parsedPickupTime=pickupTimeRaw?Date.parse(String(pickupTimeRaw)):NaN;
+      const pickedAt=Number.isFinite(parsedPickupTime)?new Date(parsedPickupTime).toISOString():s.ekart_picked_up_at??syncedAt;
+      const {data:updated,error:updateError}=await db.from("india_shipping_shipments").update({tracking_status:status,tracking_occurred_at:occurredAt,ekart_tracking_payload:{status,history},ekart_last_synced_at:syncedAt,...(picked?{ekart_picked_up_at:pickedAt}:{}),...(delivered?{ekart_delivered_at:occurredAt??syncedAt}:{}),updated_at:syncedAt}).eq("id",s.id).eq("provider","ekart").select("id").maybeSingle();
+      if(updateError||!updated)return reply(503,{ok:false,code:"ekart_tracking_local_save_failed"});
+      return reply(200,{ok:true,status,history,occurredAt:occurredAt??null,syncedAt});
     }
 
     if(input.action==="label"||input.action==="manifest"){
@@ -194,9 +216,9 @@ Deno.serve(async(req:Request)=>{
         return reply(200,{ok:true,filename:`ekart-labels-${new Date().toISOString().slice(0,10)}.pdf`,pdfBase64:btoa(binary)});
       }
       const {payload}=await ekart("/data/v2/generate/manifest","POST",undefined,{ids:waybills});
-      if(input.action==="manifest"&&isRecord(payload)&&typeof payload.manifestNumber!=="undefined"){
-        await db.from("india_shipping_shipments").update({ekart_manifest_number:String(payload.manifestNumber),ekart_manifest_url:clean(payload.manifestDownloadUrl,1000),updated_at:new Date().toISOString()}).in("external_shipment_id",unique).eq("provider","ekart");
-      }
+      if(!isRecord(payload)||payload.manifestNumber===undefined||!clean(payload.manifestDownloadUrl,1000))return reply(502,{ok:false,code:"ekart_manifest_response_invalid"});
+      const {error:manifestSaveError}=await db.from("india_shipping_shipments").update({ekart_manifest_number:String(payload.manifestNumber),ekart_manifest_url:clean(payload.manifestDownloadUrl,1000),updated_at:new Date().toISOString()}).in("external_shipment_id",unique).eq("provider","ekart");
+      if(manifestSaveError)return reply(503,{ok:false,code:"ekart_manifest_local_save_failed"});
       return reply(200,{ok:true,result:payload});
     }
 
@@ -219,7 +241,11 @@ Deno.serve(async(req:Request)=>{
       if(!Array.isArray(input.trackingIds)||input.trackingIds.length<1||input.trackingIds.length>100||typeof input.dispatchDate!=="string"||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(input.dispatchDate)||input.dispatchDate<=todayIndia())return reply(400,{ok:false,code:"invalid_dispatch_date_request"});
       const ids=[...new Set(input.trackingIds as string[])];const {data:known,error}=await db.from("india_shipping_shipments").select("external_shipment_id").eq("provider","ekart").eq("country_code","IN").in("external_shipment_id",ids);
       if(error||!known||known.length!==ids.length)return reply(403,{ok:false,code:"unknown_ekart_tracking_id"});
-      const {payload}=await ekart("/data/shipment/dispatch-date","POST",undefined,{ids,dispatchDate:input.dispatchDate});return reply(200,{ok:true,result:payload});
+      const {payload}=await ekart("/data/shipment/dispatch-date","POST",undefined,{ids,dispatchDate:input.dispatchDate});
+      const acknowledgements=isRecord(payload)&&Array.isArray(payload.data)?payload.data.filter(isRecord):[];
+      const failed=ids.filter(id=>!acknowledgements.some((row:any)=>String(row.tracking_id??"")===id&&row.status===true));
+      if(failed.length)return reply(409,{ok:false,code:"ekart_dispatch_date_rejected",failedTrackingIds:failed});
+      return reply(200,{ok:true,result:payload});
     }
 
     if(input.action==="ewbn"){
@@ -227,7 +253,9 @@ Deno.serve(async(req:Request)=>{
       if(!trackingId||!/^\d{12}$/.test(ewbn))return reply(400,{ok:false,code:"invalid_ewbn_request"});
       const {data:known,error}=await db.from("india_shipping_shipments").select("id").eq("provider","ekart").eq("country_code","IN").eq("external_shipment_id",trackingId).maybeSingle();
       if(error||!known)return reply(403,{ok:false,code:"unknown_ekart_tracking_id"});
-      const {payload}=await ekart("/data/shipment/ewbn","POST",undefined,{id:trackingId,ewbn});return reply(200,{ok:true,result:payload});
+      const {payload}=await ekart("/data/shipment/ewbn","POST",undefined,{id:trackingId,ewbn});
+      if(!isRecord(payload)||payload.status!==true||String(payload.tracking_id??"")!==trackingId)return reply(409,{ok:false,code:"ekart_ewbn_rejected"});
+      return reply(200,{ok:true,result:payload});
     }
 
     if(input.action==="ndr"){
@@ -243,7 +271,9 @@ Deno.serve(async(req:Request)=>{
         const mobile=clean(input.phone,12).replace(/\D/g,"");if(!/^\d{10}$/.test(mobile)||!clean(input.address,500))return reply(400,{ok:false,code:"ndr_edit_requires_valid_phone_and_address"});ndr.phone=mobile;ndr.address=clean(input.address,500);
       }
       if(input.instructions)ndr.instructions=clean(input.instructions,500);
-      const {payload}=await ekart("/api/v2/package/ndr","POST",undefined,ndr);return reply(200,{ok:true,result:payload});
+      const {payload}=await ekart("/api/v2/package/ndr","POST",undefined,ndr);
+      if(!isRecord(payload)||payload.status!==true||String(payload.tracking_id??"")!==trackingId)return reply(409,{ok:false,code:"ekart_ndr_rejected"});
+      return reply(200,{ok:true,result:payload});
     }
 
     if(input.action==="addresses"){
@@ -254,7 +284,10 @@ Deno.serve(async(req:Request)=>{
       if(!isRecord(input.address))return reply(400,{ok:false,code:"invalid_address"});
       const a=input.address,phone=String(a.phone??"").replace(/\D/g,"");
       if(!clean(a.alias,80)||!clean(a.address_line1,240)||!/^[0-9]{10}$/.test(phone)||!pinOk(String(a.pincode??""))||!clean(a.state,80))return reply(400,{ok:false,code:"invalid_address"});
-      const {payload}=await ekart("/api/v2/address","POST",undefined,{alias:clean(a.alias,80),phone:Number(phone),address_line1:clean(a.address_line1,240),address_line2:clean(a.address_line2,240)||null,pincode:Number(a.pincode),city:clean(a.city,80)||null,state:clean(a.state,80),country:"India"});return reply(200,{ok:true,result:payload});
+      const alias=clean(a.alias,80);
+      const {payload}=await ekart("/api/v2/address","POST",undefined,{alias,phone:Number(phone),address_line1:clean(a.address_line1,240),address_line2:clean(a.address_line2,240)||null,pincode:Number(a.pincode),city:clean(a.city,80)||null,state:clean(a.state,80),country:"India"});
+      if(!isRecord(payload)||payload.status!==true||String(payload.alias??"").toLowerCase()!==alias.toLowerCase())return reply(409,{ok:false,code:"ekart_address_add_rejected"});
+      return reply(200,{ok:true,result:payload});
     }
 
     if(input.action==="bulk_serviceability"){
