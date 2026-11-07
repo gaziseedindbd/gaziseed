@@ -222,6 +222,13 @@ export default function Home({ initialBanners = [], initialCategories = [], init
 
   return (
     <div className={`${themeClass} home-premium-scope`}>
+      {(isSectionEnabled('hero_slider') && banners.length > 0) ? (
+        <h1 className="sr-only">
+          {visitorCountry === 'IN'
+            ? t('ভারতের বাগান ও খামারের জন্য বীজ', 'Seeds for Indian Gardens and Farms', 'भारत के बगीचों और खेतों के लिए बीज')
+            : t('বাগানের জন্য বীজ বেছে নিন', 'Choose Seeds for Your Garden', 'अपने बगीचे के लिए बीज चुनें')}
+        </h1>
+      ) : null}
       {visitorCountry === 'IN' && isSectionEnabled('hero_slider') && banners.length > 0 ? (
         <section id="gazi-india-home-hero" className="section-pad home-hero-section home-india-hero-section">
           <div className="container-custom">

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+import { getSeoLanguage } from '@/lib/seo-metadata';
 
 const BASE_URL = 'https://www.gaziseed.com';
 const INDIA_SOCIAL_IMAGE = `https://wsrv.nl/?url=${encodeURIComponent(`${BASE_URL}/gazi-seed-official-logo-web.svg`)}&w=1200&h=630&fit=cover&cbg=ffffff&output=jpg&q=88`;
@@ -27,51 +28,63 @@ type IndiaProduct = {
   short_description: string | null;
 };
 
-function getEnglishText(value: string | null): string {
+function getLocalizedText(value: string | null, language: 'bn' | 'en' | 'hi'): string {
   if (!value) return '';
   const trimmed = value.trim();
   if (!trimmed.startsWith('{')) return value;
   try {
     const parsed = JSON.parse(trimmed) as { en?: string; bn?: string; hi?: string };
-    return parsed.en || parsed.bn || parsed.hi || value;
+    return parsed[language] || parsed.en || parsed.bn || parsed.hi || value;
   } catch {
     return value;
   }
 }
 
-export const metadata: Metadata = {
-  title: 'Premium Seeds Online in India | GAZI SEED India',
-  description:
-    'Shop vegetable, chilli, flower and gardening seeds online in India from GAZI SEED. Explore India-focused seed collections and cultivation guides. Check delivery and payment availability for your PIN code at checkout.',
-  alternates: {
-    canonical: BASE_URL + '/india',
-    languages: {
-      'en-IN': BASE_URL + '/india',
-      'bn-BD': BASE_URL + '/',
-      'x-default': BASE_URL + '/',
+export async function generateMetadata(): Promise<Metadata> {
+  const language = await getSeoLanguage('IN');
+  const localizedMetadata = {
+    en: {
+      title: 'Premium Seeds Online in India | GAZI SEED India',
+      description: 'Shop vegetable, chilli, flower and gardening seeds online in India from GAZI SEED. Explore seed collections and growing guides. Check delivery and payment availability for your PIN code at checkout.',
     },
-  },
-  openGraph: {
-    title: 'Premium Seeds Online in India | GAZI SEED India',
-    description:
-      'India-focused seed shopping, cultivation guides and quality seeds from GAZI SEED.',
-    url: BASE_URL + '/india',
-    siteName: 'GAZI SEED',
-    type: 'website',
-    locale: 'en_IN',
-    images: [{
-      url: INDIA_SOCIAL_IMAGE,
-      width: 1200,
-      height: 630,
-      type: 'image/jpeg',
-      alt: 'GAZI SEED official logo',
-    }],
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
+    bn: {
+      title: 'ভারতে অনলাইনে উন্নত মানের বীজ | GAZI SEED India',
+      description: 'GAZI SEED থেকে ভারতে সবজি, মরিচ, ফুল ও বাগানের বীজ কিনুন। চাষের গাইড দেখুন এবং চেকআউটে PIN কোড দিয়ে ডেলিভারি ও পেমেন্ট যাচাই করুন।',
+    },
+    hi: {
+      title: 'भारत में ऑनलाइन प्रीमियम बीज | GAZI SEED India',
+      description: 'GAZI SEED से भारत में सब्ज़ियों, मिर्च, फूलों और बागवानी के बीज खरीदें। चेकआउट पर PIN कोड से डिलीवरी और भुगतान विकल्प देखें।',
+    },
+  }[language];
+  return {
+    title: localizedMetadata.title,
+    description: localizedMetadata.description,
+    alternates: {
+      canonical: BASE_URL + '/india',
+      languages: {
+        'en-IN': BASE_URL + '/india',
+        'bn-BD': BASE_URL + '/',
+        'x-default': BASE_URL + '/',
+      },
+    },
+    openGraph: {
+      title: localizedMetadata.title,
+      description: localizedMetadata.description,
+      url: BASE_URL + '/india',
+      siteName: 'GAZI SEED',
+      type: 'website',
+      locale: `${language}_IN`,
+      images: [{
+        url: INDIA_SOCIAL_IMAGE,
+        width: 1200,
+        height: 630,
+        type: 'image/jpeg',
+        alt: 'GAZI SEED official logo',
+      }],
+    },
+    robots: { index: true, follow: true },
+  };
+}
 
 async function fetchIndiaRows<T>(table: 'categories' | 'products', query: URLSearchParams): Promise<T[]> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || FALLBACK_SUPABASE_URL;
@@ -99,6 +112,8 @@ async function fetchIndiaRows<T>(table: 'categories' | 'products', query: URLSea
 }
 
 export default async function IndiaLandingPage() {
+  const language = await getSeoLanguage('IN');
+  const tx = (en: string, bn: string, hi = en) => language === 'bn' ? bn : language === 'hi' ? hi : en;
   const [categories, products] = await Promise.all([
     fetchIndiaRows<IndiaCategory>(
       'categories',
@@ -136,12 +151,11 @@ export default async function IndiaLandingPage() {
     '@type': 'WebPage',
     '@id': BASE_URL + '/india#webpage',
     url: BASE_URL + '/india',
-    name: 'Premium Seeds Online in India | GAZI SEED India',
-    description:
-      'India-focused seed shopping and cultivation resources from GAZI SEED.',
+    name: tx('Premium Seeds Online in India | GAZI SEED India', 'ভারতে অনলাইনে উন্নত মানের বীজ | GAZI SEED India', 'भारत में ऑनलाइन प्रीमियम बीज | GAZI SEED India'),
+    description: tx('India-focused seed shopping and cultivation resources from GAZI SEED.', 'GAZI SEED থেকে ভারতে বীজ কিনুন এবং চাষের গাইড দেখুন।', 'GAZI SEED से भारत में बीज खरीदें और खेती के उपयोगी गाइड देखें।'),
     isPartOf: { '@id': BASE_URL + '/#website' },
     about: { '@id': BASE_URL + '/#organization' },
-    inLanguage: 'en-IN',
+    inLanguage: `${language}-IN`,
   };
 
   return (
@@ -157,7 +171,7 @@ export default async function IndiaLandingPage() {
         <section className="border-b border-emerald-100 bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-700 text-white">
           <div className="mx-auto max-w-6xl px-5 py-14 sm:px-8 sm:py-20">
             <nav aria-label="Breadcrumb" className="mb-6 text-sm text-emerald-100/80">
-              <Link href="/" className="hover:text-white">Home</Link>
+              <Link href="/" className="hover:text-white">{tx('Home', 'হোম', 'होम')}</Link>
               <span className="mx-2">/</span>
               <span>India</span>
             </nav>
@@ -167,24 +181,23 @@ export default async function IndiaLandingPage() {
                 GAZI SEED INDIA
               </span>
               <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl">
-                Premium Seeds Online in India
+                {tx('Premium Seeds Online in India', 'ভারতে উন্নত মানের বীজ অনলাইনে', 'भारत में प्रीमियम बीज ऑनलाइन')}
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-emerald-50 sm:text-lg">
-                Explore quality seeds for Indian home gardens, terraces and farming.
-                Explore India-focused seed collections and cultivation guides. Check payment methods and delivery availability for your PIN code at checkout.
+                {tx('Explore quality seeds for Indian home gardens, terraces and farming. Explore India-focused seed collections and cultivation guides. Check payment methods and delivery availability for your PIN code at checkout.', 'ভারতের বাড়ির বাগান, ছাদ ও খামারের জন্য মানসম্মত বীজ দেখুন। চাষের গাইড পড়ুন এবং চেকআউটে PIN কোড দিয়ে ডেলিভারি ও পেমেন্ট যাচাই করুন।', 'भारत के घरों, छतों और खेतों के लिए अच्छे बीज देखें। खेती के गाइड पढ़ें और चेकआउट पर PIN कोड से डिलीवरी व भुगतान विकल्प जाँचें।')}
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link
                   href="/all-products"
                   className="rounded-full bg-white px-5 py-3 text-sm font-black text-emerald-900 shadow-lg transition hover:-translate-y-0.5"
                 >
-                  Shop Seeds in India
+                  {tx('Shop Seeds in India', 'ভারতের বীজ দেখুন', 'भारत के बीज देखें')}
                 </Link>
                 <Link
                   href="/blog"
                   className="rounded-full border border-white/30 bg-white/10 px-5 py-3 text-sm font-black text-white transition hover:bg-white/15"
                 >
-                  Read Growing Guides
+                  {tx('Read Growing Guides', 'চাষের গাইড পড়ুন', 'खेती के गाइड पढ़ें')}
                 </Link>
               </div>
             </div>
@@ -194,11 +207,10 @@ export default async function IndiaLandingPage() {
         <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
           <div className="max-w-2xl">
             <h2 className="text-2xl font-black text-emerald-950 sm:text-3xl">
-              Shop Seeds by Category
+              {tx('Shop Seeds by Category', 'ক্যাটাগরি অনুযায়ী বীজ দেখুন', 'श्रेणी के अनुसार बीज देखें')}
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-600 sm:text-base">
-              Discover India-available seed categories selected for home gardening,
-              terrace growing and practical cultivation.
+              {tx('Discover India-available seed categories selected for home gardening, terrace growing and practical cultivation.', 'বাড়ির বাগান, ছাদে চাষ ও ব্যবহারিক চাষের জন্য ভারতে পাওয়া যায় এমন বীজের ক্যাটাগরি দেখুন।', 'घर, छत और खेती के लिए भारत में उपलब्ध बीजों की श्रेणियाँ देखें।')}
             </p>
           </div>
 
@@ -214,7 +226,7 @@ export default async function IndiaLandingPage() {
                     {category.image ? (
                       <Image
                         src={category.image}
-                        alt={category.name_en || category.name_bn}
+                        alt={language === 'bn' ? category.name_bn || category.name_en : category.name_en || category.name_bn}
                         width={400}
                         height={300}
                         sizes="(max-width: 640px) 50vw, 25vw"
@@ -227,11 +239,11 @@ export default async function IndiaLandingPage() {
                   </div>
                   <div className="p-3">
                     <h3 className="text-sm font-black text-emerald-950">
-                      {category.name_en || category.name_bn}
+                      {language === 'bn' ? category.name_bn || category.name_en : category.name_en || category.name_bn}
                     </h3>
                     {category.description ? (
                       <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
-                        {getEnglishText(category.description)}
+                        {getLocalizedText(category.description, language)}
                       </p>
                     ) : null}
                   </div>
@@ -240,7 +252,7 @@ export default async function IndiaLandingPage() {
             </div>
           ) : (
             <div className="mt-7 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-6 text-sm text-slate-600">
-              India seed categories are being updated. Browse all available seeds to continue.
+              {tx('India seed categories are being updated. Browse all available seeds to continue.', 'ভারতের বীজের ক্যাটাগরি আপডেট হচ্ছে। আপাতত সব বীজ দেখুন।', 'भारत की बीज श्रेणियाँ अपडेट हो रही हैं। अभी सभी बीज देखें।')}
             </div>
           )}
         </section>
@@ -250,17 +262,17 @@ export default async function IndiaLandingPage() {
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
                 <h2 className="text-2xl font-black text-emerald-950 sm:text-3xl">
-                  Popular Seeds Available in India
+                  {tx('Popular Seeds Available in India', 'ভারতে পাওয়া জনপ্রিয় বীজ', 'भारत में उपलब्ध लोकप्रिय बीज')}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  India-available products shown from the live catalog.
+                  {tx('India-available products shown from the live catalog.', 'লাইভ ক্যাটালগে থাকা ভারতের পণ্যগুলো এখানে দেখানো হয়েছে।', 'लाइव कैटलॉग में उपलब्ध भारत के उत्पाद यहाँ दिखाए गए हैं।')}
                 </p>
               </div>
               <Link
                 href="/all-products"
                 className="text-sm font-black text-emerald-800 hover:text-emerald-950"
               >
-                View all seeds →
+                {tx('View all seeds →', 'সব বীজ দেখুন →', 'सभी बीज देखें →')}
               </Link>
             </div>
 
@@ -281,7 +293,7 @@ export default async function IndiaLandingPage() {
                         {product.image ? (
                           <Image
                             src={product.image}
-                            alt={product.name_en || product.name_bn}
+                          alt={language === 'bn' ? product.name_bn || product.name_en : product.name_en || product.name_bn}
                             width={500}
                             height={500}
                             sizes="(max-width: 640px) 50vw, 25vw"
@@ -294,7 +306,7 @@ export default async function IndiaLandingPage() {
                       </div>
                       <div className="p-3">
                         <h3 className="line-clamp-2 text-sm font-black leading-5 text-slate-800">
-                          {product.name_en || product.name_bn}
+                          {language === 'bn' ? product.name_bn || product.name_en : product.name_en || product.name_bn}
                         </h3>
                         <p className="mt-1 text-sm font-black text-emerald-700">
                           ₹ {Number(price).toLocaleString('en-IN')}
@@ -306,7 +318,7 @@ export default async function IndiaLandingPage() {
               </div>
             ) : (
               <div className="mt-7 rounded-2xl border border-emerald-100 bg-white p-6 text-sm text-slate-600">
-                India products are being synced. Use the full seed catalog to continue shopping.
+                {tx('India products are being synced. Use the full seed catalog to continue shopping.', 'ভারতের পণ্য সিঙ্ক হচ্ছে। সব বীজের ক্যাটালগে গিয়ে কেনাকাটা চালিয়ে যান।', 'भारत के उत्पाद सिंक हो रहे हैं। खरीदारी के लिए पूरा बीज कैटलॉग देखें।')}
               </div>
             )}
           </div>
@@ -317,26 +329,25 @@ export default async function IndiaLandingPage() {
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
                 <h2 className="text-2xl font-black text-emerald-950 sm:text-3xl">
-                  India Seed & Gardening Guides
+                  {tx('India Seed & Gardening Guides', 'ভারতের বীজ ও বাগান গাইড', 'भारत के बीज और बागवानी गाइड')}
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                  Practical resources for Indian growers, suitable for home gardens, terraces,
-                  containers and small growing spaces.
+                  {tx('Practical resources for Indian growers, suitable for home gardens, terraces, containers and small growing spaces.', 'বাড়ির বাগান, ছাদ, টব ও ছোট পরিসরে চাষের জন্য ভারতের চাষিদের ব্যবহারিক গাইড।', 'घर, छत, गमलों और छोटे स्थानों में खेती के लिए भारतीय उत्पादकों के उपयोगी गाइड।')}
                 </p>
               </div>
               <Link
                 href="/india/guides"
                 className="text-sm font-black text-emerald-800 hover:text-emerald-950"
               >
-                View all guides →
+                {tx('View all guides →', 'সব গাইড দেখুন →', 'सभी गाइड देखें →')}
               </Link>
             </div>
 
             <div className="mt-7 grid gap-4 md:grid-cols-3">
               {[
-                ['Naga Bombay Chili Growing Guide', '/india/guides/naga-bombay-chili-growing-guide'],
-                ['Best Seeds for Terrace Gardening in India', '/india/guides/terrace-gardening-seeds-india'],
-                ['Red Rose Seed Growing Guide for India', '/india/guides/rose-seeds-india-growing-guide'],
+                [tx('Naga Bombay Chili Growing Guide', 'নাগা বোম্বে মরিচ চাষের গাইড', 'नागा बॉम्बे मिर्च उगाने की गाइड'), '/india/guides/naga-bombay-chili-growing-guide'],
+                [tx('Best Seeds for Terrace Gardening in India', 'ভারতে ছাদবাগানের জন্য সেরা বীজ', 'भारत में छत पर बागवानी के लिए अच्छे बीज'), '/india/guides/terrace-gardening-seeds-india'],
+                [tx('Red Rose Seed Growing Guide for India', 'ভারতে লাল গোলাপের বীজ চাষের গাইড', 'भारत में लाल गुलाब के बीज उगाने की गाइड'), '/india/guides/rose-seeds-india-growing-guide'],
               ].map(([title, href]) => (
                 <Link
                   key={href}
@@ -345,7 +356,7 @@ export default async function IndiaLandingPage() {
                 >
                   <h3 className="font-black text-emerald-950">{title}</h3>
                   <span className="mt-3 inline-flex text-xs font-black text-emerald-800">
-                    Read guide →
+                    {tx('Read guide →', 'গাইড পড়ুন →', 'गाइड पढ़ें →')}
                   </span>
                 </Link>
               ))}
@@ -356,9 +367,9 @@ export default async function IndiaLandingPage() {
         <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
           <div className="grid gap-4 md:grid-cols-3">
             {[
-              ['Quality Seeds', 'Selected seed products with practical cultivation information.'],
-              ['Payment Options', 'See available payment methods, including COD where offered, at checkout.'],
-              ['Delivery Availability', 'Check delivery availability and estimated timing for your PIN code at checkout.'],
+              [tx('Quality Seeds', 'মানসম্মত বীজ', 'अच्छे बीज'), tx('Selected seed products with practical cultivation information.', 'চাষের ব্যবহারিক তথ্যসহ বাছাই করা বীজ।', 'खेती की उपयोगी जानकारी के साथ चुने गए बीज।')],
+              [tx('Payment Options', 'পেমেন্টের বিকল্প', 'भुगतान विकल्प'), tx('See available payment methods, including COD where offered, at checkout.', 'চেকআউটে উপলভ্য পেমেন্ট পদ্ধতি দেখুন; যেখানে আছে COD-ও থাকবে।', 'चेकआउट पर उपलब्ध भुगतान विकल्प देखें; जहाँ उपलब्ध हो वहाँ COD भी।')],
+              [tx('Delivery Availability', 'ডেলিভারি সুবিধা', 'डिलीवरी उपलब्धता'), tx('Check delivery availability and estimated timing for your PIN code at checkout.', 'চেকআউটে আপনার PIN কোডের ডেলিভারি সুবিধা ও আনুমানিক সময় দেখুন।', 'चेकआउट पर अपने PIN कोड के लिए डिलीवरी उपलब्धता और अनुमानित समय देखें।')],
             ].map(([title, text]) => (
               <div key={title} className="rounded-2xl border border-emerald-100 bg-white p-6 shadow-[0_14px_35px_-28px_rgba(4,62,40,.55)]">
                 <h2 className="text-lg font-black text-emerald-950">{title}</h2>
@@ -371,23 +382,23 @@ export default async function IndiaLandingPage() {
         <section className="border-t border-emerald-100 bg-white">
           <div className="mx-auto max-w-6xl px-5 py-12 text-center sm:px-8 sm:py-16">
             <h2 className="text-2xl font-black text-emerald-950">
-              Grow Better with GAZI SEED India
+              {tx('Grow Better with GAZI SEED India', 'GAZI SEED India-এর সঙ্গে আরও ভালো চাষ করুন', 'GAZI SEED India के साथ बेहतर उगाएँ')}
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-              Find seeds, explore cultivation guides and choose products for your next garden or crop.
+              {tx('Find seeds, explore cultivation guides and choose products for your next garden or crop.', 'বীজ খুঁজুন, চাষের গাইড দেখুন এবং পরের বাগান বা ফসলের জন্য পণ্য বেছে নিন।', 'बीज खोजें, खेती के गाइड देखें और अपने अगले बगीचे या फसल के लिए उत्पाद चुनें।')}
             </p>
             <div className="mt-6 flex justify-center gap-3">
               <Link
                 href="/all-products"
                 className="rounded-full bg-emerald-800 px-5 py-3 text-sm font-black text-white shadow-lg transition hover:bg-emerald-900"
               >
-                Browse India Seed Catalog
+                {tx('Browse India Seed Catalog', 'ভারতের বীজের ক্যাটালগ দেখুন', 'भारत का बीज कैटलॉग देखें')}
               </Link>
               <Link
                 href="/contact"
                 className="rounded-full border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-900"
               >
-                Contact GAZI SEED
+                {tx('Contact GAZI SEED', 'GAZI SEED-এ যোগাযোগ করুন', 'GAZI SEED से संपर्क करें')}
               </Link>
             </div>
           </div>

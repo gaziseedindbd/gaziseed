@@ -5,6 +5,21 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { normalizeVisitorCountry, resolveVisitorCountry } from '@/lib/visitor-country';
 
 export type SeoCountry = 'BD' | 'IN';
+export type SeoLanguage = 'bn' | 'en' | 'hi';
+
+export async function getSeoLanguage(country?: SeoCountry): Promise<SeoLanguage> {
+  const cookieStore = await cookies();
+  const savedLanguage = cookieStore.get('gazi_lang')?.value;
+  if (savedLanguage === 'bn' || savedLanguage === 'en' || savedLanguage === 'hi') {
+    return savedLanguage;
+  }
+  const resolvedCountry = country || await getSeoCountry();
+  return resolvedCountry === 'IN' ? 'en' : 'bn';
+}
+
+export function getSeoLocale(language: SeoLanguage, country: SeoCountry): string {
+  return `${language}_${country}`;
+}
 
 export async function getSeoCountry(): Promise<SeoCountry> {
   const [cookieStore, requestHeaders] = await Promise.all([cookies(), headers()]);
