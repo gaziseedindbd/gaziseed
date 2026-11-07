@@ -189,7 +189,7 @@ Deno.serve(async(req:Request)=>{
       const normalized=status.trim().toLowerCase();
       const picked=/^(picked up|picked-up|in transit|out for delivery|delivered|rto in transit|rto out for delivery|rto delivered)$/.test(normalized)||root.mh_inscanned===true;
       const delivered=root.delivered===true||normalized==="delivered";
-      const pickupEvent=rawHistory.find((row:any)=>/picked.?up|in transit|out for delivery|delivered|rto/i.test(String(row.status??"")));
+      const pickupEvent=rawHistory.find((row:any)=>/picked.?up|in transit|out for delivery/i.test(String(row.status??"")));
       const pickupTimeRaw=pickupEvent?.event_date_iso8601??pickupEvent?.timestamp??pickupEvent?.updated_datetime??pickupEvent?.event_date??null;
       const eventTimeRaw=latestRaw?.event_date_iso8601??latestRaw?.timestamp??latestRaw?.updated_datetime??latestRaw?.event_date??null;
       const parsedEventTime=eventTimeRaw?Date.parse(String(eventTimeRaw)):NaN;
