@@ -206,8 +206,12 @@ Deno.serve(async(req:Request)=>{
       if(error||!s?.external_shipment_id)return reply(404,{ok:false,code:"ekart_shipment_not_found"});
       if(s.ekart_picked_up_at||/^(picked up|in transit|out for delivery|delivered|rto in transit|rto delivered)$/i.test(s.tracking_status??""))return reply(409,{ok:false,code:"shipment_already_handed_to_courier"});
       const {payload}=await ekart(`/api/v1/package/cancel?tracking_id=${encodeURIComponent(s.external_shipment_id)}`,"DELETE");
-      if(isRecord(payload)&&payload.status===false)return reply(409,{ok:false,code:"ekart_cancel_rejected"});
-      await db.from("india_shipping_shipments").update({tracking_status:"Cancelled",updated_at:new Date().toISOString()}).eq("id",s.id);
+      const acknowledgements=isRecord(payload)&&Array.isArray(payload.data)?payload.data.filter(isRecord):[];
+      const acknowledgement=acknowledgements.find((row:any)=>String(row.tracking_id??"")===s.external_shipment_id);
+      if(!acknowledgement)return reply(503,{ok:false,code:"ekart_cancel_outcome_uncertain",doNotRetry:true});
+      if(acknowledgement.status!==true)return reply(409,{ok:false,code:"ekart_cancel_rejected"});
+      const {error:updateError}=await db.from("india_shipping_shipments").update({tracking_status:"Cancelled",updated_at:new Date().toISOString()}).eq("id",s.id);
+      if(updateError)return reply(503,{ok:false,code:"ekart_cancelled_local_record_failed",doNotRetry:true});
       return reply(200,{ok:true,result:payload});
     }
 
