@@ -187,8 +187,8 @@ Deno.serve(async(req:Request)=>{
       const shipmentStatus=Array.isArray(root.shipments)&&isRecord(root.shipments[0])?clean(root.shipments[0].status??"",120):"";
       const status=clean(root.status??shipmentStatus??(root.delivered===true?"Delivered":historyStatus||"Status unavailable"),120);
       const normalized=status.trim().toLowerCase();
-      const picked=/^(picked up|picked-up|in transit|out for delivery|delivered|rto in transit|rto out for delivery|rto delivered)$/.test(normalized)||root.mh_inscanned===true;
       const delivered=root.delivered===true||normalized==="delivered";
+      const pickupEvidence=/^(picked up|picked-up|in transit|out for delivery)$/.test(normalized)||root.mh_inscanned===true;
       const pickupEvent=rawHistory.find((row:any)=>/picked.?up|in transit|out for delivery/i.test(String(row.status??"")));
       const pickupTimeRaw=pickupEvent?.event_date_iso8601??pickupEvent?.timestamp??pickupEvent?.updated_datetime??pickupEvent?.event_date??null;
       const eventTimeRaw=latestRaw?.event_date_iso8601??latestRaw?.timestamp??latestRaw?.updated_datetime??latestRaw?.event_date??null;
@@ -197,7 +197,7 @@ Deno.serve(async(req:Request)=>{
       const occurredAt=Number.isFinite(parsedEventTime)?new Date(parsedEventTime).toISOString():s.tracking_occurred_at;
       const parsedPickupTime=pickupTimeRaw?Date.parse(String(pickupTimeRaw)):NaN;
       const pickedAt=Number.isFinite(parsedPickupTime)?new Date(parsedPickupTime).toISOString():s.ekart_picked_up_at??syncedAt;
-      const {data:updated,error:updateError}=await db.from("india_shipping_shipments").update({tracking_status:status,tracking_occurred_at:occurredAt,ekart_tracking_payload:{status,history},ekart_last_synced_at:syncedAt,...(picked?{ekart_picked_up_at:pickedAt}:{}),...(delivered?{ekart_delivered_at:occurredAt??syncedAt}:{}),updated_at:syncedAt}).eq("id",s.id).eq("provider","ekart").select("id").maybeSingle();
+      const {data:updated,error:updateError}=await db.from("india_shipping_shipments").update({tracking_status:status,tracking_occurred_at:occurredAt,ekart_tracking_payload:{status,history},ekart_last_synced_at:syncedAt,...(pickupEvidence?{ekart_picked_up_at:pickedAt}:{}),...(delivered?{ekart_delivered_at:occurredAt??syncedAt}:{}),updated_at:syncedAt}).eq("id",s.id).eq("provider","ekart").select("id").maybeSingle();
       if(updateError||!updated)return reply(503,{ok:false,code:"ekart_tracking_local_save_failed"});
       return reply(200,{ok:true,status,history,occurredAt:occurredAt??null,syncedAt});
     }
