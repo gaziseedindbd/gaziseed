@@ -8,11 +8,13 @@ import type { Product } from '@/lib/supabase/types';
 import { addToCart, getCart } from '@/lib/cart';
 import { toast } from './toast-provider';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { useLang } from './language-provider';
 
 export function ProductCard({ product, stackedActions = false }: { product: Product; stackedActions?: boolean }) {
   const router = useRouter();
   const { lang, t, tDb } = useLang();
+  const [imageIndex, setImageIndex] = useState(0);
   const price = getEffectivePrice(product);
   const discount = getDiscountPercent(product);
   const inStock = product.stock > 0;
@@ -28,6 +30,8 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
   const shortDescription = tDb(translated.short_description || product.short_description || '');
   const productCountry = (product as Product & { country_code?: string }).country_code === 'IN' ? 'IN' : 'BD';
   const productBranch = productCountry.toLowerCase();
+  const imageCandidates = Array.from(new Set([product.image, ...(product.images || [])].filter((value): value is string => Boolean(value))));
+  const currentImage = imageCandidates[imageIndex];
 
   const badge = product.is_best_seller
     ? t('বেস্ট সেলার', 'Best Seller', 'बेस्ट सेलर')
@@ -104,18 +108,20 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
           <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-emerald-200/25 blur-2xl transition-transform duration-500 group-hover:scale-125" />
           <div className="pointer-events-none absolute -bottom-12 -left-10 h-28 w-28 rounded-full bg-lime-200/20 blur-2xl transition-transform duration-500 group-hover:scale-125" />
 
-          {product.image ? (
+          {currentImage ? (
             <Image
-              src={product.image}
+              src={currentImage}
               alt={translated.image_alt || product.image_alt || product.image_alt_bn || name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
               quality={65}
+              onError={() => setImageIndex((index) => index + 1)}
               className="relative z-[1] object-cover object-center p-0 transition-transform duration-500 ease-out group-hover:scale-[1.025]"
             />
           ) : (
-            <div className="relative z-[1] flex h-full w-full items-center justify-center">
+            <div className="relative z-[1] flex h-full w-full flex-col items-center justify-center gap-2 text-emerald-700/70" role="img" aria-label={t('পণ্যের ছবি উপলভ্য নয়', 'Product image unavailable', 'उत्पाद की तस्वीर उपलब्ध नहीं है')}>
               <Leaf className="h-12 w-12 text-emerald-300 sm:h-16 sm:w-16" />
+              <span className="text-[10px] font-semibold">{t('বীজের পণ্য', 'Seed product', 'बीज उत्पाद')}</span>
             </div>
           )}
 
