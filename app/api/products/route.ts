@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
 
 const FALLBACK_URL = 'https://ufxsthshyebahkwbmioe.supabase.co';
 const FALLBACK_KEY = 'sb_publishable_vCaz5OGrHocUTgpOXmE9xg_QVsuUJc0';
@@ -37,7 +38,10 @@ export async function GET(req: NextRequest) {
     const country = getCountry(req);
 
     const params = new URLSearchParams({
-      select: '*',
+      // `products` grants only storefront-safe columns to browser roles. An
+      // unrestricted `*` includes internal fields and fails after cost access
+      // is revoked, even though this endpoint only needs public catalog data.
+      select: PRODUCT_SAFE_SELECT,
       is_active: 'eq.true',
       is_ads_only: 'eq.false',
       country_code: `eq.${country}`,
@@ -56,10 +60,13 @@ export async function GET(req: NextRequest) {
     }
 
     if (!response.ok) {
-      const detail = await response.text();
+      // Keep upstream database details out of the public response.
+      console.error('[api/products] Supabase catalog request failed', {
+        status: response.status,
+      });
       return NextResponse.json(
-        { error: 'Failed to load products', detail },
-        { status: response.status }
+        { error: 'Products are temporarily unavailable.' },
+        { status: 502, headers: { 'Cache-Control': 'no-store' } }
       );
     }
 
@@ -68,9 +75,12 @@ export async function GET(req: NextRequest) {
       headers: { 'Cache-Control': 'no-store, max-age=0' },
     });
   } catch (error) {
+    console.error('[api/products] Catalog request failed', {
+      errorType: error instanceof Error ? error.name : 'unknown',
+    });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      { error: 'Products are temporarily unavailable.' },
+      { status: 502, headers: { 'Cache-Control': 'no-store' } }
     );
   }
 }
