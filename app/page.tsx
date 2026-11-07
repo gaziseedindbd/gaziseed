@@ -3,23 +3,40 @@ import path from 'path';
 import Home from '@/components/site/home';
 import HomeStyleRegistry from '@/components/site/home-style-registry';
 import type { Banner, Category } from '@/lib/supabase/types';
-import { getSeoCountry, pageMetadata, SITE_URL } from '@/lib/seo-metadata';
+import { getSeoCountry, getSeoLanguage, getSeoLocale, pageMetadata, SITE_URL } from '@/lib/seo-metadata';
 
 export const revalidate = 60;
 
 export async function generateMetadata() {
   const country = await getSeoCountry();
   const isIndia = country === 'IN';
+  const language = await getSeoLanguage(country);
+  const localized = {
+    en: {
+      title: isIndia ? 'Quality Seeds Online in India | GAZI SEED' : 'Quality Seeds and Gardening Products | GAZI SEED',
+      description: isIndia
+        ? 'Shop vegetable, flower and gardening seeds online in India from GAZI SEED. Check payment methods and delivery availability for your PIN code at checkout.'
+        : 'Shop seeds, plants and gardening products from GAZI SEED. Check local delivery and payment options at checkout.',
+    },
+    bn: {
+      title: isIndia ? 'ভারতে বীজ ও বাগান পণ্য অনলাইনে | GAZI SEED' : 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
+      description: isIndia
+        ? 'GAZI SEED থেকে ভারতে সবজি, ফুল ও বাগানের বীজ কিনুন। PIN কোড দিয়ে ডেলিভারি ও পেমেন্টের সুবিধা যাচাই করুন।'
+        : 'GAZI SEED থেকে বীজ, গাছ ও বাগান পণ্য কিনুন। চেকআউটে আপনার এলাকার ডেলিভারি ও পেমেন্টের সুবিধা দেখুন।',
+    },
+    hi: {
+      title: isIndia ? 'भारत में ऑनलाइन बीज खरीदें | GAZI SEED' : 'GAZI SEED - बीज और बागवानी उत्पाद',
+      description: isIndia
+        ? 'GAZI SEED से भारत में सब्ज़ियों, फूलों और बागवानी के बीज खरीदें। चेकआउट पर PIN कोड से डिलीवरी और भुगतान विकल्प देखें।'
+        : 'GAZI SEED से बीज और बागवानी उत्पाद खरीदें। चेकआउट पर स्थानीय डिलीवरी और भुगतान विकल्प देखें।',
+    },
+  }[language];
   return pageMetadata({
-    title: isIndia
-      ? 'Quality Seeds Online in India | GAZI SEED'
-      : 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
-    description: isIndia
-      ? 'Shop vegetable, flower and gardening seeds online in India from GAZI SEED. Check payment methods and delivery availability for your PIN code at checkout.'
-      : 'GAZI SEED - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। আপনার এলাকায় ডেলিভারি ও পেমেন্টের সুবিধা চেক করুন।',
+    title: localized.title,
+    description: localized.description,
     image: '/gazi-seed-official-logo-web.svg',
     path: '/',
-    locale: isIndia ? 'en_IN' : 'bn_BD',
+    locale: getSeoLocale(language, country),
     languages: {
       'en-IN': `${SITE_URL}/india`,
       'bn-BD': `${SITE_URL}/`,
@@ -30,6 +47,7 @@ export async function generateMetadata() {
 
 export default async function Page() {
   const visitorCountry = await getSeoCountry();
+  const language = await getSeoLanguage(visitorCountry);
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey =
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
@@ -108,12 +126,16 @@ export default async function Page() {
     }
   }
   initialCategories = await categoriesPromise;
-  const homeTitle = visitorCountry === 'IN'
-    ? 'Quality Seeds Online in India | GAZI SEED'
-    : 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর';
-  const homeDescription = visitorCountry === 'IN'
-    ? 'Shop quality vegetable, flower and gardening seeds online in India from GAZI SEED, with convenient delivery across India.'
-    : 'GAZI SEED - বীজ, গাছ, বাগান ও কৃষি পণ্যের অনলাইন স্টোর। ক্যাশ অন ডেলিভারি সারাদেশে।';
+  const homeTitle = language === 'hi'
+    ? (visitorCountry === 'IN' ? 'भारत में ऑनलाइन बीज खरीदें | GAZI SEED' : 'GAZI SEED - बीज और बागवानी उत्पाद')
+    : language === 'bn'
+      ? (visitorCountry === 'IN' ? 'ভারতে বীজ ও বাগান পণ্য অনলাইনে | GAZI SEED' : 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর')
+      : (visitorCountry === 'IN' ? 'Quality Seeds Online in India | GAZI SEED' : 'Quality Seeds and Gardening Products | GAZI SEED');
+  const homeDescription = language === 'hi'
+    ? 'GAZI SEED से बीज और बागवानी उत्पाद खरीदें। चेकआउट पर डिलीवरी और भुगतान विकल्प देखें।'
+    : language === 'bn'
+      ? (visitorCountry === 'IN' ? 'GAZI SEED থেকে ভারতে সবজি, ফুল ও বাগানের বীজ কিনুন। PIN কোড দিয়ে ডেলিভারি ও পেমেন্টের সুবিধা যাচাই করুন।' : 'GAZI SEED থেকে বীজ, গাছ ও বাগান পণ্য কিনুন। চেকআউটে ডেলিভারি ও পেমেন্টের সুবিধা দেখুন।')
+      : 'Shop quality seeds and gardening products from GAZI SEED. Check delivery and payment availability for your PIN code at checkout.';
   const homeLd = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -130,7 +152,7 @@ export default async function Page() {
         url: SITE_URL + '/',
         name: 'GAZI SEED',
         publisher: { '@id': SITE_URL + '/#organization' },
-        inLanguage: visitorCountry === 'IN' ? 'en-IN' : 'bn-BD',
+        inLanguage: `${language}-${visitorCountry}`,
       },
       {
         '@type': 'WebPage',
@@ -140,7 +162,7 @@ export default async function Page() {
         description: homeDescription,
         isPartOf: { '@id': SITE_URL + '/#website' },
         about: { '@id': SITE_URL + '/#organization' },
-        inLanguage: visitorCountry === 'IN' ? 'en-IN' : 'bn-BD',
+        inLanguage: `${language}-${visitorCountry}`,
       },
     ],
   };
