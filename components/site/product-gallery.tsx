@@ -16,6 +16,7 @@ const AUTO_ADVANCE_MS = 4500;
 
 export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProps) {
   const [activeIdx, setActiveIdx] = useState(0);
+  const [failedImages, setFailedImages] = useState<string[]>([]);
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
   const [autoPlayStopped, setAutoPlayStopped] = useState(false);
   const [interactionPaused, setInteractionPaused] = useState(false);
@@ -25,24 +26,25 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
   const { t } = useLang();
   const touchStartX = useRef<number | null>(null);
 
-  const hasMultiple = images.length > 1;
+  const availableImages = images.filter((image) => !failedImages.includes(image));
+  const hasMultiple = availableImages.length > 1;
   const imageSetKey = JSON.stringify(images);
 
   const goTo = useCallback((idx: number) => {
-    if (!images.length) return;
+    if (!availableImages.length) return;
     setAutoPlayStopped(true);
-    setActiveIdx(((idx % images.length) + images.length) % images.length);
-  }, [images.length]);
+    setActiveIdx(((idx % availableImages.length) + availableImages.length) % availableImages.length);
+  }, [availableImages.length]);
 
   const next = useCallback(() => {
-    if (!images.length) return;
-    setActiveIdx((prev) => (prev + 1) % images.length);
-  }, [images.length]);
+    if (!availableImages.length) return;
+    setActiveIdx((prev) => (prev + 1) % availableImages.length);
+  }, [availableImages.length]);
 
   const prev = useCallback(() => {
-    if (!images.length) return;
-    setActiveIdx((prev) => (prev - 1 + images.length) % images.length);
-  }, [images.length]);
+    if (!availableImages.length) return;
+    setActiveIdx((prev) => (prev - 1 + availableImages.length) % availableImages.length);
+  }, [availableImages.length]);
 
   const manualNext = useCallback(() => {
     setAutoPlayStopped(true);
@@ -56,6 +58,7 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
 
   useEffect(() => {
     setActiveIdx(0);
+    setFailedImages([]);
     setAutoPlayStopped(false);
   }, [imageSetKey]);
 
@@ -111,7 +114,7 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
     setInteractionPaused(false);
   };
 
-  if (images.length === 0) {
+  if (availableImages.length === 0) {
     return (
       <div className={`product-gallery-premium ${country === 'IN' ? 'product-gallery-india' : ''}`}>
         <div className="relative aspect-square overflow-hidden rounded-[1.5rem] border border-primary/10 bg-gradient-to-br from-primary/5 via-white to-accent/10 shadow-inner">
@@ -142,10 +145,10 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
         }}
       >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(16,185,129,.12),transparent_30%),radial-gradient(circle_at_90%_85%,rgba(245,158,11,.10),transparent_32%)]" />
-        {images[activeIdx] && (
+        {availableImages[activeIdx] && (
           <Image
-            key={activeIdx}
-            src={images[activeIdx]}
+            key={availableImages[activeIdx]}
+            src={availableImages[activeIdx]}
             alt={alt}
             fill
             priority={activeIdx === 0}
@@ -153,6 +156,10 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
             quality={92}
             className="relative object-contain p-0 animate-[fadeIn_0.4s_ease-out] transition-transform duration-700 ease-out group-hover:scale-[1.015]"
             draggable={false}
+            onError={() => {
+              setFailedImages((current) => [...current, availableImages[activeIdx]]);
+              setActiveIdx(0);
+            }}
           />
         )}
 
@@ -164,7 +171,7 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
 
         {hasMultiple && (
           <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-xl border border-white/80 bg-white/85 px-2.5 py-1.5 text-[10px] font-bold text-slate-700 shadow-md backdrop-blur-md sm:right-4 sm:top-4">
-            <Images className="h-3.5 w-3.5 text-primary" /> {images.length}
+            <Images className="h-3.5 w-3.5 text-primary" /> {availableImages.length}
           </span>
         )}
 
@@ -191,7 +198,7 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
 
       {hasMultiple && (
         <div className="mt-2 flex flex-wrap items-center justify-center" aria-label={t('ছবি নির্বাচন', 'Choose image', 'तस्वीर चुनें')}>
-          {images.map((_, idx) => (
+          {availableImages.map((_, idx) => (
             <button
               type="button"
               key={idx}
@@ -208,7 +215,7 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
 
       {hasMultiple && (
         <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar px-0.5 pb-1 sm:mt-4 sm:gap-2.5">
-          {images.map((img, idx) => (
+          {availableImages.map((img, idx) => (
             <button
               key={idx}
               onClick={() => goTo(idx)}
