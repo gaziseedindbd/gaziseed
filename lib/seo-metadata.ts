@@ -1,5 +1,4 @@
 import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
-import { cookies } from 'next/headers';
 import type { Metadata } from 'next';
 import { cookies, headers } from 'next/headers';
 import { createServerSupabase } from '@/lib/supabase/server';
