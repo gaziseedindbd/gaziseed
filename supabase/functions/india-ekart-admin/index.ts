@@ -299,7 +299,7 @@ Deno.serve(async(req:Request)=>{
     if(input.action==="webhook_add"){
       const webhookSecret=Deno.env.get("EKART_WEBHOOK_SECRET")??"";
       if(webhookSecret.length<6||webhookSecret.length>30)return reply(503,{ok:false,code:"ekart_webhook_secret_missing"});
-      const endpoint=url.replace(/\\/+$/,"")+"/functions/v1/india-ekart-webhook";
+      const endpoint=url.replace(/\/+$/,"")+"/functions/v1/india-ekart-webhook";
       const {payload:registered}=await ekart("/api/v2/webhook");
       if(!Array.isArray(registered))return reply(502,{ok:false,code:"ekart_webhook_list_invalid"});
       const matches=registered.filter((w:unknown)=>isRecord(w)&&String(w.url??"")===endpoint);
