@@ -19,6 +19,7 @@ const navGroups: NavGroup[] = [
   ] },
   { label: 'Courier Management', items: [
     { href: '/admin/india-shipping', label: 'Shipping Dashboard', icon: LayoutDashboard, indiaOnly: true },
+    { href: '/admin/india-shipping/ekart', label: 'Ekart Shipping', icon: Truck, indiaOnly: true },
     { href: '/admin/india-shipping/rates', label: 'Courier Rates', icon: Truck, indiaOnly: true },
     { href: '/admin/india-shipping/connection', label: 'Shiprocket Connection', icon: Settings, indiaOnly: true },
   ] },

@@ -71,23 +71,11 @@ export default function AdminLoginPage() {
 
     setResetLoading(true);
     try {
-      const { data: isAdminEmail, error: adminCheckError } = await supabase
-        .from('admin_users')
-        .select('user_id')
-        .eq('email', email)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (adminCheckError) throw adminCheckError;
-      if (!isAdminEmail) {
-        setError('এই ইমেইলের জন্য সক্রিয় অ্যাডমিন অ্যাকাউন্ট পাওয়া যায়নি।');
-        return;
-      }
-
       const redirectTo = `${window.location.origin}${RESET_PATH}`;
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
 
-      setResetMessage('পাসওয়ার্ড রিসেট লিংক আপনার ইমেইলে পাঠানো হয়েছে।');
+      setResetMessage('এই ইমেইলে অ্যাকাউন্ট থাকলে পাসওয়ার্ড রিসেট লিংক পাঠানো হবে।');
     } catch (err: any) {
       setError(err.message || 'পাসওয়ার্ড রিসেট লিংক পাঠানো যায়নি');
     } finally {
