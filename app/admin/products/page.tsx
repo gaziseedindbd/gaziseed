@@ -23,17 +23,18 @@ export default function AdminProductsPage() {
 
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [adminBranch, setAdminBranch] = useState<'BD' | 'IN'>('BD');
+  const [adminBranchReady, setAdminBranchReady] = useState(false);
 
   useEffect(() => {
     loadAdminBranch();
-    loadCategories();
   }, []);
 
   useEffect(() => {
+    if (!adminBranchReady) return;
     loadCategories();
     loadProducts();
     loadAllProducts();
-  }, [adminBranch]);
+  }, [adminBranch, adminBranchReady]);
 
   useEffect(() => {
     const handler = () => loadAdminBranch();
@@ -42,10 +43,12 @@ export default function AdminProductsPage() {
   }, []);
 
   const loadAdminBranch = async () => {
+    // Do not allow product/category requests until the authoritative admin branch is known.
+    setAdminBranchReady(false);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     const { data: admin } = await supabase.from('admin_users').select('role,country_code').eq('user_id', user.id).maybeSingle();
-    if (!admin) return;
+    if (!admin) { setLoading(false); return; }
 
     if (admin.role === 'master_admin') {
       // Master Admin branch is controlled only by the central branch context RPC.
@@ -54,12 +57,14 @@ export default function AdminProductsPage() {
       const { data: branchCountry, error: branchError } = await supabase.rpc('current_admin_country');
       if (branchError) {
         console.error('Products admin branch check failed:', branchError);
+        setLoading(false);
         return;
       }
       setAdminBranch(String(branchCountry).toUpperCase() === 'IN' ? 'IN' : 'BD');
     } else {
       setAdminBranch(admin.country_code === 'IN' ? 'IN' : 'BD');
     }
+    setAdminBranchReady(true);
   };
 
   const loadAllProducts = async () => {
