@@ -57,6 +57,7 @@ export default function AdminProductsPage() {
       const { data: branchCountry, error: branchError } = await supabase.rpc('current_admin_country');
       if (branchError) {
         console.error('Products admin branch check failed:', branchError);
+        setLoading(false);
         return;
       }
       setAdminBranch(String(branchCountry).toUpperCase() === 'IN' ? 'IN' : 'BD');
