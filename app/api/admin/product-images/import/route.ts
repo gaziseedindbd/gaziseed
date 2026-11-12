@@ -177,7 +177,8 @@ function requestPinnedUrl(url: URL, address: SafeAddress, maxBytes: number): Pro
         const contentType = String(response.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
         const contentLength = Number(response.headers['content-length'] || 0) || undefined;
 
-        if ([301, 302, 303, 307, 308].includes(status)) {
+        if ([301, 302, 303, 307, 308].includes(status) || status !== 200) {
+          // Never buffer upstream error pages or redirect bodies.
           response.resume();
           agent.destroy();
           resolve({ status, location, contentType, contentLength });
@@ -187,7 +188,11 @@ function requestPinnedUrl(url: URL, address: SafeAddress, maxBytes: number): Pro
         if (contentLength && contentLength > maxBytes) {
           response.resume();
           agent.destroy();
-          reject(new ImageImportError(413, 'IMAGE_TOO_LARGE', 'Image file 10 MB সীমার চেয়ে বড়। ছোট image URL ব্যবহার করুন।'));
+          reject(new ImageImportError(
+            413,
+            'IMAGE_TOO_LARGE',
+            'Image file ' + Math.floor(maxBytes / (1024 * 1024)) + ' MB limit-এর চেয়ে বড়। ছোট image URL ব্যবহার করুন.',
+          ));
           return;
         }
 
@@ -202,6 +207,7 @@ function requestPinnedUrl(url: URL, address: SafeAddress, maxBytes: number): Pro
           chunks.push(chunk);
         });
         response.on('end', () => {
+          clearTimeout(absoluteTimeout);
           agent.destroy();
           resolve({
             status,
@@ -218,10 +224,15 @@ function requestPinnedUrl(url: URL, address: SafeAddress, maxBytes: number): Pro
       },
     );
 
+    const absoluteTimeout = setTimeout(() => {
+      request.destroy(new ImageImportError(504, 'IMAGE_HOST_TIMEOUT', 'Image host response দিতে বেশি সময় নিচ্ছে। পরে আবার চেষ্টা করুন।'));
+    }, REQUEST_TIMEOUT_MS);
+
     request.setTimeout(REQUEST_TIMEOUT_MS, () => {
       request.destroy(new ImageImportError(504, 'IMAGE_HOST_TIMEOUT', 'Image host response দিতে বেশি সময় নিচ্ছে। পরে আবার চেষ্টা করুন।'));
     });
     request.on('error', (error) => {
+      clearTimeout(absoluteTimeout);
       agent.destroy();
       reject(error);
     });
