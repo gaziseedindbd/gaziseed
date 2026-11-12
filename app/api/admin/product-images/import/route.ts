@@ -2,7 +2,7 @@ import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
 import https from 'node:https';
 import { createClient } from '@supabase/supabase-js';
-import sharp from 'sharp';
+import sharp, { type Metadata, type OutputInfo } from 'sharp';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -273,7 +273,7 @@ async function optimizeProductImage(
     size: number;
   },
 ): Promise<Buffer> {
-  let metadata: sharp.Metadata;
+  let metadata: Metadata;
   try {
     metadata = await sharp(source, { limitInputPixels: 40_000_000, animated: false }).metadata();
   } catch {
@@ -289,7 +289,7 @@ async function optimizeProductImage(
     throw new ImageImportError(415, 'UNSUPPORTED_IMAGE', 'এই image format support করা হচ্ছে না। JPG, PNG, WebP বা AVIF ব্যবহার করুন।');
   }
 
-  let processed: { data: Buffer; info: sharp.OutputInfo };
+  let processed: { data: Buffer; info: OutputInfo };
   try {
     processed = await sharp(source, { limitInputPixels: 40_000_000, animated: false })
       .rotate()
@@ -302,7 +302,7 @@ async function optimizeProductImage(
 
   if (watermark.enabled && watermark.logoUrl) {
     const logo = await downloadPublicImage(watermark.logoUrl, MAX_WATERMARK_BYTES);
-    let logoMetadata: sharp.Metadata;
+    let logoMetadata: Metadata;
     try {
       logoMetadata = await sharp(logo.buffer, { limitInputPixels: 16_000_000 }).metadata();
     } catch {
