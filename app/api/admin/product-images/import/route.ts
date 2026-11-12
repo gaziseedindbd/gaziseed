@@ -179,6 +179,7 @@ function requestPinnedUrl(url: URL, address: SafeAddress, maxBytes: number): Pro
 
         if ([301, 302, 303, 307, 308].includes(status) || status !== 200) {
           // Never buffer upstream error pages or redirect bodies.
+          clearTimeout(absoluteTimeout);
           response.resume();
           agent.destroy();
           resolve({ status, location, contentType, contentLength });
@@ -186,6 +187,7 @@ function requestPinnedUrl(url: URL, address: SafeAddress, maxBytes: number): Pro
         }
 
         if (contentLength && contentLength > maxBytes) {
+          clearTimeout(absoluteTimeout);
           response.resume();
           agent.destroy();
           reject(new ImageImportError(
@@ -218,6 +220,7 @@ function requestPinnedUrl(url: URL, address: SafeAddress, maxBytes: number): Pro
           });
         });
         response.on('error', (error) => {
+          clearTimeout(absoluteTimeout);
           agent.destroy();
           reject(error);
         });
