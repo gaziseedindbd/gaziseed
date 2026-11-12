@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 import { uploadProcessedFile } from '@/lib/image-processing';
 import { Upload, Link as LinkIcon, X, Star } from 'lucide-react';
 import { toast } from '@/components/site/toast-provider';
-import { optimizeImageForUpload, optimizeImageUrlForUpload } from '@/lib/client-image-upload';
+import { optimizeImageForUpload } from '@/lib/client-image-upload';
 import { deleteProductImagesFromStorage } from '@/lib/storage/product-images';
 
 export type MediaUploaderProps = {
@@ -27,11 +27,6 @@ export function MediaUploader({ images, setImages, bucket = 'product-images', la
   // Central upload pipeline: resize + WebP + compression + current watermark settings.
   const processAndUploadFile = async (file: File) => {
     const optimizedFile = await optimizeImageForUpload(file, 'product');
-    return uploadProcessedFile(optimizedFile, bucket, supabase);
-  };
-
-  const processAndUploadUrl = async (url: string) => {
-    const optimizedFile = await optimizeImageUrlForUpload(url, 'product');
     return uploadProcessedFile(optimizedFile, bucket, supabase);
   };
 
@@ -57,19 +52,47 @@ export function MediaUploader({ images, setImages, bucket = 'product-images', la
   };
 
   const addUrlImage = async () => {
-    if (!imageUrl.trim()) return;
+    const sourceUrl = imageUrl.trim();
+    if (!sourceUrl) return;
     if (images.length >= maxImages) {
       toast(`সর্বোচ্চ ${maxImages} টি ছবি`, 'error');
       return;
     }
+
     setUploading(true);
     try {
-      const url = await processAndUploadUrl(imageUrl.trim());
-      setImages([...images, url]);
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw new Error('Admin session যাচাই করা যায়নি। আবার লগইন করুন।');
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error('Admin session নেই। আবার লগইন করুন।');
+
+      const response = await fetch('/api/admin/product-images/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ url: sourceUrl }),
+      });
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          typeof result?.message === 'string'
+            ? result.message
+            : `Image import failed (HTTP ${response.status}). আবার চেষ্টা করুন।`,
+        );
+      }
+
+      const importedUrl = typeof result?.url === 'string' ? result.url : '';
+      if (!importedUrl) throw new Error('Server ছবি import করেছে, কিন্তু image URL ফেরত দেয়নি।');
+
+      setImages([...images, importedUrl]);
       setImageUrl('');
-      toast('ছবি ওয়াটারমার্ক ও অপটিমাইজ সম্পন্ন হয়েছে');
-    } catch (err: any) {
-      toast(`ইম্পোর্ট ব্যর্থ: ${err.message}`, 'error');
+      toast('ছবি import, watermark ও WebP optimization সম্পন্ন হয়েছে');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'অজানা কারণে ছবি import ব্যর্থ হয়েছে।';
+      toast(`ইম্পোর্ট ব্যর্থ: ${message}`, 'error');
     } finally {
       setUploading(false);
     }
