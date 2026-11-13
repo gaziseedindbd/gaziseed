@@ -74,10 +74,8 @@ export async function POST(request: Request) {
       process.env.LIBRETRANSLATE_URL || '',
     ].map((value) => value.trim()).filter(Boolean);
     const defaultEndpoints = [
-      'https://translate.flossboxin.org.in/translate',
       'https://translate.cutie.dating/translate',
       'https://translate.fedilab.app/translate',
-      'https://translate.argosopentech.com/translate',
     ];
     const normalizeEndpoint = (value: string) => {
       const url = new URL(value);
@@ -147,7 +145,62 @@ export async function POST(request: Request) {
     attempts.filter((attempt) => attempt.translations === null).forEach(({ host, reason }) => {
       providerFailures.push({ host, reason });
     });
-    const translations = successful?.translations || null;
+    let translations = successful?.translations || null;
+
+    // MyMemory is a separate fallback API. Its GET endpoint accepts at most
+    // 500 UTF-8 bytes per query, so split long text at word boundaries.
+    if (!translations) {
+      stage = 'mymemory_fallback';
+      const splitUtf8 = (value: string, maxBytes: number): string[] => {
+        const words = value.split(/(\\s+)/);
+        const chunks: string[] = [];
+        let current = '';
+        for (const word of words) {
+          if (new TextEncoder().encode(current + word).length > maxBytes && current) {
+            chunks.push(current);
+            current = word.trimStart();
+          } else {
+            current += word;
+          }
+        }
+        if (current) chunks.push(current);
+        return chunks;
+      };
+
+      try {
+        const fallbackTranslations: string[] = [];
+        for (const textValue of cleanTexts) {
+          const chunks = splitUtf8(textValue, 450);
+          const translatedChunks: string[] = [];
+          for (const chunk of chunks) {
+            const params = new URLSearchParams({
+              q: chunk,
+              langpair: `en|${target}`,
+              mt: '1',
+            });
+            const response = await fetch(`https://api.mymemory.translated.net/get?${params.toString()}`, {
+              method: 'GET',
+              headers: { Accept: 'application/json' },
+              signal: AbortSignal.timeout(5000),
+              cache: 'no-store',
+            });
+            if (!response.ok) throw new Error(`MyMemory HTTP ${response.status}`);
+            const result = await response.json();
+            if (Number(result?.responseStatus) !== 200 || typeof result?.responseData?.translatedText !== 'string') {
+              throw new Error('MyMemory returned no translation');
+            }
+            translatedChunks.push(result.responseData.translatedText);
+          }
+          fallbackTranslations.push(translatedChunks.join(''));
+        }
+        if (fallbackTranslations.length === cleanTexts.length && fallbackTranslations.every((value) => value.trim())) {
+          translations = fallbackTranslations;
+        }
+      } catch (fallbackError) {
+        const reason = fallbackError instanceof Error ? fallbackError.message : 'unknown_error';
+        providerFailures.push({ host: 'api.mymemory.translated.net', reason });
+      }
+    }
 
     if (!translations) {
       console.error('[translate-product-content] All translation providers failed', {
