@@ -170,7 +170,7 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
   // New ads-only product form
   const [newProduct, setNewProduct] = useState({
     name_bn: '', name_en: '', sku: '', stock: 0,
-    short_description: '', description: '', regular_price: 0,
+    short_description: '', description: '', regular_price: 0, translations: {},
   });
   // Landing page form
   const [landing, setLanding] = useState({
@@ -218,7 +218,7 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
         const { data: prod, error: prodError } = await supabase.from('products').insert({
           name_bn: newProduct.name_bn, name_en: newProduct.name_en, sku: newProduct.sku,
           stock: Number(newProduct.stock) || 0, short_description: newProduct.short_description,
-          description: newProduct.description, regular_price: Number(newProduct.regular_price) || 0,
+          description: newProduct.description, translations: newProduct.translations || {}, regular_price: Number(newProduct.regular_price) || 0,
           slug, is_active: true, is_ads_only: true, image: images[0] || '', country_code: activeCountryCode,
         }).select().single();
         if (prodError) throw prodError;
@@ -373,6 +373,7 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
             </div>
             <div><label className="mb-1 block text-sm font-medium">সংক্ষিপ্ত বিবরণ</label><textarea value={newProduct.short_description} onChange={(e) => setNewProduct({ ...newProduct, short_description: e.target.value })} className="input-bangla min-h-[60px]" /></div>
             <div><label className="mb-1 block text-sm font-medium">পণ্যের বিস্তারিত বিবরণ</label><textarea value={newProduct.description} onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} className="input-bangla min-h-[120px]" placeholder="🌱 পণ্যের বিস্তারিত বিবরণ লিখুন..." /></div>
+            <MultilingualFields enableTranslate languages={countryCode === 'IN' ? ['en', 'bn', 'hi'] : ['en', 'bn']} value={{ ...(newProduct.translations || {}), en: { ...(newProduct.translations?.en || {}), name: newProduct.name_en, short_description: newProduct.short_description, description: newProduct.description } }} onChange={(translations) => setNewProduct({ ...newProduct, translations, name_bn: translations.bn?.name || newProduct.name_bn, name_en: translations.en?.name || newProduct.name_en, short_description: translations.en?.short_description || newProduct.short_description, description: translations.en?.description || newProduct.description })} title="🌐 Ads Product-এর ভাষাভিত্তিক Content" fields={[{ key: 'name', label: 'Product Name' }, { key: 'short_description', label: 'Short Description', multiline: true }, { key: 'description', label: 'Description', multiline: true }]} />
             <LandingFields countryCode={countryCode} landing={landing} setLanding={setLanding} />
             <MediaUploader images={images} setImages={setImages} imageUrl={imageUrl} setImageUrl={setImageUrl} uploading={uploading} setUploading={setUploading} />
             <DescriptionFields landing={landing} setLanding={setLanding} benefits={benefits} setBenefits={setBenefits} features={features} setFeatures={setFeatures} />
