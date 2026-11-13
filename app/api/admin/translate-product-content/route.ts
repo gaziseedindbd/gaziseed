@@ -91,7 +91,7 @@ export async function POST(request: Request) {
       return url.toString();
     };
     const configured = configuredEndpoints.map(normalizeEndpoint);
-    const endpoints = [...new Set([...configured, ...defaultEndpoints])];
+    const endpoints = [...configured, ...defaultEndpoints].filter((endpoint, index, all) => all.indexOf(endpoint) === index);
     const payload: Record<string, unknown> = {
       q: cleanTexts,
       source: 'en',
