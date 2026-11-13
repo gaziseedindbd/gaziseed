@@ -366,6 +366,7 @@ export default function AdsLandingEditorPage() {
           <div><label className="mb-1 block text-sm font-medium">Delivery Text</label><input value={landing.delivery_text || ''} onChange={(e) => setLanding({ ...landing, delivery_text: e.target.value })} className="input-bangla" /></div>
 
           <MultilingualFields enableTranslate
+            sourceValues={{ title: landing.title, subtitle: landing.subtitle, description: landing.description, growing_guide: landing.growing_guide, offer_headline: landing.offer_headline, offer_badge: landing.offer_badge, discount_label: landing.discount_label, cta_text: landing.cta_text, trust_text: landing.trust_text, delivery_text: landing.delivery_text, cod_text: landing.cod_text }}
             value={landing.translations || {}}
             onChange={(translations) => setLanding({ ...landing, translations })}
             languages={landing.country_code === 'IN' ? ['en', 'bn', 'hi'] : ['en', 'bn']}
