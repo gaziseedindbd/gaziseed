@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     const providerFailures: Array<{ host: string; reason: string }> = [];
 
     stage = 'libretranslate_fetch';
-    const attempts = await Promise.all(endpoints.map(async (endpoint, index) => {
+    const attempts = await Promise.all(endpoints.map(async (endpoint) => {
       const host = new URL(endpoint).host;
       const requestPayload = { ...payload };
       // Only attach a configured key to the explicitly configured primary URL.
