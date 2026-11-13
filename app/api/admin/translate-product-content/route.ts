@@ -74,8 +74,9 @@ export async function POST(request: Request) {
       process.env.LIBRETRANSLATE_URL || '',
     ].map((value) => value.trim()).filter(Boolean);
     const defaultEndpoints = [
-      'https://translate.astian.org/translate',
       'https://translate.flossboxin.org.in/translate',
+      'https://translate.cutie.dating/translate',
+      'https://translate.fedilab.app/translate',
       'https://translate.argosopentech.com/translate',
     ];
     const normalizeEndpoint = (value: string) => {
@@ -99,15 +100,16 @@ export async function POST(request: Request) {
       format: 'text',
     };
     const providerFailures: Array<{ host: string; reason: string }> = [];
-    let translations: string[] | null = null;
 
     stage = 'libretranslate_fetch';
-    for (let index = 0; index < endpoints.length; index += 1) {
-      const endpoint = endpoints[index];
+    const attempts = await Promise.all(endpoints.map(async (endpoint, index) => {
       const host = new URL(endpoint).host;
       const requestPayload = { ...payload };
-      // Never send a configured provider key to unrelated public mirrors.
-      if (index === 0 && process.env.LIBRETRANSLATE_API_KEY) {
+      // Only attach a configured key to the explicitly configured primary URL.
+      const primaryUrl = process.env.LIBRETRANSLATE_URL
+        ? normalizeEndpoint(process.env.LIBRETRANSLATE_URL.trim())
+        : '';
+      if (primaryUrl && endpoint === primaryUrl && process.env.LIBRETRANSLATE_API_KEY) {
         requestPayload.api_key = process.env.LIBRETRANSLATE_API_KEY;
       }
 
@@ -116,12 +118,11 @@ export async function POST(request: Request) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: JSON.stringify(requestPayload),
-          signal: AbortSignal.timeout(3500),
+          signal: AbortSignal.timeout(4500),
           cache: 'no-store',
         });
         if (!response.ok) {
-          providerFailures.push({ host, reason: `http_${response.status}` });
-          continue;
+          return { host, reason: `http_${response.status}`, translations: null as string[] | null };
         }
 
         const result = await response.json();
@@ -129,21 +130,24 @@ export async function POST(request: Request) {
           ? result.translatedText
           : [result?.translatedText];
         if (values.length !== cleanTexts.length || values.some((value: unknown) => typeof value !== 'string' || !value.trim())) {
-          providerFailures.push({ host, reason: 'invalid_response' });
-          continue;
+          return { host, reason: 'invalid_response', translations: null as string[] | null };
         }
-
-        translations = values as string[];
-        break;
+        return { host, reason: 'ok', translations: values as string[] };
       } catch (providerError) {
         const reason = providerError instanceof Error
           ? providerError.name === 'TimeoutError' || providerError.name === 'AbortError'
             ? 'timeout'
             : providerError.name || 'fetch_error'
           : 'unknown_error';
-        providerFailures.push({ host, reason });
+        return { host, reason, translations: null as string[] | null };
       }
-    }
+    }));
+
+    const successful = attempts.find((attempt) => attempt.translations !== null);
+    attempts.filter((attempt) => attempt.translations === null).forEach(({ host, reason }) => {
+      providerFailures.push({ host, reason });
+    });
+    const translations = successful?.translations || null;
 
     if (!translations) {
       console.error('[translate-product-content] All translation providers failed', {
@@ -154,6 +158,7 @@ export async function POST(request: Request) {
         ok: false,
         code: 'translation_providers_unavailable',
         message: 'All free translation servers are temporarily unavailable. Please try again later.',
+        providerDiagnostics: providerFailures,
       }, { status: 502 });
     }
 
