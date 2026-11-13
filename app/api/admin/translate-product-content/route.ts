@@ -82,8 +82,11 @@ export async function POST(request: Request) {
       const url = new URL(value);
       url.search = '';
       url.hash = '';
-      if (!url.pathname.replace(/\\/+$/, '').endsWith('/translate')) {
-        url.pathname = `${url.pathname.replace(/\\/+$/, '')}/translate`;
+      while (url.pathname.length > 1 && url.pathname.endsWith('/')) {
+        url.pathname = url.pathname.slice(0, -1);
+      }
+      if (!url.pathname.endsWith('/translate')) {
+        url.pathname = `${url.pathname}/translate`;
       }
       return url.toString();
     };
