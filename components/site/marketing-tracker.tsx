@@ -210,7 +210,11 @@ async function initialiseProviders(settings: MarketingSettings) {
 async function trackRouteCommerceEvents(pathname: string, search: string) {
   try {
     const { countryCode, currency } = getTrackingContext();
-    if (pathname.startsWith('/product/')) {
+    if (
+      pathname.startsWith('/product/') ||
+      pathname.startsWith('/bd/product/') ||
+      pathname.startsWith('/in/product/')
+    ) {
       const slug = decodeURIComponent(pathname.replace(/^\/product\//, '').split('/')[0]);
       if (!slug) return;
       const product = await getProductBySlug(slug);
