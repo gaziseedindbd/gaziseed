@@ -12,7 +12,7 @@ function adminSupabase() {
 
 export async function POST(request: Request) {
   try {
-    const token = request.headers.get('authorization')?.replace(/^Bearer\\s+/i, '').trim() || '';
+    const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() || '';
     if (!token) return NextResponse.json({ ok: false, message: 'Authentication required' }, { status: 401 });
 
     const db = adminSupabase();
