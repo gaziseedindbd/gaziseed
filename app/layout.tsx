@@ -46,6 +46,11 @@ export const metadata: Metadata = {
     shortcut: [{ url: FAVICON_URL, type: 'image/svg+xml' }],
     apple: [{ url: FAVICON_URL, type: 'image/svg+xml' }],
   },
+  verification: {
+    other: {
+      'facebook-domain-verification': 'otel00ytcp9f8o6uwq5g97s6mamul1',
+    },
+  },
   openGraph: {
     title: 'GAZI SEED - বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
     description: 'বীজ, গাছ ও কৃষি পণ্যের অনলাইন স্টোর',
