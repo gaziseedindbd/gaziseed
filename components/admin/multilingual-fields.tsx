@@ -23,6 +23,7 @@ export function MultilingualFields({
   description = 'একই content-এর English, বাংলা ও हिन्दी version আলাদা করে সংরক্ষণ করুন। Existing content/logic অপরিবর্তিত থাকবে।',
   languages = ['en', 'bn', 'hi'],
   enableTranslate = false,
+  sourceValues = {},
 }: {
   value: MultilingualValue;
   onChange: (value: MultilingualValue) => void;
@@ -31,6 +32,7 @@ export function MultilingualFields({
   description?: string;
   languages?: LanguageKey[];
   enableTranslate?: boolean;
+  sourceValues?: Record<string, string>;
 }) {
   const availableLangs = LANGS.filter((item) => languages.includes(item.key));
   const [lang, setLang] = React.useState<LanguageKey>('en');
@@ -42,7 +44,8 @@ export function MultilingualFields({
   const [translationMessage, setTranslationMessage] = React.useState('');
 
   const translateAll = async () => {
-    const source = value?.en || {};
+    const source = { ...(sourceValues || {}), ...(value?.en || {}) };
+    Object.keys(source).forEach((key) => { if (!String(source[key] || '').trim() && sourceValues?.[key]) source[key] = sourceValues[key]; });
     const sourceFields = fields.filter((field) => String(source[field.key] || '').trim());
     const targets = languages.filter((language) => language !== 'en');
     if (!sourceFields.length) {
