@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { RichTextEditor } from '@/components/admin/rich-text-editor';
+import { supabase } from '@/lib/supabase/client';
 
 export type MultilingualValue = Record<string, Record<string, string>>;
 
@@ -21,6 +22,7 @@ export function MultilingualFields({
   title = 'Multilingual Content',
   description = 'একই content-এর English, বাংলা ও हिन्दी version আলাদা করে সংরক্ষণ করুন। Existing content/logic অপরিবর্তিত থাকবে।',
   languages = ['en', 'bn', 'hi'],
+  enableTranslate = false,
 }: {
   value: MultilingualValue;
   onChange: (value: MultilingualValue) => void;
@@ -28,6 +30,7 @@ export function MultilingualFields({
   title?: string;
   description?: string;
   languages?: LanguageKey[];
+  enableTranslate?: boolean;
 }) {
   const availableLangs = LANGS.filter((item) => languages.includes(item.key));
   const [lang, setLang] = React.useState<LanguageKey>('en');
@@ -35,6 +38,48 @@ export function MultilingualFields({
     if (!languages.includes(lang)) setLang(languages[0] || 'en');
   }, [lang, languages]);
   const current = value?.[lang] || {};
+  const [translating, setTranslating] = React.useState(false);
+  const [translationMessage, setTranslationMessage] = React.useState('');
+
+  const translateAll = async () => {
+    const source = value?.en || {};
+    const sourceFields = fields.filter((field) => String(source[field.key] || '').trim());
+    const targets = languages.filter((language) => language !== 'en');
+    if (!sourceFields.length) {
+      setTranslationMessage('আগে English content লিখুন।');
+      return;
+    }
+    setTranslating(true);
+    setTranslationMessage('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Admin login যাচাই করা যায়নি। আবার লগইন করুন।');
+      let nextValue: MultilingualValue = { ...(value || {}) };
+      for (const target of targets) {
+        const missingFields = sourceFields.filter((field) => !String(nextValue?.[target]?.[field.key] || '').trim());
+        if (!missingFields.length) continue;
+        const response = await fetch('/api/admin/translate-product-content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+          body: JSON.stringify({ target, texts: missingFields.map((field) => String(source[field.key])) }),
+          cache: 'no-store',
+        });
+        const result = await response.json();
+        if (!response.ok || !result.ok || !Array.isArray(result.translations)) {
+          throw new Error(result.message || 'অনুবাদ করা যায়নি। পরে আবার চেষ্টা করুন।');
+        }
+        const translatedFields: Record<string, string> = {};
+        missingFields.forEach((field, index) => { translatedFields[field.key] = result.translations[index]; });
+        nextValue = { ...nextValue, [target]: { ...(nextValue[target] || {}), ...translatedFields } };
+      }
+      onChange(nextValue);
+      setTranslationMessage('খালি ভাষার Field-গুলো অনুবাদ হয়েছে। Save করার আগে দেখে নিন।');
+    } catch (error) {
+      setTranslationMessage(error instanceof Error ? error.message : 'অনুবাদ করা যায়নি।');
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   const setField = (key: string, next: string) => {
     onChange({
@@ -49,7 +94,7 @@ export function MultilingualFields({
         <h3 className="font-bold">{title}</h3>
         <p className="mt-1 text-xs text-muted-foreground">{description}</p>
       </div>
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         {availableLangs.map((item) => (
           <button
             key={item.key}
@@ -60,7 +105,9 @@ export function MultilingualFields({
             {item.flag} {item.label}
           </button>
         ))}
+        {enableTranslate && <button type="button" onClick={translateAll} disabled={translating} className="ml-auto rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-sm font-semibold text-primary disabled:opacity-50">{translating ? 'অনুবাদ হচ্ছে…' : 'Translate All'}</button>}
       </div>
+      {enableTranslate && translationMessage && <p className="mb-3 text-xs text-muted-foreground" role="status">{translationMessage}</p>}
       <div className="grid gap-3">
         {fields.map((field) => (
           <div key={field.key}>
