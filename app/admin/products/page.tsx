@@ -611,6 +611,7 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
           </div>
 
           <MultilingualFields enableTranslate languages={adminBranch === 'IN' ? ['en', 'bn', 'hi'] : ['en', 'bn']}
+            sourceValues={{ cultivation_instructions: form.cultivation_instructions }}
             value={form.translations || {}}
             onChange={(translations) => setForm({ ...form, translations })}
             title="🌱 ভাষাভিত্তিক চাষের নির্দেশনা"
