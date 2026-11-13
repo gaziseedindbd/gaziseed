@@ -168,7 +168,7 @@ function CreateLandingModal({ countryCode, onClose, onCreated }: { countryCode: 
   const [loading, setLoading] = useState(false);
 
   // New ads-only product form
-  const [newProduct, setNewProduct] = useState({
+  const [newProduct, setNewProduct] = useState<any>({
     name_bn: '', name_en: '', sku: '', stock: 0,
     short_description: '', description: '', regular_price: 0, translations: {},
   });
