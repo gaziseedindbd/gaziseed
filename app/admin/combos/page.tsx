@@ -393,7 +393,7 @@ function ComboForm({ combo, countryCode, isSeedLanding, onSave, onClose }: { com
           </div>
 
           <p className="text-sm text-muted-foreground">মূল বাংলা নাম ও বিবরণ কম্বোর পরিচিতি। লাইভ করতে নিচের English, বাংলা ও हिन्दी tab-এ Title ও Description পূরণ করুন। SEO প্রতিটি ভাষার tab-এ লিখুন।</p>
-          <MultilingualFields value={form.translations || {}} onChange={(translations) => setForm({ ...form, translations })} title="🌐 ভাষাভিত্তিক কম্বো নাম ও বিবরণ" fields={[{ key: 'title', label: 'Combo Title' }, { key: 'subtitle', label: 'Subtitle' }, { key: 'description', label: 'Description', multiline: true }, { key: 'seo_title', label: 'SEO Title' }, { key: 'meta_description', label: 'Meta Description', multiline: true }]} />
+          <MultilingualFields enableTranslate languages={countryCode === 'IN' ? ['en', 'bn', 'hi'] : ['en', 'bn']} value={form.translations || {}} onChange={(translations) => setForm({ ...form, translations })} title="🌐 ভাষাভিত্তিক কম্বো নাম ও বিবরণ" fields={[{ key: 'title', label: 'Combo Title' }, { key: 'subtitle', label: 'Subtitle' }, { key: 'description', label: 'Description', multiline: true }, { key: 'seo_title', label: 'SEO Title' }, { key: 'meta_description', label: 'Meta Description', multiline: true }]} />
 
           <div>
             <label className="mb-1.5 block text-sm font-semibold">মূল কম্বো বিবরণ (বাংলা)</label>

@@ -98,7 +98,7 @@ export default function AdsLandingEditorPage() {
     if (!product) return;
     await supabase.from('products').update({
       name_bn: product.name_bn, name_en: product.name_en, sku: product.sku, stock: Number(product.stock),
-      short_description: product.short_description, description: product.description,
+      short_description: product.short_description, description: product.description, translations: product.translations || {},
       seed_type: product.seed_type, variety: product.variety, origin: product.origin,
       season: product.season, packet_weight: product.packet_weight, is_active: product.is_active,
     }).eq('id', product.id).eq('country_code', landing.country_code);
@@ -228,6 +228,7 @@ export default function AdsLandingEditorPage() {
             </div>
             <div className="mt-3"><label className="mb-1 block text-sm font-medium">সংক্ষিপ্ত বিবরণ</label><textarea value={product?.short_description || ''} onChange={(e) => setProduct({ ...product, short_description: e.target.value })} className="input-bangla min-h-[60px]" /></div>
             <div className="mt-2"><label className="mb-1 block text-sm font-medium">বিস্তারিত বিবরণ</label><textarea value={product?.description || ''} onChange={(e) => setProduct({ ...product, description: e.target.value })} className="input-bangla min-h-[100px]" /></div>
+            <MultilingualFields enableTranslate languages={landing.country_code === 'IN' ? ['en', 'bn', 'hi'] : ['en', 'bn']} value={{ ...(product?.translations || {}), en: { ...(product?.translations?.en || {}), name: product?.name_en || '' } }} onChange={(translations) => setProduct({ ...product, translations, name_bn: translations.bn?.name || product?.name_bn, name_en: translations.en?.name || product?.name_en, short_description: translations.en?.short_description || product?.short_description, description: translations.en?.description || product?.description })} title="🌐 Product-এর ভাষাভিত্তিক Content" fields={[{ key: 'name', label: 'Product Name' }, { key: 'short_description', label: 'Short Description', multiline: true }, { key: 'description', label: 'Description', multiline: true }]} />
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
               <div><label className="mb-1 block text-xs text-muted-foreground">Product Type</label><input value={product?.seed_type || ''} onChange={(e) => setProduct({ ...product, seed_type: e.target.value })} className="w-full rounded-lg border border-input px-3 py-2 text-sm" /></div>
               <div><label className="mb-1 block text-xs text-muted-foreground">Variety</label><input value={product?.variety || ''} onChange={(e) => setProduct({ ...product, variety: e.target.value })} className="w-full rounded-lg border border-input px-3 py-2 text-sm" /></div>
@@ -364,7 +365,7 @@ export default function AdsLandingEditorPage() {
           <div><label className="mb-1 block text-sm font-medium">COD Text</label><input value={landing.cod_text || ''} onChange={(e) => setLanding({ ...landing, cod_text: e.target.value })} className="input-bangla" /></div>
           <div><label className="mb-1 block text-sm font-medium">Delivery Text</label><input value={landing.delivery_text || ''} onChange={(e) => setLanding({ ...landing, delivery_text: e.target.value })} className="input-bangla" /></div>
 
-          <MultilingualFields
+          <MultilingualFields enableTranslate
             value={landing.translations || {}}
             onChange={(translations) => setLanding({ ...landing, translations })}
             languages={landing.country_code === 'IN' ? ['en', 'bn', 'hi'] : ['en', 'bn']}
