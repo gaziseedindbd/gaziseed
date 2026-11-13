@@ -278,6 +278,7 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
   const [faqs, setFaqs] = useState<any[]>([]);
   const [removedFaqs, setRemovedFaqs] = useState<string[]>([]);
   const [faqForm, setFaqForm] = useState({ question_bn: '', answer_bn: '', question_en: '', answer_en: '', question_hi: '', answer_hi: '', display_order: 0, is_active: true });
+  const [faqTranslating, setFaqTranslating] = useState(false);
   const [relatedSearch, setRelatedSearch] = useState('');
   const [showRelatedPicker, setShowRelatedPicker] = useState(false);
   const [variants, setVariants] = useState<any[]>([]);
@@ -320,9 +321,47 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
     setForm({ ...form, season_tags: tags.includes(t) ? tags.filter((x: string) => x !== t) : [...tags, t] });
   };
 
+  const translateFaq = async () => {
+    const question = faqForm.question_en.trim();
+    const answer = faqForm.answer_en.trim();
+    if (!question || !answer) { toast('আগে English Question ও Answer লিখুন', 'error'); return; }
+    setFaqTranslating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Authentication required');
+      const translate = async (target: 'bn' | 'hi') => {
+        const response = await fetch('/api/admin/translate-product-content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ target, texts: [question, answer] }),
+        });
+        const result = await response.json();
+        if (!response.ok || !result?.ok || !Array.isArray(result.translations) || result.translations.length !== 2) {
+          throw new Error(result?.message || 'Translation failed');
+        }
+        return result.translations as string[];
+      };
+      const bn = await translate('bn');
+      const hi = adminBranch === 'IN' ? await translate('hi') : null;
+      setFaqForm((current) => ({
+        ...current,
+        question_bn: current.question_bn.trim() ? current.question_bn : bn[0],
+        answer_bn: current.answer_bn.trim() ? current.answer_bn : bn[1],
+        question_hi: current.question_hi.trim() ? current.question_hi : (hi?.[0] || ''),
+        answer_hi: current.answer_hi.trim() ? current.answer_hi : (hi?.[1] || ''),
+      }));
+      toast('বাংলা ও Hindi অনুবাদ তৈরি হয়েছে');
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'অনুবাদ করা যায়নি', 'error');
+    } finally {
+      setFaqTranslating(false);
+    }
+  };
+
   const addFaq = () => {
-    if (!faqForm.question_bn || !faqForm.answer_bn) { toast('প্রশ্ন ও উত্তর দিন', 'error'); return; }
-    if (Boolean(faqForm.question_hi.trim()) !== Boolean(faqForm.answer_hi.trim())) { toast('Hindi প্রশ্ন ও উত্তর দুটোই দিন', 'error'); return; }
+    if (!faqForm.question_en.trim() || !faqForm.answer_en.trim()) { toast('English Question ও Answer দিন', 'error'); return; }
+    if (!faqForm.question_bn.trim() || !faqForm.answer_bn.trim()) { toast('আগে Translate All চাপুন', 'error'); return; }
+    if (adminBranch === 'IN' && (!faqForm.question_hi.trim() || !faqForm.answer_hi.trim())) { toast('আগে Hindi অনুবাদ তৈরি করুন', 'error'); return; }
     const newFaq = { ...faqForm, product_id: product?.id, _new: true };
     setFaqs([...faqs, newFaq]);
     setFaqForm({ question_bn: '', answer_bn: '', question_en: '', answer_en: '', question_hi: '', answer_hi: '', display_order: faqs.length + 1, is_active: true });
@@ -930,12 +969,17 @@ function ProductForm({ product, categories, allProducts, adminBranch, onSave, on
               ))}
             </div>
             <div className="mt-3 space-y-2 rounded-lg border border-dashed border-border p-3">
-              <input value={faqForm.question_bn} onChange={(e) => setFaqForm({ ...faqForm, question_bn: e.target.value })} placeholder="প্রশ্ন (বাংলা)" className="input-bangla" />
-              <textarea value={faqForm.answer_bn} onChange={(e) => setFaqForm({ ...faqForm, answer_bn: e.target.value })} placeholder="উত্তর (বাংলা)" className="input-bangla min-h-[60px]" />
-              <input value={faqForm.question_en} onChange={(e) => setFaqForm({ ...faqForm, question_en: e.target.value })} placeholder="Question (English - optional)" className="input-bangla" />
-              <textarea value={faqForm.answer_en} onChange={(e) => setFaqForm({ ...faqForm, answer_en: e.target.value })} placeholder="Answer (English - optional)" className="input-bangla min-h-[60px]" />
-              <input aria-label="FAQ question Hindi" value={faqForm.question_hi} onChange={(e) => setFaqForm({ ...faqForm, question_hi: e.target.value })} placeholder="प्रश्न (हिन्दी - optional)" className="input-bangla" />
-              <textarea aria-label="FAQ answer Hindi" value={faqForm.answer_hi} onChange={(e) => setFaqForm({ ...faqForm, answer_hi: e.target.value })} placeholder="उत्तर (हिन्दी - optional)" className="input-bangla min-h-[60px]" />
+              <input value={faqForm.question_en} onChange={(e) => setFaqForm({ ...faqForm, question_en: e.target.value })} placeholder="Question (English)" className="input-bangla" />
+              <textarea value={faqForm.answer_en} onChange={(e) => setFaqForm({ ...faqForm, answer_en: e.target.value })} placeholder="Answer (English)" className="input-bangla min-h-[60px]" />
+              <button type="button" onClick={translateFaq} disabled={faqTranslating} className="flex items-center justify-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-medium text-primary disabled:opacity-60">
+                {faqTranslating ? 'অনুবাদ হচ্ছে...' : 'Translate All — বাংলা' + (adminBranch === 'IN' ? ' + हिन्दी' : '')}
+              </button>
+              <input value={faqForm.question_bn} onChange={(e) => setFaqForm({ ...faqForm, question_bn: e.target.value })} placeholder="প্রশ্ন (বাংলা — auto translated)" className="input-bangla" />
+              <textarea value={faqForm.answer_bn} onChange={(e) => setFaqForm({ ...faqForm, answer_bn: e.target.value })} placeholder="উত্তর (বাংলা — auto translated)" className="input-bangla min-h-[60px]" />
+              {adminBranch === 'IN' && <>
+                <input aria-label="FAQ question Hindi" value={faqForm.question_hi} onChange={(e) => setFaqForm({ ...faqForm, question_hi: e.target.value })} placeholder="प्रश्न (हिन्दी — auto translated)" className="input-bangla" />
+                <textarea aria-label="FAQ answer Hindi" value={faqForm.answer_hi} onChange={(e) => setFaqForm({ ...faqForm, answer_hi: e.target.value })} placeholder="उत्तर (हिन्दी — auto translated)" className="input-bangla min-h-[60px]" />
+              </>}
               <button type="button" onClick={addFaq} className="flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/20"><Plus className="h-4 w-4" /> FAQ যোগ করুন</button>
             </div>
           </div>
