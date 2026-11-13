@@ -69,40 +69,93 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, message: 'Empty text is not allowed in a translation batch' }, { status: 400 });
     }
 
-    const endpoint = (process.env.LIBRETRANSLATE_URL || 'https://translate.astian.org/translate').trim();
+    const configuredEndpoints = [
+      ...(process.env.LIBRETRANSLATE_URLS || '').split(','),
+      process.env.LIBRETRANSLATE_URL || '',
+    ].map((value) => value.trim()).filter(Boolean);
+    const defaultEndpoints = [
+      'https://translate.astian.org/translate',
+      'https://translate.flossboxin.org.in/translate',
+      'https://translate.argosopentech.com/translate',
+    ];
+    const normalizeEndpoint = (value: string) => {
+      const url = new URL(value);
+      url.search = '';
+      url.hash = '';
+      if (!url.pathname.replace(/\\/+$/, '').endsWith('/translate')) {
+        url.pathname = `${url.pathname.replace(/\\/+$/, '')}/translate`;
+      }
+      return url.toString();
+    };
+    const configured = configuredEndpoints.map(normalizeEndpoint);
+    const endpoints = [...new Set([...configured, ...defaultEndpoints])];
     const payload: Record<string, unknown> = {
       q: cleanTexts,
       source: 'en',
       target,
       format: 'text',
     };
-    if (process.env.LIBRETRANSLATE_API_KEY) payload.api_key = process.env.LIBRETRANSLATE_API_KEY;
+    const providerFailures: Array<{ host: string; reason: string }> = [];
+    let translations: string[] | null = null;
 
     stage = 'libretranslate_fetch';
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(15000),
-      cache: 'no-store',
-    });
-    if (!response.ok) {
-      return NextResponse.json({ ok: false, message: 'Free translation server is temporarily unavailable. Please try again.' }, { status: 502 });
+    for (let index = 0; index < endpoints.length; index += 1) {
+      const endpoint = endpoints[index];
+      const host = new URL(endpoint).host;
+      const requestPayload = { ...payload };
+      // Never send a configured provider key to unrelated public mirrors.
+      if (index === 0 && process.env.LIBRETRANSLATE_API_KEY) {
+        requestPayload.api_key = process.env.LIBRETRANSLATE_API_KEY;
+      }
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(requestPayload),
+          signal: AbortSignal.timeout(3500),
+          cache: 'no-store',
+        });
+        if (!response.ok) {
+          providerFailures.push({ host, reason: `http_${response.status}` });
+          continue;
+        }
+
+        const result = await response.json();
+        const values = Array.isArray(result?.translatedText)
+          ? result.translatedText
+          : [result?.translatedText];
+        if (values.length !== cleanTexts.length || values.some((value: unknown) => typeof value !== 'string' || !value.trim())) {
+          providerFailures.push({ host, reason: 'invalid_response' });
+          continue;
+        }
+
+        translations = values as string[];
+        break;
+      } catch (providerError) {
+        const reason = providerError instanceof Error
+          ? providerError.name === 'TimeoutError' || providerError.name === 'AbortError'
+            ? 'timeout'
+            : providerError.name || 'fetch_error'
+          : 'unknown_error';
+        providerFailures.push({ host, reason });
+      }
     }
 
-    stage = 'libretranslate_response_parse';
-    const result = await response.json();
-    const translated = Array.isArray(result)
-      ? result.map((item: any) => item?.translatedText)
-      : Array.isArray(result?.translatedText)
-        ? result.translatedText
-        : [result?.translatedText];
-    if (translated.length !== cleanTexts.length || translated.some((value: unknown) => typeof value !== 'string' || !value.trim())) {
-      return NextResponse.json({ ok: false, message: 'Translation server returned an incomplete result' }, { status: 502 });
+    if (!translations) {
+      console.error('[translate-product-content] All translation providers failed', {
+        stage,
+        providers: providerFailures,
+      });
+      return NextResponse.json({
+        ok: false,
+        code: 'translation_providers_unavailable',
+        message: 'All free translation servers are temporarily unavailable. Please try again later.',
+      }, { status: 502 });
     }
 
     stage = 'complete';
-    return NextResponse.json({ ok: true, translations: translated });
+    return NextResponse.json({ ok: true, translations });
   } catch (error) {
     const timedOut = error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError');
     const errorName = error instanceof Error ? error.name : 'UnknownError';
