@@ -61,18 +61,43 @@ export function MultilingualFields({
       for (const target of targets) {
         const missingFields = sourceFields.filter((field) => !String(nextValue?.[target]?.[field.key] || '').trim());
         if (!missingFields.length) continue;
-        const response = await fetch('/api/admin/translate-product-content', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
-          body: JSON.stringify({ target, texts: missingFields.map((field) => String(source[field.key])) }),
-          cache: 'no-store',
-        });
-        const result = await response.json();
-        if (!response.ok || !result.ok || !Array.isArray(result.translations)) {
-          throw new Error(result.message || 'অনুবাদ করা যায়নি। পরে আবার চেষ্টা করুন।');
+        // The translation API accepts at most 30 strings and 12,000 characters per request.
+        // Split large sections into safe batches so Animated Landing sections can translate fully.
+        const batches: typeof missingFields[] = [];
+        let batch: typeof missingFields = [];
+        let batchLength = 0;
+        for (const field of missingFields) {
+          const textValue = String(source[field.key]);
+          if (textValue.length > 4000) {
+            throw new Error(`${field.label}: ৪,০০০ অক্ষরের বেশি হওয়ায় অনুবাদ করা যাচ্ছে না।`);
+          }
+          if (batch.length >= 30 || (batch.length > 0 && batchLength + textValue.length > 12000)) {
+            batches.push(batch);
+            batch = [];
+            batchLength = 0;
+          }
+          batch.push(field);
+          batchLength += textValue.length;
         }
+        if (batch.length) batches.push(batch);
+
         const translatedFields: Record<string, string> = {};
-        missingFields.forEach((field, index) => { translatedFields[field.key] = result.translations[index]; });
+        for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
+          const currentBatch = batches[batchIndex];
+          const response = await fetch('/api/admin/translate-product-content', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+            body: JSON.stringify({ target, texts: currentBatch.map((field) => String(source[field.key])) }),
+            cache: 'no-store',
+          });
+          const result = await response.json();
+          if (!response.ok || !result.ok || !Array.isArray(result.translations) || result.translations.length !== currentBatch.length) {
+            throw new Error(result.message || `অনুবাদ করা যায়নি। Batch ${batchIndex + 1}/${batches.length} ব্যর্থ হয়েছে।`);
+          }
+          currentBatch.forEach((field, index) => {
+            translatedFields[field.key] = result.translations[index];
+          });
+        }
         nextValue = { ...nextValue, [target]: { ...(nextValue[target] || {}), ...translatedFields } };
       }
       onChange(nextValue);

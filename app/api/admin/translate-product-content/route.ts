@@ -100,7 +100,8 @@ export async function POST(request: Request) {
     const providerFailures: Array<{ host: string; reason: string }> = [];
 
     stage = 'libretranslate_fetch';
-    const attempts = await Promise.all(endpoints.map(async (endpoint) => {
+    let translations: string[] | null = null;
+    for (const endpoint of endpoints) {
       const host = new URL(endpoint).host;
       const requestPayload = { ...payload };
       // Only attach a configured key to the explicitly configured primary URL.
@@ -116,11 +117,12 @@ export async function POST(request: Request) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: JSON.stringify(requestPayload),
-          signal: AbortSignal.timeout(4500),
+          signal: AbortSignal.timeout(3000),
           cache: 'no-store',
         });
         if (!response.ok) {
-          return { host, reason: `http_${response.status}`, translations: null as string[] | null };
+          providerFailures.push({ host, reason: `http_${response.status}` });
+          continue;
         }
 
         const result = await response.json();
@@ -128,24 +130,56 @@ export async function POST(request: Request) {
           ? result.translatedText
           : [result?.translatedText];
         if (values.length !== cleanTexts.length || values.some((value: unknown) => typeof value !== 'string' || !value.trim())) {
-          return { host, reason: 'invalid_response', translations: null as string[] | null };
+          providerFailures.push({ host, reason: 'invalid_response' });
+          continue;
         }
-        return { host, reason: 'ok', translations: values as string[] };
+        translations = values as string[];
+        break;
       } catch (providerError) {
         const reason = providerError instanceof Error
           ? providerError.name === 'TimeoutError' || providerError.name === 'AbortError'
             ? 'timeout'
             : providerError.name || 'fetch_error'
           : 'unknown_error';
-        return { host, reason, translations: null as string[] | null };
+        providerFailures.push({ host, reason });
       }
-    }));
+    }
 
-    const successful = attempts.find((attempt) => attempt.translations !== null);
-    attempts.filter((attempt) => attempt.translations === null).forEach(({ host, reason }) => {
-      providerFailures.push({ host, reason });
-    });
-    let translations = successful?.translations || null;
+    // Google Translate's public web endpoint is a best-effort fallback.
+    // It is unofficial and may be rate-limited; no API key is required.
+    if (!translations) {
+      stage = 'google_translate_fallback';
+      const host = 'translate.googleapis.com';
+      try {
+        const translated = await Promise.all(cleanTexts.map(async (textValue) => {
+          const params = new URLSearchParams({
+            client: 'gtx',
+            sl: 'en',
+            tl: target,
+            dt: 't',
+            q: textValue,
+          });
+          const response = await fetch(`https://translate.googleapis.com/translate_a/single?${params.toString()}`, {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+            signal: AbortSignal.timeout(4500),
+            cache: 'no-store',
+          });
+          if (!response.ok) throw new Error(`Google Translate HTTP ${response.status}`);
+          const result = await response.json();
+          const segments = Array.isArray(result?.[0]) ? result[0] : [];
+          const value = segments.map((segment: unknown) =>
+            Array.isArray(segment) && typeof segment[0] === 'string' ? segment[0] : ''
+          ).join('');
+          if (!value.trim()) throw new Error('Google Translate returned no translation');
+          return value;
+        }));
+        if (translated.length === cleanTexts.length) translations = translated;
+      } catch (googleError) {
+        const reason = googleError instanceof Error ? googleError.message : 'unknown_error';
+        providerFailures.push({ host, reason });
+      }
+    }
 
     // MyMemory is a separate fallback API. Its GET endpoint accepts at most
     // 500 UTF-8 bytes per query, so split long text at word boundaries.
