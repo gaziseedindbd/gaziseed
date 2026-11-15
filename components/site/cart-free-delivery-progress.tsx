@@ -155,9 +155,9 @@ export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
               ? t('ফ্রি ডেলিভারি আনলক হয়েছে!', 'Free delivery unlocked!', 'मुफ्त डिलीवरी मिल गई!')
               : freeDeliveryRemaining !== null
                 ? t(
-                    \`আর \${formatPrice(freeDeliveryRemaining, country)} যোগ করুন ফ্রি ডেলিভারির জন্য\`,
-                    \`Add \${formatPrice(freeDeliveryRemaining, country)} more for free delivery\`,
-                    \`मुफ्त डिलीवरी के लिए \${formatPrice(freeDeliveryRemaining, country)} और जोड़ें\`,
+                    `আর ${formatPrice(freeDeliveryRemaining, country)} যোগ করুন ফ্রি ডেলিভারির জন্য`,
+                    `Add ${formatPrice(freeDeliveryRemaining, country)} more for free delivery`,
+                    `मुफ्त डिलीवरी के लिए ${formatPrice(freeDeliveryRemaining, country)} और जोड़ें`,
                   )
                 : t('ডেলিভারি চার্জ প্রযোজ্য', 'Delivery charge applies', 'डिलीवरी शुल्क लागू है')}
         </span>
@@ -178,7 +178,7 @@ export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
       >
         <div
           className="h-full rounded-full bg-primary transition-[width] duration-300"
-          style={{ width: \`\${freeDeliveryPercent}%\` }}
+          style={{ width: `${freeDeliveryPercent}%` }}
         />
       </div>
     </div>
