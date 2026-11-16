@@ -218,7 +218,17 @@ export default function CheckoutPage() {
     const pendingOrderId = localStorage.getItem('cashfree_pending_order_id');
     const pendingPaymentIntentId = localStorage.getItem('cashfree_pending_payment_intent_id');
     const pendingPaymentMethod = localStorage.getItem('cashfree_pending_payment_method') || 'online';
-    const cashfreeOrderId = queryOrderId || (returnedFromCashfree ? pendingOrderId : null);
+
+    // Never run payment verification on a normal checkout visit just because
+    // a previous Cashfree attempt left pending IDs in localStorage.
+    if (!returnedFromCashfree && !queryOrderId) {
+      localStorage.removeItem('cashfree_pending_order_id');
+      localStorage.removeItem('cashfree_pending_payment_intent_id');
+      localStorage.removeItem('cashfree_pending_payment_method');
+      return;
+    }
+
+    const cashfreeOrderId = queryOrderId || pendingOrderId;
     if (!cashfreeOrderId && !pendingPaymentIntentId) return;
 
     let active = true;
