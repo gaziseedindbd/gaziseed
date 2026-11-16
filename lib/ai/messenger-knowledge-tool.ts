@@ -300,6 +300,14 @@ function hasKnowledgeIntent(text: string): boolean {
   );
 }
 
+/**
+ * Recognize product-field questions even when customers phrase them without
+ * one of the older FAQ keywords (for example, packet seed-count questions).
+ */
+export function isMessengerProductKnowledgeIntent(text: string): boolean {
+  return hasKnowledgeIntent(text) || isSimpleProductFieldQuestion(text);
+}
+
 function effectivePrice(product: MessengerProduct): number | null {
   const prices = [
     product.offer_price,
@@ -904,7 +912,7 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
     };
   }
 
-  if (!hasKnowledgeIntent(text)) {
+  if (!isMessengerProductKnowledgeIntent(text)) {
     return { handled: false };
   }
 
