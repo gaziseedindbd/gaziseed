@@ -233,6 +233,15 @@ export default function CheckoutPage() {
       try {
         const isCodReturn = pendingPaymentMethod === 'cod' && Boolean(pendingPaymentIntentId);
 
+        // Cashfree can return to checkout while Supabase is still restoring the
+        // persisted browser session. Hydrate it before invoking the protected
+        // COD completion function, otherwise a paid order may be completed by
+        // the webhook while this client receives a misleading 401/403.
+        const { data: authState } = await supabase.auth.getSession();
+        if (authState.session?.expires_at && authState.session.expires_at <= Math.floor(Date.now() / 1000) + 60) {
+          await supabase.auth.refreshSession();
+        }
+
         for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
           if (!active) return;
 
