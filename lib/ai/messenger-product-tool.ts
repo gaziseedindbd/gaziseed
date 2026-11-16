@@ -182,6 +182,17 @@ const TRANSACTIONAL_QUERY_STOP_WORDS = new Set([
  */
 export function normalizeMessengerProductQuery(value: string): string {
   const term = normalizeSearchTerm(value);
+  // Normalize common Banglish seed names and remove conversational filler.
+  if (/\b(?:morich|lonka|lanka|bij|beej|apnader|kache|ache|ase|lagate|chai)\b/i.test(term)) {
+    const transliterated = term
+      .replace(/\bmorich\b/gi, 'chili')
+      .replace(/\b(?:lonka|lanka)\b/gi, 'lanka')
+      .replace(/\b(?:bij|beej)\b/gi, ' ')
+      .replace(/\b(?:apnader|kache|ki|ache|ase|er|lagate|chai|ami|apni)\b/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (transliterated) return normalizeSearchTerm(transliterated);
+  }
   if (!/(दाम|कीमत|मूल्य|स्टॉक|दाम|price|cost|stock|available|দাম|মূল্য|স্টক)/i.test(term)) {
     return term;
   }
