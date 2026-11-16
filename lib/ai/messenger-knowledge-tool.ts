@@ -168,7 +168,8 @@ function isSimpleProductFieldQuestion(text: string): boolean {
     return false;
   }
 
-  return /(ब्रांड|कंपनी|उत्पत्ति|कहां का|कहाँ का|किस्म|बीज का प्रकार|मौसम|अंकुरण|कितने दिन|दूरी|गहराई|धूप|सूरज की रोशनी|पानी|मिट्टी|पैकेट|कितने बीज|उपज|कटाई|भंडारण|brand|origin|variety|बীজের ধরন|seed type|season|মৌসুম|অঙ্কুর|germination|দূরত্ব|spacing|গভীরতা|depth|রোদ|সূর্যালোক|sunlight|পানি|জল|water|মাটি|soil|প্যাকেট|packet|ফলন|yield|harvest|সংরক্ষণ|storage)/i.test(normalized);
+  return (/(ब्रांड|कंपनी|उत्पत्ति|कहां का|कहाँ का|किस्म|बीज का प्रकार|मौसम|अंकुरण|कितने दिन|कितने बीज|कितने दाने|दूरी|गहराई|धूप|सूरज की रोशनी|पानी|मिट्टी|पैकेट|उपज|कटाई|भंडारण|brand|origin|variety|seed type|seed quantity|how many seeds|seeds per packet|packet|quantity|বীজের ধরন|মৌসুম|অঙ্কুর|germination|দূরত্ব|spacing|গভীরতা|depth|রোদ|সূর্যালোক|sunlight|পানি|জল|water|মাটি|soil|প্যাকেট|ফলন|yield|harvest|সংরক্ষণ|storage)/i.test(normalized) ||
+    /(?:কত|কয়|কয়|কয়টা|কতটি|কতগুলো).{0,24}(?:বীজ|দানা|প্যাকেট|গ্রাম|দিন)|(?:বীজ|দানা|প্যাকেট|গ্রাম).{0,24}(?:কত|কয়|কয়)|\b(?:how many|how much).{0,24}\b(?:seeds?|packets?|grams?)\b|\b(?:seeds?|packets?)\b.{0,24}\b(?:how many|quantity|count)\b|कितने.{0,16}(?:बीज|दाने|पैकेट)|(?:बीज|दाने|पैकेट).{0,16}कितने/i.test(normalized));
 }
 
 export function isMessengerExplicitProductKnowledgeQuery(
@@ -273,6 +274,12 @@ function tokenize(value: string): string[] {
       candidates.push(normalized.slice(0, -2));
     }
 
+    // Bengali possessive/genitive suffixes can also be a standalone final
+    // "র" (e.g. "লঙ্কার" -> "লঙ্কা", "রানির" -> "রানি").
+    if (normalized.length >= 4 && normalized.endsWith('র')) {
+      candidates.push(normalized.slice(0, -1));
+    }
+
     if (normalized.length >= 5 && normalized.endsWith('দের')) {
       candidates.push(normalized.slice(0, -3));
     }
@@ -298,6 +305,14 @@ function hasKnowledgeIntent(text: string): boolean {
   return KNOWLEDGE_KEYWORDS.some((keyword) =>
     normalized.includes(keyword.toLocaleLowerCase()),
   );
+}
+
+/**
+ * Recognize product-field questions even when customers phrase them without
+ * one of the older FAQ keywords (for example, packet seed-count questions).
+ */
+export function isMessengerProductKnowledgeIntent(text: string): boolean {
+  return hasKnowledgeIntent(text) || isSimpleProductFieldQuestion(text);
 }
 
 function effectivePrice(product: MessengerProduct): number | null {
@@ -904,7 +919,7 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
     };
   }
 
-  if (!hasKnowledgeIntent(text)) {
+  if (!isMessengerProductKnowledgeIntent(text)) {
     return { handled: false };
   }
 

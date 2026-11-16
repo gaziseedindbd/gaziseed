@@ -50,6 +50,7 @@ import {
   isMessengerExplicitProductKnowledgeQuery,
   isBangladeshPaymentMethodQuestion,
   isMessengerProductSpecificKnowledgeQuery,
+  isMessengerProductKnowledgeIntent,
 } from '../lib/ai/messenger-knowledge-tool';
 import {
   getMessengerHumanSupportQueueState,
@@ -796,4 +797,29 @@ test('detects explicit country in Bengali seed catalog requests', () => {
     detectExplicitMessengerCountry('বাংলাদেশে এবং ভারতে কী কী বীজ পাওয়া যাচ্ছে?'),
     null,
   );
+});
+
+
+test('matches Bengali possessive product names in seed-count questions', () => {
+  const raniLanka = {
+    name_bn: 'হাইব্রিড মরিচ, রানি লঙ্কা (বাণিজ্যিক চাষ)',
+    name_en: 'Hybrid Chili Pepper – Rani Lanka (Commercial Cultivation)',
+    slug: 'hybrid-chili-rani-lanka',
+  };
+  assert.equal(
+    isMessengerExplicitProductKnowledgeQuery('রানি লঙ্কার এক প্যাকেটে কয়টি বীজ আছে?', raniLanka),
+    true,
+  );
+});
+
+test('recognizes natural seed packet quantity questions as product knowledge intent', () => {
+  assert.equal(isMessengerProductKnowledgeIntent('রানি লঙ্কার এক প্যাকেটে কয়টি বীজ আছে?'), true);
+  assert.equal(isMessengerProductKnowledgeIntent('Rani Lanka packet e koyta bij ache?'), true);
+  assert.equal(isMessengerProductKnowledgeIntent('इस पैकेट में कितने बीज हैं?'), true);
+  assert.equal(isMessengerProductKnowledgeIntent('What is the packet seed quantity?'), true);
+  assert.equal(isMessengerProductKnowledgeIntent('etar koyta bij ache?'), true);
+  assert.equal(isMessengerProductKnowledgeIntent('Rani Lanka packet e koita seed thake?'), true);
+  assert.equal(isMessengerProductKnowledgeIntent('How many seeds are there in one packet?'), true);
+  assert.equal(isMessengerProductKnowledgeIntent('इसमें कितने दाने हैं?'), true);
+  assert.equal(isMessengerProductKnowledgeIntent('আজ আবহাওয়া কেমন?'), false);
 });
