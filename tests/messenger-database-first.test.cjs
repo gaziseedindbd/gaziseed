@@ -138,3 +138,15 @@ test('Messenger AI prompt understands context and formats concise professional r
   assert.match(route, /Avoid repeating facts already stated in the conversation/);
   assert.match(route, /Never invent claims/);
 });
+
+
+test('Banglish seed requests normalize common chili and rani lonka product terms', () => {
+  const intents = fs.readFileSync(path.join(root, 'lib/ai/messenger-intents.ts'), 'utf8');
+  const products = fs.readFileSync(path.join(root, 'lib/ai/messenger-product-tool.ts'), 'utf8');
+  assert.match(intents, /apnader/);
+  assert.match(intents, /morich/);
+  assert.match(intents, /lonka/);
+  assert.match(products, /morich\|lonka\|lanka\|bij\|beej/);
+  assert.match(products, /'chili'/);
+  assert.match(products, /'lanka'/);
+});
