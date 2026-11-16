@@ -153,6 +153,9 @@ test('Banglish seed requests normalize common chili and rani lonka product terms
   assert.match(products, /morich\|lonka\|lanka\|bij\|beej/);
   assert.match(products, /'chili'/);
   assert.match(products, /'lanka'/);
+  assert.ok(products.includes(".replace(/\\bmorich\\b/gi, 'chili')"));
+  assert.ok(products.includes(".replace(/\\b(?:lonka|lanka)\\b/gi, 'lanka')"));
+  assert.ok(products.includes(".replace(/[^\\p{L}\\p{M}\\p{N}\\s]/gu, ' ')"));
   assert.ok(products.includes(".replace(/রানি/g, 'rani')"));
   assert.ok(products.includes(".replace(/লঙ্কা|লংকা/g, 'lanka')"));
   assert.match(products, /বীজের\?\\|লাগাতে\|চাই/);
