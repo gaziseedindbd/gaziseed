@@ -182,22 +182,29 @@ const TRANSACTIONAL_QUERY_STOP_WORDS = new Set([
  */
 export function normalizeMessengerProductQuery(value: string): string {
   const term = normalizeSearchTerm(value);
-  // Normalize common Banglish seed names and remove conversational filler.
-  if (/\b(?:morich|lonka|lanka|bij|beej|apnader|kache|ache|ase|lagate|chai)\b/i.test(term)) {
-    const transliterated = term
-      .replace(/\bmorich\b/gi, 'chili')
-      .replace(/\b(?:lonka|lanka)\b/gi, 'lanka')
-      .replace(/\b(?:bij|beej)\b/gi, ' ')
-      .replace(/\b(?:apnader|kache|ki|ache|ase|er|lagate|chai|ami|apni)\b/gi, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    if (transliterated) return normalizeSearchTerm(transliterated);
+  // Normalize both Latin-script Banglish and Bengali-script product phrases.
+  // Intent normalization may already have converted "rani lonka bij lagate chai"
+  // into "রানি লঙ্কা বীজ লাগাতে চাই" before this product lookup runs.
+  const normalizedSeedPhrase = term
+    .replace(/\\bmorich\\b/gi, 'chili')
+    .replace(/\\b(?:lonka|lanka)\\b/gi, 'lanka')
+    .replace(/\\b(?:bij|beej)\\b/gi, ' ')
+    .replace(/\\b(?:apnader|kache|ki|ache|ase|er|lagate|chai|ami|apni)\\b/gi, ' ')
+    .replace(/মরিচ/g, 'chili')
+    .replace(/লঙ্কা|লংকা/g, 'lanka')
+    .replace(/রানি/g, 'rani')
+    .replace(/বীজের?|লাগাতে|চাই|আছে|কি|কী|এর|আপনাদের|কাছে/g, ' ')
+    .replace(/\\s+/g, ' ')
+    .trim();
+  const hasSeedPhrase = /(?:\\b(?:morich|lonka|lanka|bij|beej|apnader|kache|ache|ase|lagate|chai)\\b|মরিচ|লঙ্কা|লংকা|রানি|বীজ|লাগাতে)/i.test(term);
+  if (hasSeedPhrase && normalizedSeedPhrase) {
+    return normalizeSearchTerm(normalizedSeedPhrase);
   }
   if (!/(दाम|कीमत|मूल्य|स्टॉक|दाम|price|cost|stock|available|দাম|মূল্য|স্টক)/i.test(term)) {
     return term;
   }
 
-  const tokens = term.match(/[A-Za-z0-9\u0900-\u09FF]+/g) || [];
+  const tokens = term.match(/[A-Za-z0-9\\u0900-\\u09FF]+/g) || [];
   const productTokens = tokens
     .filter((token) => !TRANSACTIONAL_QUERY_STOP_WORDS.has(token.toLocaleLowerCase()))
     .map((token) => token.toLocaleLowerCase() === 'বীজের' ? 'বীজ' : token);
