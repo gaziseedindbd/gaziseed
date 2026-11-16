@@ -2,6 +2,7 @@ const BANGLISH_INTENT_ALIASES: Array<[RegExp, string]> = [
   [/\bami\b/g, 'আমি'], [/\bamake\b/g, 'আমাকে'], [/\bamar\b/g, 'আমার'],
   [/\bamader\b/g, 'আমাদের'], [/\bapni\b/g, 'আপনি'], [/\bapnar\b/g, 'আপনার'],
   [/\bkoto\b/g, 'কত'], [/\bkoyta\b/g, 'কয়টা'], [/\b(?:daam|dam)\b/g, 'দাম'],
+  [/\\b(?:koita|koyti)\\b/g, 'কয়টি'], [/\\b(?:koto\\s+gula|koy\\s+gula)\\b/g, 'কতগুলো'],
   [/\b(?:ache|ase)\b/g, 'আছে'], [/\b(?:nai|naie|nei)\b/g, 'নেই'],
   [/\b(?:chaie|chai|chay)\b/g, 'চাই'], [/\b(?:mati|matti)\b/g, 'মাটি'],
   [/\bpani\b/g, 'পানি'], [/\bsar\b/g, 'সার'], [/\bbij\b/g, 'বীজ'],
@@ -139,7 +140,7 @@ export function isMessengerSeedKnowledgeQuestion(text: string): boolean {
       normalized,
     );
   const hasQuestionOrAdviceIntent =
-    /(কীভাবে|কিভাবে|কী ভাবে|কি ভাবে|কী করে|কি করে|কখন|কতদিন|কত দিনে|কতটি|কয়টি|কয়টি|কতগুলো|কত গুলো|প্যাকেট|বীজের সংখ্যা|seed quantity|packet|অঙ্কুর|বপন|রোপণ|পরিচর্যা|মাটি|সার|পানি|জল|ব্র্যান্ড|জাত|variety|season|germination|sow|sowing|plant|planting|care|soil|fertilizer|water|watering|brand|origin|কোথাকার|উৎপত্তি|details|about|তথ্য|বিস্তারিত|कैसे|कब|कितने दिन|अंकुरण|बुवाई|रोपाई|देखभाल|मिट्टी|खाद|पानी|सिंचाई|ब्रांड|किस्म|मौसम|उत्पत्ति|जानकारी|विवरण)/i.test(
+    /(কীভাবে|কিভাবে|কী ভাবে|কি ভাবে|কী করে|কি করে|কখন|কতদিন|কত দিনে|কতটি|কয়টি|কয়টি|কতগুলো|কত গুলো|কত|কয়টা|দানা|প্যাকেট|বীজের সংখ্যা|seed quantity|how many seeds|seeds per packet|packet|অঙ্কুর|বপন|রোপণ|পরিচর্যা|মাটি|সার|পানি|জল|ব্র্যান্ড|জাত|variety|season|germination|sow|sowing|plant|planting|care|soil|fertilizer|water|watering|brand|origin|কোথাকার|উৎপত্তি|details|about|তথ্য|বিস্তারিত|कैसे|कब|कितने दिन|अंकुरण|बुवाई|रोपाई|देखभाल|मिट्टी|खाद|पानी|सिंचाई|ब्रांड|किस्म|मौसम|उत्पत्ति|जानकारी|विवरण)/i.test(
       normalized,
     );
 
