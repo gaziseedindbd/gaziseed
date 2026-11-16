@@ -108,7 +108,7 @@ function canonicalizeProductMatchText(value: string): string {
     // transactional words are removed, e.g. "Five-Color Chili Seeds" versus
     // "five color chili seeds".
     .replace(/[-_/]+/g, ' ')
-    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/[^\p{L}\p{M}\p{N}\s]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
