@@ -27,10 +27,25 @@ const HINDI_SEARCH_ALIASES: Array<[string, string]> = [
   ['पैकेट', 'প্যাকেট'], ['बीज का प्रकार', 'বীজের ধরন'],
 ];
 
+const ROMAN_HINDI_SEARCH_ALIASES: Array<[RegExp, string]> = [
+  [/\b(?:hari|green)\s+mirch\b/g, 'সবুজ মরিচ'],
+  [/\b(?:mirchi|mirch)\b/g, 'মরিচ'],
+  [/\bchilli?\b/g, 'মরিচ'],
+  [/\bpackets?\b/g, 'প্যাকেট'],
+  [/\b(?:chahiye|chahie|chaahiye)\b/g, 'চাই'],
+  [/\bmujhe\b/g, 'আমাকে'],
+  [/\bbhi\b/g, 'ও'],
+  [/\baur\b/g, 'আর'],
+  [/\bek\b/g, 'এক'],
+];
+
 export function normalizeMessengerHindiSearchText(text: string): string {
   let normalized = text.toLocaleLowerCase();
   for (const [source, replacement] of HINDI_SEARCH_ALIASES) {
     normalized = normalized.replaceAll(source, replacement);
+  }
+  for (const [pattern, replacement] of ROMAN_HINDI_SEARCH_ALIASES) {
+    normalized = normalized.replace(pattern, replacement);
   }
   return normalized;
 }
@@ -89,6 +104,16 @@ export function isProductAvailabilityQuestion(text: string): boolean {
   );
 }
 
+export function isMessengerSpecificProductRequest(text: string): boolean {
+  const normalized = normalizeMessengerIntentText(text);
+  const hasPurchaseLanguage =
+    /(?:\b(?:want|need|buy|order|chahiye)\b|চাই|चाहिए|मुझे.*(?:चाहिए|लेना)|নিতে চাই|কিনতে চাই)/i.test(normalized);
+  const hasProductCue =
+    /(?:\b(?:seed|seeds|packet|packets|product|item)\b|বীজ|পণ্য|প্রোডাক্ট|মরিচ|मिर्च|मिर्ची)/i.test(normalized);
+
+  return hasPurchaseLanguage && hasProductCue;
+}
+
 function isEnglishSeedCatalogPhrase(normalized: string): boolean {
   // Cover natural English catalog requests, not only the exact phrase
   // "What seeds are available?". Keep instructional questions such as
@@ -105,6 +130,7 @@ export function isProductCatalogRequest(text: string): boolean {
 
   return (
     isOtherProductRequest(normalized) ||
+    isMessengerSpecificProductRequest(normalized) ||
     isProductAvailabilityQuestion(normalized) ||
     isEnglishSeedCatalogPhrase(normalized) ||
     /(products?|product list|catalog|what seeds|which seeds|available seeds|seeds? available|seeds? in stock|কি কি প্রোডাক্ট|কী কী প্রোডাক্ট|কি কি পণ্য|কী কী পণ্য|পণ্যগুলো|পণ্য কী কী|কি কি আছে|কী কী আছে|বীজ.*(?:তালিকা|লিস্ট|পাওয়া যাচ্ছে|পাওয়া যাচ্ছে|উপলব্ধ)|(?:তালিকা|লিস্ট).*(?:বীজ|পণ্য|প্রোডাক্ট)|পণ্যের নাম.*(?:তালিকা|দিন|দেখান)|available products|what products|what do you have|তোমাদের কাছে|আপনাদের কাছে|দাম|price|স্টক|stock|available|উপলব্ধ|कीमत|मूल्य|दाम|स्टॉक|उपलब्ध|उत्पाद|प्रोडक्ट)/i.test(

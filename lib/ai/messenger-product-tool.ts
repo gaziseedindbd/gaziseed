@@ -173,6 +173,9 @@ const TRANSACTIONAL_QUERY_STOP_WORDS = new Set([
   'price', 'cost', 'stock', 'available', 'availability', 'how', 'much',
   'what', 'is', 'are', 'the', 'of', 'and', 'in', 'per', 'packet', 'pack',
   'please', 'tell', 'me',
+  'मुझे', 'मुझको', 'चाहिए', 'तो', 'का', 'की', 'के', 'और', 'भी',
+  'पैकेट', 'पैकेटों', 'एक', 'करना', 'है', 'हैं',
+  'আমাকে', 'চাই', 'ও', 'আর', 'প্যাকেট', 'to', 'ka',
   'दाम', 'कीमत', 'मूल्य', 'स्टॉक', 'कितना', 'कितनी', 'कितने', 'है', 'का', 'की', 'के', 'और', 'बताइए',
 ]);
 
@@ -182,7 +185,7 @@ const TRANSACTIONAL_QUERY_STOP_WORDS = new Set([
  */
 export function normalizeMessengerProductQuery(value: string): string {
   const term = normalizeSearchTerm(value);
-  if (!/(दाम|कीमत|मूल्य|स्टॉक|दाम|price|cost|stock|available|দাম|মূল্য|স্টক)/i.test(term)) {
+  if (!/(दाम|कीमत|मूल्य|स्टॉक|price|cost|stock|available|দাম|মূল্য|স্টক|मुझे|चाहिए|पैकेट|mirchi|mirch|chilli?|মরিচ|প্যাকেট|চাই)/i.test(term)) {
     return term;
   }
 

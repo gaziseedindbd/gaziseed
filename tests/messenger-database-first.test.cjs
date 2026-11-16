@@ -52,6 +52,14 @@ test('verified website/product knowledge and published CMS lookup run before gen
   assert.match(route, /ai_call_skipped: true/);
 });
 
+test('fresh Roman-Hindi product requests interrupt stale pending order steps without deleting the suspended order', () => {
+  assert.match(route, /isMessengerSpecificProductRequest\(normalizedActionText\)/);
+  assert.match(route, /freshProductBrowseIntent/);
+  assert.match(route, /suspended_messenger_order:\s*pendingOrderBeforeInterrupt/);
+  assert.match(route, /suspended_messenger_product:/);
+  assert.match(route, /last_messenger_product:\s*null/);
+});
+
 test('database lookup errors never fall through to a speculative AI response', () => {
   assert.match(route, /database_lookup_failed:\s*true/);
   assert.match(route, /if \(cmsKnowledge\.lookupFailed && !cmsKnowledge\.handled\)/);
