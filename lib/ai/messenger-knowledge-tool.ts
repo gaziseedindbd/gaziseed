@@ -274,6 +274,12 @@ function tokenize(value: string): string[] {
       candidates.push(normalized.slice(0, -2));
     }
 
+    // Bengali possessive/genitive suffixes can also be a standalone final
+    // "র" (e.g. "লঙ্কার" -> "লঙ্কা", "রানির" -> "রানি").
+    if (normalized.length >= 4 && normalized.endsWith('র')) {
+      candidates.push(normalized.slice(0, -1));
+    }
+
     if (normalized.length >= 5 && normalized.endsWith('দের')) {
       candidates.push(normalized.slice(0, -3));
     }
