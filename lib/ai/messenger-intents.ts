@@ -109,7 +109,7 @@ export function isMessengerSpecificProductRequest(text: string): boolean {
   const hasPurchaseLanguage =
     /(?:\b(?:want|need|buy|order|chahiye)\b|চাই|चाहिए|मुझे.*(?:चाहिए|लेना)|নিতে চাই|কিনতে চাই)/i.test(normalized);
   const hasProductCue =
-    /(?:\b(?:seed|seeds|packet|packets|product|item)\b|বীজ|প্যাকেট|মরিচ|मिर्च|मिर्ची)/i.test(normalized);
+    /(?:\b(?:seed|seeds|packet|packets|product|item)\b|বীজ|পণ্য|প্রোডাক্ট|মরিচ|मिर्च|मिर्ची)/i.test(normalized);
 
   return hasPurchaseLanguage && hasProductCue;
 }
