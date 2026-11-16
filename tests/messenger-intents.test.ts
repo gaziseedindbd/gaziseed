@@ -17,6 +17,7 @@ import {
 
 import {
   isMessengerAddAnotherProductRequest,
+  isMessengerSpecificProductRequest,
   isMessengerCheckoutRequest,
   isMessengerCustomerProfileRequest,
   isMessengerOrderHistoryRequest,
@@ -43,6 +44,7 @@ import {
   isTrustedMessengerProductMatch,
   normalizeMessengerSearchSlug,
   normalizeMessengerSearchTerm,
+  normalizeMessengerProductQuery,
   serializeMessengerProducts,
 } from '../lib/ai/messenger-product-tool';
 import {
@@ -202,6 +204,21 @@ test('recognizes Romanized Bangla purchase intent without affecting normal brows
   assert.equal(isMessengerOrderIntent('rose seed nite chai'), true);
   assert.equal(isMessengerOrderIntent('what products do you have'), false);
   assert.equal(isMessengerOrderIntent('how to plant rose seeds'), false);
+});
+
+test('recognizes Roman-Hindi named-product purchase requests without treating quantity replies as new products', () => {
+  const request = 'Mujhe to packet Mirchi Ka Bhi chahie';
+  assert.equal(normalizeMessengerIntentText(request), 'আমাকে to প্যাকেট মরিচ ka ও চাই');
+  assert.equal(isMessengerSpecificProductRequest(request), true);
+  assert.equal(isProductCatalogRequest(request), true);
+  assert.equal(isProductListRequest(request), false);
+  assert.equal(isMessengerSpecificProductRequest('2'), false);
+  assert.equal(isMessengerSpecificProductRequest('Mujhe chahiye'), false);
+});
+
+test('normalizes Roman-Hindi product terms and removes purchase filler from search queries', () => {
+  assert.equal(normalizeMessengerHindiSearchText('Mujhe Mirchi ka packet bhi chahiye'), 'আমাকে মরিচ ka প্যাকেট ও চাই');
+  assert.equal(normalizeMessengerProductQuery('Mujhe to packet Mirchi Ka Bhi chahie'), 'মরিচ');
 });
 
 test('recognizes common Messenger product spelling typos', () => {
