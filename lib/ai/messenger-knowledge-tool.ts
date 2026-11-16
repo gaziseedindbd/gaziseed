@@ -736,9 +736,30 @@ function buildFieldReply(
     const value = firstNonEmpty(product.soil_type);
     return value ? `${prefix}\n${line('🪴', labels.soil, value)}` : null;
   }
-  if (/(প্যাকেট|packet|কতটি বীজ|কত বীজ|seed quantity|पैकेट)/i.test(normalized)) {
-    const value = firstNonEmpty(product.packet_weight, product.seed_quantity);
-    return value ? `${prefix}\n${line('📦', labels.packet, value)}` : null;
+  if (/(প্যাকেট|packet|কতটি বীজ|কত বীজ|কতগুলো বীজ|কত গুলো বীজ|কতগুলি বীজ|কয়টি বীজ|কয়টি বীজ|কোটগুলো বীজ|কোট গুলো বীজ|বীজের সংখ্যা|seed quantity|seeds? per|पैकेट|कितने बीज)/i.test(normalized)) {
+    const packetWeight = firstNonEmpty(product.packet_weight);
+    const seedQuantity = firstNonEmpty(product.seed_quantity);
+    if (!packetWeight && !seedQuantity) return null;
+
+    if (language === 'English') {
+      return [
+        prefix,
+        packetWeight ? line('📦', 'Packet weight', packetWeight) : '',
+        seedQuantity ? line('🌱', 'Seed quantity', seedQuantity) : '',
+      ].filter(Boolean).join('\\n');
+    }
+    if (language === 'Hindi') {
+      return [
+        prefix,
+        packetWeight ? line('📦', 'पैकेट का वजन', packetWeight) : '',
+        seedQuantity ? line('🌱', 'बीजों की संख्या', seedQuantity) : '',
+      ].filter(Boolean).join('\\n');
+    }
+    return [
+      prefix,
+      packetWeight ? line('📦', 'প্যাকেটের ওজন', packetWeight) : '',
+      seedQuantity ? line('🌱', 'বীজের পরিমাণ', seedQuantity) : '',
+    ].filter(Boolean).join('\\n');
   }
   if (/(ফলন|yield|harvest|कटाई|उपज)/i.test(normalized)) {
     const value = firstNonEmpty(product.expected_yield, product.harvest_time);
@@ -932,6 +953,13 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
         ),
       };
     }
+  }
+
+  // A unique, country-scoped active product found by its explicit name can
+  // safely supply product facts even when fuzzy search labels it "similar".
+  // The full read below is constrained by id, country, and is_active.
+  if (!candidate && explicitlyMentionedProducts.length === 1) {
+    candidate = explicitlyMentionedProducts[0];
   }
 
   // Only reuse the previous product when the customer did not name another
