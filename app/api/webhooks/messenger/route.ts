@@ -66,6 +66,7 @@ import {
   isMessengerOrderResumeRequest,
   isMessengerOrderTrackingRequest,
   isOtherProductRequest,
+  isMessengerSpecificProductRequest,
   isProductCatalogRequest,
   isProductListRequest,
 } from '@/lib/ai/messenger-intents';
@@ -2047,7 +2048,8 @@ async function processMessengerEvent(event: MessengerEvent) {
   // Catalog/list requests must bypass website/CMS knowledge lookups: those lookups can fail and prematurely return a support fallback before the live products query runs.
   const freshProductBrowseIntent =
     isOtherProductRequest(normalizedActionText) ||
-    isProductListRequest(normalizedActionText);
+    isProductListRequest(normalizedActionText) ||
+    isMessengerSpecificProductRequest(normalizedActionText);
   const startsNewProductIntent = isProductCatalogRequest(normalizedActionText);
   const pendingOrderBeforeInterrupt = parsePendingMessengerOrder(
     conversation.metadata?.pending_messenger_order,
