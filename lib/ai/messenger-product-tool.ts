@@ -196,7 +196,7 @@ export function normalizeMessengerProductQuery(value: string): string {
     .replace(/বীজের?|লাগাতে|চাই|আছে|কি|কী|এর|আপনাদের|কাছে/g, ' ')
     .replace(/\\s+/g, ' ')
     .trim();
-  const hasSeedPhrase = /(?:\\b(?:morich|lonka|lanka|bij|beej|apnader|kache|ache|ase|lagate|chai)\\b|মরিচ|লঙ্কা|লংকা|রানি|বীজ|লাগাতে)/i.test(term);
+  const hasSeedPhrase = /(?:\\b(?:morich|lonka|lanka|bij|beej|apnader|kache|ache|ase|lagate|chai)\\b|মরিচ|লঙ্কা|লংকা|রানি)/i.test(term);
   if (hasSeedPhrase && normalizedSeedPhrase) {
     return normalizeSearchTerm(normalizedSeedPhrase);
   }
