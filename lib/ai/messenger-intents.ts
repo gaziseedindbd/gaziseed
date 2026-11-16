@@ -32,7 +32,7 @@ const ROMAN_HINDI_SEARCH_ALIASES: Array<[RegExp, string]> = [
   [/\b(?:mirchi|mirch)\b/g, 'মরিচ'],
   [/\bchilli?\b/g, 'মরিচ'],
   [/\bpackets?\b/g, 'প্যাকেট'],
-  [/\bchahiye\b/g, 'চাই'],
+  [/\b(?:chahiye|chahie|chaahiye)\b/g, 'চাই'],
   [/\bmujhe\b/g, 'আমাকে'],
   [/\bbhi\b/g, 'ও'],
   [/\baur\b/g, 'আর'],
