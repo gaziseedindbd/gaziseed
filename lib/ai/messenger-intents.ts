@@ -2,7 +2,7 @@ const BANGLISH_INTENT_ALIASES: Array<[RegExp, string]> = [
   [/\bami\b/g, 'আমি'], [/\bamake\b/g, 'আমাকে'], [/\bamar\b/g, 'আমার'],
   [/\bamader\b/g, 'আমাদের'], [/\bapni\b/g, 'আপনি'], [/\bapnar\b/g, 'আপনার'],
   [/\bkoto\b/g, 'কত'], [/\bkoyta\b/g, 'কয়টা'], [/\b(?:daam|dam)\b/g, 'দাম'],
-  [/\\b(?:koita|koyti)\\b/g, 'কয়টি'], [/\\b(?:koto\\s+gula|koy\\s+gula)\\b/g, 'কতগুলো'],
+  [/\b(?:koita|koyti)\b/g, 'কয়টি'], [/\b(?:koto\s+gula|koy\s+gula)\b/g, 'কতগুলো'],
   [/\b(?:ache|ase)\b/g, 'আছে'], [/\b(?:nai|naie|nei)\b/g, 'নেই'],
   [/\b(?:chaie|chai|chay)\b/g, 'চাই'], [/\b(?:mati|matti)\b/g, 'মাটি'],
   [/\bpani\b/g, 'পানি'], [/\bsar\b/g, 'সার'], [/\bbij\b/g, 'বীজ'],
