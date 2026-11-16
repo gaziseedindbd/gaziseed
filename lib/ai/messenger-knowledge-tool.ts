@@ -169,7 +169,7 @@ function isSimpleProductFieldQuestion(text: string): boolean {
   }
 
   return (/(ब्रांड|कंपनी|उत्पत्ति|कहां का|कहाँ का|किस्म|बीज का प्रकार|मौसम|अंकुरण|कितने दिन|कितने बीज|कितने दाने|दूरी|गहराई|धूप|सूरज की रोशनी|पानी|मिट्टी|पैकेट|उपज|कटाई|भंडारण|brand|origin|variety|seed type|seed quantity|how many seeds|seeds per packet|packet|quantity|বীজের ধরন|মৌসুম|অঙ্কুর|germination|দূরত্ব|spacing|গভীরতা|depth|রোদ|সূর্যালোক|sunlight|পানি|জল|water|মাটি|soil|প্যাকেট|ফলন|yield|harvest|সংরক্ষণ|storage)/i.test(normalized) ||
-    /(?:কত|কয়|কয়|কয়টা|কতটি|কতগুলো).{0,24}(?:বীজ|দানা|প্যাকেট|গ্রাম|দিন)|(?:বীজ|দানা|প্যাকেট|গ্রাম).{0,24}(?:কত|কয়|কয়)|\\b(?:how many|how much).{0,24}\\b(?:seeds?|packets?|grams?)\\b|\\b(?:seeds?|packets?)\\b.{0,24}\\b(?:how many|quantity|count)\\b|कितने.{0,16}(?:बीज|दाने|पैकेट)|(?:बीज|दाने|पैकेट).{0,16}कितने/i.test(normalized));
+    /(?:কত|কয়|কয়|কয়টা|কতটি|কতগুলো).{0,24}(?:বীজ|দানা|প্যাকেট|গ্রাম|দিন)|(?:বীজ|দানা|প্যাকেট|গ্রাম).{0,24}(?:কত|কয়|কয়)|\b(?:how many|how much).{0,24}\b(?:seeds?|packets?|grams?)\b|\b(?:seeds?|packets?)\b.{0,24}\b(?:how many|quantity|count)\b|कितने.{0,16}(?:बीज|दाने|पैकेट)|(?:बीज|दाने|पैकेट).{0,16}कितने/i.test(normalized));
 }
 
 export function isMessengerExplicitProductKnowledgeQuery(
