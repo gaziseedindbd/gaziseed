@@ -805,5 +805,9 @@ test('recognizes natural seed packet quantity questions as product knowledge int
   assert.equal(isMessengerProductKnowledgeIntent('Rani Lanka packet e koyta bij ache?'), true);
   assert.equal(isMessengerProductKnowledgeIntent('इस पैकेट में कितने बीज हैं?'), true);
   assert.equal(isMessengerProductKnowledgeIntent('What is the packet seed quantity?'), true);
+  assert.equal(isMessengerProductKnowledgeIntent('etar koyta bij ache?'), true);
+  assert.equal(isMessengerProductKnowledgeIntent('Rani Lanka packet e koita seed thake?'), true);
+  assert.equal(isMessengerProductKnowledgeIntent('How many seeds are there in one packet?'), true);
+  assert.equal(isMessengerProductKnowledgeIntent('इसमें कितने दाने हैं?'), true);
   assert.equal(isMessengerProductKnowledgeIntent('আজ আবহাওয়া কেমন?'), false);
 });
