@@ -211,6 +211,7 @@ test('recognizes Roman-Hindi named-product purchase requests without treating qu
   assert.equal(normalizeMessengerIntentText(request), 'আমাকে to প্যাকেট মরিচ ka ও চাই');
   assert.equal(isMessengerSpecificProductRequest(request), true);
   assert.equal(isProductCatalogRequest(request), true);
+  assert.equal(isMessengerOrderInterruptRequest(request), true);
   assert.equal(isProductListRequest(request), false);
   assert.equal(isMessengerSpecificProductRequest('2'), false);
   assert.equal(isMessengerSpecificProductRequest('Mujhe chahiye'), false);
