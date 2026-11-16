@@ -736,7 +736,7 @@ function buildFieldReply(
     const value = firstNonEmpty(product.soil_type);
     return value ? `${prefix}\n${line('🪴', labels.soil, value)}` : null;
   }
-  if (/(প্যাকেট|packet|কতটি বীজ|কত বীজ|কতগুলো বীজ|কত গুলো বীজ|বীজের সংখ্যা|seed quantity|seeds? per|पैकेट|कितने बीज)/i.test(normalized)) {
+  if (/(প্যাকেট|packet|কতটি বীজ|কত বীজ|কতগুলো বীজ|কত গুলো বীজ|কতগুলি বীজ|কয়টি বীজ|কয়টি বীজ|কোটগুলো বীজ|কোট গুলো বীজ|বীজের সংখ্যা|seed quantity|seeds? per|पैकेट|कितने बीज)/i.test(normalized)) {
     const packetWeight = firstNonEmpty(product.packet_weight);
     const seedQuantity = firstNonEmpty(product.seed_quantity);
     if (!packetWeight && !seedQuantity) return null;
