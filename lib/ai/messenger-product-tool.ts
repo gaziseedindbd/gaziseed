@@ -186,17 +186,17 @@ export function normalizeMessengerProductQuery(value: string): string {
   // Intent normalization may already have converted "rani lonka bij lagate chai"
   // into "রানি লঙ্কা বীজ লাগাতে চাই" before this product lookup runs.
   const normalizedSeedPhrase = term
-    .replace(/\\bmorich\\b/gi, 'chili')
-    .replace(/\\b(?:lonka|lanka)\\b/gi, 'lanka')
-    .replace(/\\b(?:bij|beej)\\b/gi, ' ')
-    .replace(/\\b(?:apnader|kache|ki|ache|ase|er|lagate|chai|ami|apni)\\b/gi, ' ')
+    .replace(/\bmorich\b/gi, 'chili')
+    .replace(/\b(?:lonka|lanka)\b/gi, 'lanka')
+    .replace(/\b(?:bij|beej)\b/gi, ' ')
+    .replace(/\b(?:apnader|kache|ki|ache|ase|er|lagate|chai|ami|apni)\b/gi, ' ')
     .replace(/মরিচ/g, 'chili')
     .replace(/লঙ্কা|লংকা/g, 'lanka')
     .replace(/রানি/g, 'rani')
     .replace(/বীজের?|লাগাতে|চাই|আছে|কি|কী|এর|আপনাদের|কাছে/g, ' ')
-    .replace(/\\s+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
-  const hasSeedPhrase = /(?:\\b(?:morich|lonka|lanka|bij|beej|apnader|kache|ache|ase|lagate|chai)\\b|মরিচ|লঙ্কা|লংকা|রানি)/i.test(term);
+  const hasSeedPhrase = /(?:\b(?:morich|lonka|lanka|bij|beej|apnader|kache|ache|ase|lagate|chai)\b|মরিচ|লঙ্কা|লংকা|রানি)/i.test(term);
   if (hasSeedPhrase && normalizedSeedPhrase) {
     return normalizeSearchTerm(normalizedSeedPhrase);
   }
