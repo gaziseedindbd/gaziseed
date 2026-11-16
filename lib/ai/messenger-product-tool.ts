@@ -204,7 +204,7 @@ export function normalizeMessengerProductQuery(value: string): string {
     return term;
   }
 
-  const tokens = term.match(/[\p{L}\p{N}]+/gu) || [];
+  const tokens = term.match(/[\p{L}\p{M}\p{N}]+/gu) || [];
   const productTokens = tokens
     .filter((token) => !TRANSACTIONAL_QUERY_STOP_WORDS.has(token.toLocaleLowerCase()))
     .map((token) => token.toLocaleLowerCase() === 'বীজের' ? 'বীজ' : token);
