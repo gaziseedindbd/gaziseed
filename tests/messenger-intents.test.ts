@@ -50,6 +50,7 @@ import {
   isMessengerExplicitProductKnowledgeQuery,
   isBangladeshPaymentMethodQuestion,
   isMessengerProductSpecificKnowledgeQuery,
+  isMessengerProductKnowledgeIntent,
 } from '../lib/ai/messenger-knowledge-tool';
 import {
   getMessengerHumanSupportQueueState,
@@ -796,4 +797,13 @@ test('detects explicit country in Bengali seed catalog requests', () => {
     detectExplicitMessengerCountry('বাংলাদেশে এবং ভারতে কী কী বীজ পাওয়া যাচ্ছে?'),
     null,
   );
+});
+
+
+test('recognizes natural seed packet quantity questions as product knowledge intent', () => {
+  assert.equal(isMessengerProductKnowledgeIntent('রানি লঙ্কার এক প্যাকেটে কয়টি বীজ আছে?'), true);
+  assert.equal(isMessengerProductKnowledgeIntent('Rani Lanka packet e koyta bij ache?'), true);
+  assert.equal(isMessengerProductKnowledgeIntent('इस पैकेट में कितने बीज हैं?'), true);
+  assert.equal(isMessengerProductKnowledgeIntent('What is the packet seed quantity?'), true);
+  assert.equal(isMessengerProductKnowledgeIntent('আজ আবহাওয়া কেমন?'), false);
 });
