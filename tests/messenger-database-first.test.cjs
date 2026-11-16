@@ -137,6 +137,10 @@ test('Messenger AI prompt understands context and formats concise professional r
   assert.match(route, /Do not use Markdown tables/);
   assert.match(route, /Avoid repeating facts already stated in the conversation/);
   assert.match(route, /Never invent claims/);
+  assert.match(route, /Treat planting\/growing intent/);
+  assert.match(route, /unless the customer clearly says they want to buy, order, or checkout/);
+  assert.match(route, /If any numeric cultivation detail is not explicitly present in VERIFIED DATA, omit it/);
+  assert.match(route, /Never claim a product is available/);
 });
 
 
