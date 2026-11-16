@@ -124,3 +124,17 @@ test('Messenger Admin endpoints reject non-admin users before branch data querie
   assert.ok(supportGetGate > supportGetStart && supportGetGate < supportGetDataRead, 'support GET must authorize before reading handoffs');
   assert.ok(supportPostGate > supportPostStart && supportPostGate < supportPostBodyRead, 'support POST must authorize before reading action input');
 });
+
+test('Messenger AI prompt understands context and formats concise professional replies', () => {
+  assert.match(route, /Understand the customer's intent before answering/);
+  assert.match(route, /Read the latest message together with recent conversation history/);
+  assert.match(route, /do not ask the customer to repeat information already provided/);
+  assert.match(route, /general language and reasoning ability for greetings/);
+  assert.match(route, /do not require a matching FAQ row/);
+  assert.match(route, /GAZI SEED-specific company, product, quality, germination, packaging, shipping, delivery, payment, price, stock, offer, and order claims/);
+  assert.match(route, /Answer the exact question first/);
+  assert.match(route, /Keep simple replies to 1–3 short sentences/);
+  assert.match(route, /Do not use Markdown tables/);
+  assert.match(route, /Avoid repeating facts already stated in the conversation/);
+  assert.match(route, /Never invent claims/);
+});
