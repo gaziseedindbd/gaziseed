@@ -800,6 +800,18 @@ test('detects explicit country in Bengali seed catalog requests', () => {
 });
 
 
+test('matches Bengali possessive product names in seed-count questions', () => {
+  const raniLanka = {
+    name_bn: 'হাইব্রিড মরিচ, রানি লঙ্কা (বাণিজ্যিক চাষ)',
+    name_en: 'Hybrid Chili Pepper – Rani Lanka (Commercial Cultivation)',
+    slug: 'hybrid-chili-rani-lanka',
+  };
+  assert.equal(
+    isMessengerExplicitProductKnowledgeQuery('রানি লঙ্কার এক প্যাকেটে কয়টি বীজ আছে?', raniLanka),
+    true,
+  );
+});
+
 test('recognizes natural seed packet quantity questions as product knowledge intent', () => {
   assert.equal(isMessengerProductKnowledgeIntent('রানি লঙ্কার এক প্যাকেটে কয়টি বীজ আছে?'), true);
   assert.equal(isMessengerProductKnowledgeIntent('Rani Lanka packet e koyta bij ache?'), true);
