@@ -11,6 +11,7 @@ const BANGLISH_INTENT_ALIASES: Array<[RegExp, string]> = [
   [/\bnibo\b/g, 'নেব'], [/\bropon\b/g, 'রোপণ'], [/\bbopon\b/g, 'বপন'],
   [/\bdorkar\b/g, 'দরকার'], [/\blagbe\b/g, 'লাগবে'], [/\bden\b/g, 'দিন'],
   [/\bbolen\b/g, 'বলেন'], [/\bdekhte\b/g, 'দেখতে'], [/\bdekhan\b/g, 'দেখান'],
+  [/\bapnader\b/g, 'আপনাদের'], [/\bkache\b/g, 'কাছে'], [/\bmorich\b/g, 'মরিচ'], [/\brani\b/g, 'রানি'], [/\b(?:lonka|lanka)\b/g, 'লঙ্কা'], [/\blagate\b/g, 'লাগাতে'],
 ];
 
 const HINDI_SEARCH_ALIASES: Array<[string, string]> = [
@@ -139,7 +140,7 @@ export function isMessengerSeedKnowledgeQuestion(text: string): boolean {
       normalized,
     );
   const hasQuestionOrAdviceIntent =
-    /(কীভাবে|কিভাবে|কী ভাবে|কি ভাবে|কী করে|কি করে|কখন|কতদিন|কত দিনে|অঙ্কুর|বপন|রোপণ|পরিচর্যা|মাটি|সার|পানি|জল|ব্র্যান্ড|জাত|variety|season|germination|sow|sowing|plant|planting|care|soil|fertilizer|water|watering|brand|origin|কোথাকার|উৎপত্তি|details|about|তথ্য|বিস্তারিত|कैसे|कब|कितने दिन|अंकुरण|बुवाई|रोपाई|देखभाल|मिट्टी|खाद|पानी|सिंचाई|ब्रांड|किस्म|मौसम|उत्पत्ति|जानकारी|विवरण)/i.test(
+    /(কীভাবে|কিভাবে|কী ভাবে|কি ভাবে|কী করে|কি করে|কখন|কতদিন|কত দিনে|অঙ্কুর|বপন|রোপণ|লাগাতে|পরিচর্যা|মাটি|সার|পানি|জল|ব্র্যান্ড|জাত|variety|season|germination|sow|sowing|plant|planting|care|soil|fertilizer|water|watering|brand|origin|কোথাকার|উৎপত্তি|details|about|তথ্য|বিস্তারিত|कैसे|कब|कितने दिन|अंकुरण|बुवाई|रोपाई|देखभाल|मिट्टी|खाद|पानी|सिंचाई|ब्रांड|किस्म|मौसम|उत्पत्ति|जानकारी|विवरण)/i.test(
       normalized,
     );
 

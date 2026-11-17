@@ -124,3 +124,80 @@ test('Messenger Admin endpoints reject non-admin users before branch data querie
   assert.ok(supportGetGate > supportGetStart && supportGetGate < supportGetDataRead, 'support GET must authorize before reading handoffs');
   assert.ok(supportPostGate > supportPostStart && supportPostGate < supportPostBodyRead, 'support POST must authorize before reading action input');
 });
+
+test('Messenger AI prompt understands context and formats concise professional replies', () => {
+  assert.match(route, /Understand the customer's intent before answering/);
+  assert.match(route, /Read the latest message together with recent conversation history/);
+  assert.match(route, /do not ask the customer to repeat information already provided/);
+  assert.match(route, /general language and reasoning ability for greetings/);
+  assert.match(route, /do not require a matching FAQ row/);
+  assert.match(route, /GAZI SEED-specific company, product, quality, germination, packaging, shipping, delivery, payment, price, stock, offer, and order claims/);
+  assert.match(route, /Answer the exact question first/);
+  assert.match(route, /Keep simple replies to 1–3 short sentences/);
+  assert.match(route, /Do not use Markdown tables/);
+  assert.match(route, /Avoid repeating facts already stated in the conversation/);
+  assert.match(route, /Never invent claims/);
+  assert.match(route, /Treat planting\/growing intent/);
+  assert.match(route, /unless the customer clearly says they want to buy, order, or checkout/);
+  assert.match(route, /If any numeric cultivation detail is not explicitly present in VERIFIED DATA, omit it/);
+  assert.match(route, /Never claim a product is available/);
+});
+
+
+test('Banglish seed requests normalize common chili and rani lonka product terms', () => {
+  const intents = fs.readFileSync(path.join(root, 'lib/ai/messenger-intents.ts'), 'utf8');
+  const products = fs.readFileSync(path.join(root, 'lib/ai/messenger-product-tool.ts'), 'utf8');
+  assert.match(intents, /apnader/);
+  assert.match(intents, /morich/);
+  assert.match(intents, /lonka/);
+  assert.match(products, /morich\|lonka\|lanka\|bij\|beej/);
+  assert.match(products, /'chili'/);
+  assert.match(products, /'lanka'/);
+  assert.ok(products.includes(".replace(/\\bmorich\\b/gi, 'chili')"));
+  assert.ok(products.includes(".replace(/\\b(?:lonka|lanka)\\b/gi, 'lanka')"));
+  assert.ok(products.includes(".replace(/[^\\p{L}\\p{M}\\p{N}\\s]/gu, ' ')"));
+  assert.ok(products.includes(".replace(/রানি/g, 'rani')"));
+  assert.ok(products.includes(".replace(/লঙ্কা|লংকা/g, 'lanka')"));
+  assert.match(products, /বীজের\?\\|লাগাতে\|চাই/);
+  assert.ok(products.includes('term.match(/[\\p{L}\\p{M}\\p{N}]+/gu)'));
+
+});
+
+
+test('cultivation requests bypass pending checkout and block AI order prompts', () => {
+  assert.match(route, /!isGeneralSeedAdviceRequest\(normalizedActionText\) &&/);
+  assert.match(route, /function hasAgricultureCheckoutPrompt\(reply: string\)/);
+  assert.match(route, /function getSafeCultivationIntentReply\(language: string\)/);
+  assert.match(route, /unsafeAgricultureCheckoutReply/);
+  assert.match(route, /cultivation_intent_guard/);
+  assert.match(route, /agriculture_checkout_guard: unsafeAgricultureCheckoutReply/);
+});
+
+
+test('Preview Messenger test endpoint is isolated, authenticated, and database-first', () => {
+  const previewTestRoute = fs.readFileSync(
+    path.join(root, 'app/api/admin/ai-assistant/preview-test/route.ts'),
+    'utf8',
+  );
+  const previewGuard = previewTestRoute.indexOf("process.env.VERCEL_ENV !== 'preview'");
+  const authGuard = previewTestRoute.indexOf('if (!isAuthorized(request))');
+  const databaseLookup = previewTestRoute.indexOf('searchMessengerProducts(');
+  const databaseFailure = previewTestRoute.indexOf('Database lookup failed; AI fallback was not called');
+  const trustedMatch = previewTestRoute.indexOf('products.filter(isTrustedMessengerProductMatch)');
+  const aiFallback = previewTestRoute.indexOf('messengerAIChat({');
+
+  assert.ok(previewGuard >= 0 && previewGuard < authGuard, 'non-Preview deployments must be blocked before authorization or work');
+  assert.ok(authGuard > previewGuard && authGuard < databaseLookup, 'secret authorization must happen before database access');
+  assert.ok(databaseLookup > authGuard, 'database lookup must follow authorization');
+  assert.ok(databaseFailure > databaseLookup && databaseFailure < aiFallback, 'database errors must stop before AI fallback');
+  assert.ok(trustedMatch > databaseLookup && trustedMatch < aiFallback, 'trusted database matches must be returned before AI fallback');
+  assert.ok(aiFallback > trustedMatch, 'AI fallback may run only after no trusted database match exists');
+  assert.match(previewTestRoute, /timingSafeEqual/);
+  assert.match(previewTestRoute, /MESSENGER_PREVIEW_TEST_SECRET/);
+  assert.match(previewTestRoute, /x-preview-test-secret/);
+  assert.match(previewTestRoute, /country !== 'IN' && country !== 'BD'/);
+  assert.match(previewTestRoute, /message.length > 500/);
+  assert.match(previewTestRoute, /process\.env\.SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(previewTestRoute, /server-side test route/);
+  assert.doesNotMatch(previewTestRoute, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY|NEXT_PUBLIC_SUPABASE_ANON_KEY/);
+});

@@ -108,7 +108,7 @@ function canonicalizeProductMatchText(value: string): string {
     // transactional words are removed, e.g. "Five-Color Chili Seeds" versus
     // "five color chili seeds".
     .replace(/[-_/]+/g, ' ')
-    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/[^\p{L}\p{M}\p{N}\s]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -132,6 +132,26 @@ export function classifyMessengerProductMatch(
     canonicalSlug === querySlug
   ) {
     return 'exact';
+  }
+
+  // Match all meaningful query words against the combined product identity.
+  // This handles natural word order and intervening catalogue descriptors,
+  // e.g. "hybrid rani lanka" against "Hybrid Chili Pepper – Rani Lanka".
+  // Requiring every query token prevents one shared word such as "hybrid"
+  // from making an unrelated product a trusted match.
+  const queryTokens = query.split(/\s+/).filter((token) => token.length >= 2);
+  const identityTokens = new Set(
+    [nameBn, nameEn, slug.replace(/-/g, ' ')]
+      .join(' ')
+      .split(/\s+/)
+      .filter(Boolean),
+  );
+
+  if (
+    queryTokens.length > 0 &&
+    queryTokens.every((token) => identityTokens.has(token))
+  ) {
+    return 'strong';
   }
 
   if (
@@ -167,7 +187,7 @@ function searchTokens(value: string): string[] {
 }
 
 const TRANSACTIONAL_QUERY_STOP_WORDS = new Set([
-  'দাম', 'দামটা', 'মূল্য', 'স্টক', 'স্টকে', 'কত', 'কয়', 'কয়টি',
+  'দাম', 'দামটা', 'মূল্য', 'স্টক', 'স্টকে', 'কত', 'কয়', 'কয়টি', 'dam', 'damer', 'koto',
   'আছে', 'ও', 'এবং', 'কি', 'কী', 'এর', 'র', 'প্রতি', 'প্যাকেট',
   'বলুন', 'বলেন', 'জানান', 'দিবেন', 'দাও',
   'price', 'cost', 'stock', 'available', 'availability', 'how', 'much',
@@ -182,11 +202,32 @@ const TRANSACTIONAL_QUERY_STOP_WORDS = new Set([
  */
 export function normalizeMessengerProductQuery(value: string): string {
   const term = normalizeSearchTerm(value);
+  // Normalize both Latin-script Banglish and Bengali-script product phrases.
+  // Intent normalization may already have converted "rani lonka bij lagate chai"
+  // into "রানি লঙ্কা বীজ লাগাতে চাই" before this product lookup runs.
+  const normalizedSeedPhrase = term
+    .replace(/\bmorich\b/gi, 'chili')
+    .replace(/\b(?:lonka|lanka)\b/gi, 'lanka')
+    .replace(/\b(?:bij|beej)\b/gi, ' ')
+    .replace(/\b(?:apnader|kache|ki|ache|ase|er|lagate|chai|ami|apni)\b/gi, ' ')
+    .replace(/মরিচ/g, 'chili')
+    .replace(/লঙ্কা|লংকা/g, 'lanka')
+    .replace(/রানি/g, 'rani')
+    .replace(/বীজের?|লাগাতে|চাই|আছে|কি|কী|এর|আপনাদের|কাছে/g, ' ')
+    .replace(/\s+/g, ' ')
+    .split(/\s+/)
+    .filter((token) => !TRANSACTIONAL_QUERY_STOP_WORDS.has(token.toLocaleLowerCase()))
+    .join(' ')
+    .trim();
+  const hasSeedPhrase = /(?:\b(?:morich|lonka|lanka|bij|beej|apnader|kache|ache|ase|lagate|chai)\b|মরিচ|লঙ্কা|লংকা|রানি)/i.test(term);
+  if (hasSeedPhrase && normalizedSeedPhrase) {
+    return normalizeSearchTerm(normalizedSeedPhrase);
+  }
   if (!/(दाम|कीमत|मूल्य|स्टॉक|दाम|price|cost|stock|available|দাম|মূল্য|স্টক)/i.test(term)) {
     return term;
   }
 
-  const tokens = term.match(/[A-Za-z0-9\u0900-\u09FF]+/g) || [];
+  const tokens = term.match(/[\p{L}\p{M}\p{N}]+/gu) || [];
   const productTokens = tokens
     .filter((token) => !TRANSACTIONAL_QUERY_STOP_WORDS.has(token.toLocaleLowerCase()))
     .map((token) => token.toLocaleLowerCase() === 'বীজের' ? 'বীজ' : token);
@@ -292,17 +333,16 @@ export async function searchMessengerProducts(
 
     if (!error && Array.isArray(data)) {
       const rankedRows = data as unknown as MessengerProduct[];
-      const refinedRows = lookupTerm === term
-        ? rankedRows
-        : rankedRows.map((row) => ({
-            ...row,
-            // Full-text overlap can make unrelated products look strong.
-            // For transactional questions, require a lexical name match.
-            search_match_type: classifyMessengerProductMatch(lookupTerm, row),
-          }));
+      // Never trust the database fuzzy rank by itself. Reclassify every row
+      // against the customer's normalized phrase so FTS/trigram overlap cannot
+      // promote unrelated products (for example, a hybrid pumpkin for "Rani Lanka").
+      const refinedRows = rankedRows.map((row) => ({
+        ...row,
+        search_match_type: classifyMessengerProductMatch(lookupTerm, row),
+      }));
       const trustedRows = refinedRows.filter(isTrustedMessengerProductMatch);
       return sortMessengerProducts(
-        lookupTerm !== term && trustedRows.length ? trustedRows : refinedRows,
+        trustedRows.length ? trustedRows : refinedRows,
       ).slice(0, safeLimit);
     }
   } catch {

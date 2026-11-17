@@ -169,9 +169,19 @@ function isSeedKnowledgeRequest(text: string): boolean {
 function isGeneralSeedAdviceRequest(text: string): boolean {
   if (!isSeedKnowledgeRequest(text)) return false;
   const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
-  return /(কীভাবে|কিভাবে|কখন|কতদিন|কত দিনে|অঙ্কুর|বপন|রোপণ|পরিচর্যা|মাটি|সার|পানি|জল|watering|how to|when to|how long|germination|sow|sowing|plant|planting|care|soil|fertilizer)/i.test(
+  return /(কীভাবে|কিভাবে|কখন|কতদিন|কত দিনে|অঙ্কুর|বপন|রোপণ|লাগাতে|পরিচর্যা|মাটি|সার|পানি|জল|watering|how to|when to|how long|germination|sow|sowing|plant|planting|care|soil|fertilizer)/i.test(
     normalized,
   );
+}
+
+function hasAgricultureCheckoutPrompt(reply: string): boolean {
+  return /(অর্ডার করতে চাইলে|অর্ডার করতে হলে|অর্ডার নিশ্চিত|order (?:now|if|to|would)|checkout|কত\s*(?:গ্রাম|প্যাকেট|টি প্যাকেট)|quantity|delivery address|ডেলিভারির ঠিকানা|পিন কোড|মোবাইল নম্বর|যোগাযোগের নাম|payment method|পেমেন্ট পদ্ধতি|ক্যাশ অন ডেলিভারি|cash on delivery)/i.test(reply);
+}
+
+function getSafeCultivationIntentReply(language: string): string {
+  if (language === 'English') return 'I can help with growing this chili variety. Please follow the instructions on the seed packet or verified variety-specific guidance. Would you like help with sowing and seedling care?';
+  if (language === 'Hindi') return 'मैं इस मिर्च की किस्म को उगाने में मदद कर सकता हूँ। बीज के पैकेट पर दिए निर्देश या सत्यापित किस्म-विशेष जानकारी का पालन करें। क्या आप बुवाई और पौधों की देखभाल जानना चाहते हैं?';
+  return 'আপনার উল্লেখ করা বীজ লাগানোর বিষয়ে সাহায্য করছি। বপনের নির্দিষ্ট নিয়মের জন্য বীজের প্যাকেটের নির্দেশনা বা যাচাইকৃত জাতভিত্তিক তথ্য অনুসরণ করুন। আপনি কি বপন ও চারা পরিচর্যার নিয়ম জানতে চান?';
 }
 
 function formatMessengerCurrency(country: CountryCode): string {
@@ -2464,6 +2474,7 @@ async function processMessengerEvent(event: MessengerEvent) {
   // be hijacked by the previously selected product's checkout flow.
   if (
     !startsNewProductIntent &&
+    !isGeneralSeedAdviceRequest(normalizedActionText) &&
     !isMessengerDeliveryPolicyQuestion(normalizedActionText)
   ) {
     try {
@@ -3070,7 +3081,7 @@ async function processMessengerEvent(event: MessengerEvent) {
   const replyLanguage = detectMessengerReplyLanguage(normalizedActionText);
   const systemPrompt =
     'You are GAZI SEED customer support AI on Facebook Messenger. ' +
-    `Reply in the customer's language. The required reply language for this turn is ${replyLanguage}. English questions must receive English answers, Bengali and Banglish questions must receive clear Bengali answers, and Hindi questions must receive Hindi answers. For Latin-script Hindi/transliterated Hindi, answer in Hindi as well. Never switch languages merely because product names, catalog fields, or retrieved context use another language. Translate the surrounding explanation into the required reply language while preserving verified product names where useful. ` +
+    `Reply in the customer's language. The required reply language for this turn is ${replyLanguage}. English questions must receive English answers, Bengali and Banglish questions must receive clear Bengali answers, and Hindi questions must receive Hindi answers. For Latin-script Hindi/transliterated Hindi, answer in Hindi as well. Never switch languages merely because product names, catalog fields, or retrieved context use another language. Translate the surrounding explanation into the required reply language while preserving verified product names where useful. Understand the customer's intent before answering. Read the latest message together with recent conversation history: resolve short follow-ups such as 'price?', 'details', 'this one', 'delivery?', or 'Chilli seed' from the active context when it is clear; do not ask the customer to repeat information already provided. If the meaning or product is genuinely unclear, ask one short, specific clarification instead of guessing. Use your general language and reasoning ability for greetings, introductions, location acknowledgements, explanations, and general non-transactional questions; these do not require a matching FAQ row. For general agriculture questions, use safe broadly applicable knowledge under the existing agriculture safety rules. For GAZI SEED-specific company, product, quality, germination, packaging, shipping, delivery, payment, price, stock, offer, and order claims, use only the supplied verified catalog, CMS, policy, or transactional data. Never invent claims such as tested germination rates, moisture-proof packaging, nationwide coverage, COD availability, or delivery promises. Write like a helpful, experienced human customer-support agent. Answer the exact question first. Treat planting/growing intent (for example, 'bij lagate chai', 'বীজ লাগাতে চাই', or 'রোপণ করতে চাই') as a cultivation question, never as an order request. Do not ask for name, phone, address, payment method, quantity, or checkout details unless the customer clearly says they want to buy, order, or checkout. Never claim a product is available or that GAZI SEED has it unless a matching PRODUCT DATA entry is marked transactional_data_verified=true; for a similar/unverified match, say it may be a matching variety and ask whether they want help identifying it, without saying it is in stock. For cultivation replies, use verified product-specific growing fields when present. If they are missing, give only broad non-numeric guidance; do not add measurements, durations, counts, percentages, temperatures, or numeric schedules. If any numeric cultivation detail is not explicitly present in VERIFIED DATA, omit it. Keep simple replies to 1–3 short sentences. For product discovery, show a short list with product name and verified price only; include stock only when the customer asks or it helps them choose. Do not dump cultivation fields, long descriptions, or every catalog attribute unless asked. When the customer asks for details or cultivation guidance, give only the relevant verified fields in a compact, readable format. Use at most 5 bullets for a normal answer; use numbered steps only for procedures. Do not use Markdown tables, repeated headings, raw Markdown syntax, duplicate links, repeated greetings, or unnecessary company introductions. Avoid repeating facts already stated in the conversation. End with one useful next question only when it helps the customer move forward; do not add generic sales pitches. Never expose internal reasoning or say that you are searching the database. ` +
     'The previous human-support request may already be closed. When human_support_state is closed, treat the current customer message as a fresh AI turn and do not repeat, quote, or imitate any earlier human-support waiting/active-support message. Only use a human-support waiting response when the webhook hard-stop has explicitly triggered it. ' +
     `The verified customer country is ${activeCountry}. Only use the catalog data for that country. ` +
     'Use ONLY the supplied GAZI SEED product data for current GAZI SEED prices, stock, offers, product lists, and product facts. Only PRODUCT DATA entries marked transactional_data_verified=true may be used for current price or stock claims, order-related product selection, or other transactional product facts. Similar matches are discovery-only: you may mention their product name as a possible match, but never use their price, stock, offers, or other transactional fields. For product-list questions, list the available products for the verified country from PRODUCT DATA. For price or stock questions, answer only from a transactional_data_verified matching product; if no verified match is present for the verified country, say it is not available or cannot be verified rather than using a similar match. ' +
@@ -3161,6 +3172,9 @@ async function processMessengerEvent(event: MessengerEvent) {
     const unsafeGeneralAgricultureReply =
       isGeneralAgricultureMessage &&
       hasUnsafeGeneralAgricultureSpecifics(result.content);
+    const unsafeAgricultureCheckoutReply =
+      isGeneralAgricultureMessage &&
+      hasAgricultureCheckoutPrompt(result.content);
 
     const transactionalCategory =
       !unsafeGeneralAgricultureReply &&
@@ -3180,7 +3194,9 @@ async function processMessengerEvent(event: MessengerEvent) {
         result.content.trim() === getBangladeshHumanSupportAcknowledgement().trim()
       );
 
-    const finalReply = unsafeGeneralAgricultureReply
+    const finalReply = unsafeAgricultureCheckoutReply
+      ? getSafeCultivationIntentReply(replyLanguage)
+      : unsafeGeneralAgricultureReply
       ? getMessengerHumanSupportContactReply(
           activeCountry,
           replyLanguage,
@@ -3200,9 +3216,11 @@ async function processMessengerEvent(event: MessengerEvent) {
 
     const finalReplyActionStatus =
       finalReply !== result.content
-        ? transactionallyUnsafeAIReply
-          ? 'transactional_guard'
-          : repeatedHumanSupportReply
+        ? unsafeAgricultureCheckoutReply
+          ? 'cultivation_intent_guard'
+          : transactionallyUnsafeAIReply
+            ? 'transactional_guard'
+            : repeatedHumanSupportReply
             ? 'human_support_resume_guard'
             : 'knowledge_fallback_support'
         : 'generated';
@@ -3219,6 +3237,7 @@ async function processMessengerEvent(event: MessengerEvent) {
         usage: result.usage || null,
         knowledge_fallback: finalReply !== result.content,
         transactional_guard: transactionallyUnsafeAIReply,
+        agriculture_checkout_guard: unsafeAgricultureCheckoutReply,
         transactional_category: transactionalCategory,
         human_support_resume_guard: repeatedHumanSupportReply,
       },
