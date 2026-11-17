@@ -168,10 +168,20 @@ function isSeedKnowledgeRequest(text: string): boolean {
 
 function isGeneralSeedAdviceRequest(text: string): boolean {
   if (!isSeedKnowledgeRequest(text)) return false;
-  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+  const normalized = text.toLocaleLowerCase().replace(/\\s+/g, ' ').trim();
   return /(কীভাবে|কিভাবে|কখন|কতদিন|কত দিনে|অঙ্কুর|বপন|রোপণ|লাগাতে|পরিচর্যা|মাটি|সার|পানি|জল|watering|how to|when to|how long|germination|sow|sowing|plant|planting|care|soil|fertilizer)/i.test(
     normalized,
   );
+}
+
+function hasAgricultureCheckoutPrompt(reply: string): boolean {
+  return /(অর্ডার করতে চাইলে|অর্ডার করতে হলে|অর্ডার নিশ্চিত|order (?:now|if|to|would)|checkout|কত\\s*(?:গ্রাম|প্যাকেট|টি প্যাকেট)|quantity|delivery address|ডেলিভারির ঠিকানা|পিন কোড|মোবাইল নম্বর|যোগাযোগের নাম|payment method|পেমেন্ট পদ্ধতি|ক্যাশ অন ডেলিভারি|cash on delivery)/i.test(reply);
+}
+
+function getSafeCultivationIntentReply(language: string): string {
+  if (language === 'English') return 'I can help with growing this chili variety. Please follow the instructions on the seed packet or verified variety-specific guidance. Would you like help with sowing and seedling care?';
+  if (language === 'Hindi') return 'मैं इस मिर्च की किस्म को उगाने में मदद कर सकता हूँ। बीज के पैकेट पर दिए निर्देश या सत्यापित किस्म-विशेष जानकारी का पालन करें। क्या आप बुवाई और पौधों की देखभाल जानना चाहते हैं?';
+  return 'রানি লঙ্কার বীজ লাগানোর বিষয়ে সাহায্য করছি। বপনের নির্দিষ্ট নিয়মের জন্য বীজের প্যাকেটের নির্দেশনা বা যাচাইকৃত জাতভিত্তিক তথ্য অনুসরণ করুন। আপনি কি বপন ও চারা পরিচর্যার নিয়ম জানতে চান?';
 }
 
 function formatMessengerCurrency(country: CountryCode): string {
@@ -2464,6 +2474,7 @@ async function processMessengerEvent(event: MessengerEvent) {
   // be hijacked by the previously selected product's checkout flow.
   if (
     !startsNewProductIntent &&
+    !isGeneralSeedAdviceRequest(normalizedActionText) &&
     !isMessengerDeliveryPolicyQuestion(normalizedActionText)
   ) {
     try {
@@ -3161,6 +3172,9 @@ async function processMessengerEvent(event: MessengerEvent) {
     const unsafeGeneralAgricultureReply =
       isGeneralAgricultureMessage &&
       hasUnsafeGeneralAgricultureSpecifics(result.content);
+    const unsafeAgricultureCheckoutReply =
+      isGeneralAgricultureMessage &&
+      hasAgricultureCheckoutPrompt(result.content);
 
     const transactionalCategory =
       !unsafeGeneralAgricultureReply &&
@@ -3180,7 +3194,9 @@ async function processMessengerEvent(event: MessengerEvent) {
         result.content.trim() === getBangladeshHumanSupportAcknowledgement().trim()
       );
 
-    const finalReply = unsafeGeneralAgricultureReply
+    const finalReply = unsafeAgricultureCheckoutReply
+      ? getSafeCultivationIntentReply(replyLanguage)
+      : unsafeGeneralAgricultureReply
       ? getMessengerHumanSupportContactReply(
           activeCountry,
           replyLanguage,
@@ -3202,7 +3218,9 @@ async function processMessengerEvent(event: MessengerEvent) {
       finalReply !== result.content
         ? transactionallyUnsafeAIReply
           ? 'transactional_guard'
-          : repeatedHumanSupportReply
+          : unsafeAgricultureCheckoutReply
+            ? 'cultivation_intent_guard'
+            : repeatedHumanSupportReply
             ? 'human_support_resume_guard'
             : 'knowledge_fallback_support'
         : 'generated';
@@ -3219,6 +3237,7 @@ async function processMessengerEvent(event: MessengerEvent) {
         usage: result.usage || null,
         knowledge_fallback: finalReply !== result.content,
         transactional_guard: transactionallyUnsafeAIReply,
+        agriculture_checkout_guard: unsafeAgricultureCheckoutReply,
         transactional_category: transactionalCategory,
         human_support_resume_guard: repeatedHumanSupportReply,
       },
