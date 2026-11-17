@@ -31,6 +31,20 @@ function hasEnglishCountryIntent(
   );
 }
 
+function hasRomanBanglishCountryIntent(normalized: string, country: string): boolean {
+  // Roman-Banglish country statements, the Latin-script equivalent of the
+  // Bengali-script "<country> থেকে" pattern above:
+  // - "<country> theke" — "Bangladesh theke order korte chai",
+  //   "ami Bangladesh theke bolchi", "India theke delivery hobe?"
+  // - "ami <country>" — "ami Bangladesh", "ami India theke achi".
+  // The word boundary after the country word keeps product adjectives out:
+  // "Bangladeshi beej" / "Indian seeds" do not match.
+  return (
+    new RegExp('\\b' + country + '\\s+theke\\b', 'i').test(normalized) ||
+    new RegExp('\\bami\\s+' + country + '\\b', 'i').test(normalized)
+  );
+}
+
 function hasBanglaCountryIntent(
   normalized: string,
   country: string,
@@ -80,14 +94,44 @@ export function detectExplicitMessengerCountry(
   const mentionsIndia =
     hasEnglishCountryIntent(normalized, 'india', 'indian', 'india') ||
     hasEnglishCountryIntent(normalized, 'bharat', 'indian', 'bharat') ||
+    hasRomanBanglishCountryIntent(normalized, 'india') ||
+    hasRomanBanglishCountryIntent(normalized, 'bharat') ||
     hasBanglaCountryIntent(normalized, 'ভারত', 'ভারতীয়', 'ভারতে') ||
     hasBanglaCountryIntent(normalized, 'ভারত', 'ভারতীয়', 'ভারতে');
 
   const mentionsBangladesh =
     hasEnglishCountryIntent(normalized, 'bangladesh', 'bangladeshi', 'bangladesh') ||
+    hasRomanBanglishCountryIntent(normalized, 'bangladesh') ||
     hasBanglaCountryIntent(normalized, 'বাংলাদেশ', 'বাংলাদেশি', 'বাংলাদেশে') ||
     hasBanglaCountryIntent(normalized, 'বাংলাদেশ', 'বাংলাদেশী', 'বাংলাদেশে');
 
   if (mentionsIndia === mentionsBangladesh) return null;
   return mentionsIndia ? 'IN' : 'BD';
+}
+
+/**
+ * Whether a detected country gets the explicit confirmation + catalog reply
+ * (the "ঠিক আছে। আপনার জন্য Bangladesh 🇧🇩 সাপোর্ট তথ্য ব্যবহার করা হবে।"
+ * message) instead of falling through to the AI reply.
+ *
+ * - An exact country word ("india" / "bangladesh") always confirms, as before.
+ * - A free-text sentence that CHANGES the country ("ami Bangladesh theke
+ *   bolchi" from an India conversation) also confirms, so the customer is
+ *   told the country actually switched instead of the AI improvising a
+ *   misleading acknowledgement ("জানিয়ে ভালো লাগল") while nothing changed.
+ * - No confirmation when the free-text country is the one already verified
+ *   (nothing changed), and quick-reply button taps keep their existing flow.
+ */
+export function shouldConfirmMessengerCountrySelection(options: {
+  quickReplyCountry: MessengerCountryCode | null;
+  freeTextCountry: MessengerCountryCode | null;
+  currentCountry: MessengerCountryCode | null;
+  isExactCountrySelection: boolean;
+}): boolean {
+  if (options.isExactCountrySelection) return true;
+  return (
+    options.quickReplyCountry === null &&
+    options.freeTextCountry !== null &&
+    options.freeTextCountry !== options.currentCountry
+  );
 }

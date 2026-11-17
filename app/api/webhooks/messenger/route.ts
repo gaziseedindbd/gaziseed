@@ -116,7 +116,7 @@ import {
   limitMessengerAIHistoryMessages,
   shouldIncludeMessengerAIHistoryMessage,
 } from '@/lib/ai/messenger-history';
-import { detectExplicitMessengerCountry } from '@/lib/ai/messenger-country';
+import { detectExplicitMessengerCountry, shouldConfirmMessengerCountrySelection } from '@/lib/ai/messenger-country';
 import {
   getMessengerAIDeliveryActionStatus,
   shouldTrackMessengerAIDeliveryStatus,
@@ -1070,7 +1070,8 @@ async function processMessengerEvent(event: MessengerEvent) {
   const storedWebsiteCartContext = verifyMessengerCartContext(conversation.metadata?.website_cart_context_token);
   const websiteCartContext = eventWebsiteCartContext || storedWebsiteCartContext;
   const currentCountry = websiteCartContext?.country || getVerifiedCountry(conversation);
-  const detectedCountry = quickReplyCountry || detectExplicitCountry(normalizedActionText);
+  const freeTextCountry = detectExplicitCountry(normalizedActionText);
+  const detectedCountry = quickReplyCountry || freeTextCountry;
   const rateLimitCountry = resolveMessengerRateLimitCountry({
     quickReplyCountry,
     detectedCountry,
@@ -1346,7 +1347,13 @@ async function processMessengerEvent(event: MessengerEvent) {
     activeCountry = detectedCountry;
 
     const countrySelection = normalizedActionText.toLocaleLowerCase().trim();
-    if (countrySelection === 'india' || countrySelection === 'bangladesh') {
+    if (shouldConfirmMessengerCountrySelection({
+      quickReplyCountry,
+      freeTextCountry,
+      currentCountry,
+      isExactCountrySelection:
+        countrySelection === 'india' || countrySelection === 'bangladesh',
+    })) {
       const confirmation =
         activeCountry === 'IN'
           ? 'ঠিক আছে। আপনার জন্য India 🇮🇳 সাপোর্ট তথ্য ব্যবহার করা হবে। এখন আপনার প্রশ্নটি লিখুন।'

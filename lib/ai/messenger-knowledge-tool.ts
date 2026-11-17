@@ -322,6 +322,103 @@ function canonicalBaseTokens(tokens: string[]): string[] {
   );
 }
 
+// Whole-word price vocabulary. After normalizeText runs, Banglish
+// ("dam" -> "দাম", "koto" -> "কত") and Devanagari price words
+// ("कीमत"/"दाम" -> "দাম") are already Bengali tokens, so the Bengali set
+// covers Bangla script, Banglish, and Devanagari Hindi alike. Roman Hindi
+// ("kitna"/"keemat") is not normalized and stays as-is.
+const MESSENGER_PRICE_INTENT_TOKENS = new Set([
+  'দাম',
+  'কত',
+  'কতো',
+  'টাকা',
+  'price',
+  'cost',
+  'kitna',
+  'kitne',
+  'kitni',
+  'keemat',
+  'कितना',
+  'कितने',
+  'कितनी',
+  'कीमत',
+  'दाम',
+]);
+
+// A duration word right after কত/kitna turns the question into a time
+// question ("কত দিন লাগবে?", "kitne din lagenge?"), not a price question.
+// ("কতদিন" is already a single token after normalization, so it never
+// matches কত in the first place.)
+const MESSENGER_PRICE_DURATION_TOKENS = new Set([
+  'দিন',
+  'দিনে',
+  'ঘণ্টা',
+  'ঘন্টা',
+  'সপ্তাহ',
+  'মাস',
+  'বছর',
+  'সময়',
+  'মিনিট',
+  'din',
+  'dino',
+  'day',
+  'days',
+]);
+
+// "rate" alone is a price word, but "germination rate" is a field question.
+const MESSENGER_PRICE_RATE_EXCLUSION_PREVIOUS_TOKENS = new Set([
+  'germination',
+  'growth',
+  'অঙ্কুরোদগম',
+  'অঙ্কুর',
+]);
+
+export function isMessengerPriceIntentQuery(text: string): boolean {
+  const normalized = normalizeText(text);
+
+  // "how much" is a phrase, not a single token. "how much time" asks for
+  // a duration, not a price.
+  if (/\bhow\s+much\b/i.test(normalized)) {
+    return !/\bhow\s+much\s+time\b/i.test(normalized);
+  }
+
+  const tokens =
+    normalized.match(/[A-Za-z0-9\u0900-\u097F\u0980-\u09FF]+/g) || [];
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index].toLocaleLowerCase();
+
+    if (token === 'rate') {
+      const previous =
+        index > 0 ? tokens[index - 1].toLocaleLowerCase() : '';
+      if (!MESSENGER_PRICE_RATE_EXCLUSION_PREVIOUS_TOKENS.has(previous)) {
+        return true;
+      }
+      continue;
+    }
+
+    if (!MESSENGER_PRICE_INTENT_TOKENS.has(token)) continue;
+
+    if (
+      (token === 'কত' ||
+        token === 'কতো' ||
+        token === 'kitna' ||
+        token === 'kitne' ||
+        token === 'kitni') &&
+      index + 1 < tokens.length &&
+      MESSENGER_PRICE_DURATION_TOKENS.has(
+        tokens[index + 1].toLocaleLowerCase(),
+      )
+    ) {
+      continue;
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
 function hasKnowledgeIntent(text: string): boolean {
   const normalized = normalizeText(text);
   return KNOWLEDGE_KEYWORDS.some((keyword) =>
@@ -336,7 +433,7 @@ function hasKnowledgeIntent(text: string): boolean {
 // Deliberately excludes the generic trigger "বীজ"/"seed": a bare product
 // name contains it, and it alone asks nothing.
 const BARE_NAME_QUESTION_WORDS = new Set([
-  'কি', 'কী', 'কেমন', 'কেন', 'কখন', 'কোথায়', 'কোথায়', 'কোন', 'কোনটা', 'কত',
+  'কি', 'কী', 'কেমন', 'কেন', 'কখন', 'কোথায়', 'কোথায়', 'কোন', 'কোনটা', 'কত', 'কতদিন', 'কতোদিন', 'দিন', 'লাগে', 'চারা',
   'কয়টা', 'কয়টা', 'জাত', 'ব্র্যান্ড', 'উৎপত্তি', 'ওজন', 'দাম', 'চাষ',
   'চাষাবাদ', 'মৌসুম', 'অঙ্কুর', 'গজাতে', 'দূরত্ব', 'গভীরতা', 'রোদ',
   'সূর্যালোক', 'পানি', 'মাটি', 'প্যাকেট', 'ফলন', 'সংরক্ষণ', 'পরিচর্যা',
@@ -1008,6 +1105,11 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
   // answer it, so the deterministic catalog path can reply with the short
   // price reply instead. Real questions still reach the FAQ/field path.
   const bareProductNameQuery = isMessengerBareProductNameQuery(text);
+  // A price question must be answered by the catalog's live price, never by
+  // a product FAQ whose words merely overlap (e.g. "লাল গোলাপ ফুলের বীজ কত?"
+  // matching a germination-time FAQ). Skipping the FAQ lookup lets the
+  // catalog short price reply answer instead.
+  const hasPriceIntent = isMessengerPriceIntentQuery(text);
 
   let candidate: MessengerProduct | null = null;
 
@@ -1042,7 +1144,7 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
   // but a similar match must never authorize field facts, prices, or stock.
   if (!candidate && explicitlyMentionedProducts.length === 1) {
     const explicitlyMentionedProduct = explicitlyMentionedProducts[0];
-    const faq = bareProductNameQuery
+    const faq = bareProductNameQuery || hasPriceIntent
       ? null
       : await findFaq(supabase, explicitlyMentionedProduct.id, text);
     if (faq) {
@@ -1112,7 +1214,7 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
     };
   }
 
-  const faq = bareProductNameQuery
+  const faq = bareProductNameQuery || hasPriceIntent
     ? null
     : await findFaq(supabase, candidate.id, text);
   if (faq) {
