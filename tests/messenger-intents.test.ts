@@ -43,6 +43,7 @@ import {
   isTrustedMessengerProductMatch,
   normalizeMessengerSearchSlug,
   normalizeMessengerSearchTerm,
+  normalizeMessengerProductQuery,
   serializeMessengerProducts,
 } from '../lib/ai/messenger-product-tool';
 import {
@@ -311,6 +312,30 @@ test('offers selectable options for similar product matches without disclosing t
     title: 'Red Rose Flower See…',
     payload: 'PRODUCT_SELECT:00000000-0000-4000-8000-000000000001',
   }]);
+});
+
+test('normalizes Banglish and Bengali Rani Lanka queries to one searchable identity', () => {
+  assert.equal(normalizeMessengerProductQuery('rani lonka bij lagate chai'), 'rani lanka');
+  assert.equal(normalizeMessengerProductQuery('রানি লঙ্কা বীজের দাম কত'), 'rani lanka');
+  assert.equal(normalizeMessengerProductQuery('Hybrid Rani Lanka bij er dam koto'), 'Hybrid Rani Lanka');
+});
+
+test('requires all meaningful product identity terms for a trusted multi-word match', () => {
+  const raniLanka = {
+    name_bn: 'হাইব্রিড মরিচ, রানি লঙ্কা (বাণিজ্যিক চাষ)',
+    name_en: 'Hybrid Chili Pepper – Rani Lanka (Commercial Cultivation)',
+    slug: 'hybrid-chili-rani-lanka',
+  };
+  const pumpkin = {
+    name_bn: 'হাইব্রিড মিষ্টি কুমড়া বীজ – লন্ডন-২',
+    name_en: 'F1 Hybrid Sweet Pumpkin Seeds – London-2',
+    slug: 'f1-hybrid-sweet-pumpkin-seeds-london-2',
+  };
+
+  assert.equal(classifyMessengerProductMatch('hybrid rani lanka', raniLanka), 'strong');
+  assert.equal(classifyMessengerProductMatch('hybrid rani lanka', pumpkin), 'similar');
+  assert.equal(classifyMessengerProductMatch('rani lanka', raniLanka), 'strong');
+  assert.equal(classifyMessengerProductMatch('rani lanka', pumpkin), 'similar');
 });
 
 test('normalizes and classifies Messenger product search matches', () => {
