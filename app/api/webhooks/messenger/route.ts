@@ -181,7 +181,7 @@ function hasAgricultureCheckoutPrompt(reply: string): boolean {
 function getSafeCultivationIntentReply(language: string): string {
   if (language === 'English') return 'I can help with growing this chili variety. Please follow the instructions on the seed packet or verified variety-specific guidance. Would you like help with sowing and seedling care?';
   if (language === 'Hindi') return 'मैं इस मिर्च की किस्म को उगाने में मदद कर सकता हूँ। बीज के पैकेट पर दिए निर्देश या सत्यापित किस्म-विशेष जानकारी का पालन करें। क्या आप बुवाई और पौधों की देखभाल जानना चाहते हैं?';
-  return 'রানি লঙ্কার বীজ লাগানোর বিষয়ে সাহায্য করছি। বপনের নির্দিষ্ট নিয়মের জন্য বীজের প্যাকেটের নির্দেশনা বা যাচাইকৃত জাতভিত্তিক তথ্য অনুসরণ করুন। আপনি কি বপন ও চারা পরিচর্যার নিয়ম জানতে চান?';
+  return 'আপনার উল্লেখ করা বীজ লাগানোর বিষয়ে সাহায্য করছি। বপনের নির্দিষ্ট নিয়মের জন্য বীজের প্যাকেটের নির্দেশনা বা যাচাইকৃত জাতভিত্তিক তথ্য অনুসরণ করুন। আপনি কি বপন ও চারা পরিচর্যার নিয়ম জানতে চান?';
 }
 
 function formatMessengerCurrency(country: CountryCode): string {
@@ -3216,10 +3216,10 @@ async function processMessengerEvent(event: MessengerEvent) {
 
     const finalReplyActionStatus =
       finalReply !== result.content
-        ? transactionallyUnsafeAIReply
-          ? 'transactional_guard'
-          : unsafeAgricultureCheckoutReply
-            ? 'cultivation_intent_guard'
+        ? unsafeAgricultureCheckoutReply
+          ? 'cultivation_intent_guard'
+          : transactionallyUnsafeAIReply
+            ? 'transactional_guard'
             : repeatedHumanSupportReply
             ? 'human_support_resume_guard'
             : 'knowledge_fallback_support'
