@@ -797,3 +797,12 @@ test('detects explicit country in Bengali seed catalog requests', () => {
     null,
   );
 });
+
+
+test('treats Banglish seed planting as cultivation intent, not an order interruption', () => {
+  const message = 'rani lonka bij lagate chai';
+  assert.equal(normalizeMessengerIntentText(message), 'রানি লঙ্কা বীজ লাগাতে চাই');
+  assert.equal(isMessengerSeedKnowledgeQuestion(message), true);
+  assert.equal(isMessengerOrderInterruptRequest(message), true);
+  assert.equal(isMessengerOrderIntent(message), false);
+});
