@@ -467,6 +467,40 @@ export function isMessengerBareProductNameQuery(text: string): boolean {
   );
 }
 
+// Generic seed-product words, in the three reply languages plus Roman
+// Banglish. A bare name that names a seed product generically ("ম্যাংগো
+// টমেটোর বীজ") is a product mention even when the catalog search found
+// nothing in either country — the product is genuinely absent, so the
+// deterministic "not in stock" reply is correct. Without this, only the
+// search result could tell a product name from a non-product word ("Hi",
+// "ধন্যবাদ"), which also matches nothing.
+const MESSENGER_GENERIC_PRODUCT_WORDS = /বীজ|seed|बीज|beej/i;
+
+export function hasMessengerGenericProductWord(text: string): boolean {
+  return MESSENGER_GENERIC_PRODUCT_WORDS.test(normalizeText(text));
+}
+
+// Whether a bare product name must be answered deterministically by the
+// catalog path instead of the AI section. A bare name is only treated as
+// a product mention when the search found something in this country, the
+// text names a seed product generically, or the product exists in the
+// other country — otherwise it is not a product at all ("Hi", "ধন্যবাদ")
+// and must keep the existing AI routing. Pure decision helper; the
+// caller supplies the (async) other-country lookup result.
+export function shouldAnswerMessengerBareNameDeterministically(args: {
+  isBareProductName: boolean;
+  hasLocalProducts: boolean;
+  hasGenericProductWord: boolean;
+  existsInOtherCountry: boolean;
+}): boolean {
+  return (
+    args.isBareProductName &&
+    (args.hasLocalProducts ||
+      args.hasGenericProductWord ||
+      args.existsInOtherCountry)
+  );
+}
+
 // Stock-out phrasings in the three reply languages. A legitimate "not in
 // stock" answer is never a knowledge fallback, even when it starts with
 // "দুঃখিত": the fallback detector below matches "দুঃখিত.*নেই", so without

@@ -84,9 +84,12 @@ import {
 } from '@/lib/ai/messenger-intents';
 import {
   getMessengerWebsiteKnowledgeAnswer,
+  hasMessengerGenericProductWord,
   isBangladeshPaymentMethodQuestion,
   isKnowledgeFallbackResponse,
+  isMessengerBareProductNameQuery,
   isMessengerProductSpecificKnowledgeQuery,
+  shouldAnswerMessengerBareNameDeterministically,
 } from '@/lib/ai/messenger-knowledge-tool';
 import {
   getMessengerPublishedContentAnswer,
@@ -2920,31 +2923,82 @@ async function processMessengerEvent(event: MessengerEvent) {
       : Promise.resolve(''),
   ]);
 
+  // A bare product name ("রানি মরিচের বীজ") asks nothing, so the AI
+  // section must not decide its answer: with trusted matches it gets the
+  // deterministic catalog reply, and with no trusted match in this country
+  // it gets the deterministic "not in stock" reply. It is only treated as
+  // a product mention when the search found something here, the text names
+  // a seed product generically, or the product exists in the other country
+  // — otherwise it is not a product at all ("Hi", "ধন্যবাদ") and keeps the
+  // existing AI routing. The other-country lookup runs only for a bare name
+  // with no local match and no generic product word.
+  const isBareProductNameRequest = isMessengerBareProductNameQuery(normalizedActionText);
+  let bareNameExistsInOtherCountry = false;
   if (
-    isProductCatalogRequest(normalizedActionText) &&
+    isBareProductNameRequest &&
+    products.length === 0 &&
+    !hasMessengerGenericProductWord(normalizedActionText)
+  ) {
+    const otherCountry: CountryCode = activeCountry === 'IN' ? 'BD' : 'IN';
+    const otherCountryProducts = await getProductContext(
+      sb,
+      otherCountry,
+      normalizedActionText,
+    );
+    bareNameExistsInOtherCountry = (
+      otherCountryProducts as Array<Record<string, unknown>>
+    ).some(isTrustedMessengerProductMatch);
+  }
+  const shouldAnswerBareNameDeterministically =
+    shouldAnswerMessengerBareNameDeterministically({
+      isBareProductName: isBareProductNameRequest,
+      hasLocalProducts: products.length > 0,
+      hasGenericProductWord: hasMessengerGenericProductWord(normalizedActionText),
+      existsInOtherCountry: bareNameExistsInOtherCountry,
+    });
+
+  if (
+    (isProductCatalogRequest(normalizedActionText) ||
+      shouldAnswerBareNameDeterministically) &&
     !isMessengerDeliveryPolicyQuestion(normalizedActionText) &&
     !isGeneralSeedAdviceRequest(normalizedActionText)
   ) {
-    const catalogReply = formatMessengerCatalogReply(
-      normalizedActionText,
-      products as Array<Record<string, unknown>>,
-      activeCountry,
-      detectMessengerReplyLanguage(normalizedActionText),
-    );
-
     const trustedProducts = (products as Array<Record<string, unknown>>).filter(
       isTrustedMessengerProductMatch,
     );
 
+    // A bare name with no trusted match in this country is "not in stock"
+    // for this customer: answer from the empty-products branch instead of
+    // showing similar products for a product that is not carried here. The
+    // catalog (price/stock question) path keeps its existing similar
+    // handling, so only the bare-name arm substitutes the empty list.
+    const catalogProducts =
+      shouldAnswerBareNameDeterministically && trustedProducts.length === 0
+        ? []
+        : (products as Array<Record<string, unknown>>);
+    const catalogReply = formatMessengerCatalogReply(
+      normalizedActionText,
+      catalogProducts,
+      activeCountry,
+      detectMessengerReplyLanguage(normalizedActionText),
+    );
+
     // A list reply numbers the products in the text; store the exact list
     // that was shown so a later bare-number reply ("2" / "২") can select
-    // from it. The single-product short reply is not a list, so it keeps
-    // the existing last_messenger_product marking only.
-    const isSingleShortReply =
-      !isProductListRequest(normalizedActionText) && products.length === 1;
+    // from it. The reply is a single-product short reply when the catalog
+    // formatter picked a best match (best-match wins), not only when
+    // exactly one product was returned: a bare name can match several
+    // products while the formatter still answers about the one best match,
+    // and a later bare "yes" must know that product. Mirrors
+    // buildMessengerAIProviderFallbackReply, which already marks the best
+    // match on the provider-failure path.
+    const bestMatchProduct = !isProductListRequest(normalizedActionText)
+      ? findMessengerBestMatchProduct(catalogProducts)
+      : null;
+    const isSingleShortReply = bestMatchProduct !== null;
     const numberedProductList = isSingleShortReply
       ? []
-      : buildMessengerProductListSnapshot(products);
+      : buildMessengerProductListSnapshot(catalogProducts);
 
     const catalogMetadata: Record<string, unknown> = {};
     if (numberedProductList.length) {
@@ -2953,8 +3007,8 @@ async function processMessengerEvent(event: MessengerEvent) {
       // A fresh list replaces the previous single-product context, so a
       // bare "yes" afterwards cannot order the product from before the list.
       catalogMetadata.last_messenger_product = null;
-    } else if (trustedProducts.length === 1 && products.length === 1) {
-      const product = trustedProducts[0];
+    } else if (bestMatchProduct) {
+      const product = bestMatchProduct;
       catalogMetadata.last_messenger_product = {
         id: typeof product.id === 'string' ? product.id : null,
         name: formatMessengerProductName(product),
@@ -2971,7 +3025,7 @@ async function processMessengerEvent(event: MessengerEvent) {
     }
 
     const selectionOptions = getMessengerProductSelectionQuickReplies(
-      products,
+      catalogProducts,
       detectMessengerReplyLanguage(normalizedActionText),
     );
     const productQuickReplies = selectionOptions.length ? selectionOptions : undefined;
@@ -2983,13 +3037,14 @@ async function processMessengerEvent(event: MessengerEvent) {
       countryCode: activeCountry,
       sourceContext: {
         deterministic_catalog_reply: true,
-        product_count: products.length,
+        bare_name_deterministic_reply: shouldAnswerBareNameDeterministically,
+        product_count: catalogProducts.length,
         selectable_product_count: productQuickReplies?.length || 0,
       },
     });
     const catalogLanguage = detectMessengerReplyLanguage(normalizedActionText);
     const productCards = buildMessengerProductCards(
-      products as Array<Record<string, unknown>>,
+      catalogProducts,
       activeCountry,
       catalogLanguage,
     );
