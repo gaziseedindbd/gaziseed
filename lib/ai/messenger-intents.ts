@@ -11,7 +11,7 @@ const BANGLISH_INTENT_ALIASES: Array<[RegExp, string]> = [
   [/\bnibo\b/g, 'নেব'], [/\bropon\b/g, 'রোপণ'], [/\bbopon\b/g, 'বপন'],
   [/\bdorkar\b/g, 'দরকার'], [/\blagbe\b/g, 'লাগবে'], [/\bden\b/g, 'দিন'],
   [/\bbolen\b/g, 'বলেন'], [/\bdekhte\b/g, 'দেখতে'], [/\bdekhan\b/g, 'দেখান'],
-  [/\bapnader\b/g, 'আপনাদের'], [/\bkache\b/g, 'কাছে'], [/\bmorich\b/g, 'মরিচ'], [/\b(?:lonka|lanka)\b/g, 'লঙ্কা'], [/\blagate\b/g, 'লাগাতে'],
+  [/\bapnader\b/g, 'আপনাদের'], [/\bkache\b/g, 'কাছে'], [/\bmorich\b/g, 'মরিচ'], [/\brani\b/g, 'রানি'], [/\b(?:lonka|lanka)\b/g, 'লঙ্কা'], [/\blagate\b/g, 'লাগাতে'],
 ];
 
 const HINDI_SEARCH_ALIASES: Array<[string, string]> = [
