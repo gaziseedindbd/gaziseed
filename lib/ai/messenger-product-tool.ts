@@ -134,6 +134,26 @@ export function classifyMessengerProductMatch(
     return 'exact';
   }
 
+  // Match all meaningful query words against the combined product identity.
+  // This handles natural word order and intervening catalogue descriptors,
+  // e.g. "hybrid rani lanka" against "Hybrid Chili Pepper – Rani Lanka".
+  // Requiring every query token prevents one shared word such as "hybrid"
+  // from making an unrelated product a trusted match.
+  const queryTokens = query.split(/\\s+/).filter((token) => token.length >= 2);
+  const identityTokens = new Set(
+    [nameBn, nameEn, slug.replace(/-/g, ' ')]
+      .join(' ')
+      .split(/\\s+/)
+      .filter(Boolean),
+  );
+
+  if (
+    queryTokens.length > 0 &&
+    queryTokens.every((token) => identityTokens.has(token))
+  ) {
+    return 'strong';
+  }
+
   if (
     (nameBn && nameBn.includes(query)) ||
     (nameEn && nameEn.includes(query)) ||
@@ -310,17 +330,16 @@ export async function searchMessengerProducts(
 
     if (!error && Array.isArray(data)) {
       const rankedRows = data as unknown as MessengerProduct[];
-      const refinedRows = lookupTerm === term
-        ? rankedRows
-        : rankedRows.map((row) => ({
-            ...row,
-            // Full-text overlap can make unrelated products look strong.
-            // For transactional questions, require a lexical name match.
-            search_match_type: classifyMessengerProductMatch(lookupTerm, row),
-          }));
+      // Never trust the database fuzzy rank by itself. Reclassify every row
+      // against the customer's normalized phrase so FTS/trigram overlap cannot
+      // promote unrelated products (for example, a hybrid pumpkin for "Rani Lanka").
+      const refinedRows = rankedRows.map((row) => ({
+        ...row,
+        search_match_type: classifyMessengerProductMatch(lookupTerm, row),
+      }));
       const trustedRows = refinedRows.filter(isTrustedMessengerProductMatch);
       return sortMessengerProducts(
-        lookupTerm !== term && trustedRows.length ? trustedRows : refinedRows,
+        trustedRows.length ? trustedRows : refinedRows,
       ).slice(0, safeLimit);
     }
   } catch {
