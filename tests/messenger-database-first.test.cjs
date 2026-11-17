@@ -24,7 +24,9 @@ const supportTool = fs.readFileSync(
 test('verified website/product knowledge and published CMS lookup run before generative AI', () => {
   const productLookup = route.indexOf('getMessengerWebsiteKnowledgeAnswer({');
   const cmsLookup = route.indexOf('getMessengerPublishedContentAnswer({');
-  const aiCall = route.indexOf('const result = await messengerAIChat({');
+  // The first AI call (a general-agriculture reply may get exactly one
+  // rewrite retry afterwards, which is a second messengerAIChat call).
+  const aiCall = route.indexOf('await messengerAIChat({');
 
   assert.ok(productLookup > 0, 'product database lookup must exist');
   assert.ok(cmsLookup > productLookup, 'published CMS lookup must follow the product knowledge lookup');

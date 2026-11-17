@@ -23,9 +23,14 @@ const BANGLISH_LATIN_HINTS = new Set([
 // These tokens are strong Romanized-Bengali signals. In particular, "ki"
 // alone is ambiguous with Hindi, so a phrase like "ki ki product ase"
 // must be resolved using "ase" rather than counting each "ki" as Hindi.
+// "dam"/"daam" are deliberately NOT here: dam (दाम/দাম) means "price" in
+// both Hindi and Bengali, so it must never short-circuit detection to
+// Bengali — e.g. "Rani chili ka dam kya hai?" is Hindi, not Banglish.
+// It stays in BANGLISH_LATIN_HINTS so it still counts toward the
+// Banglish score when no stronger Hindi signal is present.
 const DISTINCT_BANGLISH_HINTS = new Set([
   'ase', 'ache', 'nai', 'naie', 'nei', 'ami', 'amake', 'amar', 'amader',
-  'apni', 'apnar', 'tomar', 'koto', 'koyta', 'dam', 'daam', 'dorkar',
+  'apni', 'apnar', 'tomar', 'koto', 'koyta', 'dorkar',
   'lagbe', 'pabo', 'paben', 'diben', 'kibhabe', 'kivabe', 'kothay',
   'korbo', 'korben', 'bolen', 'dekhan', 'nibo', 'kinbo',
 ]);
