@@ -192,6 +192,75 @@ export function parseMessengerQuantity(text: string): number | null {
   return quantity;
 }
 
+const MESSENGER_BENGALI_DIGITS = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+
+/**
+ * Localized numeral for numbered option lines: Bengali digits for Bengali
+ * replies, Latin digits otherwise.
+ */
+export function formatMessengerOptionNumeral(
+  value: number,
+  language: ReturnType<typeof detectMessengerReplyLanguage>,
+): string {
+  if (
+    language === 'Bengali' &&
+    Number.isInteger(value) &&
+    value >= 0 &&
+    value <= 9
+  ) {
+    return MESSENGER_BENGALI_DIGITS[value];
+  }
+  return String(value);
+}
+
+/**
+ * The two saved-details confirmation options as numbered lines, one above
+ * the other, with the full untruncated labels. Messenger quick-reply titles
+ * are cut at 20 characters and need horizontal sliding, so the options are
+ * also written out in the message text itself.
+ */
+export function formatMessengerSavedDetailsOptions(
+  language: ReturnType<typeof detectMessengerReplyLanguage>,
+): string {
+  const useSaved =
+    language === 'Hindi'
+      ? 'Saved details उपयोग करें'
+      : language === 'English'
+        ? 'Use saved details'
+        : 'Saved details ব্যবহার করুন';
+  const changeDetails =
+    language === 'Hindi'
+      ? 'Details change करें'
+      : language === 'English'
+        ? 'Change details'
+        : 'তথ্য পরিবর্তন করুন';
+  return (
+    formatMessengerOptionNumeral(1, language) +
+    '. ' +
+    useSaved +
+    '\n' +
+    formatMessengerOptionNumeral(2, language) +
+    '. ' +
+    changeDetails
+  );
+}
+
+/**
+ * Reads a bare "1"/"2" (Latin or Bengali digits) as a saved-details
+ * confirmation answer. Only an exact bare number counts — "1 packet",
+ * "1, 2", "3" and any other text return null so they keep their existing
+ * meaning. Callers must only consult this while the saved-details
+ * confirmation step is actually pending for the conversation.
+ */
+export function parseMessengerSavedDetailsNumberSelection(
+  text: string,
+): 'confirm' | 'change' | null {
+  const normalized = normalizeMessengerDigits(text.trim());
+  if (normalized === '1') return 'confirm';
+  if (normalized === '2') return 'change';
+  return null;
+}
+
 export function normalizeMessengerPhone(text: string, country: MessengerOrderCountry): string | null {
   const digits = normalizeMessengerDigits(text).replace(/\D/g, '');
 
@@ -457,7 +526,7 @@ function formatMessengerOrderCartSummary(
   return [cartLabel, ...lines, '', `${subtotalLabel}: ${currency}${subtotal.toFixed(0)}`].join('\n');
 }
 
-function getMessengerSavedDetailsReply(
+export function getMessengerSavedDetailsReply(
   pending: PendingMessengerOrder,
   cart: MessengerCartItem[],
   currency: string,
@@ -467,6 +536,7 @@ function getMessengerSavedDetailsReply(
     ? addPendingMessengerOrderToCart(cart, pending)
     : cart;
   const summary = formatMessengerOrderCartSummary(orderItems, currency, language);
+  const numberedOptions = formatMessengerSavedDetailsOptions(language);
   if (language === 'Hindi') {
     return [
       '✅ आपके saved Messenger order details मिल गए हैं।',
@@ -478,6 +548,8 @@ function getMessengerSavedDetailsReply(
       'पता: ' + (pending.delivery_address || 'saved नहीं है'),
       '',
       messengerOrderText(language, 'saved_details'),
+      '',
+      numberedOptions,
     ].join('\n');
   }
   if (language === 'English') {
@@ -491,6 +563,8 @@ function getMessengerSavedDetailsReply(
       'Address: ' + (pending.delivery_address || 'Not saved'),
       '',
       messengerOrderText(language, 'saved_details'),
+      '',
+      numberedOptions,
     ].join('\n');
   }
   return [
@@ -503,6 +577,8 @@ function getMessengerSavedDetailsReply(
     'ঠিকানা: ' + (pending.delivery_address || 'সংরক্ষিত নেই'),
     '',
     messengerOrderText(language, 'saved_details'),
+    '',
+    numberedOptions,
   ].join('\n');
 }
 export function getMessengerOrderResumeReply(
@@ -536,7 +612,13 @@ export function getMessengerOrderResumeReply(
     case 'india_state':
       return prefix + '\n\n' + messengerOrderText(language, 'state');
     case 'saved_details_confirmation':
-      return prefix + '\n\n' + messengerOrderText(language, 'saved_details');
+      return (
+        prefix +
+        '\n\n' +
+        messengerOrderText(language, 'saved_details') +
+        '\n\n' +
+        formatMessengerSavedDetailsOptions(language)
+      );
     case 'confirmation':
       return prefix + '\n\n' + messengerOrderText(language, 'confirmation');
   }
@@ -960,6 +1042,13 @@ export async function handleMessengerOrderFlow(args: {
     }
 
     if (pending.step === 'saved_details_confirmation') {
+      // A bare "1"/"2" (Latin or Bengali digits) answers the numbered
+      // options shown in the message text. This check lives inside this
+      // step only, so a bare number anywhere else keeps its existing
+      // meaning (quantity, product-number selection, or normal handling).
+      const numberSelection = parseMessengerSavedDetailsNumberSelection(
+        args.text,
+      );
       if (isMessengerCancellation(args.text)) {
         return {
           handled: true,
@@ -968,7 +1057,10 @@ export async function handleMessengerOrderFlow(args: {
         };
       }
 
-      if (isMessengerChangeDetailsRequest(args.text)) {
+      if (
+        numberSelection === 'change' ||
+        isMessengerChangeDetailsRequest(args.text)
+      ) {
         const next: PendingMessengerOrder = {
           ...pending,
           step: 'name',
@@ -989,7 +1081,10 @@ export async function handleMessengerOrderFlow(args: {
         };
       }
 
-      if (!isMessengerConfirmation(args.text)) {
+      if (
+        numberSelection !== 'confirm' &&
+        !isMessengerConfirmation(args.text)
+      ) {
         return {
           handled: true,
           reply: messengerOrderText(replyLanguage, 'saved_invalid'),
