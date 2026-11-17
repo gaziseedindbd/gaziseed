@@ -16,6 +16,9 @@
   "include": [
     "tests/messenger-intents.test.ts",
     "tests/messenger-e2e.test.ts",
+    "tests/messenger-general-advice.test.ts",
+    "lib/ai/messenger-general-advice-guard.ts",
+    "tests/messenger-language.test.ts",
     "tests/messenger-country.test.ts",
     "tests/messenger-price-faq-guard.test.ts",
     "tests/messenger-banglish-particles.test.ts",
