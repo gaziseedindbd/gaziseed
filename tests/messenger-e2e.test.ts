@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHmac } from 'node:crypto';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 import {
   MessengerAIProviderError,
@@ -15,6 +16,7 @@ import {
 import { verifyMessengerWebhookSignature } from '../lib/ai/messenger-webhook-security';
 import {
   classifyMessengerProductMatch,
+  formatMessengerShortProductReply,
   getMessengerProductSelectionQuickReplies,
   normalizeMessengerProductQuery,
   serializeMessengerProducts,
@@ -25,9 +27,12 @@ import {
   shouldIncludeMessengerAIHistoryMessage,
 } from '../lib/ai/messenger-history';
 import {
+  getMessengerWebsiteKnowledgeAnswer,
+  isMessengerBareProductNameQuery,
   isMessengerExplicitProductKnowledgeQuery,
   isMessengerProductSpecificKnowledgeQuery,
   isMessengerWebsiteKnowledgeRequest,
+  scoreMessengerProductFaqMatch,
   selectMessengerFaqResponse,
 } from '../lib/ai/messenger-knowledge-tool';
 import {
@@ -500,6 +505,200 @@ test('database FAQ matching stays paired with its source-language question and a
 
   assert.equal(match?.language, 'English');
   assert.equal(match?.answer, 'Sow the seeds about 0.5 cm deep.');
+});
+
+const RANI_FAQ_QUESTION = 'এই মরিচের জাতের নাম কী?';
+const RANI_FAQ_ANSWER =
+  'এটি হাইব্রিড মরিচ, রানি লঙ্কা (বাণিজ্যিক চাষ) নামে তালিকাভুক্ত।';
+
+const RANI_SHORT_REPLY_PRODUCT = {
+  name_bn: 'হাইব্রিড মরিচ, রানি লঙ্কা (বাণিজ্যিক চাষ)',
+  name_en: 'Hybrid Chili – Rani Lanka',
+  slug: 'hybrid-chili-rani-lanka',
+  regular_price: 190,
+  sale_price: null,
+  offer_price: null,
+  price: 190,
+  stock: 25,
+  packet_weight: '200 g',
+};
+
+// Minimal stand-in for the Supabase client used by
+// getMessengerWebsiteKnowledgeAnswer: the indexed RPC returns the Rani
+// product, product_faqs returns its variety FAQ, and product reads return
+// the full Rani record. `variety: null` forces the field-answer path to
+// miss so the FAQ path is exercised.
+function makeRaniKnowledgeSupabase(variety: string | null = 'হাইব্রিড মরিচ') {
+  const rani = {
+    ...RANI_SHORT_REPLY_PRODUCT,
+    id: 'rani-lanka-id',
+    short_description: 'হাইব্রিড মরিচ, রানি লঙ্কা',
+    description: 'হাইব্রিড মরিচ, রানি লঙ্কা (বাণিজ্যিক চাষ)',
+    is_active: true,
+    seed_type: 'মরিচ',
+    variety,
+    brand: null,
+    origin: null,
+    season: null,
+    planting_season: null,
+    germination_time: null,
+    germination_rate: null,
+    harvest_time: null,
+    plant_spacing: null,
+    planting_depth: null,
+    sunlight: null,
+    water_requirement: null,
+    soil_type: null,
+    growing_location: null,
+    seed_quantity: null,
+    expected_yield: null,
+    cultivation_instructions: null,
+    storage_instructions: null,
+    country_code: 'IN',
+  };
+
+  const faqs = [
+    {
+      id: 'faq-rani-variety-name',
+      question_bn: RANI_FAQ_QUESTION,
+      answer_bn: RANI_FAQ_ANSWER,
+      question_en: 'What is the name of this chili variety?',
+      answer_en:
+        'It is listed as Hybrid Chili, Rani Lanka (Commercial Cultivation).',
+      display_order: 1,
+    },
+  ];
+
+  type FakeQueryResult = { data: unknown; error: null };
+  const makeQuery = (table: string) => {
+    const result: FakeQueryResult = {
+      data: table === 'product_faqs' ? faqs : [rani],
+      error: null,
+    };
+    const builder = {
+      select: () => builder,
+      eq: () => builder,
+      or: () => builder,
+      order: () => builder,
+      limit: () => builder,
+      in: () => builder,
+      maybeSingle: async () => ({ data: rani, error: null }),
+      then: (resolve: (value: FakeQueryResult) => void) => resolve(result),
+    };
+    return builder;
+  };
+
+  return {
+    rpc: async () => ({ data: [rani], error: null }),
+    from: (table: string) => makeQuery(table),
+  } as unknown as SupabaseClient;
+}
+
+test('a bare Rani product name does not confidently match its variety FAQ', () => {
+  const score = scoreMessengerProductFaqMatch(
+    'রানি মরিচের বীজ',
+    RANI_FAQ_QUESTION,
+  );
+
+  // One shared word ("মরিচ") must not count twice via the genitive
+  // expansion ("মরিচের" + "মরিচ").
+  assert.equal(score.overlap, 1);
+  assert.equal(score.confident, false);
+});
+
+test('a real Rani variety question still confidently matches the same FAQ', () => {
+  const score = scoreMessengerProductFaqMatch(
+    'রানি মরিচের বীজের জাতের নাম কী?',
+    RANI_FAQ_QUESTION,
+  );
+
+  assert.equal(score.overlap, 3);
+  assert.equal(score.confident, true);
+
+  assert.equal(isMessengerBareProductNameQuery('রানি মরিচের বীজ'), true);
+  assert.equal(
+    isMessengerBareProductNameQuery('রানি মরিচের বীজের জাতের নাম কী?'),
+    false,
+  );
+  assert.equal(isMessengerBareProductNameQuery('এই বীজের দাম কত?'), false);
+  assert.equal(isMessengerBareProductNameQuery('Rani Chili Seed'), true);
+});
+
+test('a bare Rani product name falls through to the catalog short price reply', async () => {
+  const knowledge = await getMessengerWebsiteKnowledgeAnswer({
+    supabase: makeRaniKnowledgeSupabase(),
+    country: 'IN',
+    text: 'রানি মরিচের বীজ',
+  });
+
+  // The knowledge path must not answer a bare product name with a FAQ
+  // reply, so the deterministic catalog path can answer with the price.
+  assert.equal(knowledge.handled, false);
+  assert.equal(knowledge.productId, 'rani-lanka-id');
+
+  const shortReply = formatMessengerShortProductReply(
+    RANI_SHORT_REPLY_PRODUCT,
+    'IN',
+    'Bengali',
+  );
+
+  assert.equal(
+    shortReply,
+    [
+      'হাইব্রিড মরিচ, রানি লঙ্কা (বাণিজ্যিক চাষ)',
+      'দাম: ₹190 প্রতি প্যাকেট',
+      'অর্ডার করবেন?',
+    ].join('\n'),
+  );
+  assert.equal(shortReply.includes('❓'), false);
+  assert.equal(shortReply.includes('জাতের নাম'), false);
+});
+
+test('an English bare Rani product name still gives the short price reply', async () => {
+  const knowledge = await getMessengerWebsiteKnowledgeAnswer({
+    supabase: makeRaniKnowledgeSupabase(),
+    country: 'IN',
+    text: 'Rani Chili Seed',
+  });
+
+  assert.equal(knowledge.handled, false);
+
+  assert.equal(
+    formatMessengerShortProductReply(
+      RANI_SHORT_REPLY_PRODUCT,
+      'IN',
+      'English',
+    ),
+    [
+      'Hybrid Chili – Rani Lanka',
+      'Price: ₹190 per packet',
+      'Would you like to order?',
+    ].join('\n'),
+  );
+});
+
+test('a real Rani variety question still gets a verified FAQ answer', async () => {
+  const knowledge = await getMessengerWebsiteKnowledgeAnswer({
+    supabase: makeRaniKnowledgeSupabase(null),
+    country: 'IN',
+    text: 'রানি মরিচের বীজের জাতের নাম কী?',
+  });
+
+  assert.equal(knowledge.handled, true);
+  assert.ok(knowledge.reply?.includes('❓'));
+  assert.ok(knowledge.reply?.includes(RANI_FAQ_ANSWER));
+});
+
+test('a real Rani variety question still gets a verified field answer', async () => {
+  const knowledge = await getMessengerWebsiteKnowledgeAnswer({
+    supabase: makeRaniKnowledgeSupabase('হাইব্রিড মরিচ'),
+    country: 'IN',
+    text: 'রানি মরিচের বীজের জাতের নাম কী?',
+  });
+
+  assert.equal(knowledge.handled, true);
+  assert.ok(knowledge.reply?.includes('জাত/ভ্যারাইটি'));
+  assert.ok(knowledge.reply?.includes('হাইব্রিড মরিচ'));
 });
 
 test('requires verified CMS answers for website-specific policy questions', () => {

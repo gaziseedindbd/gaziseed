@@ -293,10 +293,80 @@ function tokenize(value: string): string[] {
   ).slice(0, 12);
 }
 
+// Reduce a token to its base form by stripping the same Bengali genitive
+// suffixes tokenize() expands (e.g. "মরিচের" -> "মরিচ", "জাতের" -> "জাত").
+// Longest suffix first: a token ending in "দের" also ends in "ের", so the
+// shorter strip must not win and leave a dangling "দ".
+function baseToken(token: string): string {
+  const normalized = token.toLocaleLowerCase().trim();
+  if (normalized.length >= 5 && normalized.endsWith('গুলোর')) {
+    return normalized.slice(0, -5);
+  }
+  if (normalized.length >= 5 && normalized.endsWith('দের')) {
+    return normalized.slice(0, -3);
+  }
+  if (normalized.length >= 4 && normalized.endsWith('ের')) {
+    return normalized.slice(0, -2);
+  }
+  return normalized;
+}
+
+// Canonicalize tokens so each distinct base word counts once. Without this,
+// the genitive expansion in tokenize() lets one shared word count twice
+// (both "মরিচের" and "মরিচ"), which inflated FAQ overlap scores.
+function canonicalBaseTokens(tokens: string[]): string[] {
+  return Array.from(
+    new Set(
+      tokens.map(baseToken).filter((token) => token.length >= 2),
+    ),
+  );
+}
+
 function hasKnowledgeIntent(text: string): boolean {
   const normalized = normalizeText(text);
   return KNOWLEDGE_KEYWORDS.some((keyword) =>
     normalized.includes(keyword.toLocaleLowerCase()),
+  );
+}
+
+// Single words that turn a product mention into an actual question or a
+// field request (interrogatives and field names, in Bangla / English /
+// Hindi). Checked against whole words, never substrings, so product names
+// such as "কতবেল" or "জলপাই" do not false-positive on "কত" or "জল".
+// Deliberately excludes the generic trigger "বীজ"/"seed": a bare product
+// name contains it, and it alone asks nothing.
+const BARE_NAME_QUESTION_WORDS = new Set([
+  'কি', 'কী', 'কেমন', 'কেন', 'কখন', 'কোথায়', 'কোথায়', 'কোন', 'কোনটা', 'কত',
+  'কয়টা', 'কয়টা', 'জাত', 'ব্র্যান্ড', 'উৎপত্তি', 'ওজন', 'দাম', 'চাষ',
+  'চাষাবাদ', 'মৌসুম', 'অঙ্কুর', 'গজাতে', 'দূরত্ব', 'গভীরতা', 'রোদ',
+  'সূর্যালোক', 'পানি', 'মাটি', 'প্যাকেট', 'ফলন', 'সংরক্ষণ', 'পরিচর্যা',
+  'বিস্তারিত', 'তথ্য', 'বৈশিষ্ট্য', 'বপন', 'রোপণ', 'সেচ', 'ধরন', 'টাইপ',
+  'how', 'what', 'why', 'when', 'where', 'which', 'who', 'price', 'cost',
+  'weight', 'variety', 'brand', 'origin', 'cultivation', 'season',
+  'germination', 'spacing', 'depth', 'sunlight', 'water', 'soil', 'packet',
+  'yield', 'harvest', 'storage', 'care', 'details', 'about', 'sowing',
+  'planting', 'sow',
+  'कैसे', 'क्यों', 'कब', 'कहाँ', 'कितना', 'कितनी', 'कौन', 'क्या', 'किस्म',
+  'ब्रांड', 'उत्पत्ति', 'मौसम', 'अंकुरण', 'दूरी', 'गहराई', 'धूप', 'पानी',
+  'मिट्टी', 'पैकेट', 'उपज', 'कटाई', 'भंडारण', 'खेती', 'देखभाल', 'बुवाई',
+  'रोपाई',
+]);
+
+// Multi-word question phrases that word matching alone cannot catch.
+const BARE_NAME_QUESTION_PHRASES =
+  /(seed type|বীজের ধরন|বীজের টাইপ|how to|how much|how many|কী ভাবে|কি ভাবে)/i;
+
+// True when the customer only named a product ("রানি মরিচের বীজ") without
+// asking anything about it. Such a message is a catalog lookup, not a
+// knowledge question: no FAQ reply may hijack it, so the deterministic
+// catalog path can answer with the short price reply instead.
+export function isMessengerBareProductNameQuery(text: string): boolean {
+  const normalized = normalizeText(text);
+  if (BARE_NAME_QUESTION_PHRASES.test(normalized)) return false;
+  const words =
+    normalized.match(/[A-Za-z0-9\u0900-\u097F\u0980-\u09FF]+/g) || [];
+  return !words.some((word) =>
+    BARE_NAME_QUESTION_WORDS.has(baseToken(word)),
   );
 }
 
@@ -427,6 +497,46 @@ type ProductFaqMatch = {
   language: MessengerReplyLanguage;
 };
 
+export type MessengerProductFaqMatchScore = {
+  overlap: number;
+  ratio: number;
+  phraseMatch: boolean;
+  confident: boolean;
+};
+
+// Pure FAQ confidence scoring, shared by findFaq and its tests. Overlap is
+// computed on canonical base tokens so one shared word can never count
+// twice (see canonicalBaseTokens): "রানি মরিচের বীজ" vs the FAQ question
+// "এই মরিচের জাতের নাম কী?" shares only "মরিচ" (overlap 1, ratio 1/3),
+// so it is not confident, while the real question "রানি মরিচের বীজের
+// জাতের নাম কী?" shares "মরিচ", "জাত" and "নাম" (overlap 3) and is.
+export function scoreMessengerProductFaqMatch(
+  text: string,
+  question: string,
+): MessengerProductFaqMatchScore {
+  const queryTokens = tokenize(text);
+  const queryBaseTokens = canonicalBaseTokens(queryTokens);
+  const questionBaseTokens = new Set(canonicalBaseTokens(tokenize(question)));
+  const overlap = queryBaseTokens.filter((token) =>
+    questionBaseTokens.has(token),
+  );
+  const ratio = overlap.length / Math.max(1, queryBaseTokens.length);
+  const normalizedText = normalizeText(text);
+  const normalizedQuestion = normalizeText(question);
+  const phraseMatch =
+    queryTokens.length >= 2 &&
+    normalizedText.length > 6 &&
+    normalizedQuestion.length > 6 &&
+    (normalizedText.includes(normalizedQuestion) ||
+      normalizedQuestion.includes(normalizedText));
+  const confident =
+    phraseMatch ||
+    (overlap.length >= 2 && ratio >= 0.45) ||
+    (overlap.length >= 3 && ratio >= 0.35);
+
+  return { overlap: overlap.length, ratio, phraseMatch, confident };
+}
+
 async function findFaq(
   supabase: SupabaseClient,
   productId: string,
@@ -491,7 +601,6 @@ async function findFaq(
   }
 
   const requestedLanguage = detectMessengerReplyLanguage(text);
-  const queryTokens = tokenize(text);
   const candidates: Array<{
     id: string;
     question: string;
@@ -516,21 +625,8 @@ async function findFaq(
       const answer = firstNonEmpty(pair.answer);
       if (!question || !answer) continue;
 
-      const questionTokens = new Set(tokenize(question));
-      const overlap = queryTokens.filter((token) => questionTokens.has(token));
-      const ratio = overlap.length / Math.max(1, queryTokens.length);
-      const normalizedText = normalizeText(text);
-      const normalizedQuestion = normalizeText(question);
-      const phraseMatch =
-        queryTokens.length >= 2 &&
-        normalizedText.length > 6 &&
-        normalizedQuestion.length > 6 &&
-        (normalizedText.includes(normalizedQuestion) ||
-          normalizedQuestion.includes(normalizedText));
-      const confident =
-        phraseMatch ||
-        (overlap.length >= 2 && ratio >= 0.45) ||
-        (overlap.length >= 3 && ratio >= 0.35);
+      const { overlap, phraseMatch, confident } =
+        scoreMessengerProductFaqMatch(text, question);
 
       if (!confident) continue;
 
@@ -542,7 +638,7 @@ async function findFaq(
         // Record the actual answer language separately from the matched column.
         language: detectMessengerReplyLanguage(answer),
         score:
-          overlap.length * 2 +
+          overlap * 2 +
           (phraseMatch ? 6 : 0) +
           (pair.language === requestedLanguage ? 0.75 : 0),
       });
@@ -908,6 +1004,11 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
     return { handled: false };
   }
 
+  // A bare product name ("রানি মরিচের বীজ") asks nothing: no FAQ reply may
+  // answer it, so the deterministic catalog path can reply with the short
+  // price reply instead. Real questions still reach the FAQ/field path.
+  const bareProductNameQuery = isMessengerBareProductNameQuery(text);
+
   let candidate: MessengerProduct | null = null;
 
   // An explicit product name in the current question must win over a stale
@@ -941,7 +1042,9 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
   // but a similar match must never authorize field facts, prices, or stock.
   if (!candidate && explicitlyMentionedProducts.length === 1) {
     const explicitlyMentionedProduct = explicitlyMentionedProducts[0];
-    const faq = await findFaq(supabase, explicitlyMentionedProduct.id, text);
+    const faq = bareProductNameQuery
+      ? null
+      : await findFaq(supabase, explicitlyMentionedProduct.id, text);
     if (faq) {
       return {
         handled: true,
@@ -1009,7 +1112,9 @@ export async function getMessengerWebsiteKnowledgeAnswer(args: {
     };
   }
 
-  const faq = await findFaq(supabase, candidate.id, text);
+  const faq = bareProductNameQuery
+    ? null
+    : await findFaq(supabase, candidate.id, text);
   if (faq) {
     return {
       handled: true,
