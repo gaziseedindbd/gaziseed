@@ -168,14 +168,14 @@ function isSeedKnowledgeRequest(text: string): boolean {
 
 function isGeneralSeedAdviceRequest(text: string): boolean {
   if (!isSeedKnowledgeRequest(text)) return false;
-  const normalized = text.toLocaleLowerCase().replace(/\\s+/g, ' ').trim();
+  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
   return /(কীভাবে|কিভাবে|কখন|কতদিন|কত দিনে|অঙ্কুর|বপন|রোপণ|লাগাতে|পরিচর্যা|মাটি|সার|পানি|জল|watering|how to|when to|how long|germination|sow|sowing|plant|planting|care|soil|fertilizer)/i.test(
     normalized,
   );
 }
 
 function hasAgricultureCheckoutPrompt(reply: string): boolean {
-  return /(অর্ডার করতে চাইলে|অর্ডার করতে হলে|অর্ডার নিশ্চিত|order (?:now|if|to|would)|checkout|কত\\s*(?:গ্রাম|প্যাকেট|টি প্যাকেট)|quantity|delivery address|ডেলিভারির ঠিকানা|পিন কোড|মোবাইল নম্বর|যোগাযোগের নাম|payment method|পেমেন্ট পদ্ধতি|ক্যাশ অন ডেলিভারি|cash on delivery)/i.test(reply);
+  return /(অর্ডার করতে চাইলে|অর্ডার করতে হলে|অর্ডার নিশ্চিত|order (?:now|if|to|would)|checkout|কত\s*(?:গ্রাম|প্যাকেট|টি প্যাকেট)|quantity|delivery address|ডেলিভারির ঠিকানা|পিন কোড|মোবাইল নম্বর|যোগাযোগের নাম|payment method|পেমেন্ট পদ্ধতি|ক্যাশ অন ডেলিভারি|cash on delivery)/i.test(reply);
 }
 
 function getSafeCultivationIntentReply(language: string): string {
