@@ -140,7 +140,7 @@ export function isMessengerSeedKnowledgeQuestion(text: string): boolean {
       normalized,
     );
   const hasQuestionOrAdviceIntent =
-    /(কীভাবে|কিভাবে|কী ভাবে|কি ভাবে|কী করে|কি করে|কখন|কতদিন|কত দিনে|অঙ্কুর|বপন|রোপণ|পরিচর্যা|মাটি|সার|পানি|জল|ব্র্যান্ড|জাত|variety|season|germination|sow|sowing|plant|planting|care|soil|fertilizer|water|watering|brand|origin|কোথাকার|উৎপত্তি|details|about|তথ্য|বিস্তারিত|कैसे|कब|कितने दिन|अंकुरण|बुवाई|रोपाई|देखभाल|मिट्टी|खाद|पानी|सिंचाई|ब्रांड|किस्म|मौसम|उत्पत्ति|जानकारी|विवरण)/i.test(
+    /(কীভাবে|কিভাবে|কী ভাবে|কি ভাবে|কী করে|কি করে|কখন|কতদিন|কত দিনে|অঙ্কুর|বপন|রোপণ|লাগাতে|পরিচর্যা|মাটি|সার|পানি|জল|ব্র্যান্ড|জাত|variety|season|germination|sow|sowing|plant|planting|care|soil|fertilizer|water|watering|brand|origin|কোথাকার|উৎপত্তি|details|about|তথ্য|বিস্তারিত|कैसे|कब|कितने दिन|अंकुरण|बुवाई|रोपाई|देखभाल|मिट्टी|खाद|पानी|सिंचाई|ब्रांड|किस्म|मौसम|उत्पत्ति|जानकारी|विवरण)/i.test(
       normalized,
     );
 
