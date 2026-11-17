@@ -64,18 +64,17 @@ export async function POST(request: NextRequest) {
     return jsonError('message must contain 1–500 characters', 400);
   }
 
+  // Match the real Messenger webhook: product search must use the server-only
+  // service role so RLS does not silently hide the customer catalog. Never use
+  // a public/anon key for this privileged server-side test route.
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    process.env.SUPABASE_ANON_KEY;
+  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !supabaseKey) {
-    return jsonError('Preview Supabase configuration is missing', 503);
+  if (!supabaseUrl || !serviceRole) {
+    return jsonError('Preview server-side Supabase configuration is missing', 503);
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey, {
+  const supabase = createClient(supabaseUrl, serviceRole, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
