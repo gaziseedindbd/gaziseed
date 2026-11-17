@@ -29,6 +29,7 @@
     "tests/messenger-numbered-confirmation.test.ts",
     "tests/messenger-ai-provider-fallback.test.ts",
     "tests/messenger-stockout-detector.test.ts",
+    "tests/messenger-bare-name-reply.test.ts",
     "lib/ai/messenger-country.ts",
     "lib/ai/messenger-intents.ts",
     "lib/ai/messenger-monitoring.ts",
