@@ -162,3 +162,13 @@ test('Banglish seed requests normalize common chili and rani lonka product terms
   assert.ok(products.includes('term.match(/[\\p{L}\\p{M}\\p{N}]+/gu)'));
 
 });
+
+
+test('cultivation requests bypass pending checkout and block AI order prompts', () => {
+  assert.match(route, /!isGeneralSeedAdviceRequest\(normalizedActionText\) &&/);
+  assert.match(route, /function hasAgricultureCheckoutPrompt\(reply: string\)/);
+  assert.match(route, /function getSafeCultivationIntentReply\(language: string\)/);
+  assert.match(route, /unsafeAgricultureCheckoutReply/);
+  assert.match(route, /cultivation_intent_guard/);
+  assert.match(route, /agriculture_checkout_guard: unsafeAgricultureCheckoutReply/);
+});
