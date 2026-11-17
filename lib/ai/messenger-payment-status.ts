@@ -1,4 +1,5 @@
 import { detectMessengerReplyLanguage, type MessengerReplyLanguage } from './messenger-language';
+import { messengerButtonTitle } from './messenger-product-tool';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { extractMessengerPhone, normalizeMessengerPhone } from './messenger-phone';
@@ -289,7 +290,7 @@ export async function getMessengerPaymentStatusReply(args: {
             orderIds: [String(linkedOrder.id)],
             cashfreeOrderId,
             ...(retryUrl
-              ? { paymentRetryButton: { title: '🔄 Retry Payment', url: retryUrl } }
+              ? { paymentRetryButton: { title: messengerButtonTitle(replyLanguage, 'retry_payment'), url: retryUrl } }
               : {}),
           };
         }
@@ -310,7 +311,7 @@ export async function getMessengerPaymentStatusReply(args: {
             : '\n\nPayment complete হলে একই Messenger-এ “payment status” আবার লিখতে পারেন।'),
         cashfreeOrderId,
         ...(retryUrl
-          ? { paymentRetryButton: { title: '🔄 Retry Payment', url: retryUrl } }
+          ? { paymentRetryButton: { title: messengerButtonTitle(replyLanguage, 'retry_payment'), url: retryUrl } }
           : {}),
       };
     }
@@ -399,7 +400,7 @@ export async function getMessengerPaymentStatusReply(args: {
     orderIds: [String(order.id)],
     cashfreeOrderId: resolvedCashfreeOrderId,
     ...(retryUrl
-      ? { paymentRetryButton: { title: '🔄 Retry Payment', url: retryUrl } }
+      ? { paymentRetryButton: { title: messengerButtonTitle(replyLanguage, 'retry_payment'), url: retryUrl } }
       : {}),
   };
 }

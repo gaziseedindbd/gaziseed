@@ -10,6 +10,7 @@ import {
   formatMessengerShortProductReply,
   getMessengerProductSelectionQuickReplies,
   isTrustedMessengerProductMatch,
+  messengerButtonTitle,
   searchMessengerProducts,
   listMessengerProducts,
   serializeMessengerProducts,
@@ -1617,8 +1618,8 @@ async function processMessengerEvent(event: MessengerEvent) {
       reply,
       messengerCartItems.length
         ? [
-            { title: '✅ Checkout', payload: 'CART_CHECKOUT' },
-            { title: '➕ Add product', payload: 'CART_ADD_PRODUCT' },
+            { title: messengerButtonTitle(detectMessengerReplyLanguage(normalizedActionText), 'checkout'), payload: 'CART_CHECKOUT' },
+            { title: messengerButtonTitle(detectMessengerReplyLanguage(normalizedActionText), 'add_product'), payload: 'CART_ADD_PRODUCT' },
           ]
         : undefined,
     );
@@ -1788,8 +1789,8 @@ async function processMessengerEvent(event: MessengerEvent) {
       senderId,
       reply,
       [
-        { title: '✅ Checkout', payload: 'CART_CHECKOUT' },
-        { title: '➕ Add product', payload: 'CART_ADD_PRODUCT' },
+        { title: messengerButtonTitle(detectMessengerReplyLanguage(normalizedActionText), 'checkout'), payload: 'CART_CHECKOUT' },
+        { title: messengerButtonTitle(detectMessengerReplyLanguage(normalizedActionText), 'add_product'), payload: 'CART_ADD_PRODUCT' },
       ],
     );
     return;
@@ -1852,7 +1853,10 @@ async function processMessengerEvent(event: MessengerEvent) {
     await sendMessengerText(
       senderId,
       reply,
-      getMessengerProductSelectionQuickReplies([left, right]),
+      getMessengerProductSelectionQuickReplies(
+        [left, right],
+        detectMessengerReplyLanguage(normalizedActionText),
+      ),
     );
     return;
   }
@@ -2562,26 +2566,27 @@ async function processMessengerEvent(event: MessengerEvent) {
         },
       });
 
+      const orderConfirmLanguage = detectMessengerReplyLanguage(normalizedActionText);
       const confirmationQuickReplies =
         orderFlow.pending?.step === 'saved_details_confirmation'
           ? [
-              { title: '✅ Saved details ব্যবহার করুন', payload: 'ORDER_USE_SAVED_DETAILS' },
-              { title: '✏️ তথ্য পরিবর্তন করুন', payload: 'ORDER_CHANGE_DETAILS' },
+              { title: messengerButtonTitle(orderConfirmLanguage, 'use_saved_details'), payload: 'ORDER_USE_SAVED_DETAILS' },
+              { title: messengerButtonTitle(orderConfirmLanguage, 'change_details'), payload: 'ORDER_CHANGE_DETAILS' },
             ]
           : orderFlow.pending?.step === 'confirmation'
             ? [
-                { title: '✅ হ্যাঁ, অর্ডার নিশ্চিত করুন', payload: 'ORDER_CONFIRM' },
-                { title: '❌ না, অর্ডার বাতিল করুন', payload: 'ORDER_CANCEL' },
+                { title: messengerButtonTitle(orderConfirmLanguage, 'confirm_order'), payload: 'ORDER_CONFIRM' },
+                { title: messengerButtonTitle(orderConfirmLanguage, 'cancel_order'), payload: 'ORDER_CANCEL' },
               ]
             : orderFlow.pending?.step === 'name'
               ? [
-                  { title: '➕ আরও product', payload: 'CART_ADD_PRODUCT' },
-                  { title: '✅ Checkout', payload: 'CART_CHECKOUT' },
+                  { title: messengerButtonTitle(orderConfirmLanguage, 'add_more_product'), payload: 'CART_ADD_PRODUCT' },
+                  { title: messengerButtonTitle(orderConfirmLanguage, 'checkout'), payload: 'CART_CHECKOUT' },
                 ]
               : 'paymentButton' in orderFlow && orderFlow.paymentButton
-                ? [{ title: '💳 Payment Status', payload: 'PAYMENT_STATUS' }]
+                ? [{ title: messengerButtonTitle(orderConfirmLanguage, 'payment_status'), payload: 'PAYMENT_STATUS' }]
                 : orderNumberMatch
-                  ? [{ title: '📦 Order Status', payload: 'ORDER_STATUS' }]
+                  ? [{ title: messengerButtonTitle(orderConfirmLanguage, 'order_status'), payload: 'ORDER_STATUS' }]
                   : undefined;
 
       await sendMessengerText(
@@ -2762,7 +2767,10 @@ async function processMessengerEvent(event: MessengerEvent) {
 
       const productSelectionOptions = knowledgeResult.productId
         ? [{
-            title: '🛒 এই পণ্য নিন',
+            title: messengerButtonTitle(
+              detectMessengerReplyLanguage(normalizedActionText),
+              'take_product',
+            ),
             payload: `PRODUCT_SELECT:${knowledgeResult.productId}`,
           }]
         : undefined;
@@ -3236,7 +3244,10 @@ async function processMessengerEvent(event: MessengerEvent) {
             })
           : [];
       const aiProductSelectionOptions =
-        getMessengerProductSelectionQuickReplies(aiProductCandidates);
+        getMessengerProductSelectionQuickReplies(
+          aiProductCandidates,
+          detectMessengerReplyLanguage(normalizedActionText),
+        );
       await sendMessengerText(
         senderId,
         finalReply,
