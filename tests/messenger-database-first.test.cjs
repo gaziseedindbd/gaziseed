@@ -198,6 +198,6 @@ test('Preview Messenger test endpoint is isolated, authenticated, and database-f
   assert.match(previewTestRoute, /country !== 'IN' && country !== 'BD'/);
   assert.match(previewTestRoute, /message.length > 500/);
   assert.match(previewTestRoute, /process\.env\.SUPABASE_SERVICE_ROLE_KEY/);
-  assert.match(previewTestRoute, /server-only Supabase access/);
+  assert.match(previewTestRoute, /server-side test route/);
   assert.doesNotMatch(previewTestRoute, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY|NEXT_PUBLIC_SUPABASE_ANON_KEY/);
 });
