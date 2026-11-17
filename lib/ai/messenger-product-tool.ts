@@ -65,6 +65,41 @@ export function isTrustedMessengerProductMatch(product: unknown): boolean {
   return matchType === 'exact' || matchType === 'strong';
 }
 
+/**
+ * Best-match wins: when the customer did NOT ask for a list, a single
+ * trusted product may answer alone even when the search returned several
+ * trusted rows — but only when its match score strictly beats every other
+ * trusted row. A tie at the top score is genuine ambiguity (for example a
+ * generic "chili seeds" query matching several chilis equally), so the
+ * caller should keep the multi-product list instead. Untrusted
+ * ("similar") rows never win: their price/stock is not verified.
+ * Returns the winning product, or null when there is no trusted product
+ * or the top trusted score is tied.
+ */
+export function findMessengerBestMatchProduct(
+  products: Array<Record<string, unknown>>,
+): Record<string, unknown> | null {
+  const trusted = products.filter(isTrustedMessengerProductMatch);
+  if (!trusted.length) return null;
+
+  const sorted = [...trusted].sort(
+    (a, b) =>
+      Number(b.search_match_score || 0) - Number(a.search_match_score || 0),
+  );
+  const top = sorted[0];
+  const second = sorted[1];
+
+  if (
+    second &&
+    Number(second.search_match_score || 0) >=
+      Number(top.search_match_score || 0)
+  ) {
+    return null;
+  }
+
+  return top;
+}
+
 const PRODUCT_FIELDS = [
   'id',
   'name_bn',
