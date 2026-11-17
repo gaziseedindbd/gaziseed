@@ -6,10 +6,13 @@ import {
   messengerAIChat,
 } from '@/lib/ai/messenger-provider-router';
 import {
+  buildMessengerAIProviderFallbackReply,
   buildMessengerProductListSnapshot,
   enrichMessengerProductsWithKnowledge,
   findMessengerBestMatchProduct,
+  formatMessengerCatalogReply,
   formatMessengerNumberedListLine,
+  formatMessengerProductName,
   formatMessengerProductSelectionReply,
   formatMessengerShortProductReply,
   getMessengerProductSelectionQuickReplies,
@@ -243,173 +246,64 @@ function getMessengerComparisonQueries(text: string): string[] {
   return parts.slice(0, 2);
 }
 
-function formatMessengerProductName(product: Record<string, unknown>): string {
-  return (
-    (typeof product.name_bn === 'string' && product.name_bn) ||
-    (typeof product.name_en === 'string' && product.name_en) ||
-    (typeof product.slug === 'string' && product.slug) ||
-    'পণ্য'
-  );
-}
-
-function formatMessengerCatalogReply(
-  text: string,
+/**
+ * Product cards for a catalog reply: trusted, in-stock products with an
+ * image only. The card shows the price only (short-reply rule); checkout
+ * still uses the verified stock from the database. Shared by the catalog
+ * branch and the AI-provider fallback so both send identical cards.
+ */
+function buildMessengerProductCards(
   products: Array<Record<string, unknown>>,
   country: CountryCode,
-  language: MessengerReplyLanguage = detectMessengerReplyLanguage(text),
-): string {
-  const english = language === 'English';
-  const hindi = language === 'Hindi';
-
-  const displayName = (product: Record<string, unknown>) =>
-    english || hindi
-      ? ((typeof product.name_en === 'string' && product.name_en) ||
-          (typeof product.name_bn === 'string' && product.name_bn) ||
-          (typeof product.slug === 'string' && product.slug) ||
-          (hindi ? 'उत्पाद' : 'Product'))
-      : formatMessengerProductName(product);
-
-  if (!products.length) {
-    if (english) return 'Sorry, this product is not in stock in this country.';
-    if (hindi) return 'माफ़ कीजिए, यह उत्पाद इस देश में स्टॉक में नहीं है।';
-    return 'দুঃখিত, এই প্রোডাক্টটি এই দেশে স্টকে নেই।';
-  }
-
-  if (!isProductListRequest(text)) {
-    // Best-match wins: when one trusted product strictly outscores every
-    // other trusted product, answer about that one product alone instead
-    // of showing a multi-product list (live case: "Imported long red chili
-    // seeds price?" matched both Imported Long Red Chili at score 4 and
-    // 12-Month Banana Long Chilli at score 2, so the list ran even though
-    // the customer named one product). A tie at the top score is genuine
-    // ambiguity, so the list reply below is kept for it.
-    const bestMatch = findMessengerBestMatchProduct(products);
-    if (bestMatch) {
-      // Short-reply rule (user requirement): 3-4 lines, price always
-      // shown, stock only when the customer asked for it, weight only
-      // when asked and only when the database has it. No details /
-      // delivery dump here.
-      return formatMessengerShortProductReply(
-        bestMatch as unknown as Parameters<
-          typeof formatMessengerShortProductReply
-        >[0],
-        country,
-        language,
-        {
-          stock: /(স্টক|stock|स्टॉक)/i.test(text),
-          weight: /(ওজন|weight|वजन)/i.test(text),
-        },
-      );
-    }
-
-    if (products.length === 1) {
-      const product = products[0];
-      const name = displayName(product);
-
-      const prefix = english
-        ? '🔎 You may be looking for:'
-        : hindi
-          ? '🔎 शायद आप यह उत्पाद खोज रहे हैं:'
-          : '🔎 আপনি সম্ভবত এই পণ্যটি খুঁজছেন:';
-      return english
-        ? prefix + ' ' + name + '\n\nPlease enter the exact product name to verify the current price and stock before ordering.'
-        : hindi
-          ? prefix + ' ' + name + '\n\nऑर्डर से पहले सही उत्पाद का नाम लिखें, ताकि मौजूदा कीमत और स्टॉक की पुष्टि हो सके।'
-          : prefix + ' ' + name + '\n\nঅর্ডার বা বর্তমান দাম/স্টক জানতে সঠিক product name লিখুন।';
-    }
-  }
-
-  const primaryProducts = products.filter(isTrustedMessengerProductMatch);
-  const similarProducts = products.filter(
-    (product) => !isTrustedMessengerProductMatch(product),
-  );
-
-  // Short-reply rule: a list line shows its number + name + price only.
-  // The number is how the customer selects a product without sliding the
-  // quick-reply pills: they reply with just the number. Stock is not
-  // shown unless the customer asked for it; the product card / order flow
-  // still carries the verified stock for checkout.
-  const formatPrimaryLine = (product: Record<string, unknown>, index: number) => {
-    return formatMessengerNumberedListLine(
-      {
-        name_bn: typeof product.name_bn === 'string' ? product.name_bn : null,
-        name_en: typeof product.name_en === 'string' ? product.name_en : null,
-        slug: typeof product.slug === 'string' ? product.slug : null,
-        price: typeof product.effective_price === 'number' ? product.effective_price : null,
-      },
-      index,
-      country,
-      language,
-    );
-  };
-
-  const formatSimilarLine = (product: Record<string, unknown>) => {
-    const name = displayName(product);
-    return english
-      ? '• ' + name + ' — potential similar match; price/stock not verified'
-      : hindi
-        ? '• ' + name + ' — संभावित मिलता-जुलता उत्पाद; कीमत और स्टॉक की पुष्टि नहीं हुई है'
-        : '• ' + name + ' — সম্ভাব্য similar match; দাম/স্টক যাচাই করা হয়নি';
-  };
-
-  const sections: string[] = [];
-  if (primaryProducts.length) {
-    sections.push(
-      primaryProducts.slice(0, 12).map((product, index) => formatPrimaryLine(product, index)).join('\n'),
-    );
-  }
-
-  if (similarProducts.length) {
-    sections.push(
-      (english
-        ? '🔎 Potential similar products:'
-        : hindi
-          ? '🔎 संभावित मिलते-जुलते उत्पाद:'
-          : '🔎 সম্ভাব্য similar products:') +
-      '\n' +
-      similarProducts.slice(0, 6).map(formatSimilarLine).join('\n'),
-    );
-  }
-
-  // When the list has numbered (selectable) products, the closing line
-  // tells the customer to reply with the number instead of pointing at
-  // the quick-reply pills below. With no numbered products the previous
-  // closing lines are kept.
-  const hasNumberedProducts = primaryProducts.length > 0;
-
-  if (english) {
-    return (
-      '🌱 Matching GAZI SEED products:\n\n' +
-      sections.join('\n\n') +
-      (hasNumberedProducts
-        ? '\n\n' + messengerNumberedListInstruction(language)
-        : products.length
-          ? '\n\nChoose a product option below to verify its current price and stock or place an order.'
-          : '\n\nFor price, stock, or ordering information, type the exact product name.')
-    );
-  }
-
-  if (hindi) {
-    return (
-      '🌱 GAZI SEED के उपलब्ध उत्पाद:\n\n' +
-      sections.join('\n\n') +
-      (hasNumberedProducts
-        ? '\n\n' + messengerNumberedListInstruction(language)
-        : products.length
-          ? '\n\nनीचे दिए गए विकल्पों में से उत्पाद चुनें। उसके बाद मौजूदा कीमत और स्टॉक की पुष्टि होगी।'
-          : '\n\nकीमत, स्टॉक या ऑर्डर की जानकारी के लिए उत्पाद का सही नाम लिखें।')
-    );
-  }
-
-  return (
-    '🌱 GAZI SEED-এর matching products:\n\n' +
-    sections.join('\n\n') +
-    (hasNumberedProducts
-      ? '\n\n' + messengerNumberedListInstruction(language)
-      : products.length
-        ? '\n\nনিচের option থেকে পণ্য বেছে নিন—তারপর database থেকে বর্তমান দাম ও stock যাচাই হবে।'
-        : '\n\nকোনো পণ্য সম্পর্কে দাম, স্টক বা অর্ডার জানতে সঠিক product name লিখুন।')
-  );
+  language: MessengerReplyLanguage,
+): Array<{
+  title: string;
+  subtitle?: string;
+  imageUrl?: string;
+  productId: string;
+  productUrl?: string;
+  viewProductTitle?: string;
+  orderNowTitle?: string;
+}> {
+  const currency = formatMessengerCurrency(country);
+  return products
+    .filter(
+      (product) =>
+        isTrustedMessengerProductMatch(product) &&
+        typeof product.stock === 'number' &&
+        product.stock > 0 &&
+        typeof product.image === 'string' &&
+        /^https?:\/\//i.test(product.image.trim()),
+    )
+    .map((product) => {
+      const cardName = language === 'English'
+        ? ((typeof product.name_en === 'string' && product.name_en) || formatMessengerProductName(product))
+        : language === 'Hindi'
+          ? ((typeof product.name_en === 'string' && product.name_en) || formatMessengerProductName(product))
+          : formatMessengerProductName(product);
+      const priceLabel = typeof product.effective_price === 'number'
+        ? currency + product.effective_price
+        : language === 'English'
+          ? 'Price unavailable'
+          : language === 'Hindi'
+            ? 'कीमत उपलब्ध नहीं'
+            : 'দাম জানা নেই';
+      return {
+        title: cardName,
+        // Short-reply rule: the card shows the price only. Stock is
+        // shown only when the customer asks for it; checkout still uses
+        // the verified stock from the database.
+        subtitle: priceLabel,
+        imageUrl: String(product.image).trim(),
+        productId: String(product.id),
+        viewProductTitle: language === 'English' ? 'View Product' : language === 'Hindi' ? 'उत्पाद देखें' : 'পণ্য দেখুন',
+        orderNowTitle: language === 'English' ? 'Order Now' : language === 'Hindi' ? 'ऑर्डर करें' : 'অর্ডার করুন',
+        productUrl:
+          typeof product.slug === 'string' && product.slug
+            ? 'https://www.gaziseed.com/product/' + encodeURIComponent(product.slug)
+            : undefined,
+      };
+    });
 }
 
 async function getWebSeedContext(text: string): Promise<string> {
@@ -3098,46 +2992,12 @@ async function processMessengerEvent(event: MessengerEvent) {
         selectable_product_count: productQuickReplies?.length || 0,
       },
     });
-    const messengerCountry: CountryCode = activeCountry;
     const catalogLanguage = detectMessengerReplyLanguage(normalizedActionText);
-    const productCards = (products as Array<Record<string, unknown>>)
-      .filter(
-        (product) =>
-          isTrustedMessengerProductMatch(product) &&
-          typeof product.stock === 'number' &&
-          product.stock > 0 &&
-          typeof product.image === 'string' &&
-          /^https?:\/\//i.test(product.image.trim()),
-      )
-      .map((product) => {
-        const cardName = catalogLanguage === 'English'
-          ? ((typeof product.name_en === 'string' && product.name_en) || formatMessengerProductName(product))
-          : catalogLanguage === 'Hindi'
-            ? ((typeof product.name_en === 'string' && product.name_en) || formatMessengerProductName(product))
-            : formatMessengerProductName(product);
-        const priceLabel = typeof product.effective_price === 'number'
-          ? formatMessengerCurrency(messengerCountry) + product.effective_price
-          : catalogLanguage === 'English'
-            ? 'Price unavailable'
-            : catalogLanguage === 'Hindi'
-              ? 'कीमत उपलब्ध नहीं'
-              : 'দাম জানা নেই';
-        return {
-          title: cardName,
-          // Short-reply rule: the card shows the price only. Stock is
-          // shown only when the customer asks for it; checkout still uses
-          // the verified stock from the database.
-          subtitle: priceLabel,
-          imageUrl: String(product.image).trim(),
-          productId: String(product.id),
-          viewProductTitle: catalogLanguage === 'English' ? 'View Product' : catalogLanguage === 'Hindi' ? 'उत्पाद देखें' : 'পণ্য দেখুন',
-          orderNowTitle: catalogLanguage === 'English' ? 'Order Now' : catalogLanguage === 'Hindi' ? 'ऑर्डर करें' : 'অর্ডার করুন',
-          productUrl:
-            typeof product.slug === 'string' && product.slug
-              ? 'https://www.gaziseed.com/product/' + encodeURIComponent(product.slug)
-              : undefined,
-        };
-      });
+    const productCards = buildMessengerProductCards(
+      products as Array<Record<string, unknown>>,
+      activeCountry,
+      catalogLanguage,
+    );
 
     await sendMessengerText(senderId, catalogReply, productQuickReplies, undefined, productCards);
     return;
@@ -3255,13 +3115,97 @@ async function processMessengerEvent(event: MessengerEvent) {
       return;
     }
 
-    let result = await messengerAIChat({
-      messages: chatMessages,
-      temperature: 0.2,
-      // Short replies only: 250 tokens is enough for 3-4 short lines and
-      // keeps the model from dumping details the customer never asked for.
-      max_tokens: 250,
-    });
+    let result: Awaited<ReturnType<typeof messengerAIChat>>;
+    try {
+      result = await messengerAIChat({
+        messages: chatMessages,
+        temperature: 0.2,
+        // Short replies only: 250 tokens is enough for 3-4 short lines and
+        // keeps the model from dumping details the customer never asked for.
+        max_tokens: 250,
+      });
+    } catch (error) {
+      // All configured AI providers failed. When the database already
+      // returned trusted products for this turn, answer deterministically
+      // from them (short price reply for one product, numbered list for
+      // several) instead of handing the customer off to human support.
+      // With no trusted product there is nothing verified to answer with,
+      // so rethrow and keep the existing handoff behaviour. Only a
+      // provider error is caught here — any other failure still reaches
+      // the section catch below exactly as before.
+      if (!(error instanceof MessengerAIProviderError)) throw error;
+      const fallbackReply = buildMessengerAIProviderFallbackReply(
+        normalizedActionText,
+        products as Array<Record<string, unknown>>,
+        activeCountry,
+        replyLanguage,
+      );
+      if (!fallbackReply) throw error;
+
+      const fallbackMetadata: Record<string, unknown> = {};
+      if (fallbackReply.numberedProductList.length) {
+        fallbackMetadata.last_messenger_product_list =
+          fallbackReply.numberedProductList;
+        fallbackMetadata.last_messenger_product_list_at =
+          new Date().toISOString();
+        // A fresh list replaces the previous single-product context, so a
+        // bare "yes" afterwards cannot order the product from before the list.
+        fallbackMetadata.last_messenger_product = null;
+      } else if (fallbackReply.selectedProduct) {
+        const product = fallbackReply.selectedProduct;
+        fallbackMetadata.last_messenger_product = {
+          id: typeof product.id === 'string' ? product.id : null,
+          name: formatMessengerProductName(product),
+          price:
+            typeof product.effective_price === 'number'
+              ? product.effective_price
+              : 0,
+          stock: typeof product.stock === 'number' ? product.stock : 0,
+        };
+      }
+
+      if (Object.keys(fallbackMetadata).length) {
+        await markConversation(
+          sb,
+          conversation.id,
+          'active',
+          fallbackMetadata,
+          activeCountry,
+        );
+      }
+
+      const fallbackQuickReplies = getMessengerProductSelectionQuickReplies(
+        products as Array<Record<string, unknown>>,
+        replyLanguage,
+      );
+      const fallbackProductCards = buildMessengerProductCards(
+        products as Array<Record<string, unknown>>,
+        activeCountry,
+        replyLanguage,
+      );
+
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: fallbackReply.reply,
+        actionStatus: 'product_catalog',
+        countryCode: activeCountry,
+        sourceContext: {
+          deterministic_catalog_reply: true,
+          ai_provider_fallback: true,
+          product_count: (products as Array<Record<string, unknown>>).length,
+          selectable_product_count: fallbackQuickReplies.length,
+        },
+      });
+
+      await sendMessengerText(
+        senderId,
+        fallbackReply.reply,
+        fallbackQuickReplies.length ? fallbackQuickReplies : undefined,
+        undefined,
+        fallbackProductCards,
+      );
+      return;
+    }
 
     // A general-agriculture answer that still trips the unsafe-specifics
     // filter gets exactly one rewrite attempt without any numbers or
@@ -3274,13 +3218,22 @@ async function processMessengerEvent(event: MessengerEvent) {
         result.content,
       )
     ) {
-      const rewriteResult = await messengerAIChat({
-        messages: appendGeneralAgricultureRewriteInstruction(chatMessages),
-        temperature: 0.2,
-        max_tokens: 250,
-      });
-      if (!hasUnsafeGeneralAgricultureSpecifics(rewriteResult.content)) {
-        result = rewriteResult;
+      try {
+        const rewriteResult = await messengerAIChat({
+          messages: appendGeneralAgricultureRewriteInstruction(chatMessages),
+          temperature: 0.2,
+          max_tokens: 250,
+        });
+        if (!hasUnsafeGeneralAgricultureSpecifics(rewriteResult.content)) {
+          result = rewriteResult;
+        }
+      } catch (rewriteError) {
+        // The first AI answer already exists; a provider failure on the
+        // optional one-time rewrite must not turn it into a handoff.
+        // Keep the original result and continue below.
+        if (!(rewriteError instanceof MessengerAIProviderError)) {
+          throw rewriteError;
+        }
       }
     }
 

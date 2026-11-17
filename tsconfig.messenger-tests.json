@@ -27,6 +27,7 @@
     "tests/messenger-button-language.test.ts",
     "tests/messenger-numbered-selection.test.ts",
     "tests/messenger-numbered-confirmation.test.ts",
+    "tests/messenger-ai-provider-fallback.test.ts",
     "lib/ai/messenger-country.ts",
     "lib/ai/messenger-intents.ts",
     "lib/ai/messenger-monitoring.ts",

@@ -1,6 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { MessengerReplyLanguage } from './messenger-language';
-import { normalizeMessengerHindiSearchText } from './messenger-intents';
+import {
+  detectMessengerReplyLanguage,
+  type MessengerReplyLanguage,
+} from './messenger-language';
+import {
+  isProductListRequest,
+  normalizeMessengerHindiSearchText,
+} from './messenger-intents';
 import {
   MESSENGER_NON_DISTINCTIVE_TOKENS,
   canonicalizeMessengerSearchText,
@@ -1053,4 +1059,230 @@ export function serializeMessengerProducts(products: MessengerProduct[]) {
       transactional_data_verified: transactionalDataVerified,
     };
   });
+}
+
+export function formatMessengerProductName(product: Record<string, unknown>): string {
+  return (
+    (typeof product.name_bn === 'string' && product.name_bn) ||
+    (typeof product.name_en === 'string' && product.name_en) ||
+    (typeof product.slug === 'string' && product.slug) ||
+    'পণ্য'
+  );
+}
+
+export function formatMessengerCatalogReply(
+  text: string,
+  products: Array<Record<string, unknown>>,
+  country: MessengerCountry,
+  language: MessengerReplyLanguage = detectMessengerReplyLanguage(text),
+): string {
+  const english = language === 'English';
+  const hindi = language === 'Hindi';
+
+  const displayName = (product: Record<string, unknown>) =>
+    english || hindi
+      ? ((typeof product.name_en === 'string' && product.name_en) ||
+          (typeof product.name_bn === 'string' && product.name_bn) ||
+          (typeof product.slug === 'string' && product.slug) ||
+          (hindi ? 'उत्पाद' : 'Product'))
+      : formatMessengerProductName(product);
+
+  if (!products.length) {
+    if (english) return 'Sorry, this product is not in stock in this country.';
+    if (hindi) return 'माफ़ कीजिए, यह उत्पाद इस देश में स्टॉक में नहीं है।';
+    return 'দুঃখিত, এই প্রোডাক্টটি এই দেশে স্টকে নেই।';
+  }
+
+  if (!isProductListRequest(text)) {
+    // Best-match wins: when one trusted product strictly outscores every
+    // other trusted product, answer about that one product alone instead
+    // of showing a multi-product list (live case: "Imported long red chili
+    // seeds price?" matched both Imported Long Red Chili at score 4 and
+    // 12-Month Banana Long Chilli at score 2, so the list ran even though
+    // the customer named one product). A tie at the top score is genuine
+    // ambiguity, so the list reply below is kept for it.
+    const bestMatch = findMessengerBestMatchProduct(products);
+    if (bestMatch) {
+      // Short-reply rule (user requirement): 3-4 lines, price always
+      // shown, stock only when the customer asked for it, weight only
+      // when asked and only when the database has it. No details /
+      // delivery dump here.
+      return formatMessengerShortProductReply(
+        bestMatch as unknown as Parameters<
+          typeof formatMessengerShortProductReply
+        >[0],
+        country,
+        language,
+        {
+          stock: /(স্টক|stock|स्टॉक)/i.test(text),
+          weight: /(ওজন|weight|वजन)/i.test(text),
+        },
+      );
+    }
+
+    if (products.length === 1) {
+      const product = products[0];
+      const name = displayName(product);
+
+      const prefix = english
+        ? '🔎 You may be looking for:'
+        : hindi
+          ? '🔎 शायद आप यह उत्पाद खोज रहे हैं:'
+          : '🔎 আপনি সম্ভবত এই পণ্যটি খুঁজছেন:';
+      return english
+        ? prefix + ' ' + name + '\n\nPlease enter the exact product name to verify the current price and stock before ordering.'
+        : hindi
+          ? prefix + ' ' + name + '\n\nऑर्डर से पहले सही उत्पाद का नाम लिखें, ताकि मौजूदा कीमत और स्टॉक की पुष्टि हो सके।'
+          : prefix + ' ' + name + '\n\nঅর্ডার বা বর্তমান দাম/স্টক জানতে সঠিক product name লিখুন।';
+    }
+  }
+
+  const primaryProducts = products.filter(isTrustedMessengerProductMatch);
+  const similarProducts = products.filter(
+    (product) => !isTrustedMessengerProductMatch(product),
+  );
+
+  // Short-reply rule: a list line shows its number + name + price only.
+  // The number is how the customer selects a product without sliding the
+  // quick-reply pills: they reply with just the number. Stock is not
+  // shown unless the customer asked for it; the product card / order flow
+  // still carries the verified stock for checkout.
+  const formatPrimaryLine = (product: Record<string, unknown>, index: number) => {
+    return formatMessengerNumberedListLine(
+      {
+        name_bn: typeof product.name_bn === 'string' ? product.name_bn : null,
+        name_en: typeof product.name_en === 'string' ? product.name_en : null,
+        slug: typeof product.slug === 'string' ? product.slug : null,
+        price: typeof product.effective_price === 'number' ? product.effective_price : null,
+      },
+      index,
+      country,
+      language,
+    );
+  };
+
+  const formatSimilarLine = (product: Record<string, unknown>) => {
+    const name = displayName(product);
+    return english
+      ? '• ' + name + ' — potential similar match; price/stock not verified'
+      : hindi
+        ? '• ' + name + ' — संभावित मिलता-जुलता उत्पाद; कीमत और स्टॉक की पुष्टि नहीं हुई है'
+        : '• ' + name + ' — সম্ভাব্য similar match; দাম/স্টক যাচাই করা হয়নি';
+  };
+
+  const sections: string[] = [];
+  if (primaryProducts.length) {
+    sections.push(
+      primaryProducts.slice(0, 12).map((product, index) => formatPrimaryLine(product, index)).join('\n'),
+    );
+  }
+
+  if (similarProducts.length) {
+    sections.push(
+      (english
+        ? '🔎 Potential similar products:'
+        : hindi
+          ? '🔎 संभावित मिलते-जुलते उत्पाद:'
+          : '🔎 সম্ভাব্য similar products:') +
+      '\n' +
+      similarProducts.slice(0, 6).map(formatSimilarLine).join('\n'),
+    );
+  }
+
+  // When the list has numbered (selectable) products, the closing line
+  // tells the customer to reply with the number instead of pointing at
+  // the quick-reply pills below. With no numbered products the previous
+  // closing lines are kept.
+  const hasNumberedProducts = primaryProducts.length > 0;
+
+  if (english) {
+    return (
+      '🌱 Matching GAZI SEED products:\n\n' +
+      sections.join('\n\n') +
+      (hasNumberedProducts
+        ? '\n\n' + messengerNumberedListInstruction(language)
+        : products.length
+          ? '\n\nChoose a product option below to verify its current price and stock or place an order.'
+          : '\n\nFor price, stock, or ordering information, type the exact product name.')
+    );
+  }
+
+  if (hindi) {
+    return (
+      '🌱 GAZI SEED के उपलब्ध उत्पाद:\n\n' +
+      sections.join('\n\n') +
+      (hasNumberedProducts
+        ? '\n\n' + messengerNumberedListInstruction(language)
+        : products.length
+          ? '\n\nनीचे दिए गए विकल्पों में से उत्पाद चुनें। उसके बाद मौजूदा कीमत और स्टॉक की पुष्टि होगी।'
+          : '\n\nकीमत, स्टॉक या ऑर्डर की जानकारी के लिए उत्पाद का सही नाम लिखें।')
+    );
+  }
+
+  return (
+    '🌱 GAZI SEED-এর matching products:\n\n' +
+    sections.join('\n\n') +
+    (hasNumberedProducts
+      ? '\n\n' + messengerNumberedListInstruction(language)
+      : products.length
+        ? '\n\nনিচের option থেকে পণ্য বেছে নিন—তারপর database থেকে বর্তমান দাম ও stock যাচাই হবে।'
+        : '\n\nকোনো পণ্য সম্পর্কে দাম, স্টক বা অর্ডার জানতে সঠিক product name লিখুন।')
+  );
+}
+
+/**
+ * Deterministic product answer used when the AI call fails with
+ * MessengerAIProviderError (all configured providers down) but the database
+ * already returned trusted products for this turn. A provider outage must
+ * not turn a price/list question into a human-support handoff when the
+ * verified answer is already in hand: the reply is built with the exact
+ * same formatters the catalog branch uses, so it is identical to what the
+ * customer would have received from the normal catalog path.
+ *
+ * Returns null when there is no trusted (exact/strong) product — a greeting,
+ * a general question, or only similar/untrusted matches have nothing
+ * verified to answer with, so the caller must keep the existing handoff
+ * behaviour for those.
+ */
+export type MessengerAIProviderFallbackReply = {
+  /** Reply text, identical to the catalog reply for the same products. */
+  reply: string;
+  /** True when the reply is the single-product short reply. */
+  isSingleShortReply: boolean;
+  /** The product the short reply is about, or null when the reply is a list. */
+  selectedProduct: Record<string, unknown> | null;
+  /** Snapshot of the numbered list to store, or [] when the reply is not a list. */
+  numberedProductList: MessengerListedProduct[];
+};
+
+export function buildMessengerAIProviderFallbackReply(
+  text: string,
+  products: Array<Record<string, unknown>>,
+  country: MessengerCountry,
+  language: MessengerReplyLanguage,
+): MessengerAIProviderFallbackReply | null {
+  const trustedProducts = products.filter(isTrustedMessengerProductMatch);
+  if (!trustedProducts.length) return null;
+
+  const reply = formatMessengerCatalogReply(text, products, country, language);
+
+  // The reply is a list unless the catalog formatter answered with the
+  // single-product short reply: best-match wins (when the customer did not
+  // ask for a list) or a single trusted product.
+  const isSingleShortReply =
+    !isProductListRequest(text) &&
+    findMessengerBestMatchProduct(products) !== null;
+
+  const selectedProduct = isSingleShortReply
+    ? findMessengerBestMatchProduct(products)
+    : null;
+
+  return {
+    reply,
+    isSingleShortReply,
+    selectedProduct,
+    numberedProductList: isSingleShortReply
+      ? []
+      : buildMessengerProductListSnapshot(products),
+  };
 }
