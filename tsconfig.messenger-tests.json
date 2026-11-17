@@ -25,6 +25,7 @@
     "tests/messenger-best-match.test.ts",
     "tests/messenger-sold-out-reply.test.ts",
     "tests/messenger-button-language.test.ts",
+    "tests/messenger-numbered-selection.test.ts",
     "lib/ai/messenger-country.ts",
     "lib/ai/messenger-intents.ts",
     "lib/ai/messenger-monitoring.ts",

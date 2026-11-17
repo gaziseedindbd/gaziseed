@@ -6,12 +6,18 @@ import {
   messengerAIChat,
 } from '@/lib/ai/messenger-provider-router';
 import {
+  buildMessengerProductListSnapshot,
   enrichMessengerProductsWithKnowledge,
   findMessengerBestMatchProduct,
+  formatMessengerNumberedListLine,
+  formatMessengerProductSelectionReply,
   formatMessengerShortProductReply,
   getMessengerProductSelectionQuickReplies,
   isTrustedMessengerProductMatch,
   messengerButtonTitle,
+  messengerNumberedListInstruction,
+  parseMessengerProductNumberSelections,
+  parseMessengerStoredProductList,
   searchMessengerProducts,
   listMessengerProducts,
   serializeMessengerProducts,
@@ -252,7 +258,6 @@ function formatMessengerCatalogReply(
   country: CountryCode,
   language: MessengerReplyLanguage = detectMessengerReplyLanguage(text),
 ): string {
-  const currency = formatMessengerCurrency(country);
   const english = language === 'English';
   const hindi = language === 'Hindi';
 
@@ -319,21 +324,23 @@ function formatMessengerCatalogReply(
     (product) => !isTrustedMessengerProductMatch(product),
   );
 
-  // Short-reply rule: a list line shows name + price only. Stock is not
+  // Short-reply rule: a list line shows its number + name + price only.
+  // The number is how the customer selects a product without sliding the
+  // quick-reply pills: they reply with just the number. Stock is not
   // shown unless the customer asked for it; the product card / order flow
   // still carries the verified stock for checkout.
-  const formatPrimaryLine = (product: Record<string, unknown>) => {
-    const name = displayName(product);
-    const price =
-      typeof product.effective_price === 'number'
-        ? currency + product.effective_price
-        : english
-          ? 'Price unavailable'
-          : hindi
-            ? 'कीमत उपलब्ध नहीं'
-            : 'দাম জানা নেই';
-
-    return '• ' + name + ' — ' + price;
+  const formatPrimaryLine = (product: Record<string, unknown>, index: number) => {
+    return formatMessengerNumberedListLine(
+      {
+        name_bn: typeof product.name_bn === 'string' ? product.name_bn : null,
+        name_en: typeof product.name_en === 'string' ? product.name_en : null,
+        slug: typeof product.slug === 'string' ? product.slug : null,
+        price: typeof product.effective_price === 'number' ? product.effective_price : null,
+      },
+      index,
+      country,
+      language,
+    );
   };
 
   const formatSimilarLine = (product: Record<string, unknown>) => {
@@ -347,7 +354,9 @@ function formatMessengerCatalogReply(
 
   const sections: string[] = [];
   if (primaryProducts.length) {
-    sections.push(primaryProducts.slice(0, 12).map(formatPrimaryLine).join('\n'));
+    sections.push(
+      primaryProducts.slice(0, 12).map((product, index) => formatPrimaryLine(product, index)).join('\n'),
+    );
   }
 
   if (similarProducts.length) {
@@ -362,13 +371,21 @@ function formatMessengerCatalogReply(
     );
   }
 
+  // When the list has numbered (selectable) products, the closing line
+  // tells the customer to reply with the number instead of pointing at
+  // the quick-reply pills below. With no numbered products the previous
+  // closing lines are kept.
+  const hasNumberedProducts = primaryProducts.length > 0;
+
   if (english) {
     return (
       '🌱 Matching GAZI SEED products:\n\n' +
       sections.join('\n\n') +
-      (products.length
-        ? '\n\nChoose a product option below to verify its current price and stock or place an order.'
-        : '\n\nFor price, stock, or ordering information, type the exact product name.')
+      (hasNumberedProducts
+        ? '\n\n' + messengerNumberedListInstruction(language)
+        : products.length
+          ? '\n\nChoose a product option below to verify its current price and stock or place an order.'
+          : '\n\nFor price, stock, or ordering information, type the exact product name.')
     );
   }
 
@@ -376,18 +393,22 @@ function formatMessengerCatalogReply(
     return (
       '🌱 GAZI SEED के उपलब्ध उत्पाद:\n\n' +
       sections.join('\n\n') +
-      (products.length
-        ? '\n\nनीचे दिए गए विकल्पों में से उत्पाद चुनें। उसके बाद मौजूदा कीमत और स्टॉक की पुष्टि होगी।'
-        : '\n\nकीमत, स्टॉक या ऑर्डर की जानकारी के लिए उत्पाद का सही नाम लिखें।')
+      (hasNumberedProducts
+        ? '\n\n' + messengerNumberedListInstruction(language)
+        : products.length
+          ? '\n\nनीचे दिए गए विकल्पों में से उत्पाद चुनें। उसके बाद मौजूदा कीमत और स्टॉक की पुष्टि होगी।'
+          : '\n\nकीमत, स्टॉक या ऑर्डर की जानकारी के लिए उत्पाद का सही नाम लिखें।')
     );
   }
 
   return (
     '🌱 GAZI SEED-এর matching products:\n\n' +
     sections.join('\n\n') +
-    (products.length
-      ? '\n\nনিচের option থেকে পণ্য বেছে নিন—তারপর database থেকে বর্তমান দাম ও stock যাচাই হবে।'
-      : '\n\nকোনো পণ্য সম্পর্কে দাম, স্টক বা অর্ডার জানতে সঠিক product name লিখুন।')
+    (hasNumberedProducts
+      ? '\n\n' + messengerNumberedListInstruction(language)
+      : products.length
+        ? '\n\nনিচের option থেকে পণ্য বেছে নিন—তারপর database থেকে বর্তমান দাম ও stock যাচাই হবে।'
+        : '\n\nকোনো পণ্য সম্পর্কে দাম, স্টক বা অর্ডার জানতে সঠিক product name লিখুন।')
   );
 }
 
@@ -1402,6 +1423,16 @@ async function processMessengerEvent(event: MessengerEvent) {
               : undefined,
         }));
       const reply = `${confirmation}\n\n${catalogReply}`;
+      // This confirmation also sends a numbered product list, so store
+      // the shown list for a later bare-number selection.
+      const confirmedListSnapshot = buildMessengerProductListSnapshot(serializedProducts);
+      if (confirmedListSnapshot.length) {
+        await markConversation(sb, conversation.id, 'active', {
+          last_messenger_product_list: confirmedListSnapshot,
+          last_messenger_product_list_at: new Date().toISOString(),
+          last_messenger_product: null,
+        }, activeCountry);
+      }
       await saveMessage(sb, conversation.id, {
         role: 'assistant',
         content: reply,
@@ -2625,6 +2656,68 @@ async function processMessengerEvent(event: MessengerEvent) {
     }
   }
 
+  // Numbered product selection: after a multi-product list, the customer
+  // can reply with just the number ("2", "২") or several numbers
+  // ("1, 3", "১, ৩"). The pending-order flow above already consumed any
+  // number meant as a quantity, so reaching here means no checkout step
+  // is waiting for a number. A bare number only — "2 packet" / "মরিচ 3টা"
+  // are quantity requests and fall through to the normal handling, as does
+  // any out-of-range number or a message with no stored list. When any
+  // number in a multi-select is out of range, the whole message is not a
+  // selection (no partial selection).
+  const numberSelections = parseMessengerProductNumberSelections(normalizedActionText);
+  if (numberSelections !== null) {
+    const storedList = parseMessengerStoredProductList(
+      conversation.metadata?.last_messenger_product_list,
+    );
+    const selectedProducts =
+      storedList && numberSelections.every((n) => n >= 1 && n <= storedList.length)
+        ? numberSelections.map((n) => storedList[n - 1])
+        : [];
+    if (selectedProducts.length) {
+      const selectionLanguage = detectMessengerReplyLanguage(normalizedActionText);
+      const selectionReply = formatMessengerProductSelectionReply(
+        selectedProducts,
+        activeCountry,
+        selectionLanguage,
+      );
+      const firstSelected = selectedProducts[0];
+      await markConversation(sb, conversation.id, 'active', {
+        last_messenger_product: {
+          id: firstSelected.id,
+          name:
+            selectionLanguage === 'English' || selectionLanguage === 'Hindi'
+              ? (firstSelected.name_en || firstSelected.name_bn || firstSelected.slug || 'Product')
+              : (firstSelected.name_bn || firstSelected.name_en || firstSelected.slug || 'পণ্য'),
+          price: firstSelected.price ?? 0,
+          stock: firstSelected.stock,
+        },
+      }, activeCountry);
+      const selectionQuickReplies = getMessengerProductSelectionQuickReplies(
+        selectedProducts,
+        selectionLanguage,
+      );
+      await saveMessage(sb, conversation.id, {
+        role: 'assistant',
+        content: selectionReply,
+        actionStatus: 'product_number_selected',
+        countryCode: activeCountry,
+        sourceContext: {
+          deterministic_number_selection: true,
+          product_ids: selectedProducts.map((product) => product.id),
+        },
+      });
+      await sendMessengerText(
+        senderId,
+        selectionReply,
+        selectionQuickReplies.length ? selectionQuickReplies : undefined,
+      );
+      return;
+    }
+    // No valid selection (no stored list or a number out of range):
+    // fall through to the normal handling below.
+  }
+
   // Handle delivery fees and timelines deterministically from the same tables
   // used by checkout; never ask generative AI to calculate a live delivery fee.
   const deliveryChargeQuestion = isMessengerDeliveryChargeQuestion(normalizedActionText);
@@ -2954,19 +3047,38 @@ async function processMessengerEvent(event: MessengerEvent) {
       isTrustedMessengerProductMatch,
     );
 
-    if (trustedProducts.length === 1 && products.length === 1) {
+    // A list reply numbers the products in the text; store the exact list
+    // that was shown so a later bare-number reply ("2" / "২") can select
+    // from it. The single-product short reply is not a list, so it keeps
+    // the existing last_messenger_product marking only.
+    const isSingleShortReply =
+      !isProductListRequest(normalizedActionText) && products.length === 1;
+    const numberedProductList = isSingleShortReply
+      ? []
+      : buildMessengerProductListSnapshot(products);
+
+    const catalogMetadata: Record<string, unknown> = {};
+    if (numberedProductList.length) {
+      catalogMetadata.last_messenger_product_list = numberedProductList;
+      catalogMetadata.last_messenger_product_list_at = new Date().toISOString();
+      // A fresh list replaces the previous single-product context, so a
+      // bare "yes" afterwards cannot order the product from before the list.
+      catalogMetadata.last_messenger_product = null;
+    } else if (trustedProducts.length === 1 && products.length === 1) {
       const product = trustedProducts[0];
-      await markConversation(sb, conversation.id, 'active', {
-        last_messenger_product: {
-          id: typeof product.id === 'string' ? product.id : null,
-          name: formatMessengerProductName(product),
-          price:
-            typeof product.effective_price === 'number'
-              ? product.effective_price
-              : 0,
-          stock: typeof product.stock === 'number' ? product.stock : 0,
-        },
-      }, activeCountry);
+      catalogMetadata.last_messenger_product = {
+        id: typeof product.id === 'string' ? product.id : null,
+        name: formatMessengerProductName(product),
+        price:
+          typeof product.effective_price === 'number'
+            ? product.effective_price
+            : 0,
+        stock: typeof product.stock === 'number' ? product.stock : 0,
+      };
+    }
+
+    if (Object.keys(catalogMetadata).length) {
+      await markConversation(sb, conversation.id, 'active', catalogMetadata, activeCountry);
     }
 
     const selectionOptions = getMessengerProductSelectionQuickReplies(
