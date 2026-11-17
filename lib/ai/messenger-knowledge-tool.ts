@@ -467,6 +467,27 @@ export function isMessengerBareProductNameQuery(text: string): boolean {
   );
 }
 
+// Stock-out phrasings in the three reply languages. A legitimate "not in
+// stock" answer is never a knowledge fallback, even when it starts with
+// "দুঃখিত": the fallback detector below matches "দুঃখিত.*নেই", so without
+// this early return the bot's own correct stock-out reply ("দুঃখিত, এই
+// প্রোডাক্টটি এই দেশে স্টকে নেই।") would be replaced by the human-support
+// contact reply. Only literal stock-out assertions are listed here —
+// "no stock" is deliberately excluded, so a genuine "I don't have stock
+// information" fallback still matches the fallback regex.
+const MESSENGER_STOCK_OUT_PATTERNS =
+  /স্টকে নেই|স্টক শেষ|স্টক নেই|not in stock|out of stock|स्टॉक खत्म|स्टॉक में नहीं/i;
+
+// True when the AI reply is a knowledge fallback ("I don't have that
+// information") rather than a real answer. A stock-out answer is a verified
+// answer from the database, so it is checked first and always returns
+// false — even if the text also contains a fallback-looking phrase.
+export function isKnowledgeFallbackResponse(text: string): boolean {
+  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+  if (MESSENGER_STOCK_OUT_PATTERNS.test(normalized)) return false;
+  return /(দুঃখিত.*(তথ্য|সুনির্দিষ্ট|জানা|নেই)|তথ্য.*(নেই|অন্তর্ভুক্ত নেই)|তথ্যতালিকায়.*(নেই|অন্তর্ভুক্ত)|সুনির্দিষ্ট তথ্য নেই|জানাতে পারছি না|বিস্তারিত জানতে.*(মানব|সহায়তা)|মানব (সহায়তা|প্রতিনিধি)|human support|human representative|cannot (provide|verify)|don't have (the )?information|no (specific|exact) information)/i.test(normalized);
+}
+
 function effectivePrice(product: MessengerProduct): number | null {
   const prices = [
     product.offer_price,

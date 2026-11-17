@@ -85,6 +85,7 @@ import {
 import {
   getMessengerWebsiteKnowledgeAnswer,
   isBangladeshPaymentMethodQuestion,
+  isKnowledgeFallbackResponse,
   isMessengerProductSpecificKnowledgeQuery,
 } from '@/lib/ai/messenger-knowledge-tool';
 import {
@@ -342,12 +343,6 @@ async function getWebSeedContext(text: string): Promise<string> {
     return '';
   }
 }
-
-function isKnowledgeFallbackResponse(text: string): boolean {
-  const normalized = text.toLocaleLowerCase().replace(/\s+/g, ' ').trim();
-  return /(দুঃখিত.*(তথ্য|সুনির্দিষ্ট|জানা|নেই)|তথ্য.*(নেই|অন্তর্ভুক্ত নেই)|তথ্যতালিকায়.*(নেই|অন্তর্ভুক্ত)|সুনির্দিষ্ট তথ্য নেই|জানাতে পারছি না|বিস্তারিত জানতে.*(মানব|সহায়তা)|মানব (সহায়তা|প্রতিনিধি)|human support|human representative|cannot (provide|verify)|don't have (the )?information|no (specific|exact) information)/i.test(normalized);
-}
-
 
 function getCountryQuestion() {
   return (
