@@ -172,3 +172,29 @@ test('cultivation requests bypass pending checkout and block AI order prompts', 
   assert.match(route, /cultivation_intent_guard/);
   assert.match(route, /agriculture_checkout_guard: unsafeAgricultureCheckoutReply/);
 });
+
+
+test('Preview Messenger test endpoint is isolated, authenticated, and database-first', () => {
+  const previewTestRoute = fs.readFileSync(
+    path.join(root, 'app/api/admin/ai-assistant/preview-test/route.ts'),
+    'utf8',
+  );
+  const previewGuard = previewTestRoute.indexOf("process.env.VERCEL_ENV !== 'preview'");
+  const authGuard = previewTestRoute.indexOf('if (!isAuthorized(request))');
+  const databaseLookup = previewTestRoute.indexOf('searchMessengerProducts(');
+  const databaseFailure = previewTestRoute.indexOf('Database lookup failed; AI fallback was not called');
+  const trustedMatch = previewTestRoute.indexOf('products.filter(isTrustedMessengerProductMatch)');
+  const aiFallback = previewTestRoute.indexOf('messengerAIChat({');
+
+  assert.ok(previewGuard >= 0 && previewGuard < authGuard, 'non-Preview deployments must be blocked before authorization or work');
+  assert.ok(authGuard > previewGuard && authGuard < databaseLookup, 'secret authorization must happen before database access');
+  assert.ok(databaseLookup > authGuard, 'database lookup must follow authorization');
+  assert.ok(databaseFailure > databaseLookup && databaseFailure < aiFallback, 'database errors must stop before AI fallback');
+  assert.ok(trustedMatch > databaseLookup && trustedMatch < aiFallback, 'trusted database matches must be returned before AI fallback');
+  assert.ok(aiFallback > trustedMatch, 'AI fallback may run only after no trusted database match exists');
+  assert.match(previewTestRoute, /timingSafeEqual/);
+  assert.match(previewTestRoute, /MESSENGER_PREVIEW_TEST_SECRET/);
+  assert.match(previewTestRoute, /x-preview-test-secret/);
+  assert.match(previewTestRoute, /country !== 'IN' && country !== 'BD'/);
+  assert.match(previewTestRoute, /message.length > 500/);
+});
