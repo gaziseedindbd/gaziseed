@@ -404,6 +404,33 @@ test('normalizes Bengali price and stock questions into precise product matches'
   );
 });
 
+test('normalizes Rani Lanka price questions into a trusted product match', () => {
+  const product = {
+    name_bn: 'হাইব্রিড মরিচ – রানি লঙ্কা',
+    name_en: 'Hybrid Chili – Rani Lanka',
+    slug: 'hybrid-chili-rani-lanka',
+  };
+
+  assert.equal(
+    normalizeMessengerProductQuery('রানী লঙ্কার বীজের দাম কত?'),
+    'রানী লঙ্কার বীজ',
+  );
+  assert.equal(
+    classifyMessengerProductMatch(
+      normalizeMessengerProductQuery('রানী লঙ্কার বীজের দাম কত?'),
+      product,
+    ),
+    'strong',
+  );
+  assert.equal(
+    classifyMessengerProductMatch(
+      normalizeMessengerProductQuery('Rani Chili Seed price koto?'),
+      product,
+    ),
+    'strong',
+  );
+});
+
 test('matches a hyphenated English product exactly in a Hindi price and stock question', () => {
   const query = normalizeMessengerProductQuery(
     'Five-Color Chili Seeds की कीमत और स्टॉक कितना है?',

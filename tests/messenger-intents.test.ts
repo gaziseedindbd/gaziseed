@@ -38,12 +38,15 @@ import {
   normalizeMessengerIntentText,
 } from '../lib/ai/messenger-intents';
 import {
+  formatMessengerShortProductReply,
   getMessengerProductSelectionQuickReplies,
   classifyMessengerProductMatch,
   isTrustedMessengerProductMatch,
   normalizeMessengerSearchSlug,
   normalizeMessengerSearchTerm,
+  scoreMessengerProductMatch,
   serializeMessengerProducts,
+  stripMessengerProductDetailsForAI,
 } from '../lib/ai/messenger-product-tool';
 import {
   getBangladeshPaymentMethodReply,
@@ -329,6 +332,184 @@ test('normalizes and classifies Messenger product search matches', () => {
 });
 
 
+
+test('resolves Rani Lanka variants to the same trusted product', () => {
+  const product = {
+    name_bn: 'হাইব্রিড মরিচ – রানি লঙ্কা',
+    name_en: 'Hybrid Chili – Rani Lanka',
+    slug: 'hybrid-chili-rani-lanka',
+  };
+
+  // Same product asked in Bangla, Banglish and English, with different
+  // spellings of Rani / Lanka / Morich / Chili — all must be trusted so
+  // the price is shown instead of a "not found" human-support reply.
+  for (const query of [
+    'রানী লঙ্কার বীজ',
+    'রানি মরিচের বীজ',
+    'Rani Chili Seed',
+    'rani lanka bij koto',
+    'রানি লঙ্কার বীজ কত',
+    'রানী লঙ্কার বীজের দাম কত?',
+  ]) {
+    assert.equal(
+      classifyMessengerProductMatch(query, product),
+      'strong',
+      query,
+    );
+    assert.equal(
+      isTrustedMessengerProductMatch({
+        search_match_type: classifyMessengerProductMatch(query, product),
+      }),
+      true,
+      query,
+    );
+  }
+
+  // The same variants must NOT resolve to a different chili product.
+  const naga = {
+    name_bn: 'নাগা বোম্বাই মরিচের বীজ',
+    name_en: 'Naga Bombay Chili Seeds',
+    slug: 'naga-bombay-chili-seeds',
+  };
+  assert.equal(
+    classifyMessengerProductMatch('রানী লঙ্কার বীজ', naga),
+    'similar',
+  );
+  assert.equal(
+    classifyMessengerProductMatch('Rani Chili Seed', naga),
+    'similar',
+  );
+});
+
+test('a future product added only in test data resolves generically', () => {
+  // This product is invented here and appears nowhere else in the code:
+  // no per-product intent, synonym or special case mentions it. If the
+  // generic token matching works, it resolves the same way as Rani Lanka.
+  const product = {
+    name_bn: 'সোনালি সূর্যমুখী ফুলের বীজ',
+    name_en: 'Golden Sunflower Seeds',
+    slug: 'golden-sunflower-seeds',
+  };
+
+  assert.equal(
+    classifyMessengerProductMatch('sunflower seed price', product),
+    'strong',
+  );
+  assert.equal(
+    classifyMessengerProductMatch('সূর্যমুখী বীজের দাম কত', product),
+    'strong',
+  );
+  assert.equal(
+    classifyMessengerProductMatch('golden sunflower bij koto', product),
+    'strong',
+  );
+  // And it must not match an unrelated product.
+  assert.equal(
+    classifyMessengerProductMatch('sunflower seed price', {
+      name_bn: 'লাল গোলাপ ফুলের বীজ',
+      name_en: 'Red Rose Flower Seeds',
+      slug: 'lal-golap-fuler-bij',
+    }),
+    'similar',
+  );
+});
+
+test('a generic chili query matches several chili products for card selection', () => {
+  const products = [
+    {
+      name_bn: 'হাইব্রিড মরিচ – রানি লঙ্কা',
+      name_en: 'Hybrid Chili – Rani Lanka',
+      slug: 'hybrid-chili-rani-lanka',
+    },
+    {
+      name_bn: 'নাগা বোম্বাই মরিচের বীজ',
+      name_en: 'Naga Bombay Chili Seeds',
+      slug: 'naga-bombay-chili-seeds',
+    },
+    {
+      name_bn: 'বিদেশি লাল লম্বা মরিচের বীজ',
+      name_en: 'Foreign Long Red Chili Seeds',
+      slug: 'foreign-long-red-chili-seeds',
+    },
+  ];
+
+  // One generic word matches every chili product, so the customer gets
+  // several cards to pick from instead of a single guessed product.
+  const trusted = products.filter(
+    (product) =>
+      classifyMessengerProductMatch('মরিচের বীজ', product) !== 'similar',
+  );
+  assert.equal(trusted.length, 3);
+  assert.equal(
+    scoreMessengerProductMatch('মরিচের বীজ', products[0]).type,
+    'strong',
+  );
+});
+
+test('price questions return a short reply without stock or details', () => {
+  const product = {
+    name_bn: 'হাইব্রিড মরিচ – রানি লঙ্কা',
+    name_en: 'Hybrid Chili – Rani Lanka',
+    slug: 'hybrid-chili-rani-lanka',
+    regular_price: 150,
+    sale_price: null,
+    offer_price: null,
+    price: null,
+    stock: 42,
+    packet_weight: '200 বীজ',
+  };
+
+  const reply = formatMessengerShortProductReply(product, 'BD', 'Bengali');
+  const lines = reply.split('\n');
+  assert.ok(lines.length <= 4, reply);
+  assert.match(reply, /দাম: ৳150 প্রতি প্যাকেট/);
+  assert.doesNotMatch(reply, /স্টক/);
+  assert.doesNotMatch(reply, /ওজন/);
+  assert.match(reply, /অর্ডার করবেন\?/);
+
+  // Stock is shown only when the customer asked for it.
+  const withStock = formatMessengerShortProductReply(product, 'BD', 'Bengali', {
+    stock: true,
+  });
+  assert.match(withStock, /স্টক: 42 প্যাকেট/);
+  assert.equal(withStock.split('\n').length, 4);
+
+  // Weight is shown only when asked and only when the database has it.
+  const withWeight = formatMessengerShortProductReply(product, 'BD', 'Bengali', {
+    weight: true,
+  });
+  assert.match(withWeight, /ওজন: 200 বীজ/);
+
+  const english = formatMessengerShortProductReply(product, 'IN', 'English');
+  assert.match(english, /Price: ₹150 per packet/);
+  assert.doesNotMatch(english, /Stock/);
+});
+
+test('AI context strips long-form details for plain price questions', () => {
+  const products = [
+    {
+      id: '00000000-0000-4000-8000-000000000001',
+      name_bn: 'হাইব্রিড মরিচ – রানি লঙ্কা',
+      name_en: 'Hybrid Chili – Rani Lanka',
+      slug: 'hybrid-chili-rani-lanka',
+      effective_price: 150,
+      stock: 42,
+      cultivation_instructions: 'Very long growing instructions.',
+      description: 'A very long description.',
+      search_match_type: 'strong',
+      transactional_data_verified: true,
+    },
+  ];
+
+  const stripped = stripMessengerProductDetailsForAI(products, false);
+  assert.equal(stripped[0].effective_price, 150);
+  assert.equal(stripped[0].stock, 42);
+  assert.equal('cultivation_instructions' in stripped[0], false);
+  assert.equal('description' in stripped[0], false);
+
+  const kept = stripMessengerProductDetailsForAI(products, true);
+  assert.equal(kept[0].cultivation_instructions, 'Very long growing instructions.');
+});
 
 test('recognizes Bangladesh COD-only payment questions', () => {
   assert.equal(isBangladeshPaymentMethodQuestion('আপনাদের payment method কী কী?'), true);

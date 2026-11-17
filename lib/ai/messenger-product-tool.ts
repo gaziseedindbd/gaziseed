@@ -1,6 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { MessengerReplyLanguage } from './messenger-language';
 import { normalizeMessengerHindiSearchText } from './messenger-intents';
+import {
+  MESSENGER_NON_DISTINCTIVE_TOKENS,
+  canonicalizeMessengerSearchText,
+  messengerSearchSurfacesForToken,
+} from './messenger-product-synonyms';
 
 export type MessengerCountry = 'IN' | 'BD';
 
@@ -85,6 +90,11 @@ const PRODUCT_FIELDS = [
 ].join(',');
 
 function normalizeSearchTerm(value: string): string {
+  // NOTE: do NOT normalize Bengali vowel variants (ী -> ি) here. That would
+  // corrupt correctly spelled words ("বীজ" -> "বিজ") in the term sent to
+  // the search RPC and asserted by tests. Variant handling lives only
+  // inside canonicalizeMessengerSearchToken, where both sides of a match
+  // are normalized the same way for comparison.
   return normalizeMessengerHindiSearchText(value)
     .replace(/[%_]/g, ' ')
     .replace(/[\r\n]+/g, ' ')
@@ -102,23 +112,67 @@ export function normalizeMessengerSearchSlug(value: string): string {
 }
 
 function canonicalizeProductMatchText(value: string): string {
-  return normalizeSearchTerm(value)
+  const cleaned = normalizeSearchTerm(value)
     .toLocaleLowerCase()
     // Hyphenated catalogue names must match natural-language queries after
     // transactional words are removed, e.g. "Five-Color Chili Seeds" versus
     // "five color chili seeds".
     .replace(/[-_/]+/g, ' ')
-    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    // \p{M} (combining marks) must be kept: Bengali/Devanagari vowel signs
+    // (া ো ু ে ী) and the virama are marks, not letters. The old
+    // [^\p{L}\p{N}\s] class stripped them, turning "গোলাপ" into "গ ল প"
+    // on both sides — invisible to whole-string matching, fatal to
+    // token-overlap matching.
+    .replace(/[^\p{L}\p{M}\p{N}\s]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+  // Map generic words to one concept ("মরিচ"/"morich"/"chili" -> "chili",
+  // "রানী"/"রানি"/"rani" -> "rani") and normalize Bengali variants, so a
+  // customer can write the same product in Bangla, Banglish, English or
+  // Hindi. Distinctive product tokens pass through unchanged.
+  return canonicalizeMessengerSearchText(cleaned);
 }
 
-export function classifyMessengerProductMatch(
+/** Canonical token set for one text, for generic token-overlap matching. */
+function canonicalTokenSet(value: string): Set<string> {
+  return new Set(
+    canonicalizeProductMatchText(value).split(/\s+/).filter(Boolean),
+  );
+}
+
+/**
+ * Distinctive tokens: everything except generic filler such as "seed" and
+ * question words such as "price" / "কত". A price question is judged on the
+ * product words in it, never on the question words.
+ */
+function distinctiveTokens(tokens: Set<string>): Set<string> {
+  return new Set(
+    Array.from(tokens).filter((token) => !MESSENGER_NON_DISTINCTIVE_TOKENS.has(token)),
+  );
+}
+
+export type MessengerProductMatchScore = {
+  type: MessengerProductSearchMatchType;
+  /** Distinctive-token overlap count; exact matches score 99 for sorting. */
+  score: number;
+  /** Distinctive query tokens that also appear in the product. */
+  overlap: string[];
+};
+
+/**
+ * Generic token-overlap scoring. A product is trusted (exact/strong) when
+ * its name shares 2+ distinctive tokens with the query, or when the query
+ * has a single distinctive token and that token matches — regardless of
+ * word order, language, or generic suffixes. This is what makes a product
+ * added tomorrow work with no new code: its own distinctive tokens are
+ * what match, never a per-product list.
+ */
+export function scoreMessengerProductMatch(
   searchTerm: string,
   product: Pick<MessengerProduct, 'name_bn' | 'name_en' | 'slug'>,
-): MessengerProductSearchMatchType {
+): MessengerProductMatchScore {
   const query = canonicalizeProductMatchText(searchTerm);
-  if (!query) return 'similar';
+  if (!query) return { type: 'similar', score: 0, overlap: [] };
 
   const nameBn = canonicalizeProductMatchText(product.name_bn || '');
   const nameEn = canonicalizeProductMatchText(product.name_en || '');
@@ -127,22 +181,41 @@ export function classifyMessengerProductMatch(
   const canonicalSlug = slug.replace(/\s+/g, '-');
 
   if (
-    nameBn === query ||
-    nameEn === query ||
-    canonicalSlug === querySlug
+    (nameBn && nameBn === query) ||
+    (nameEn && nameEn === query) ||
+    (slug && canonicalSlug === querySlug)
   ) {
-    return 'exact';
+    const overlap = Array.from(distinctiveTokens(canonicalTokenSet(query)));
+    return { type: 'exact', score: 99, overlap };
   }
+
+  const queryTokens = distinctiveTokens(canonicalTokenSet(query));
+  if (!queryTokens.size) return { type: 'similar', score: 0, overlap: [] };
+
+  // Match against the union of all name fields, so a Bangla query can match
+  // an English name (and vice versa) through the generic synonym layer.
+  const productTokens = new Set<string>();
+  for (const text of [nameBn, nameEn, slug]) {
+    for (const token of Array.from(canonicalTokenSet(text))) productTokens.add(token);
+  }
+
+  const overlap = Array.from(queryTokens).filter((token) => productTokens.has(token));
 
   if (
-    (nameBn && nameBn.includes(query)) ||
-    (nameEn && nameEn.includes(query)) ||
-    (slug && (slug.includes(query) || canonicalSlug.includes(querySlug)))
+    overlap.length >= 2 ||
+    (overlap.length === 1 && queryTokens.size === 1)
   ) {
-    return 'strong';
+    return { type: 'strong', score: overlap.length, overlap };
   }
 
-  return 'similar';
+  return { type: 'similar', score: overlap.length, overlap };
+}
+
+export function classifyMessengerProductMatch(
+  searchTerm: string,
+  product: Pick<MessengerProduct, 'name_bn' | 'name_en' | 'slug'>,
+): MessengerProductSearchMatchType {
+  return scoreMessengerProductMatch(searchTerm, product).type;
 }
 
 function searchTokens(value: string): string[] {
@@ -292,17 +365,21 @@ export async function searchMessengerProducts(
 
     if (!error && Array.isArray(data)) {
       const rankedRows = data as unknown as MessengerProduct[];
-      const refinedRows = lookupTerm === term
-        ? rankedRows
-        : rankedRows.map((row) => ({
-            ...row,
-            // Full-text overlap can make unrelated products look strong.
-            // For transactional questions, require a lexical name match.
-            search_match_type: classifyMessengerProductMatch(lookupTerm, row),
-          }));
+      // Always re-rank RPC rows with generic token-overlap scoring: the RPC
+      // is the recall path, but only the token score decides whether a row
+      // is trusted for price/stock. This is what rescues good RPC matches
+      // that the old whole-string substring rule discarded as "similar".
+      const refinedRows = rankedRows.map((row) => {
+        const scored = scoreMessengerProductMatch(lookupTerm, row);
+        return {
+          ...row,
+          search_match_type: scored.type,
+          search_match_score: scored.score,
+        };
+      });
       const trustedRows = refinedRows.filter(isTrustedMessengerProductMatch);
       return sortMessengerProducts(
-        lookupTerm !== term && trustedRows.length ? trustedRows : refinedRows,
+        trustedRows.length ? trustedRows : refinedRows,
       ).slice(0, safeLimit);
     }
   } catch {
@@ -312,18 +389,36 @@ export async function searchMessengerProducts(
 
   const columns = ['name_bn', 'name_en', 'slug'] as const;
   const queries = [lookupTerm];
-  const tokens = searchTokens(lookupTerm);
-
-  for (const token of tokens) {
+  // Fallback ilike terms use canonical tokens and their database surface
+  // forms, so a Banglish query ("morich", "রানী") still finds the stored
+  // spelling ("মরিচ", "রানি"). Distinctive tokens first, capped at 6.
+  const canonicalTokens = Array.from(canonicalTokenSet(lookupTerm)).filter(
+    (token) => !MESSENGER_NON_DISTINCTIVE_TOKENS.has(token),
+  );
+  for (const token of canonicalTokens) {
+    if (queries.length >= 6) break;
+    for (const surface of messengerSearchSurfacesForToken(token)) {
+      if (queries.length >= 6) break;
+      if (
+        !queries.some(
+          (query) => query.toLocaleLowerCase() === surface.toLocaleLowerCase(),
+        )
+      ) {
+        queries.push(surface);
+      }
+    }
+  }
+  // Any remaining raw tokens (for example a new product's own distinctive
+  // word) are tried verbatim as well.
+  for (const token of searchTokens(lookupTerm)) {
+    if (queries.length >= 6) break;
     if (
-      queries.length >= 6 ||
-      queries.some(
+      !queries.some(
         (query) => query.toLocaleLowerCase() === token.toLocaleLowerCase(),
       )
     ) {
-      continue;
+      queries.push(token);
     }
-    queries.push(token);
   }
 
   const results = await Promise.all(
@@ -348,11 +443,11 @@ export async function searchMessengerProducts(
 
     const rows = result.data as unknown as MessengerProduct[] | null;
     for (const row of rows || []) {
-      const matchType = classifyMessengerProductMatch(lookupTerm, row);
+      const scored = scoreMessengerProductMatch(lookupTerm, row);
       merged.set(row.id, {
         ...row,
-        search_match_type: matchType,
-        search_match_score: matchType === 'exact' ? 1 : 0,
+        search_match_type: scored.type,
+        search_match_score: scored.score,
       });
     }
   }
@@ -457,6 +552,126 @@ export function getMessengerProductSelectionQuickReplies(
   }
 
   return quickReplies;
+}
+
+/**
+ * Short 3-4 line reply for one trusted product. User rules:
+ * - Always show the price.
+ * - Never show stock unless the customer asked for it.
+ * - Show weight only if asked (and only when the database has it).
+ * - Answer only what was asked; no details, delivery or cultivation dump.
+ * The order question is always the last line so the customer can continue
+ * to checkout from the same thread.
+ */
+export function formatMessengerShortProductReply(
+  product: Pick<
+    MessengerProduct,
+    | 'name_bn'
+    | 'name_en'
+    | 'slug'
+    | 'regular_price'
+    | 'sale_price'
+    | 'offer_price'
+    | 'price'
+    | 'stock'
+    | 'packet_weight'
+  >,
+  country: MessengerCountry,
+  language: MessengerReplyLanguage,
+  asked: { stock?: boolean; weight?: boolean } = {},
+): string {
+  const name =
+    language === 'English' || language === 'Hindi'
+      ? (product.name_en || product.name_bn || product.slug || 'Product')
+      : (product.name_bn || product.name_en || product.slug || 'পণ্য');
+  const currency = country === 'IN' ? '₹' : '৳';
+  const price = effectivePrice(product as MessengerProduct);
+  const lines: string[] = [name];
+
+  if (language === 'English') {
+    lines.push(
+      price !== null
+        ? `Price: ${currency}${price} per packet`
+        : 'Price unavailable',
+    );
+    if (asked.stock && typeof product.stock === 'number') {
+      lines.push(`Stock: ${product.stock} packets`);
+    }
+    if (asked.weight && product.packet_weight) {
+      lines.push(`Weight: ${product.packet_weight}`);
+    }
+    lines.push('Would you like to order?');
+  } else if (language === 'Hindi') {
+    lines.push(
+      price !== null
+        ? `कीमत: ${currency}${price} प्रति पैकेट`
+        : 'कीमत उपलब्ध नहीं',
+    );
+    if (asked.stock && typeof product.stock === 'number') {
+      lines.push(`स्टॉक: ${product.stock} पैकेट`);
+    }
+    if (asked.weight && product.packet_weight) {
+      lines.push(`वजन: ${product.packet_weight}`);
+    }
+    lines.push('ऑर्डर करना चाहेंगे?');
+  } else {
+    lines.push(
+      price !== null
+        ? `দাম: ${currency}${price} প্রতি প্যাকেট`
+        : 'দাম জানা নেই',
+    );
+    if (asked.stock && typeof product.stock === 'number') {
+      lines.push(`স্টক: ${product.stock} প্যাকেট`);
+    }
+    if (asked.weight && product.packet_weight) {
+      lines.push(`ওজন: ${product.packet_weight}`);
+    }
+    lines.push('অর্ডার করবেন?');
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Long-form database fields that must NOT be handed to the AI unless the
+ * customer actually asked a cultivation/knowledge question. Passing them for
+ * a simple price question is what made the AI dump details, charges and
+ * growing instructions the customer never asked for. Price, stock,
+ * packet weight and seed quantity stay: they are short facts the short-reply
+ * rule can use or withhold as asked.
+ */
+const MESSENGER_AI_DETAIL_FIELDS = [
+  'description',
+  'brand',
+  'origin',
+  'plant_spacing',
+  'planting_depth',
+  'sunlight',
+  'water_requirement',
+  'soil_type',
+  'growing_location',
+  'expected_yield',
+  'cultivation_instructions',
+  'storage_instructions',
+  'short_description',
+  'germination_time',
+  'germination_rate',
+  'harvest_time',
+  'season',
+  'planting_season',
+] as const;
+
+export function stripMessengerProductDetailsForAI<
+  T extends Record<string, unknown>,
+>(products: T[], includeDetails: boolean): T[] {
+  if (includeDetails) return products;
+  return products.map((product) => {
+    const copy = { ...product };
+    for (const field of MESSENGER_AI_DETAIL_FIELDS) {
+      delete copy[field];
+    }
+    return copy;
+  });
 }
 
 export function serializeMessengerProducts(products: MessengerProduct[]) {
