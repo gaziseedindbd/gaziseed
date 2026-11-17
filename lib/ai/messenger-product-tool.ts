@@ -555,6 +555,195 @@ export function getMessengerProductSelectionQuickReplies(
 }
 
 /**
+ * Numbered product selection: the quick-reply pills under a product list
+ * are a horizontally scrollable row with names truncated at 20 characters
+ * (Facebook platform limits), and many customers do not realise they have
+ * to slide left. The list text itself is therefore numbered, and the
+ * customer can reply with just the number — no sliding or tapping needed.
+ *
+ * The snapshot stored on the conversation is the exact ordered list that
+ * was shown (trusted products only, same 12-item cap as the list text), so
+ * a later bare-number reply resolves to the product the customer saw.
+ */
+export type MessengerListedProduct = {
+  id: string;
+  name_bn: string | null;
+  name_en: string | null;
+  slug: string | null;
+  price: number | null;
+  stock: number;
+};
+
+const MESSENGER_BENGALI_DIGITS = '০১২৩৪৫৬৭৮৯';
+
+function convertMessengerBengaliDigitsToLatin(value: string): string {
+  return value.replace(/[০-৯]/g, (digit) => String(MESSENGER_BENGALI_DIGITS.indexOf(digit)));
+}
+
+/**
+ * Parses bare-number selections: a single number ("2", "২") or a
+ * comma-separated list ("1, 3", "১, ৩"). Every part must be a bare number —
+ * an empty part (trailing comma "1,") or any non-digit content ("2 packet",
+ * "মরিচ 3টা") makes the whole message NOT a selection. Returns the
+ * 1-based numbers in order, deduplicated, or null.
+ */
+export function parseMessengerProductNumberSelections(text: string): number[] | null {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  const selections: number[] = [];
+  for (const part of trimmed.split(',')) {
+    const normalized = convertMessengerBengaliDigitsToLatin(part.trim());
+    if (!/^\d+$/.test(normalized)) return null;
+    const selection = Number(normalized);
+    if (!Number.isInteger(selection) || selection < 1) return null;
+    if (!selections.includes(selection)) selections.push(selection);
+  }
+  return selections.length ? selections : null;
+}
+
+/** Single-number selection: the multi-number parser must yield exactly one. */
+export function parseMessengerProductNumberSelection(text: string): number | null {
+  const selections = parseMessengerProductNumberSelections(text);
+  return selections && selections.length === 1 ? selections[0] : null;
+}
+
+/** List numeral in the reply language: Bengali digits for Bengali, Latin digits otherwise. */
+export function formatMessengerListNumeral(index: number, language: MessengerReplyLanguage): string {
+  if (language === 'Bengali') {
+    return String(index).replace(/[0-9]/g, (digit) => MESSENGER_BENGALI_DIGITS[Number(digit)]);
+  }
+  return String(index);
+}
+
+/** Short instruction line at the end of a numbered list reply. */
+export function messengerNumberedListInstruction(language: MessengerReplyLanguage): string {
+  if (language === 'English') return 'Reply with the product number to choose it.';
+  if (language === 'Hindi') return 'उत्पाद चुनने के लिए नंबर लिखें।';
+  return 'পণ্য বেছে নিতে নম্বর লিখুন।';
+}
+
+/**
+ * The exact list that a numbered list reply shows: trusted (exact/strong)
+ * products only, in the same order, capped at the same 12 items as the
+ * list text. Untrusted "similar" rows are never selectable by number.
+ */
+export function buildMessengerProductListSnapshot(
+  products: readonly unknown[],
+): MessengerListedProduct[] {
+  return (products as Array<Record<string, unknown>>)
+    .filter(isTrustedMessengerProductMatch)
+    .slice(0, 12)
+    .map((product) => ({
+      id: typeof product.id === 'string' ? product.id : '',
+      name_bn: typeof product.name_bn === 'string' ? product.name_bn : null,
+      name_en: typeof product.name_en === 'string' ? product.name_en : null,
+      slug: typeof product.slug === 'string' ? product.slug : null,
+      // Serialized catalog rows carry effective_price directly; fall back
+      // to the raw price fields for unserialized rows.
+      price:
+        typeof product.effective_price === 'number'
+          ? product.effective_price
+          : effectivePrice(product as unknown as MessengerProduct),
+      stock: typeof product.stock === 'number' ? product.stock : 0,
+    }))
+    .filter((item) => item.id.length > 0);
+}
+
+/**
+ * Validates a stored product list read back from conversation metadata.
+ * Returns null when there is no usable list (missing, empty, wrong shape),
+ * so a bare number falls through to the normal handling instead of
+ * selecting a product that was never shown.
+ */
+export function parseMessengerStoredProductList(value: unknown): MessengerListedProduct[] | null {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const items: MessengerListedProduct[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== 'object') return null;
+    const item = entry as Record<string, unknown>;
+    if (typeof item.id !== 'string' || !item.id) return null;
+    items.push({
+      id: item.id,
+      name_bn: typeof item.name_bn === 'string' ? item.name_bn : null,
+      name_en: typeof item.name_en === 'string' ? item.name_en : null,
+      slug: typeof item.slug === 'string' ? item.slug : null,
+      price: typeof item.price === 'number' ? item.price : null,
+      stock: typeof item.stock === 'number' ? item.stock : 0,
+    });
+  }
+  return items;
+}
+
+/**
+ * One numbered list line: "<numeral>. <name> — <price>". This is the exact
+ * line the catalog list shows, so a selection reply shows the customer
+ * what they saw in the list. `price` is the effective price (null when
+ * unavailable). The name rule mirrors the catalog reply: English/Hindi
+ * use the English name, Bengali uses the Bengali name.
+ */
+export function formatMessengerNumberedListLine(
+  product: Pick<MessengerListedProduct, 'name_bn' | 'name_en' | 'slug' | 'price'>,
+  index: number,
+  country: MessengerCountry,
+  language: MessengerReplyLanguage,
+): string {
+  const name =
+    language === 'English'
+      ? (product.name_en || product.name_bn || product.slug || 'Product')
+      : language === 'Hindi'
+        ? (product.name_en || product.name_bn || product.slug || 'उत्पाद')
+        : (product.name_bn || product.name_en || product.slug || 'পণ্য');
+  const currency = country === 'IN' ? '₹' : '৳';
+  const price =
+    typeof product.price === 'number'
+      ? currency + product.price
+      : language === 'English'
+        ? 'Price unavailable'
+        : language === 'Hindi'
+          ? 'कीमत उपलब्ध नहीं'
+          : 'দাম জানা নেই';
+  return formatMessengerListNumeral(index + 1, language) + '. ' + name + ' — ' + price;
+}
+
+/**
+ * Order question line. Kept in sync with formatMessengerShortProductReply
+ * (which owns the same three strings); duplicated here so that function
+ * stays untouched.
+ */
+export function messengerOrderQuestion(language: MessengerReplyLanguage): string {
+  if (language === 'English') return 'Would you like to order?';
+  if (language === 'Hindi') return 'ऑर्डर करना चाहेंगे?';
+  return 'অর্ডার করবেন?';
+}
+
+/**
+ * Reply for a number selection. A single selection gets the exact short
+ * price reply; multiple selections get one short line per product (in
+ * selection order) plus the order question, so a follow-up "yes" orders
+ * the first selected product (the caller sets last_messenger_product to
+ * it).
+ */
+export function formatMessengerProductSelectionReply(
+  products: MessengerListedProduct[],
+  country: MessengerCountry,
+  language: MessengerReplyLanguage,
+): string {
+  if (products.length === 1) {
+    return formatMessengerShortProductReply(
+      products[0] as unknown as Parameters<typeof formatMessengerShortProductReply>[0],
+      country,
+      language,
+      { stock: false, weight: false },
+    );
+  }
+  const lines = products.map((product, index) =>
+    formatMessengerNumberedListLine(product, index, country, language),
+  );
+  lines.push(messengerOrderQuestion(language));
+  return lines.join('\n');
+}
+
+/**
  * Short 3-4 line reply for one trusted product. User rules:
  * - Always show the price.
  * - Never show stock unless the customer asked for it.
