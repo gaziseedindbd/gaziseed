@@ -7,6 +7,7 @@ import {
 } from '@/lib/ai/messenger-provider-router';
 import {
   enrichMessengerProductsWithKnowledge,
+  findMessengerBestMatchProduct,
   formatMessengerShortProductReply,
   getMessengerProductSelectionQuickReplies,
   isTrustedMessengerProductMatch,
@@ -263,12 +264,37 @@ function formatMessengerCatalogReply(
     return 'দুঃখিত, এই প্রোডাক্টটি এই দেশে স্টকে নেই।';
   }
 
-  if (!isProductListRequest(text) && products.length === 1) {
-    const product = products[0];
-    const name = displayName(product);
-    const trusted = isTrustedMessengerProductMatch(product);
+  if (!isProductListRequest(text)) {
+    // Best-match wins: when one trusted product strictly outscores every
+    // other trusted product, answer about that one product alone instead
+    // of showing a multi-product list (live case: "Imported long red chili
+    // seeds price?" matched both Imported Long Red Chili at score 4 and
+    // 12-Month Banana Long Chilli at score 2, so the list ran even though
+    // the customer named one product). A tie at the top score is genuine
+    // ambiguity, so the list reply below is kept for it.
+    const bestMatch = findMessengerBestMatchProduct(products);
+    if (bestMatch) {
+      // Short-reply rule (user requirement): 3-4 lines, price always
+      // shown, stock only when the customer asked for it, weight only
+      // when asked and only when the database has it. No details /
+      // delivery dump here.
+      return formatMessengerShortProductReply(
+        bestMatch as unknown as Parameters<
+          typeof formatMessengerShortProductReply
+        >[0],
+        country,
+        language,
+        {
+          stock: /(স্টক|stock|स्टॉक)/i.test(text),
+          weight: /(ওজন|weight|वजन)/i.test(text),
+        },
+      );
+    }
 
-    if (!trusted) {
+    if (products.length === 1) {
+      const product = products[0];
+      const name = displayName(product);
+
       const prefix = english
         ? '🔎 You may be looking for:'
         : hindi
@@ -280,21 +306,6 @@ function formatMessengerCatalogReply(
           ? prefix + ' ' + name + '\n\nऑर्डर से पहले सही उत्पाद का नाम लिखें, ताकि मौजूदा कीमत और स्टॉक की पुष्टि हो सके।'
           : prefix + ' ' + name + '\n\nঅর্ডার বা বর্তমান দাম/স্টক জানতে সঠিক product name লিখুন।';
     }
-
-    // Short-reply rule (user requirement): 3-4 lines, price always shown,
-    // stock only when the customer asked for it, weight only when asked and
-    // only when the database has it. No details / delivery dump here.
-    return formatMessengerShortProductReply(
-      product as unknown as Parameters<
-        typeof formatMessengerShortProductReply
-      >[0],
-      country,
-      language,
-      {
-        stock: /(স্টক|stock|स्टॉक)/i.test(text),
-        weight: /(ওজন|weight|वजन)/i.test(text),
-      },
-    );
   }
 
   const primaryProducts = products.filter(isTrustedMessengerProductMatch);
