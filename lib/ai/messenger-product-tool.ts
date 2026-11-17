@@ -187,7 +187,7 @@ function searchTokens(value: string): string[] {
 }
 
 const TRANSACTIONAL_QUERY_STOP_WORDS = new Set([
-  'দাম', 'দামটা', 'মূল্য', 'স্টক', 'স্টকে', 'কত', 'কয়', 'কয়টি',
+  'দাম', 'দামটা', 'মূল্য', 'স্টক', 'স্টকে', 'কত', 'কয়', 'কয়টি', 'dam', 'damer', 'koto',
   'আছে', 'ও', 'এবং', 'কি', 'কী', 'এর', 'র', 'প্রতি', 'প্যাকেট',
   'বলুন', 'বলেন', 'জানান', 'দিবেন', 'দাও',
   'price', 'cost', 'stock', 'available', 'availability', 'how', 'much',
@@ -215,6 +215,9 @@ export function normalizeMessengerProductQuery(value: string): string {
     .replace(/রানি/g, 'rani')
     .replace(/বীজের?|লাগাতে|চাই|আছে|কি|কী|এর|আপনাদের|কাছে/g, ' ')
     .replace(/\s+/g, ' ')
+    .split(/\\s+/)
+    .filter((token) => !TRANSACTIONAL_QUERY_STOP_WORDS.has(token.toLocaleLowerCase()))
+    .join(' ')
     .trim();
   const hasSeedPhrase = /(?:\b(?:morich|lonka|lanka|bij|beej|apnader|kache|ache|ase|lagate|chai)\b|মরিচ|লঙ্কা|লংকা|রানি)/i.test(term);
   if (hasSeedPhrase && normalizedSeedPhrase) {
