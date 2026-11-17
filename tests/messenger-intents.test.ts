@@ -317,7 +317,7 @@ test('offers selectable options for similar product matches without disclosing t
 test('normalizes Banglish and Bengali Rani Lanka queries to one searchable identity', () => {
   assert.equal(normalizeMessengerProductQuery('rani lonka bij lagate chai'), 'rani lanka');
   assert.equal(normalizeMessengerProductQuery('রানি লঙ্কা বীজের দাম কত'), 'rani lanka');
-  assert.equal(normalizeMessengerProductQuery('Hybrid Rani Lanka bij er dam koto'), 'Hybrid Rani Lanka');
+  assert.equal(normalizeMessengerProductQuery('Hybrid Rani Lanka bij er dam koto'), 'hybrid rani lanka');
 });
 
 test('requires all meaningful product identity terms for a trusted multi-word match', () => {
