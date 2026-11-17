@@ -622,6 +622,11 @@ export function formatMessengerShortProductReply(
   const currency = country === 'IN' ? '₹' : '৳';
   const price = effectivePrice(product as MessengerProduct);
   const lines: string[] = [name];
+  // Never invite an order for a sold-out product: the order question is a
+  // dead end when stock is 0, so end with a sold-out line instead. Applies
+  // whether or not the customer asked about stock; the stock line itself is
+  // still only shown when asked.
+  const soldOut = typeof product.stock === 'number' && product.stock === 0;
 
   if (language === 'English') {
     lines.push(
@@ -635,7 +640,7 @@ export function formatMessengerShortProductReply(
     if (asked.weight && product.packet_weight) {
       lines.push(`Weight: ${product.packet_weight}`);
     }
-    lines.push('Would you like to order?');
+    lines.push(soldOut ? 'Currently out of stock.' : 'Would you like to order?');
   } else if (language === 'Hindi') {
     lines.push(
       price !== null
@@ -648,7 +653,7 @@ export function formatMessengerShortProductReply(
     if (asked.weight && product.packet_weight) {
       lines.push(`वजन: ${product.packet_weight}`);
     }
-    lines.push('ऑर्डर करना चाहेंगे?');
+    lines.push(soldOut ? 'फिलहाल स्टॉक खत्म है।' : 'ऑर्डर करना चाहेंगे?');
   } else {
     lines.push(
       price !== null
@@ -661,7 +666,7 @@ export function formatMessengerShortProductReply(
     if (asked.weight && product.packet_weight) {
       lines.push(`ওজন: ${product.packet_weight}`);
     }
-    lines.push('অর্ডার করবেন?');
+    lines.push(soldOut ? 'এই মুহূর্তে স্টক শেষ।' : 'অর্ডার করবেন?');
   }
 
   return lines.join('\n');
