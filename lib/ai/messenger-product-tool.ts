@@ -589,6 +589,107 @@ export function getMessengerProductSelectionQuickReplies(
   return quickReplies;
 }
 
+export type MessengerButtonLabelKey =
+  | 'take_product'
+  | 'checkout'
+  | 'add_product'
+  | 'add_more_product'
+  | 'view_cart'
+  | 'browse_products'
+  | 'use_saved_details'
+  | 'change_details'
+  | 'confirm_order'
+  | 'cancel_order'
+  | 'payment_status'
+  | 'order_status'
+  | 'retry_payment';
+
+/**
+ * Button / quick-reply titles that follow the customer's reply language.
+ * Previously several call sites hardcoded a Bengali (or English) title, so a
+ * Hindi customer saw e.g. '🛒 এই পণ্য নিন' under a Hindi reply. Every label
+ * is kept to at most 20 characters: Messenger rejects longer quick-reply
+ * titles and sendMessengerText does not truncate them. Bengali strings keep
+ * the wording already live in production; only the language varies.
+ */
+const MESSENGER_BUTTON_TITLES: Record<
+  MessengerButtonLabelKey,
+  Record<MessengerReplyLanguage, string>
+> = {
+  take_product: {
+    English: '🛒 Take this product',
+    Bengali: '🛒 এই পণ্য নিন',
+    Hindi: '🛒 यह उत्पाद लें',
+  },
+  checkout: {
+    English: '✅ Checkout',
+    Bengali: '✅ চেকআউট',
+    Hindi: '✅ चेकआउट',
+  },
+  add_product: {
+    English: '➕ Add product',
+    Bengali: '➕ পণ্য যোগ করুন',
+    Hindi: '➕ Product जोड़ें',
+  },
+  add_more_product: {
+    English: '➕ Add more product',
+    Bengali: '➕ আরও product',
+    Hindi: '➕ और product जोड़ें',
+  },
+  view_cart: {
+    English: '🛒 View cart',
+    Bengali: '🛒 কার্ট দেখুন',
+    Hindi: '🛒 Cart देखें',
+  },
+  browse_products: {
+    English: '🌱 Browse products',
+    Bengali: '🌱 পণ্য দেখুন',
+    Hindi: '🌱 Product देखें',
+  },
+  use_saved_details: {
+    English: '✅ Use saved details',
+    Bengali: '✅ Saved details ব্যবহার করুন',
+    Hindi: '✅ सहेजे विवरण लें',
+  },
+  change_details: {
+    English: '✏️ Change details',
+    Bengali: '✏️ তথ্য পরিবর্তন করুন',
+    Hindi: '✏️ विवरण बदलें',
+  },
+  confirm_order: {
+    English: '✅ Yes, confirm order',
+    Bengali: '✅ হ্যাঁ, অর্ডার নিশ্চিত করুন',
+    Hindi: '✅ हाँ, पुष्टि करें',
+  },
+  cancel_order: {
+    English: '❌ No, cancel order',
+    Bengali: '❌ না, অর্ডার বাতিল করুন',
+    Hindi: '❌ नहीं, रद्द करें',
+  },
+  payment_status: {
+    English: '💳 Payment Status',
+    Bengali: '💳 পেমেন্ট স্ট্যাটাস',
+    Hindi: '💳 भुगतान स्थिति',
+  },
+  order_status: {
+    English: '📦 Order Status',
+    Bengali: '📦 অর্ডার স্ট্যাটাস',
+    Hindi: '📦 ऑर्डर स्थिति',
+  },
+  retry_payment: {
+    English: '🔄 Retry Payment',
+    Bengali: '🔄 আবার Payment করুন',
+    Hindi: '🔄 फिर भुगतान करें',
+  },
+};
+
+export function messengerButtonTitle(
+  language: MessengerReplyLanguage,
+  key: MessengerButtonLabelKey,
+): string {
+  return MESSENGER_BUTTON_TITLES[key][language];
+}
+
 /**
  * Short 3-4 line reply for one trusted product. User rules:
  * - Always show the price.
