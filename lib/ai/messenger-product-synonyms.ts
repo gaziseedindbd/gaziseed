@@ -118,6 +118,13 @@ export const MESSENGER_GENERIC_MATCH_TOKENS = new Set(['seed']);
  * Question words (after canonicalization) that also carry no product
  * identity: "দাম কত" must not stop "সূর্যমুখী বীজের দাম কত" from matching
  * a sunflower product on its one distinctive token.
+ *
+ * Roman Banglish/Hindi grammar particles belong here too: "Golap er bij
+ * koto dam?" must be judged on "golap" alone, not on "er" (এর, genitive),
+ * or the one-token product only ever scores "similar" and its price stays
+ * hidden. The Bengali ("এর") and Devanagari ("का"/"की"/"के") forms of the
+ * same particles are already stop words in TRANSACTIONAL_QUERY_STOP_WORDS;
+ * these are their Roman forms, which were missing.
  */
 export const MESSENGER_NON_DISTINCTIVE_TOKENS = new Set(
   Array.from(MESSENGER_GENERIC_MATCH_TOKENS).concat([
@@ -145,6 +152,19 @@ export const MESSENGER_NON_DISTINCTIVE_TOKENS = new Set(
   'batao',
   'bolun',
   'বলুন',
+  // Roman Banglish genitive / classifier / plural particles — grammar only,
+  // never a product word ("golap er bij", "bij ta", "bij gulo", "tar dam").
+  'er',
+  'ta',
+  'ti',
+  'tar',
+  'gulo',
+  'gula',
+  // Roman Hindi genitives (का/के) — "gulab ka beej", "gulab ke beej".
+  'ka',
+  'ke',
+  // Roman Banglish "from" (থেকে) — "Bangladesh theke ... beej".
+  'theke',
 ]));
 
 /** Normalize Bengali spelling variants that customers mix freely. */
