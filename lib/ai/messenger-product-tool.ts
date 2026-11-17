@@ -139,11 +139,11 @@ export function classifyMessengerProductMatch(
   // e.g. "hybrid rani lanka" against "Hybrid Chili Pepper – Rani Lanka".
   // Requiring every query token prevents one shared word such as "hybrid"
   // from making an unrelated product a trusted match.
-  const queryTokens = query.split(/\\s+/).filter((token) => token.length >= 2);
+  const queryTokens = query.split(/\s+/).filter((token) => token.length >= 2);
   const identityTokens = new Set(
     [nameBn, nameEn, slug.replace(/-/g, ' ')]
       .join(' ')
-      .split(/\\s+/)
+      .split(/\s+/)
       .filter(Boolean),
   );
 
@@ -215,7 +215,7 @@ export function normalizeMessengerProductQuery(value: string): string {
     .replace(/রানি/g, 'rani')
     .replace(/বীজের?|লাগাতে|চাই|আছে|কি|কী|এর|আপনাদের|কাছে/g, ' ')
     .replace(/\s+/g, ' ')
-    .split(/\\s+/)
+    .split(/\s+/)
     .filter((token) => !TRANSACTIONAL_QUERY_STOP_WORDS.has(token.toLocaleLowerCase()))
     .join(' ')
     .trim();
