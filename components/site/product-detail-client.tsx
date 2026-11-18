@@ -30,6 +30,7 @@ export default function ProductDetailClient({
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [quickViewOpen, setQuickViewOpen] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isVerifiedPurchase, setIsVerifiedPurchase] = useState(false);
   const [faqs, setFaqs] = useState<ProductFaq[]>([]);
@@ -46,6 +47,27 @@ export default function ProductDetailClient({
   const [inWishlist, setInWishlist] = useState(false);
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'guide' | 'reviews' | 'faqs'>('desc');
   const { lang, t, tDb } = useLang();
+
+  // Reopen Quick View when navigating between product routes.
+  useEffect(() => {
+    setQuickViewOpen(true);
+    setQuantity(1);
+  }, [slug]);
+
+  // Quick View modal scroll lock and Escape-key support.
+  useEffect(() => {
+    if (!quickViewOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setQuickViewOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [quickViewOpen]);
   const [guideLanguage, setGuideLanguage] = useState<'en' | 'bn' | 'hi'>(lang);
   const localizedGuideLanguages = (['en', 'bn', 'hi'] as const).filter((candidate) =>
     Boolean(product?.translations?.[candidate]?.cultivation_instructions?.trim()),
@@ -460,6 +482,129 @@ export default function ProductDetailClient({
         </div>
         {related.length > 0 && <div className="mt-16"><h2 className="mb-6 text-xl sm:text-2xl font-black text-gray-900">{t('এই বীজগুলোও আপনার ভালো লাগতে পারে', 'You may also like these seeds')}</h2><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{related.map((p) => <ProductCard key={p.id} product={p} />)}</div></div>}
       </div>
+
+      {quickViewOpen && product && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto overscroll-contain bg-slate-950/65 p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur-[3px] sm:p-6"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setQuickViewOpen(false);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="product-quick-view-title"
+            className="relative my-auto grid max-h-[calc(100dvh-1rem)] w-full max-w-3xl grid-cols-1 overflow-y-auto overscroll-contain rounded-[1.25rem] border border-white/70 bg-white shadow-[0_30px_100px_-25px_rgba(0,0,0,.55)] sm:max-h-[min(90dvh,760px)] sm:grid-cols-2 sm:overflow-hidden sm:rounded-[2rem]"
+          >
+            <button
+              type="button"
+              onClick={() => setQuickViewOpen(false)}
+              aria-label={t('বন্ধ করুন', 'Close', 'बंद करें')}
+              className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-700 shadow-lg transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+            >
+              <span aria-hidden="true" className="text-2xl leading-none">×</span>
+            </button>
+
+            <div className="relative flex h-[clamp(150px,24dvh,220px)] min-h-0 items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-lime-50 p-4 sm:h-auto sm:min-h-[420px] sm:p-8">
+              {product.image ? (
+                <img
+                  src={product.image}
+                  alt={productName}
+                  className="max-h-[clamp(125px,20dvh,185px)] w-full object-contain sm:max-h-[390px]"
+                />
+              ) : (
+                <div className="text-6xl" aria-hidden="true">🌱</div>
+              )}
+              {product.stock <= 0 && (
+                <span className="absolute bottom-4 left-4 rounded-full bg-red-600 px-3 py-1.5 text-xs font-bold text-white">
+                  {t('স্টকে নেই', 'Out of stock', 'स्टॉक में नहीं')}
+                </span>
+              )}
+            </div>
+
+            <div className="flex min-w-0 flex-col p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-7">
+              <div className="mb-2 text-[10px] font-black uppercase tracking-[.18em] text-emerald-700">
+                GAZI SEED · {t('পণ্যের সংক্ষিপ্ত বিবরণ', 'QUICK PRODUCT VIEW', 'उत्पाद की जानकारी')}
+              </div>
+              <h2 id="product-quick-view-title" className="pr-9 text-lg font-black leading-snug text-slate-950 [overflow-wrap:anywhere] sm:text-2xl">
+                {productName}
+              </h2>
+              <div className="mt-3 flex flex-wrap items-baseline gap-2">
+                <span className="text-2xl font-black text-emerald-800">{formatProductPrice(finalUnitPrice)}</span>
+                {effectivePrice > finalUnitPrice && (
+                  <span className="text-sm font-semibold text-slate-400 line-through">{formatProductPrice(effectivePrice)}</span>
+                )}
+              </div>
+              {productShortDesc && (
+                <p className="mt-4 line-clamp-4 whitespace-pre-line text-sm leading-6 text-slate-600">
+                  {productShortDesc}
+                </p>
+              )}
+              <div className="mt-4 flex items-center gap-2 text-xs font-semibold">
+                <span className={product.stock > 0 ? 'text-emerald-700' : 'text-red-600'}>
+                  {product.stock > 0
+                    ? t('স্টকে আছে', 'In stock', 'स्टॉक में उपलब्ध')
+                    : t('স্টক শেষ', 'Out of stock', 'स्टॉक समाप्त')}
+                </span>
+                {product.packet_weight && <span className="text-slate-400">· {tDb(product.packet_weight)}</span>}
+              </div>
+
+              {product.stock > 0 && (
+                <div className="mt-5 flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2">
+                  <span className="text-sm font-bold text-slate-700">{t('পরিমাণ', 'Quantity', 'मात्रा')}</span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                      aria-label={t('একটি কমান', 'Decrease quantity', 'मात्रा घटाएं')}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-800 hover:bg-slate-200"
+                    ><Minus className="h-4 w-4" /></button>
+                    <span className="min-w-5 text-center text-sm font-black tabular-nums">{quantity}</span>
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((value) => Math.min(quantityLimit, value + 1))}
+                      disabled={quantity >= quantityLimit}
+                      aria-label={t('একটি বাড়ান', 'Increase quantity', 'मात्रा बढ़ाएं')}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-800 hover:bg-slate-200 disabled:opacity-40"
+                    ><Plus className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              )}
+
+              <div className="sticky bottom-0 -mx-4 mt-auto grid gap-2 border-t border-slate-100 bg-white/95 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:pt-6">
+                <button
+                  type="button"
+                  disabled={product.stock <= 0}
+                  onClick={() => {
+                    if (handleAddToCart()) setQuickViewOpen(false);
+                  }}
+                  className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-emerald-700 bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  {t('কার্টে যোগ করুন', 'Add to Cart', 'कार्ट में जोड़ें')}
+                </button>
+                <button
+                  type="button"
+                  disabled={product.stock <= 0}
+                  onClick={handleBuyNow}
+                  className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-700 to-emerald-800 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-800/20 transition hover:from-emerald-800 hover:to-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Zap className="h-4 w-4 fill-current text-amber-300" />
+                  {t('এখনই অর্ডার করুন', 'Order Now', 'अभी ऑर्डर करें')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuickViewOpen(false)}
+                  className="min-h-11 rounded-xl px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-100"
+                >
+                  {t('সম্পূর্ণ পেজ দেখুন', 'See Full Page', 'पूरा पेज देखें')}
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
       {inStock && <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur-md px-3.5 pt-3.5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-2xl lg:hidden"><div className="max-w-md mx-auto flex items-center justify-between gap-3"><div className="min-w-0"><span className="text-[10px] text-gray-400 font-semibold block">{quantity} {t('টি পণ্যের মোট মূল্য', 'Total items price')}</span><p className="text-lg font-black text-emerald-800 truncate">{formatProductPrice(totalPrice)}</p></div><div className="flex gap-2 shrink-0"><button type="button" onClick={handleAddToCart} aria-label={t('কার্টে যোগ করুন', 'Add to cart')} className="min-h-12 min-w-12 p-3 rounded-xl border border-emerald-600/30 bg-emerald-50 text-emerald-900 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><ShoppingCart className="h-5 w-5 text-emerald-700" /></button><button type="button" onClick={handleBuyNow} className="min-h-12 flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-700 to-emerald-800 px-5 py-3 text-xs font-extrabold text-white shadow-md shadow-emerald-700/30 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><Zap className="h-4 w-4 fill-current text-amber-300" />{t('অর্ডার করুন', 'Order Now')}</button></div></div></div>}
     </div>
   );
