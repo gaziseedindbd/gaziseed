@@ -194,6 +194,34 @@ export function SiteHeader({ initialCountry = 'BD' }: { initialCountry?: 'BD' | 
     ? ([['en', 'EN', 'English'], ['bn', 'বাংলা', 'বাংলা'], ['hi', 'हिन्दी', 'हिन्दी']] as const)
     : ([['en', 'EN', 'English'], ['bn', 'বাংলা', 'বাংলা']] as const);
 
+  const isCampaignLanding = pathname.startsWith('/offer/') || pathname.startsWith('/animated-landing/') || pathname.startsWith('/combo/');
+
+  if (isCampaignLanding) {
+    return (
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-emerald-100 bg-white/95 shadow-sm backdrop-blur-xl">
+        <div className="mx-auto flex h-14 max-w-[1760px] items-center justify-between px-3 sm:px-5">
+          <Link href="/" aria-label="GAZI SEED" className="flex min-w-0 items-center gap-2">
+            {settings?.logo ? <Image src={settings.logo} alt={settings.website_name || 'GAZI SEED'} width={120} height={60} sizes="120px" className="h-9 w-auto max-w-[120px] object-contain" /> : <span className="text-sm font-black tracking-tight text-emerald-950">GAZI SEED</span>}
+          </Link>
+          <div className="flex shrink-0 items-center gap-2.5">
+            <Link href="/cart" aria-label={t('কার্ট', 'Cart')} className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-800">
+              <ShoppingCart className="h-5 w-5" />
+              {cartCount > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-700 px-1 text-[9px] font-black text-white">{cartCount > 99 ? '99+' : cartCount}</span>}
+            </Link>
+            <div ref={languageMobileRef} className="relative">
+              <button type="button" onClick={() => setLanguageMenuOpen((open) => !open)} aria-haspopup="menu" aria-expanded={languageMenuOpen} aria-label={t('ভাষা নির্বাচন', 'Select language')} className="flex h-10 items-center gap-1.5 rounded-xl border border-emerald-100 bg-emerald-50 px-3 text-xs font-black text-emerald-900">
+                <Languages className="h-4 w-4" /><span>{lang === 'hi' ? 'हिन्दी' : lang === 'bn' ? 'বাংলা' : 'EN'}</span><ChevronDown className="h-3 w-3" />
+              </button>
+              {languageMenuOpen && <div role="menu" className="absolute right-0 top-full z-[110] mt-2 w-36 rounded-2xl border border-emerald-100 bg-white p-1.5 shadow-xl">
+                {languageOptions.map(([code, shortLabel, label]) => <button key={code} type="button" role="menuitemradio" aria-checked={lang === code} onClick={() => { setLang(code); setLanguageMenuOpen(false); }} className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2.5 text-xs font-bold ${lang === code ? 'bg-emerald-50 text-emerald-900' : 'text-slate-700'}`}><span>{label}</span><span>{lang === code ? '✓' : shortLabel}</span></button>)}
+              </div>}
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
   const primaryNavLinks = navLinks.slice(0, 5);
   const secondaryNavLinks = navLinks.slice(5);
   const moreActive = secondaryNavLinks.some((link) => isActive(link.href));
