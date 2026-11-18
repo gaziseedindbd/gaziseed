@@ -43,7 +43,7 @@ export function LandingProductQuickView({ title, image, description, price, orde
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative my-auto grid w-full max-w-4xl grid-cols-1 overflow-hidden rounded-[24px] bg-white shadow-2xl sm:rounded-[30px] md:grid-cols-2"
+        className="relative my-auto grid w-full max-w-4xl grid-cols-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-[24px] bg-white shadow-2xl sm:rounded-[30px] md:grid-cols-2 md:grid-rows-1"
         style={{ maxHeight: 'min(92dvh, 760px)' }}
       >
         <button type="button" onClick={() => setOpen(false)} aria-label={labels.close} className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-slate-100 bg-white/95 text-slate-800 shadow-lg backdrop-blur"><X className="h-5 w-5" /></button>
