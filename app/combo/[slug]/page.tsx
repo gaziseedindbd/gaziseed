@@ -481,7 +481,7 @@ export default function ComboLandingPage() {
                         {index === items.length - 1 && <span className="absolute right-3 top-3 rounded-full bg-emerald-800 px-2.5 py-1 text-[9px] font-black text-white">FEATURED</span>}
                       </div>
                       <div className="p-4">
-                        <h3 className="line-clamp-2 text-[15px] font-black leading-6 text-slate-900">{itemName}</h3>
+                        <h3 className="line-clamp-2 text-[15px] font-black leading-6 text-slate-900">{product.slug ? <a href={`/${country.toLowerCase()}/product/${encodeURIComponent(product.slug)}`} className="rounded-sm hover:text-emerald-800 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600">{itemName}</a> : itemName}</h3>
                         <p className="mt-1 text-xs text-slate-500">{itemQuantity || `${per} ${copy('packet in combo', 'প্যাকেট / কম্বো', 'पैकेट प्रति कॉम्बो')}`}</p>
                         {(product.translations?.[lang]?.short_description || product.short_description || product.translations?.[lang]?.description || product.description) && <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-600">{product.translations?.[lang]?.short_description || product.short_description || product.translations?.[lang]?.description || product.description}</p>}
                         <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-200 pt-3"><span className="text-xs font-semibold text-slate-500">{copy('In your pack', 'বর্তমান প্যাকে', 'आपके पैक में')}</span><span className="rounded-full bg-emerald-800 px-2.5 py-1 text-[10px] font-black text-white">{totalQty} {copy('packs', 'প্যাকেট', 'पैकेट')}</span></div>
