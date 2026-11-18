@@ -34,21 +34,37 @@ export function LandingProductQuickView({ title, image, description, price, orde
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/75 p-3 backdrop-blur-sm sm:p-6" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
-      <section role="dialog" aria-modal="true" aria-label={title} className="relative grid w-full max-w-3xl overflow-hidden rounded-[28px] bg-white shadow-2xl md:grid-cols-2">
-        <button type="button" onClick={() => setOpen(false)} aria-label={labels.close} className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-lg"><X className="h-5 w-5" /></button>
-        <div className="relative aspect-square bg-slate-50 md:min-h-[420px]">
-          {image ? <Image src={image} alt={labels.imageAlt || title} fill priority sizes="(max-width: 768px) 100vw, 50vw" className="object-contain p-5" /> : <div className="flex h-full items-center justify-center text-7xl">🌱</div>}
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/80 p-2 backdrop-blur-md sm:p-5"
+      style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+      onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="relative my-auto grid w-full max-w-4xl grid-cols-1 overflow-hidden rounded-[24px] bg-white shadow-2xl sm:rounded-[30px] md:grid-cols-2"
+        style={{ maxHeight: 'min(92dvh, 760px)' }}
+      >
+        <button type="button" onClick={() => setOpen(false)} aria-label={labels.close} className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-slate-100 bg-white/95 text-slate-800 shadow-lg backdrop-blur"><X className="h-5 w-5" /></button>
+
+        <div className="relative min-h-0 min-w-0 overflow-hidden bg-slate-50 md:min-h-[420px]">
+          <div className="relative h-[30dvh] min-h-[190px] max-h-[300px] w-full sm:h-[36dvh] md:h-full md:min-h-[420px] md:max-h-none">
+            {image ? <Image src={image} alt={labels.imageAlt || title} fill priority sizes="(max-width: 767px) 100vw, 50vw" className="object-contain p-4 sm:p-6" /> : <div className="flex h-full items-center justify-center text-7xl">🌱</div>}
+          </div>
         </div>
-        <div className="flex flex-col justify-center p-6 sm:p-8">
-          <span className="mb-3 inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">{labels.badge}</span>
-          <h2 className="text-2xl font-black leading-tight text-slate-900 sm:text-3xl">{title}</h2>
-          {price ? <p className="mt-4 text-2xl font-black text-emerald-800">{price}</p> : null}
-          {description ? <p className="mt-4 line-clamp-5 text-sm leading-7 text-slate-600">{description}</p> : null}
-          <button type="button" onClick={() => { setOpen(false); window.setTimeout(() => document.getElementById(orderTarget)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80); }} className="mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-5 py-3 font-extrabold text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-800">
-            <ShoppingBag className="h-5 w-5" />{labels.order}<ArrowRight className="h-4 w-4" />
-          </button>
-          <button type="button" onClick={() => setOpen(false)} className="mt-3 min-h-11 rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50">{labels.close}</button>
+
+        <div className="flex min-h-0 min-w-0 flex-col overflow-y-auto overscroll-contain p-5 sm:p-7 md:justify-center md:p-8">
+          <span className="mb-3 inline-flex w-fit shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">{labels.badge}</span>
+          <h2 className="min-w-0 break-words text-xl font-black leading-tight text-slate-900 sm:text-2xl lg:text-3xl">{title}</h2>
+          {price ? <p className="mt-3 shrink-0 text-xl font-black text-emerald-800 sm:text-2xl">{price}</p> : null}
+          {description ? <p className="mt-3 break-words text-sm leading-6 text-slate-600 sm:mt-4 sm:leading-7">{description}</p> : null}
+          <div className="mt-5 grid shrink-0 gap-2 sm:mt-7">
+            <button type="button" onClick={() => { setOpen(false); window.setTimeout(() => document.getElementById(orderTarget)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100); }} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-5 py-3 font-extrabold text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-800">
+              <ShoppingBag className="h-5 w-5" />{labels.order}<ArrowRight className="h-4 w-4" />
+            </button>
+            <button type="button" onClick={() => setOpen(false)} className="min-h-11 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">{labels.close}</button>
+          </div>
         </div>
       </section>
     </div>
