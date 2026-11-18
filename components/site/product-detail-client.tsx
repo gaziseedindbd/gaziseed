@@ -530,12 +530,26 @@ export default function ProductDetailClient({
               <h2 id="product-quick-view-title" className="pr-9 text-lg font-black leading-snug text-slate-950 [overflow-wrap:anywhere] sm:text-2xl">
                 {productName}
               </h2>
-              <div className="mt-3 flex flex-wrap items-baseline gap-2">
-                <span className="text-2xl font-black text-emerald-800">{formatProductPrice(finalUnitPrice)}</span>
-                {effectivePrice > finalUnitPrice && (
-                  <span className="text-sm font-semibold text-slate-400 line-through">{formatProductPrice(effectivePrice)}</span>
-                )}
-              </div>
+              {(() => {
+                const regularPriceForQuickView = Math.max(
+                  0,
+                  Number(selectedVariant?.regular_price || product.regular_price || effectivePrice || 0),
+                );
+                const quickViewDiscount = regularPriceForQuickView > finalUnitPrice
+                  ? Math.round(((regularPriceForQuickView - finalUnitPrice) / regularPriceForQuickView) * 100)
+                  : 0;
+                return (
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <span className="text-2xl font-black text-emerald-800">{formatProductPrice(finalUnitPrice)}</span>
+                    {quickViewDiscount > 0 && (
+                      <>
+                        <span className="text-sm font-semibold text-slate-400 line-through">{formatProductPrice(regularPriceForQuickView)}</span>
+                        <span className="rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white">{quickViewDiscount}% {t('ছাড়', 'OFF', 'छूट')}</span>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
               {productShortDesc && (
                 <p className="mt-4 line-clamp-4 whitespace-pre-line text-sm leading-6 text-slate-600">
                   {productShortDesc}
