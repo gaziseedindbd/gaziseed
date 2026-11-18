@@ -9,12 +9,14 @@ type Props = {
   image?: string;
   description?: string;
   price?: string;
+  regularPrice?: string;
+  discountPercent?: number;
   country?: 'IN' | 'BD';
   orderTarget: string;
   labels: { badge: string; order: string; close: string; imageAlt: string };
 };
 
-export function LandingProductQuickView({ title, image, description, price, orderTarget, labels }: Props) {
+export function LandingProductQuickView({ title, image, description, price, regularPrice, discountPercent = 0, orderTarget, labels }: Props) {
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
@@ -57,7 +59,13 @@ export function LandingProductQuickView({ title, image, description, price, orde
         <div className="flex min-h-0 min-w-0 flex-col overflow-y-auto overscroll-contain p-5 sm:p-7 md:justify-center md:p-8">
           <span className="mb-3 inline-flex w-fit shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">{labels.badge}</span>
           <h2 className="min-w-0 break-words text-xl font-black leading-tight text-slate-900 sm:text-2xl lg:text-3xl">{title}</h2>
-          {price ? <p className="mt-3 shrink-0 text-xl font-black text-emerald-800 sm:text-2xl">{price}</p> : null}
+          {price ? (
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+              <span className="shrink-0 text-xl font-black text-emerald-800 sm:text-2xl">{price}</span>
+              {regularPrice && regularPrice !== price && <span className="shrink-0 text-sm font-semibold text-slate-400 line-through sm:text-base">{regularPrice}</span>}
+              {discountPercent > 0 && <span className="shrink-0 rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white">{discountPercent}% OFF</span>}
+            </div>
+          ) : null}
           {description ? <p className="mt-3 break-words text-sm leading-6 text-slate-600 sm:mt-4 sm:leading-7">{description}</p> : null}
           <div className="mt-5 grid shrink-0 gap-2 sm:mt-7">
             <button type="button" onClick={() => { setOpen(false); window.setTimeout(() => document.getElementById(orderTarget)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100); }} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-5 py-3 font-extrabold text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-800">
