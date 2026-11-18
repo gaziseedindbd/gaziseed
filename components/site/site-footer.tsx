@@ -13,6 +13,7 @@ import { getVisitorCountry } from '@/lib/supabase/client';
 export function SiteFooter({ initialCountry = 'BD' }: { initialCountry?: 'BD' | 'IN' }) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/allahmohammad/admin/');
+  const isCampaignLanding = pathname.startsWith('/offer/') || pathname.startsWith('/animated-landing/') || pathname.startsWith('/combo/');
 
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [nav, setNav] = useState<Navigation[]>([]);
@@ -34,7 +35,7 @@ export function SiteFooter({ initialCountry = 'BD' }: { initialCountry?: 'BD' | 
     : t('বাংলাদেশে বীজ ও কৃষি পণ্যের অনলাইন স্টোর। আপনার এলাকায় ডেলিভারি ও পেমেন্ট সুবিধা চেক করুন।', "Shop seeds and agro products in Bangladesh. Check delivery and payment options for your area.", 'बांग्लादेश में बीज और कृषि उत्पादों की ऑनलाइन दुकान।');
   const fallbackLocation = isIndia ? t('ভারত', 'India', 'भारत') : t('ঢাকা, বাংলাদেশ', 'Dhaka, Bangladesh', 'ढाका, बांग्लादेश');
 
-  if (isAdminRoute) return null;
+  if (isAdminRoute || isCampaignLanding) return null;
 
   return <footer className="border-t border-primary/10 bg-gradient-to-b from-secondary/20 to-background pb-24 md:pb-0">
     <div className="container-custom pt-10 sm:pt-14">

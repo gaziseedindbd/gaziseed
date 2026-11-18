@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase/client';
 import { Check, Truck, ShieldCheck, Star, ChevronDown, ChevronLeft, ChevronRight, Loader2, Zap, Package, Sparkles, Clock, ArrowDownCircle, CheckCircle2, Shield, HeartHandshake } from 'lucide-react';
 import { AddressSelector, formatAddressToString, type AddressValue } from '@/components/site/address-selector';
 import { PromotionalPopup } from '@/components/site/promotional-popup';
+import { LandingProductQuickView } from '@/components/site/landing-product-quick-view';
 import { useLang } from '@/components/site/language-provider';
 import { IndiaPaymentMethodSelector, type IndiaPaymentMethod } from '@/components/site/india-payment-method-selector';
 import { startIndiaCampaignPayment } from '@/lib/india-campaign-payment';
@@ -359,6 +360,7 @@ export default function OfferLandingPage() {
 
   return (
     <div className="min-h-screen bg-[#fafbfc] text-gray-900 pb-28 lg:pb-12 selection:bg-emerald-500 selection:text-white">
+      <LandingProductQuickView title={title} image={images[0] || product?.image} description={description} price={offerPrice > 0 ? formatPrice(offerPrice) : undefined} orderTarget="order-form" labels={{ badge: tr("পণ্যের বিবরণ", "Product details", "उत्पाद विवरण"), order: tr("অর্ডার করুন", "Order now", "अभी ऑर्डर करें"), close: tr("সম্পূর্ণ পেজ দেখুন", "See full page", "पूरा पेज देखें"), imageAlt: tr("পণ্যের ছবি", "Product image", "उत्पाद की तस्वीर") }} />
       {/* টপ নোটিফিকেশন বার */}
       <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white text-center py-2 px-3 text-xs sm:text-sm font-semibold tracking-wide flex items-center justify-center gap-2 shadow-sm">
         <Sparkles className="h-4 w-4 text-amber-300 animate-pulse shrink-0" />
@@ -485,6 +487,7 @@ export default function OfferLandingPage() {
               <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight">
                 {title || landing?.landing_name || product?.name_bn}
               </h1>
+              {product?.slug && <a href={`/${countryCode.toLowerCase()}/product/${encodeURIComponent(product.slug)}`} className="inline-flex min-h-10 items-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100">{tr('সম্পূর্ণ পণ্যের বিবরণ দেখুন', 'View full product details', 'उत्पाद का पूरा विवरण देखें')}</a>}
 
               {landing?.subtitle && (
                 <p className="text-sm sm:text-base text-gray-600 leading-relaxed font-medium">

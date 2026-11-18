@@ -8,12 +8,13 @@ import type { Announcement } from '@/lib/supabase/types';
 export function AnnouncementBar() {
   const pathname = usePathname();
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
+  const isCampaignLanding = pathname.startsWith('/offer/') || pathname.startsWith('/animated-landing/') || pathname.startsWith('/combo/');
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
 
   useEffect(() => {
-    if (isAdminRoute) return;
+    if (isAdminRoute || isCampaignLanding) return;
     getAnnouncements().then(setAnnouncements);
   }, [isAdminRoute]);
 
@@ -25,7 +26,7 @@ export function AnnouncementBar() {
     return () => clearInterval(interval);
   }, [announcements.length]);
 
-  if (isAdminRoute || announcements.length === 0) return null;
+  if (isAdminRoute || isCampaignLanding || announcements.length === 0) return null;
 
   const current = announcements[currentIdx];
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
+import { LandingProductQuickView } from '@/components/site/landing-product-quick-view';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useLang } from '@/components/site/language-provider';
@@ -340,6 +341,7 @@ export default function ComboLandingPage() {
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#f5f8f4] pb-28 text-slate-900">
+      <LandingProductQuickView title={comboTitle} image={mainComboImage || seedImages[0]?.image} description={comboDescription} price={formatPrice(offer)} country={country} orderTarget="quick-checkout" labels={{ badge: copy("Combo details", "কম্বো বিবরণ", "कॉम्बो विवरण"), order: copy("Order this combo", "কম্বো অর্ডার করুন", "कॉम्बो ऑर्डर करें"), close: copy("See full page", "সম্পূর্ণ পেজ দেখুন", "पूरा पेज দেখें"), imageAlt: comboTitle }} />
       <style jsx global>{`
         @media (max-width: 1023px) {
           /* Leave room for the site-wide mobile navigation below the order CTA. */
@@ -476,12 +478,12 @@ export default function ComboLandingPage() {
                   return (
                     <article key={item.product_id || `${item.name || 'manual'}-${index}`} className="group overflow-hidden rounded-[28px] border border-slate-200 bg-[#f8fbf7] transition duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl">
                       <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_35%,#ffffff,#eef7f0)]">
-                        {image ? <img src={image} alt={product.name_bn || product.name_en || 'Seed'} className="h-full w-full object-contain p-4 transition duration-500 group-hover:scale-105" loading="lazy" /> : <Leaf className="h-14 w-14 text-emerald-700/25" />}
+                        {product.slug ? <a href={`/${country.toLowerCase()}/product/${encodeURIComponent(product.slug)}`} aria-label={copy('View product details', 'পণ্যের বিস্তারিত দেখুন', 'उत्पाद विवरण देखें')} className="absolute inset-0 z-10 flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600">{image ? <img src={image} alt={product.name_bn || product.name_en || 'Seed'} className="h-full w-full object-contain p-4 transition duration-500 group-hover:scale-105" loading="lazy" /> : <Leaf className="h-14 w-14 text-emerald-700/25" />}</a> : image ? <img src={image} alt={product.name_bn || product.name_en || 'Seed'} className="h-full w-full object-contain p-4 transition duration-500 group-hover:scale-105" loading="lazy" /> : <Leaf className="h-14 w-14 text-emerald-700/25" />}
                         <span className="absolute left-3 top-3 rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-black text-emerald-900 shadow-sm">0{index + 1}</span>
                         {index === items.length - 1 && <span className="absolute right-3 top-3 rounded-full bg-emerald-800 px-2.5 py-1 text-[9px] font-black text-white">FEATURED</span>}
                       </div>
                       <div className="p-4">
-                        <h3 className="line-clamp-2 text-[15px] font-black leading-6 text-slate-900">{itemName}</h3>
+                        <h3 className="line-clamp-2 text-[15px] font-black leading-6 text-slate-900">{product.slug ? <a href={`/${country.toLowerCase()}/product/${encodeURIComponent(product.slug)}`} className="rounded-sm hover:text-emerald-800 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600">{itemName}</a> : itemName}</h3>
                         <p className="mt-1 text-xs text-slate-500">{itemQuantity || `${per} ${copy('packet in combo', 'প্যাকেট / কম্বো', 'पैकेट प्रति कॉम्बो')}`}</p>
                         {(product.translations?.[lang]?.short_description || product.short_description || product.translations?.[lang]?.description || product.description) && <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-600">{product.translations?.[lang]?.short_description || product.short_description || product.translations?.[lang]?.description || product.description}</p>}
                         <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-200 pt-3"><span className="text-xs font-semibold text-slate-500">{copy('In your pack', 'বর্তমান প্যাকে', 'आपके पैक में')}</span><span className="rounded-full bg-emerald-800 px-2.5 py-1 text-[10px] font-black text-white">{totalQty} {copy('packs', 'প্যাকেট', 'पैकेट')}</span></div>

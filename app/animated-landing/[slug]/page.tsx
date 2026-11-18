@@ -1,6 +1,7 @@
 'use client';
 
 import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
+import { LandingProductQuickView } from '@/components/site/landing-product-quick-view';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useLang } from '@/components/site/language-provider';
@@ -421,6 +422,7 @@ export default function AnimatedLandingPage() {
 
   return (
     <main className="min-h-screen bg-[#f8f4e8] text-[#0b1d13] selection:bg-lime-300 selection:text-[#04120b] overflow-x-hidden">
+      <LandingProductQuickView title={productTranslation.name || (lang === "en" ? product?.name_en : lang === "hi" ? product?.name_hi : product?.name_bn) || product?.name_en || t("বীজের পণ্য", "Seed product", "बीज उत्पाद")} image={product?.image || product?.image_url || product?.featured_image} description={product?.description || page?.hero_subtitle || ""} price={selectedPackage ? formatPrice(offerPrice) : undefined} orderTarget="packages" labels={{ badge: t("পণ্যের বিবরণ", "Product details", "उत्पाद विवरण"), order: t("অর্ডার করুন", "Order now", "अभी ऑर्डर करें"), close: t("সম্পূর্ণ পেজ দেখুন", "See full page", "पूरा पेज देखें"), imageAlt: t("পণ্যের ছবি", "Product image", "उत्पाद की तस्वीर") }} />
       <style jsx global>{`
         html { scroll-behavior: smooth; }
         .sk-animate { opacity: 0; transform: translateY(34px); transition: opacity .8s cubic-bezier(.22,.9,.25,1), transform .8s cubic-bezier(.22,.9,.25,1); }
@@ -497,7 +499,7 @@ export default function AnimatedLandingPage() {
                 <div className="mt-6 grid max-w-3xl grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
                   {(benefits.slice(0, 5)).map((item, index) => <div key={index} className={`sk-animate sk-delay-${(index % 3) + 1} rounded-2xl border border-white/10 bg-white/[.04] p-3 text-center backdrop-blur sm:p-4`}><div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl border border-lime-300/20 bg-lime-300/10 text-xl">{item.icon || '🌱'}</div><p className="mt-2 text-sm font-bold leading-snug text-white/90">{item.title || ''}</p></div>)}
                 </div>
-                <div className="mt-8 flex flex-wrap items-center gap-4"><button onClick={() => jump('packages')} className="sk-shimmer rounded-2xl bg-gradient-to-r from-amber-300 via-lime-300 to-amber-200 px-6 py-3.5 font-black text-[#06150d] shadow-xl shadow-amber-500/10 transition hover:scale-[1.02]"><span className="relative z-10">{ctaLabel} <ShoppingCart className="ml-2 inline h-4 w-4" /></span></button><button onClick={() => jump('benefits')} className="flex items-center gap-2 rounded-2xl border border-white/15 px-5 py-3.5 font-bold text-white/85 transition hover:bg-white/5">{t('বিস্তারিত দেখুন', 'Learn more', 'और जानें')} <ArrowDown className="h-4 w-4" /></button></div>
+                <div className="mt-8 flex flex-wrap items-center gap-4"><button onClick={() => jump('packages')} className="sk-shimmer rounded-2xl bg-gradient-to-r from-amber-300 via-lime-300 to-amber-200 px-6 py-3.5 font-black text-[#06150d] shadow-xl shadow-amber-500/10 transition hover:scale-[1.02]"><span className="relative z-10">{ctaLabel} <ShoppingCart className="ml-2 inline h-4 w-4" /></span></button><button onClick={() => jump('benefits')} className="flex items-center gap-2 rounded-2xl border border-white/15 px-5 py-3.5 font-bold text-white/85 transition hover:bg-white/5">{t('বিস্তারিত দেখুন', 'Learn more', 'और जानें')} <ArrowDown className="h-4 w-4" /></button>{product?.slug && <button type="button" onClick={() => { const branch = String(product.country_code || country).toUpperCase() === 'IN' ? 'in' : 'bd'; window.location.href = `/${branch}/product/${encodeURIComponent(product.slug)}`; }} className="rounded-2xl border border-lime-300/30 bg-lime-300/10 px-5 py-3.5 font-bold text-lime-100 transition hover:bg-lime-300/20">{t('পণ্যের বিস্তারিত', 'Product details', 'उत्पाद विवरण')}</button>}</div>
               </div>
               <div className="relative flex items-center justify-center lg:justify-end">
                 <div className="absolute h-72 w-72 rounded-full bg-lime-300/10 blur-3xl" />

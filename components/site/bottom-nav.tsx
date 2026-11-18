@@ -12,6 +12,7 @@ export function BottomNav({ initialCountry = 'BD' }: { initialCountry?: 'BD' | '
   const { t } = useLang();
   const [country, setCountry] = useState<'BD' | 'IN'>(initialCountry);
   const isProductPage = pathname.startsWith('/product/');
+  const isCampaignLanding = pathname.startsWith('/offer/') || pathname.startsWith('/animated-landing/') || pathname.startsWith('/combo/');
 
   useEffect(() => {
     const syncCountry = () => setCountry(getVisitorCountry());
@@ -25,6 +26,7 @@ export function BottomNav({ initialCountry = 'BD' }: { initialCountry?: 'BD' | '
   }, []);
 
   if (pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/allahmohammad/admin' || pathname.startsWith('/allahmohammad/admin/')) return null;
+  if (isCampaignLanding) return null;
   if (isProductPage && country === 'IN') return null;
 
   const navItems = [
