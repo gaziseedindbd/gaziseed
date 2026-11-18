@@ -485,7 +485,7 @@ export default function ProductDetailClient({
 
       {quickViewOpen && product && (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-slate-950/65 p-3 backdrop-blur-[3px] sm:p-6"
+          className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto overscroll-contain bg-slate-950/65 p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur-[3px] sm:p-6"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setQuickViewOpen(false);
@@ -495,7 +495,7 @@ export default function ProductDetailClient({
             role="dialog"
             aria-modal="true"
             aria-labelledby="product-quick-view-title"
-            className="relative my-auto grid w-full max-w-3xl overflow-hidden rounded-[1.5rem] border border-white/70 bg-white shadow-[0_30px_100px_-25px_rgba(0,0,0,.55)] sm:grid-cols-2 sm:rounded-[2rem]"
+            className="relative my-auto grid max-h-[calc(100dvh-1rem)] w-full max-w-3xl grid-cols-1 overflow-y-auto overscroll-contain rounded-[1.25rem] border border-white/70 bg-white shadow-[0_30px_100px_-25px_rgba(0,0,0,.55)] sm:max-h-[min(90dvh,760px)] sm:grid-cols-2 sm:overflow-hidden sm:rounded-[2rem]"
           >
             <button
               type="button"
@@ -506,12 +506,12 @@ export default function ProductDetailClient({
               <span aria-hidden="true" className="text-2xl leading-none">×</span>
             </button>
 
-            <div className="relative flex min-h-[230px] items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-lime-50 p-5 sm:min-h-[420px] sm:p-8">
+            <div className="relative flex h-[clamp(150px,24dvh,220px)] min-h-0 items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-lime-50 p-4 sm:h-auto sm:min-h-[420px] sm:p-8">
               {product.image ? (
                 <img
                   src={product.image}
                   alt={productName}
-                  className="max-h-[300px] w-full object-contain sm:max-h-[390px]"
+                  className="max-h-[clamp(125px,20dvh,185px)] w-full object-contain sm:max-h-[390px]"
                 />
               ) : (
                 <div className="text-6xl" aria-hidden="true">🌱</div>
@@ -523,11 +523,11 @@ export default function ProductDetailClient({
               )}
             </div>
 
-            <div className="flex min-w-0 flex-col p-5 sm:p-7">
+            <div className="flex min-w-0 flex-col p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-7">
               <div className="mb-2 text-[10px] font-black uppercase tracking-[.18em] text-emerald-700">
                 GAZI SEED · {t('পণ্যের সংক্ষিপ্ত বিবরণ', 'QUICK PRODUCT VIEW', 'उत्पाद की जानकारी')}
               </div>
-              <h2 id="product-quick-view-title" className="pr-9 text-xl font-black leading-snug text-slate-950 sm:text-2xl">
+              <h2 id="product-quick-view-title" className="pr-9 text-lg font-black leading-snug text-slate-950 [overflow-wrap:anywhere] sm:text-2xl">
                 {productName}
               </h2>
               <div className="mt-3 flex flex-wrap items-baseline gap-2">
@@ -572,7 +572,7 @@ export default function ProductDetailClient({
                 </div>
               )}
 
-              <div className="mt-auto grid gap-2 pt-6">
+              <div className="sticky bottom-0 -mx-4 mt-auto grid gap-2 border-t border-slate-100 bg-white/95 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:pt-6">
                 <button
                   type="button"
                   disabled={product.stock <= 0}
