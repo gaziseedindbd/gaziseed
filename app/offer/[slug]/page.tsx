@@ -485,6 +485,7 @@ export default function OfferLandingPage() {
               <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight">
                 {title || landing?.landing_name || product?.name_bn}
               </h1>
+              {product?.slug && <a href={`/${countryCode.toLowerCase()}/product/${encodeURIComponent(product.slug)}`} className="inline-flex min-h-10 items-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100">{tr('সম্পূর্ণ পণ্যের বিবরণ দেখুন', 'View full product details', 'उत्पाद का पूरा विवरण देखें')}</a>}
 
               {landing?.subtitle && (
                 <p className="text-sm sm:text-base text-gray-600 leading-relaxed font-medium">
