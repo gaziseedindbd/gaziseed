@@ -1,6 +1,7 @@
 'use client';
 
 import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
+import { LandingProductQuickView } from '@/components/site/landing-product-quick-view';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useLang } from '@/components/site/language-provider';
@@ -340,6 +341,7 @@ export default function ComboLandingPage() {
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#f5f8f4] pb-28 text-slate-900">
+      <LandingProductQuickView title={comboTitle} image={mainComboImage || seedImages[0]?.image} description={comboDescription} price={formatPrice(offer)} country={country} orderTarget="quick-checkout" labels={{ badge: copy("Combo details", "কম্বো বিবরণ", "कॉम्बो विवरण"), order: copy("Order this combo", "কম্বো অর্ডার করুন", "कॉम्बो ऑर्डर करें"), close: copy("See full page", "সম্পূর্ণ পেজ দেখুন", "पूरा पेज দেখें"), imageAlt: comboTitle }} />
       <style jsx global>{`
         @media (max-width: 1023px) {
           /* Leave room for the site-wide mobile navigation below the order CTA. */
