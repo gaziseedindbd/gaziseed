@@ -199,10 +199,7 @@ export function SiteHeader({ initialCountry = 'BD' }: { initialCountry?: 'BD' | 
   if (isCampaignLanding) {
     return (
       <header className="fixed inset-x-0 top-0 z-50 border-b border-emerald-100 bg-white/95 shadow-sm backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-[1760px] items-center justify-between px-3 sm:px-5">
-          <Link href="/" aria-label="GAZI SEED" className="flex min-w-0 items-center gap-2">
-            {settings?.logo ? <Image src={settings.logo} alt={settings.website_name || 'GAZI SEED'} width={120} height={60} sizes="120px" className="h-9 w-auto max-w-[120px] object-contain" /> : <span className="text-sm font-black tracking-tight text-emerald-950">GAZI SEED</span>}
-          </Link>
+        <div className="mx-auto flex h-14 max-w-[1760px] items-center justify-end px-3 sm:px-5">
           <div className="flex shrink-0 items-center gap-2.5">
             <Link href="/cart" aria-label={t('কার্ট', 'Cart')} className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-800">
               <ShoppingCart className="h-5 w-5" />
