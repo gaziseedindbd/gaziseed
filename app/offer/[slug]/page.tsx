@@ -360,7 +360,7 @@ export default function OfferLandingPage() {
 
   return (
     <div className="min-h-screen bg-[#fafbfc] text-gray-900 pb-28 lg:pb-12 selection:bg-emerald-500 selection:text-white">
-      <LandingProductQuickView title={title} image={images[0] || product?.image} description={description} price={offerPrice > 0 ? formatPrice(offerPrice) : undefined} orderTarget="order-form" labels={{ badge: tr("পণ্যের বিবরণ", "Product details", "उत्पाद विवरण"), order: tr("অর্ডার করুন", "Order now", "अभी ऑर्डर करें"), close: tr("সম্পূর্ণ পেজ দেখুন", "See full page", "पूरा पेज देखें"), imageAlt: tr("পণ্যের ছবি", "Product image", "उत्पाद की तस्वीर") }} />
+      <LandingProductQuickView title={title} image={images[0] || product?.image} description={description} price={offerPrice > 0 ? formatPrice(offerPrice) : undefined} regularPrice={comparePrice > offerPrice ? formatPrice(comparePrice) : undefined} discountPercent={discountPercent} orderTarget="order-form" labels={{ badge: tr("পণ্যের বিবরণ", "Product details", "उत्पाद विवरण"), order: tr("অর্ডার করুন", "Order now", "अभी ऑर्डर करें"), close: tr("সম্পূর্ণ পেজ দেখুন", "See full page", "पूरा पेज देखें"), imageAlt: tr("পণ্যের ছবি", "Product image", "उत्पाद की तस्वीर") }} />
       {/* টপ নোটিফিকেশন বার */}
       <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white text-center py-2 px-3 text-xs sm:text-sm font-semibold tracking-wide flex items-center justify-center gap-2 shadow-sm">
         <Sparkles className="h-4 w-4 text-amber-300 animate-pulse shrink-0" />
