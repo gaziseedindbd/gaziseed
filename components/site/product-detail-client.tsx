@@ -48,6 +48,12 @@ export default function ProductDetailClient({
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'guide' | 'reviews' | 'faqs'>('desc');
   const { lang, t, tDb } = useLang();
 
+  // Reopen Quick View when navigating between product routes.
+  useEffect(() => {
+    setQuickViewOpen(true);
+    setQuantity(1);
+  }, [slug]);
+
   // Quick View modal scroll lock and Escape-key support.
   useEffect(() => {
     if (!quickViewOpen) return;
