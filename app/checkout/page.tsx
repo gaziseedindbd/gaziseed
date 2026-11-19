@@ -1015,12 +1015,12 @@ export default function CheckoutPage() {
                         <p className="line-clamp-2 text-xs font-black leading-5 text-foreground">{item.name}</p>
                         {item.variant_name && <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{item.variant_name}</p>}
                         {item.bulk_tiers && item.bulk_tiers.filter((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0).length > 0 && (
-                          <div className="mb-3 rounded-xl border border-orange-200 bg-orange-50/70 p-3">
-                            <div className="mb-2 flex items-center gap-1.5 text-[11px] font-black text-orange-900">
-                              <Tag className="h-3.5 w-3.5" />
+                          <div className="mb-3 rounded-2xl border border-orange-200 bg-orange-50/70 p-4 sm:p-5">
+                            <div className="mb-3 flex items-center gap-2 text-xs font-black text-orange-900 sm:text-sm">
+                              <Tag className="h-4 w-4 shrink-0" />
                               {t('🔥 বেশি কিনুন, বেশি সাশ্রয় করুন', '🔥 BUY MORE, SAVE MORE')}
                             </div>
-                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                               {[...item.bulk_tiers]
                                 .filter((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0)
                                 .sort((a, b) => a.min_quantity - b.min_quantity)
@@ -1036,21 +1036,21 @@ export default function CheckoutPage() {
                                       disabled={!canSelect}
                                       aria-pressed={item.quantity === tier.min_quantity}
                                       onClick={() => updateCartQuantity(item.product_id, tier.min_quantity, item.variant_id, item.bundle_id)}
-                                      className={`w-full rounded-lg border px-2.5 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1 ${active ? 'border-emerald-300 bg-emerald-50' : 'border-orange-100 bg-white hover:border-orange-300 hover:bg-orange-50'} ${!canSelect ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                                      className={`flex min-h-[116px] w-full flex-col justify-between rounded-xl border p-3.5 text-left shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 sm:min-h-[128px] sm:p-4 ${active ? 'border-emerald-400 bg-emerald-50 ring-1 ring-emerald-200' : 'border-orange-200 bg-white hover:border-orange-400 hover:bg-orange-50'} ${!canSelect ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                                     >
                                       <div className="flex items-center justify-between gap-2">
-                                        <span className="text-[11px] font-extrabold text-foreground">
+                                        <span className="text-sm font-extrabold text-foreground sm:text-base">
                                           {tier.min_quantity}× {t('প্যাকেট', 'PACKETS')}
                                           {active && <span className="ml-1 text-emerald-700">· {t('সক্রিয়', 'ACTIVE')}</span>}
                                         </span>
-                                        <span className="text-[11px] font-black text-emerald-700">{formatPrice(tier.unit_price)} {t('প্রতি প্যাকেট', 'per pack')}</span>
+                                        <span className="text-sm font-black text-emerald-700 sm:text-base">{formatPrice(tier.unit_price)} <span className="text-[11px] font-semibold">{t('প্রতি প্যাকেট', 'per pack')}</span></span>
                                       </div>
-                                      {tier.free_item_text && <p className="mt-1 text-[10px] font-bold text-emerald-800">🎁 {tier.free_item_text}</p>}
-                                      <div className="mt-1 flex items-center justify-between gap-2">
-                                        <p className="text-[10px] text-muted-foreground">
+                                      {tier.free_item_text && <p className="mt-2 text-xs font-bold text-emerald-800">🎁 {tier.free_item_text}</p>}
+                                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-black/5 pt-2">
+                                        <p className="text-xs font-medium text-muted-foreground">
                                           {t('সাশ্রয়', 'You save')}: {formatPrice(savings)}
                                         </p>
-                                        <span className="text-[10px] font-black text-emerald-800">
+                                        <span className="text-[10px] font-black tracking-wide text-emerald-800">
                                           {item.quantity === tier.min_quantity ? t('নির্বাচিত', 'SELECTED') : t('এই অফার নিন', 'SELECT OFFER')}
                                         </span>
                                       </div>
