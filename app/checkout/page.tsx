@@ -775,7 +775,7 @@ export default function CheckoutPage() {
         </div>
 
         <form id="checkout-form" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-[minmax(0,1fr)_390px] lg:gap-9">
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 sm:gap-7">
             <div className="space-y-6 lg:space-y-7">
               {savedAddresses.length > 0 && (
                 <section className="rounded-[2rem] border border-border/70 bg-card p-5 shadow-sm sm:p-7">
@@ -969,7 +969,7 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            <aside className="lg:sticky lg:top-24">
+            <aside className="w-full space-y-5">
               <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-xl shadow-black/[0.06]">
                 <div className="border-b border-border/60 p-5 sm:p-6">
                   <div className="flex items-center justify-between gap-3">
@@ -990,53 +990,6 @@ export default function CheckoutPage() {
                     )}
                   </div>
                 </div>
-
-                {country === 'IN' && (
-                  <div className="border-b border-border/60 p-5 sm:p-6">
-                    <div className="mb-3">
-                      <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">{t('পেমেন্ট পদ্ধতি', 'Payment method')}</p>
-                      <h3 className="mt-1 text-sm font-black text-foreground">{t('কীভাবে পেমেন্ট করবেন?', 'How would you like to pay?')}</h3>
-                    </div>
-                    <div className="grid grid-cols-1 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod('online')}
-                        aria-pressed={paymentMethod === 'online'}
-                        className={`min-h-[92px] w-full rounded-[22px] border-2 p-5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${paymentMethod === 'online' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border bg-background hover:border-primary/30'}`}
-                      >
-                        <span className="flex items-start gap-3">
-                          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><WalletCards className="h-4 w-4" /></span>
-                          <span className="min-w-0">
-                            <span className="block text-base font-black">{t('অনলাইন পেমেন্ট', 'Online payment')}</span>
-                            <span className="mt-2 block text-sm leading-5 text-muted-foreground">UPI / Card</span>
-                          </span>
-                        </span>
-                      </button>
-
-                      {codAvailable && (
-                        <button
-                          type="button"
-                          onClick={() => setPaymentMethod('cod')}
-                          aria-pressed={paymentMethod === 'cod'}
-                          className={`min-h-[92px] w-full rounded-[22px] border-2 p-5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${paymentMethod === 'cod' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border bg-background hover:border-primary/30'}`}
-                        >
-                          <span className="flex items-start gap-3">
-                            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Banknote className="h-4 w-4" /></span>
-                            <span className="min-w-0">
-                              <span className="block text-base font-black">{t('ক্যাশ অন ডেলিভারি', 'Cash on Delivery')}</span>
-                              <span className="mt-2 block space-y-1 text-sm leading-5 text-muted-foreground"><span className="block">{t("এখন অগ্রিম", "Advance now", "अभी अग्रिम")} <strong className="font-black text-foreground">{formatPrice(codAdvance)}</strong></span><span className="block">{t("ডেলিভারির সময় বাকি", "Due on delivery", "डिलीवरी पर शेष")} <strong className="font-black text-foreground">{formatPrice(codDue)}</strong></span></span>
-                            </span>
-                          </span>
-                        </button>
-                      )}
-                    </div>
-                    {!codAvailable && (
-                      <p className="mt-3 rounded-xl border border-amber-200/80 bg-amber-500/10 px-3 py-2 text-[10px] font-bold leading-4 text-amber-700 dark:border-amber-900/60 dark:text-amber-300">
-                        {t('এই অর্ডারের জন্য COD উপলভ্য নয়।', 'COD is not available for this order.')}
-                      </p>
-                    )}
-                  </div>
-                )}
 
                 <div className="max-h-72 space-y-3 overflow-y-auto border-b border-border/60 p-5 sm:p-6">
                   {cart.map((item) => (
@@ -1064,7 +1017,7 @@ export default function CheckoutPage() {
                               <Tag className="h-3.5 w-3.5" />
                               {t('🔥 বেশি কিনুন, বেশি সাশ্রয় করুন', '🔥 BUY MORE, SAVE MORE')}
                             </div>
-                            <div className="grid grid-cols-1 gap-2">
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                               {[...item.bulk_tiers]
                                 .filter((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0)
                                 .sort((a, b) => a.min_quantity - b.min_quantity)
@@ -1136,6 +1089,53 @@ export default function CheckoutPage() {
                     </div>
                   </div>}
                 </div>
+
+                {country === 'IN' && (
+                  <div className="border-b border-border/60 p-5 sm:p-6">
+                    <div className="mb-3">
+                      <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">{t('পেমেন্ট পদ্ধতি', 'Payment method')}</p>
+                      <h3 className="mt-1 text-sm font-black text-foreground">{t('কীভাবে পেমেন্ট করবেন?', 'How would you like to pay?')}</h3>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('online')}
+                        aria-pressed={paymentMethod === 'online'}
+                        className={`min-h-[92px] w-full rounded-[22px] border-2 p-5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${paymentMethod === 'online' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border bg-background hover:border-primary/30'}`}
+                      >
+                        <span className="flex items-start gap-3">
+                          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><WalletCards className="h-4 w-4" /></span>
+                          <span className="min-w-0">
+                            <span className="block text-base font-black">{t('অনলাইন পেমেন্ট', 'Online payment')}</span>
+                            <span className="mt-2 block text-sm leading-5 text-muted-foreground">UPI / Card</span>
+                          </span>
+                        </span>
+                      </button>
+
+                      {codAvailable && (
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMethod('cod')}
+                          aria-pressed={paymentMethod === 'cod'}
+                          className={`min-h-[92px] w-full rounded-[22px] border-2 p-5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 ${paymentMethod === 'cod' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border bg-background hover:border-primary/30'}`}
+                        >
+                          <span className="flex items-start gap-3">
+                            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Banknote className="h-4 w-4" /></span>
+                            <span className="min-w-0">
+                              <span className="block text-base font-black">{t('ক্যাশ অন ডেলিভারি', 'Cash on Delivery')}</span>
+                              <span className="mt-2 block space-y-1 text-sm leading-5 text-muted-foreground"><span className="block">{t("এখন অগ্রিম", "Advance now", "अभी अग्रिम")} <strong className="font-black text-foreground">{formatPrice(codAdvance)}</strong></span><span className="block">{t("ডেলিভারির সময় বাকি", "Due on delivery", "डिलीवरी पर शेष")} <strong className="font-black text-foreground">{formatPrice(codDue)}</strong></span></span>
+                            </span>
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                    {!codAvailable && (
+                      <p className="mt-3 rounded-xl border border-amber-200/80 bg-amber-500/10 px-3 py-2 text-[10px] font-bold leading-4 text-amber-700 dark:border-amber-900/60 dark:text-amber-300">
+                        {t('এই অর্ডারের জন্য COD উপলভ্য নয়।', 'COD is not available for this order.')}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div className="space-y-3 p-5 sm:p-6">
                   {(freeDeliveryThreshold !== null || freeDeliveryUnlocked) && <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/[0.04] p-3.5" role="status" aria-live="polite">
