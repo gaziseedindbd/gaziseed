@@ -41,10 +41,18 @@ type CartItemWithDiscount = {
   image: string;
   unit_price: number;
   regular_price: number;
+  base_unit_price?: number;
   quantity: number;
   variant_id?: string;
   variant_name?: string;
   bundle_id?: string;
+  bulk_tiers?: Array<{
+    id?: string;
+    min_quantity: number;
+    unit_price: number;
+    free_item_text?: string | null;
+    is_active?: boolean;
+  }>;
 };
 
 type WalletSummary = {
@@ -1055,6 +1063,42 @@ export default function CheckoutPage() {
                           <span aria-live="polite" className="min-w-7 text-center text-sm font-black tabular-nums">{item.quantity}</span>
                           <button type="button" aria-label={`Increase quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, 1)} disabled={item.quantity >= 99} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary"><Plus className="h-4 w-4" /></button>
                         </div>
+                        {item.bulk_tiers && item.bulk_tiers.filter((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0).length > 0 && (
+                          <div className="mt-3 rounded-xl border border-orange-200 bg-orange-50/70 p-3">
+                            <div className="mb-2 flex items-center gap-1.5 text-[11px] font-black text-orange-900">
+                              <Tag className="h-3.5 w-3.5" />
+                              {t('🔥 বেশি কিনুন, বেশি সাশ্রয় করুন', '🔥 BUY MORE, SAVE MORE')}
+                            </div>
+                            <div className="grid grid-cols-1 gap-2">
+                              {[...item.bulk_tiers]
+                                .filter((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0)
+                                .sort((a, b) => a.min_quantity - b.min_quantity)
+                                .map((tier) => {
+                                  const basePrice = Number(item.base_unit_price ?? item.regular_price ?? item.unit_price);
+                                  const savings = Math.max(0, (basePrice - tier.unit_price) * tier.min_quantity);
+                                  const active = item.quantity >= tier.min_quantity;
+                                  return (
+                                    <div key={tier.id || tier.min_quantity} className={`rounded-lg border px-2.5 py-2 ${active ? 'border-emerald-300 bg-emerald-50' : 'border-orange-100 bg-white'}`}>
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="text-[11px] font-extrabold text-foreground">
+                                          {tier.min_quantity}× {t('প্যাকেট', 'PACKETS')}
+                                          {active && <span className="ml-1 text-emerald-700">· {t('সক্রিয়', 'ACTIVE')}</span>}
+                                        </span>
+                                        <span className="text-[11px] font-black text-emerald-700">{formatPrice(tier.unit_price)} {t('প্রতি প্যাকেট', 'per pack')}</span>
+                                      </div>
+                                      {tier.free_item_text && <p className="mt-1 text-[10px] font-bold text-emerald-800">🎁 {tier.free_item_text}</p>}
+                                      <p className="mt-1 text-[10px] text-muted-foreground">
+                                        {t('এই পরিমাণে সাশ্রয়', 'Save at this quantity')}: {formatPrice(savings)}
+                                      </p>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                            <p className="mt-2 text-[10px] font-semibold text-orange-900">
+                              {t('পরিমাণ বাড়ালে যোগ্য অফারের দাম অটোমেটিক প্রযোজ্য হবে।', 'Increase the quantity to apply the eligible offer price automatically.')}
+                            </p>
+                          </div>
+                        )}
                       </div>
                       <span className="shrink-0 text-xs font-black text-foreground">{formatPrice(item.unit_price * item.quantity)}</span>
                     </div>
