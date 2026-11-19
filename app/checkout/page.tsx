@@ -170,7 +170,9 @@ export default function CheckoutPage() {
         await getValidatedCart(visitorCountry);
         const currentCart = getCart();
         const hydratedCart = await Promise.all(currentCart.map(async (item) => {
-          if (item.bulk_tiers?.length) return item;
+          // Combo bundle lines carry an allocated share of the fixed combo price.
+          // Do not apply standalone product bulk pricing to these lines.
+          if (item.bundle_id || item.bulk_tiers?.length) return item;
           try {
             const tiers = await getBulkPricing(item.product_id, item.variant_id);
             return {
