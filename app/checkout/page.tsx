@@ -614,7 +614,10 @@ export default function CheckoutPage() {
       setError(country === 'IN' ? t('সঠিক ১০ সংখ্যার ভারতীয় মোবাইল নম্বর দিন', 'Enter a valid 10-digit Indian mobile number') : t('সঠিক মোবাইল নম্বর দিন', 'Enter a valid phone number'));
       return;
     }
-    if (!addrValue.division || !addrValue.district || !addrValue.thana || !addrValue.detail || (country === 'IN' && !/^\d{6}$/.test(addrValue.postalCode || ''))) {
+    const addressInvalid = country === 'IN'
+      ? !addrValue.detail.trim() || !/^\d{6}$/.test(addrValue.postalCode || '')
+      : !addrValue.division || !addrValue.district || !addrValue.thana || !addrValue.detail;
+    if (addressInvalid) {
       setError(country === 'IN' ? t('সম্পূর্ণ ভারতীয় ঠিকানা ও ৬ সংখ্যার PIN কোড দিন', 'Enter a complete Indian address and 6-digit PIN code') : t('সম্পূর্ণ ঠিকানা দিন', 'Enter full address'));
       return;
     }
