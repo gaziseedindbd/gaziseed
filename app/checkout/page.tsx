@@ -1067,27 +1067,6 @@ export default function CheckoutPage() {
                       <span className="shrink-0 text-xs font-black text-foreground">{formatPrice(item.unit_price * item.quantity)}</span>
                     </div>
                   ))}
-                  <button type="button" onClick={() => setShowMoreProducts((value) => !value)} aria-expanded={showMoreProducts}
-                    className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/60 px-3 py-2 text-sm font-bold text-primary hover:bg-primary/5">
-                    <Plus className="h-4 w-4" /> {t('আরও পণ্য যোগ করুন', 'Add another product', 'और उत्पाद जोड़ें')}
-                  </button>
-                  {showMoreProducts && <div className="space-y-3 rounded-2xl border border-border/70 bg-background p-3">
-                    <label className="block text-xs font-bold" htmlFor="checkout-add-product-search">{t('পণ্য খুঁজুন', 'Search products', 'उत्पाद खोजें')}</label>
-                    <input id="checkout-add-product-search" type="search" value={productSearch} onChange={(event) => setProductSearch(event.target.value)}
-                      placeholder={t('পণ্যের নাম লিখুন', 'Type a product name', 'उत्पाद का नाम लिखें')}
-                      className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" />
-                    {moreProductsLoading && <p className="text-xs text-muted-foreground">Loading products…</p>}
-                    {moreProductsError && <p role="alert" className="text-xs text-rose-600">{moreProductsError}</p>}
-                    {!moreProductsLoading && !moreProductsError && recommendedProducts.length === 0 && <p className="text-xs text-muted-foreground">No additional products found.</p>}
-                    <div className="max-h-72 space-y-2 overflow-y-auto">
-                      {!moreProductsLoading && recommendedProducts.map((product) => <div key={product.id} className="flex items-center gap-2 rounded-xl border border-border/60 p-2">
-                        <img src={product.image || '/placeholder.svg'} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
-                        <span className="min-w-0 flex-1"><span className="block line-clamp-2 text-xs font-bold">{product.name_en || product.name_bn}</span>
-                          <span className="text-xs text-muted-foreground">{formatPrice(product.sale_price && product.sale_price > 0 && product.sale_price < product.regular_price ? product.sale_price : product.regular_price)}</span></span>
-                        <button type="button" onClick={() => addCheckoutProduct(product)} className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">{t('যোগ করুন', 'Add', 'जोड़ें')}</button>
-                      </div>)}
-                    </div>
-                  </div>}
                 </div>
 
                 {country === 'IN' && (
@@ -1199,6 +1178,36 @@ export default function CheckoutPage() {
                     <div className="rounded-2xl bg-secondary/70 p-3"><Lock className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">SSL</span></div>
                   </div>
                 </div>
+              </section>
+
+              <section className="rounded-[2rem] border border-primary/20 bg-card p-5 shadow-sm sm:p-6">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-black text-foreground">{t('আরও পণ্য যোগ করুন', 'Add another product', 'और उत्पाद जोड़ें')}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">{t('আপনার অর্ডারে আরও বীজ যোগ করুন', 'Add more seeds to your order')}</p>
+                  </div>
+                  <button type="button" onClick={() => setShowMoreProducts((value) => !value)} aria-expanded={showMoreProducts}
+                    className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground hover:bg-primary/90">
+                    <Plus className="h-4 w-4" /> {showMoreProducts ? t('বন্ধ করুন', 'Close') : t('পণ্য যোগ করুন', 'Add product', 'उत्पाद जोड़ें')}
+                  </button>
+                </div>
+                {showMoreProducts && <div className="space-y-3 rounded-2xl border border-border/70 bg-background p-3">
+                  <label className="block text-xs font-bold" htmlFor="checkout-add-product-search">{t('পণ্য খুঁজুন', 'Search products', 'उत्पाद खोजें')}</label>
+                  <input id="checkout-add-product-search" type="search" value={productSearch} onChange={(event) => setProductSearch(event.target.value)}
+                    placeholder={t('পণ্যের নাম লিখুন', 'Type a product name', 'उत्पाद का नाम लिखें')}
+                    className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" />
+                  {moreProductsLoading && <p className="text-xs text-muted-foreground">Loading products…</p>}
+                  {moreProductsError && <p role="alert" className="text-xs text-rose-600">{moreProductsError}</p>}
+                  {!moreProductsLoading && !moreProductsError && recommendedProducts.length === 0 && <p className="text-xs text-muted-foreground">No additional products found.</p>}
+                  <div className="max-h-72 space-y-2 overflow-y-auto">
+                    {!moreProductsLoading && recommendedProducts.map((product) => <div key={product.id} className="flex items-center gap-2 rounded-xl border border-border/60 p-2">
+                      <img src={product.image || '/placeholder.svg'} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
+                      <span className="min-w-0 flex-1"><span className="block line-clamp-2 text-xs font-bold">{product.name_en || product.name_bn}</span>
+                        <span className="text-xs text-muted-foreground">{formatPrice(product.sale_price && product.sale_price > 0 && product.sale_price < product.regular_price ? product.sale_price : product.regular_price)}</span></span>
+                      <button type="button" onClick={() => addCheckoutProduct(product)} className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">{t('যোগ করুন', 'Add', 'जोड़ें')}</button>
+                    </div>)}
+                  </div>
+                </div>}
               </section>
 
               <div className="mt-4 hidden items-start gap-3 rounded-2xl border border-border/60 bg-card p-4 lg:flex">
