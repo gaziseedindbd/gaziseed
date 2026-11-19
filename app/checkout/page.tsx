@@ -5,9 +5,9 @@ import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getCart, getValidatedCart, isCartAvailable, updateCartQuantity, addToCart } from '@/lib/cart';
+import { getCart, getValidatedCart, isCartAvailable, updateCartQuantity, addToCart, saveCart } from '@/lib/cart';
 import { getVisitorCountry, supabase } from '@/lib/supabase/client';
-import { formatPrice } from '@/lib/data';
+import { formatPrice, getBulkPricing } from '@/lib/data';
 import type { CustomerAddress, Product } from '@/lib/supabase/types';
 import { AddressSelector, formatAddressToString, type AddressValue } from '@/components/site/address-selector';
 import { getMarketingCartFingerprint, trackMarketingEvent } from '@/lib/marketing';
@@ -41,10 +41,18 @@ type CartItemWithDiscount = {
   image: string;
   unit_price: number;
   regular_price: number;
+  base_unit_price?: number;
   quantity: number;
   variant_id?: string;
   variant_name?: string;
   bundle_id?: string;
+  bulk_tiers?: Array<{
+    id?: string;
+    min_quantity: number;
+    unit_price: number;
+    free_item_text?: string | null;
+    is_active?: boolean;
+  }>;
 };
 
 type WalletSummary = {
@@ -155,7 +163,41 @@ export default function CheckoutPage() {
     // Render the locally stored cart immediately; validate product activity/country in the background.
     const localCart = getCart();
     setCart(localCart as CartItemWithDiscount[]);
-    void getValidatedCart(visitorCountry).then(() => setCart(getCart() as CartItemWithDiscount[]));
+
+    let active = true;
+    const refreshCheckoutCart = async () => {
+      try {
+        await getValidatedCart(visitorCountry);
+        const currentCart = getCart();
+        const hydratedCart = await Promise.all(currentCart.map(async (item) => {
+          // Combo bundle lines carry an allocated share of the fixed combo price.
+          // Do not apply standalone product bulk pricing to these lines.
+          if (item.bundle_id || item.bulk_tiers?.length) return item;
+          try {
+            const tiers = await getBulkPricing(item.product_id, item.variant_id);
+            return {
+              ...item,
+              bulk_tiers: tiers.map((tier) => ({
+                id: tier.id,
+                min_quantity: Number(tier.min_quantity),
+                unit_price: Number(tier.unit_price),
+                free_item_text: tier.free_item_text,
+                is_active: tier.is_active,
+              })),
+            };
+          } catch {
+            return item;
+          }
+        }));
+        if (!active) return;
+        if (hydratedCart.some((item, index) => item !== currentCart[index])) saveCart(hydratedCart);
+        setCart(hydratedCart as CartItemWithDiscount[]);
+      } catch {
+        if (active) setCart(getCart() as CartItemWithDiscount[]);
+      }
+    };
+    void refreshCheckoutCart();
+
     // Reflect +/- changes immediately; order submission still validates stock and product activity.
     const handler = () => setCart(getCart() as CartItemWithDiscount[]);
     window.addEventListener('cart-updated', handler);
@@ -195,7 +237,7 @@ export default function CheckoutPage() {
       setWalletLoading(false);
     });
 
-    return () => window.removeEventListener('cart-updated', handler);
+    return () => { active = false; window.removeEventListener('cart-updated', handler); };
   }, []);
 
 
@@ -606,7 +648,10 @@ export default function CheckoutPage() {
       setError(country === 'IN' ? t('সঠিক ১০ সংখ্যার ভারতীয় মোবাইল নম্বর দিন', 'Enter a valid 10-digit Indian mobile number') : t('সঠিক মোবাইল নম্বর দিন', 'Enter a valid phone number'));
       return;
     }
-    if (!addrValue.division || !addrValue.district || !addrValue.thana || !addrValue.detail || (country === 'IN' && !/^\d{6}$/.test(addrValue.postalCode || ''))) {
+    const addressInvalid = country === 'IN'
+      ? !addrValue.detail.trim() || !/^\d{6}$/.test(addrValue.postalCode || '')
+      : !addrValue.division || !addrValue.district || !addrValue.thana || !addrValue.detail;
+    if (addressInvalid) {
       setError(country === 'IN' ? t('সম্পূর্ণ ভারতীয় ঠিকানা ও ৬ সংখ্যার PIN কোড দিন', 'Enter a complete Indian address and 6-digit PIN code') : t('সম্পূর্ণ ঠিকানা দিন', 'Enter full address'));
       return;
     }
@@ -767,7 +812,7 @@ export default function CheckoutPage() {
         </div>
 
         <form id="checkout-form" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-[minmax(0,1fr)_390px] lg:gap-9">
+          <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-start gap-5 sm:gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-7">
             <div className="space-y-6 lg:space-y-7">
               {savedAddresses.length > 0 && (
                 <section className="rounded-[2rem] border border-border/70 bg-card p-5 shadow-sm sm:p-7">
@@ -961,7 +1006,7 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            <aside className="lg:sticky lg:top-24">
+            <aside className="w-full space-y-5">
               <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-xl shadow-black/[0.06]">
                 <div className="border-b border-border/60 p-5 sm:p-6">
                   <div className="flex items-center justify-between gap-3">
@@ -981,6 +1026,84 @@ export default function CheckoutPage() {
                       </div>
                     )}
                   </div>
+                </div>
+
+                <div className="max-h-72 space-y-3 overflow-y-auto border-b border-border/60 p-5 sm:p-6">
+                  {cart.map((item) => (
+                    <div key={`${item.product_id}-${item.variant_id || ''}-${item.bundle_id || ''}`} className="flex items-center gap-3">
+                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-secondary/50">
+                        <img
+                          src={item.image || '/placeholder.svg'}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          onError={(event) => {
+                            if (country === 'BD' && event.currentTarget.dataset.fallbackApplied !== '1') {
+                              event.currentTarget.dataset.fallbackApplied = '1';
+                              event.currentTarget.src = '/placeholder.svg';
+                            }
+                          }}
+                        />
+
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-xs font-black leading-5 text-foreground">{item.name}</p>
+                        {item.variant_name && <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{item.variant_name}</p>}
+                        {item.bulk_tiers && item.bulk_tiers.filter((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0).length > 0 && (
+                          <div className="mb-3 rounded-2xl border border-orange-200 bg-orange-50/70 p-4 sm:p-5">
+                            <div className="mb-3 flex items-center gap-2 text-xs font-black text-orange-900 sm:text-sm">
+                              <Tag className="h-4 w-4 shrink-0" />
+                              {t('🔥 বেশি কিনুন, বেশি সাশ্রয় করুন', '🔥 BUY MORE, SAVE MORE')}
+                            </div>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                              {[...item.bulk_tiers]
+                                .filter((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0)
+                                .sort((a, b) => a.min_quantity - b.min_quantity)
+                                .map((tier) => {
+                                  const basePrice = Number(item.base_unit_price ?? item.regular_price ?? item.unit_price);
+                                  const savings = Math.max(0, (basePrice - tier.unit_price) * tier.min_quantity);
+                                  const active = item.quantity >= tier.min_quantity;
+                                  const canSelect = tier.min_quantity <= 99;
+                                  return (
+                                    <button
+                                      key={tier.id || tier.min_quantity}
+                                      type="button"
+                                      disabled={!canSelect}
+                                      aria-pressed={item.quantity === tier.min_quantity}
+                                      onClick={() => updateCartQuantity(item.product_id, tier.min_quantity, item.variant_id, item.bundle_id)}
+                                      className={`flex min-h-[116px] w-full flex-col justify-between rounded-xl border p-3.5 text-left shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 sm:min-h-[128px] sm:p-4 ${active ? 'border-emerald-400 bg-emerald-50 ring-1 ring-emerald-200' : 'border-orange-200 bg-white hover:border-orange-400 hover:bg-orange-50'} ${!canSelect ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                                    >
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="text-sm font-extrabold text-foreground sm:text-base">
+                                          {tier.min_quantity}× {t('প্যাকেট', 'PACKETS')}
+                                          {active && <span className="ml-1 text-emerald-700">· {t('সক্রিয়', 'ACTIVE')}</span>}
+                                        </span>
+                                        <span className="text-sm font-black text-emerald-700 sm:text-base">{formatPrice(tier.unit_price)} <span className="text-[11px] font-semibold">{t('প্রতি প্যাকেট', 'per pack')}</span></span>
+                                      </div>
+                                      {tier.free_item_text && <p className="mt-2 text-xs font-bold text-emerald-800">🎁 {tier.free_item_text}</p>}
+                                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-black/5 pt-2">
+                                        <p className="text-xs font-medium text-muted-foreground">
+                                          {t('সাশ্রয়', 'You save')}: {formatPrice(savings)}
+                                        </p>
+                                        <span className="text-[10px] font-black tracking-wide text-emerald-800">
+                                          {item.quantity === tier.min_quantity ? t('নির্বাচিত', 'SELECTED') : t('এই অফার নিন', 'SELECT OFFER')}
+                                        </span>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
+                        <div className="mt-2 inline-flex items-center gap-1 rounded-xl border border-border/70 bg-background p-1" aria-label={`Quantity for ${item.name}`}>
+                          <button type="button" aria-label={`Decrease quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, -1)} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary"><Minus className="h-4 w-4" /></button>
+                          <span aria-live="polite" className="min-w-7 text-center text-sm font-black tabular-nums">{item.quantity}</span>
+                          <button type="button" aria-label={`Increase quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, 1)} disabled={item.quantity >= 99} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary"><Plus className="h-4 w-4" /></button>
+                        </div>
+
+                      </div>
+                      <span className="shrink-0 text-xs font-black text-foreground">{formatPrice(item.unit_price * item.quantity)}</span>
+                    </div>
+                  ))}
                 </div>
 
                 {country === 'IN' && (
@@ -1029,58 +1152,6 @@ export default function CheckoutPage() {
                     )}
                   </div>
                 )}
-
-                <div className="max-h-72 space-y-3 overflow-y-auto border-b border-border/60 p-5 sm:p-6">
-                  {cart.map((item) => (
-                    <div key={`${item.product_id}-${item.variant_id || ''}-${item.bundle_id || ''}`} className="flex items-center gap-3">
-                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-secondary/50">
-                        <img
-                          src={item.image || '/placeholder.svg'}
-                          alt=""
-                          className="h-full w-full object-cover"
-                          onError={(event) => {
-                            if (country === 'BD' && event.currentTarget.dataset.fallbackApplied !== '1') {
-                              event.currentTarget.dataset.fallbackApplied = '1';
-                              event.currentTarget.src = '/placeholder.svg';
-                            }
-                          }}
-                        />
-
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="line-clamp-2 text-xs font-black leading-5 text-foreground">{item.name}</p>
-                        {item.variant_name && <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{item.variant_name}</p>}
-                        <div className="mt-2 inline-flex items-center gap-1 rounded-xl border border-border/70 bg-background p-1" aria-label={`Quantity for ${item.name}`}>
-                          <button type="button" aria-label={`Decrease quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, -1)} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary"><Minus className="h-4 w-4" /></button>
-                          <span aria-live="polite" className="min-w-7 text-center text-sm font-black tabular-nums">{item.quantity}</span>
-                          <button type="button" aria-label={`Increase quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, 1)} disabled={item.quantity >= 99} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary"><Plus className="h-4 w-4" /></button>
-                        </div>
-                      </div>
-                      <span className="shrink-0 text-xs font-black text-foreground">{formatPrice(item.unit_price * item.quantity)}</span>
-                    </div>
-                  ))}
-                  <button type="button" onClick={() => setShowMoreProducts((value) => !value)} aria-expanded={showMoreProducts}
-                    className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/60 px-3 py-2 text-sm font-bold text-primary hover:bg-primary/5">
-                    <Plus className="h-4 w-4" /> {t('আরও পণ্য যোগ করুন', 'Add another product', 'और उत्पाद जोड़ें')}
-                  </button>
-                  {showMoreProducts && <div className="space-y-3 rounded-2xl border border-border/70 bg-background p-3">
-                    <label className="block text-xs font-bold" htmlFor="checkout-add-product-search">{t('পণ্য খুঁজুন', 'Search products', 'उत्पाद खोजें')}</label>
-                    <input id="checkout-add-product-search" type="search" value={productSearch} onChange={(event) => setProductSearch(event.target.value)}
-                      placeholder={t('পণ্যের নাম লিখুন', 'Type a product name', 'उत्पाद का नाम लिखें')}
-                      className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" />
-                    {moreProductsLoading && <p className="text-xs text-muted-foreground">Loading products…</p>}
-                    {moreProductsError && <p role="alert" className="text-xs text-rose-600">{moreProductsError}</p>}
-                    {!moreProductsLoading && !moreProductsError && recommendedProducts.length === 0 && <p className="text-xs text-muted-foreground">No additional products found.</p>}
-                    <div className="max-h-72 space-y-2 overflow-y-auto">
-                      {!moreProductsLoading && recommendedProducts.map((product) => <div key={product.id} className="flex items-center gap-2 rounded-xl border border-border/60 p-2">
-                        <img src={product.image || '/placeholder.svg'} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
-                        <span className="min-w-0 flex-1"><span className="block line-clamp-2 text-xs font-bold">{product.name_en || product.name_bn}</span>
-                          <span className="text-xs text-muted-foreground">{formatPrice(product.sale_price && product.sale_price > 0 && product.sale_price < product.regular_price ? product.sale_price : product.regular_price)}</span></span>
-                        <button type="button" onClick={() => addCheckoutProduct(product)} className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">{t('যোগ করুন', 'Add', 'जोड़ें')}</button>
-                      </div>)}
-                    </div>
-                  </div>}
-                </div>
 
                 <div className="space-y-3 p-5 sm:p-6">
                   {(freeDeliveryThreshold !== null || freeDeliveryUnlocked) && <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/[0.04] p-3.5" role="status" aria-live="polite">
@@ -1144,6 +1215,36 @@ export default function CheckoutPage() {
                     <div className="rounded-2xl bg-secondary/70 p-3"><Lock className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">SSL</span></div>
                   </div>
                 </div>
+              </section>
+
+              <section className="rounded-[2rem] border border-primary/20 bg-card p-5 shadow-sm sm:p-6">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-black text-foreground">{t('আরও পণ্য যোগ করুন', 'Add another product', 'और उत्पाद जोड़ें')}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">{t('আপনার অর্ডারে আরও বীজ যোগ করুন', 'Add more seeds to your order')}</p>
+                  </div>
+                  <button type="button" onClick={() => setShowMoreProducts((value) => !value)} aria-expanded={showMoreProducts}
+                    className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground hover:bg-primary/90">
+                    <Plus className="h-4 w-4" /> {showMoreProducts ? t('বন্ধ করুন', 'Close') : t('পণ্য যোগ করুন', 'Add product', 'उत्पाद जोड़ें')}
+                  </button>
+                </div>
+                {showMoreProducts && <div className="space-y-3 rounded-2xl border border-border/70 bg-background p-3">
+                  <label className="block text-xs font-bold" htmlFor="checkout-add-product-search">{t('পণ্য খুঁজুন', 'Search products', 'उत्पाद खोजें')}</label>
+                  <input id="checkout-add-product-search" type="search" value={productSearch} onChange={(event) => setProductSearch(event.target.value)}
+                    placeholder={t('পণ্যের নাম লিখুন', 'Type a product name', 'उत्पाद का नाम लिखें')}
+                    className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" />
+                  {moreProductsLoading && <p className="text-xs text-muted-foreground">Loading products…</p>}
+                  {moreProductsError && <p role="alert" className="text-xs text-rose-600">{moreProductsError}</p>}
+                  {!moreProductsLoading && !moreProductsError && recommendedProducts.length === 0 && <p className="text-xs text-muted-foreground">No additional products found.</p>}
+                  <div className="max-h-72 space-y-2 overflow-y-auto">
+                    {!moreProductsLoading && recommendedProducts.map((product) => <div key={product.id} className="flex items-center gap-2 rounded-xl border border-border/60 p-2">
+                      <img src={product.image || '/placeholder.svg'} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
+                      <span className="min-w-0 flex-1"><span className="block line-clamp-2 text-xs font-bold">{product.name_en || product.name_bn}</span>
+                        <span className="text-xs text-muted-foreground">{formatPrice(product.sale_price && product.sale_price > 0 && product.sale_price < product.regular_price ? product.sale_price : product.regular_price)}</span></span>
+                      <button type="button" onClick={() => addCheckoutProduct(product)} className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">{t('যোগ করুন', 'Add', 'जोड़ें')}</button>
+                    </div>)}
+                  </div>
+                </div>}
               </section>
 
               <div className="mt-4 hidden items-start gap-3 rounded-2xl border border-border/60 bg-card p-4 lg:flex">

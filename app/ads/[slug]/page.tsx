@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight, Check, ChevronDown, ShieldCheck, ShoppingCart, Sparkles, Star, Truck, Zap } from 'lucide-react';
-import { getEffectivePrice, getLandingPageBySlug, getProductBySlug, getReviews, trackLandingPageView } from '@/lib/data';
+import { getEffectivePrice, getLandingPageBySlug, getProductBySlug, getReviews, trackLandingPageView, getBulkPricing } from '@/lib/data';
 import { addToCart } from '@/lib/cart';
 import type { LandingPage, Product, Review } from '@/lib/supabase/types';
 import { toast } from '@/components/site/toast-provider';
@@ -81,13 +81,19 @@ export default function AdsLandingPage() {
   const rating = reviews.length ? (reviews.reduce((sum, item) => sum + Number(item.rating || 0), 0) / reviews.length).toFixed(1) : null;
   const total = price * quantity;
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     if (!product) return;
     if (product.stock <= 0) {
       toast('এই পণ্যটি বর্তমানে স্টকে নেই', 'error');
       return;
     }
-    addToCart(product, quantity, { unit_price: price, name: productName });
+    const tiers = await getBulkPricing(product.id).catch(() => []);
+    addToCart(product, quantity, {
+      unit_price: price,
+      base_unit_price: price,
+      name: productName,
+      bulk_tiers: tiers.map((tier) => ({ id: tier.id, min_quantity: Number(tier.min_quantity), unit_price: Number(tier.unit_price), free_item_text: tier.free_item_text, is_active: tier.is_active })),
+    });
     router.push('/checkout');
   };
 

@@ -5,8 +5,11 @@ import type { Product } from './supabase/types';
 import { trackMarketingEvent } from './marketing';
 
 export type CartBulkTier = {
+  id?: string;
   min_quantity: number;
   unit_price: number;
+  free_item_text?: string | null;
+  is_active?: boolean;
 };
 
 export type CartItem = {

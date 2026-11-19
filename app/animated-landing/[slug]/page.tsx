@@ -8,7 +8,9 @@ import { useLang } from '@/components/site/language-provider';
 import { useParams, useSearchParams } from 'next/navigation';
 import { AddressSelector, formatAddressToString, type AddressValue } from '@/components/site/address-selector';
 import { getVisitorCountry, supabase } from '@/lib/supabase/client';
-import { formatPrice } from '@/lib/data';
+import { formatPrice, getBulkPricing } from '@/lib/data';
+import { addToCart } from '@/lib/cart';
+import { useRouter } from 'next/navigation';
 import { IndiaPaymentMethodSelector, type IndiaPaymentMethod } from '@/components/site/india-payment-method-selector';
 import { startIndiaCampaignPayment } from '@/lib/india-campaign-payment';
 import {
@@ -130,6 +132,7 @@ const ANIMATED_COPY_TRANSLATIONS: Record<string, { en: string; hi: string }> = {
 };
 
 export default function AnimatedLandingPage() {
+  const router = useRouter();
   const params = useParams<{ slug: string }>();
   const searchParams = useSearchParams();
   const slug = params?.slug || '';
@@ -234,6 +237,21 @@ export default function AnimatedLandingPage() {
   }, [loading, page]);
 
   const selectedPackage = packages.find((pkg) => pkg.id === selectedPackageId) || packages[0] || null;
+  const handlePopupOrder = async () => {
+    if (!product || !selectedPackage) {
+      jump('packages');
+      return;
+    }
+    const quantity = Math.max(1, Number(selectedPackage.quantity) || 1);
+    const tiers = await getBulkPricing(product.id).catch(() => []);
+    const baseUnitPrice = Number(selectedPackage.offer_price || 0) / quantity;
+    addToCart(product, quantity, {
+      name: productName,
+      base_unit_price: baseUnitPrice,
+      bulk_tiers: tiers,
+    });
+    router.push('/checkout');
+  };
   const offerPrice = Number(selectedPackage?.offer_price || 0);
   const comparePrice = Number(selectedPackage?.compare_price || 0);
   const savings = Math.max(0, comparePrice - offerPrice);
@@ -422,7 +440,7 @@ export default function AnimatedLandingPage() {
 
   return (
     <main className="min-h-screen bg-[#f8f4e8] text-[#0b1d13] selection:bg-lime-300 selection:text-[#04120b] overflow-x-hidden">
-      <LandingProductQuickView title={productTranslation.name || (lang === "en" ? product?.name_en : lang === "hi" ? product?.name_hi : product?.name_bn) || product?.name_en || t("বীজের পণ্য", "Seed product", "बीज उत्पाद")} image={product?.image || product?.image_url || product?.featured_image} description={product?.description || page?.hero_subtitle || ""} price={selectedPackage ? formatPrice(offerPrice) : undefined} regularPrice={comparePrice > offerPrice ? formatPrice(comparePrice) : undefined} discountPercent={comparePrice > offerPrice && comparePrice > 0 ? Math.round(((comparePrice - offerPrice) / comparePrice) * 100) : 0} orderTarget="packages" labels={{ badge: t("পণ্যের বিবরণ", "Product details", "उत्पाद विवरण"), order: t("অর্ডার করুন", "Order now", "अभी ऑर्डर करें"), close: t("সম্পূর্ণ পেজ দেখুন", "See full page", "पूरा पेज देखें"), imageAlt: t("পণ্যের ছবি", "Product image", "उत्पाद की तस्वीर") }} />
+      <LandingProductQuickView title={productTranslation.name || (lang === "en" ? product?.name_en : lang === "hi" ? product?.name_hi : product?.name_bn) || product?.name_en || t("বীজের পণ্য", "Seed product", "बीज उत्पाद")} image={product?.image || product?.image_url || product?.featured_image} description={product?.description || page?.hero_subtitle || ""} price={selectedPackage ? formatPrice(offerPrice) : undefined} regularPrice={comparePrice > offerPrice ? formatPrice(comparePrice) : undefined} discountPercent={comparePrice > offerPrice && comparePrice > 0 ? Math.round(((comparePrice - offerPrice) / comparePrice) * 100) : 0} orderTarget="packages" onOrder={handlePopupOrder} labels={{ badge: t("পণ্যের বিবরণ", "Product details", "उत्पाद विवरण"), order: t("অর্ডার করুন", "Order now", "अभी ऑर्डर करें"), close: t("সম্পূর্ণ পেজ দেখুন", "See full page", "पूरा पेज देखें"), imageAlt: t("পণ্যের ছবি", "Product image", "उत्पाद की तस्वीर") }} />
       <style jsx global>{`
         html { scroll-behavior: smooth; }
         .sk-animate { opacity: 0; transform: translateY(34px); transition: opacity .8s cubic-bezier(.22,.9,.25,1), transform .8s cubic-bezier(.22,.9,.25,1); }
