@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLang } from '@/components/site/language-provider';
 import { supabase, getVisitorCountry } from '@/lib/supabase/client';
 import { formatPrice } from '@/lib/data';
+import { addToCart } from '@/lib/cart';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowRight,
@@ -338,10 +339,40 @@ export default function ComboLandingPage() {
   const copy = (en: string, bn: string, hi: string) =>
     lang === 'hi' ? hi : lang === 'bn' ? bn : en;
 
+  const handleComboPopupOrder = () => {
+    if (!items.length || !combo?.id || offer <= 0) {
+      toast(copy('Combo is not ready to order yet.', 'কম্বোটি এখন অর্ডারের জন্য প্রস্তুত নয়।', 'कॉम्बो अभी ऑर्डर के लिए तैयार नहीं है।'), 'error');
+      return;
+    }
+    const validItems = items.filter((item) => item.products?.id && Number(item.quantity) > 0);
+    const totalUnits = validItems.reduce((sum, item) => sum + Number(item.quantity) * selectedQty, 0);
+    if (!validItems.length || totalUnits <= 0) {
+      toast(copy('Combo items are unavailable.', 'কম্বোর পণ্য পাওয়া যাচ্ছে না।', 'कॉम्बो के उत्पाद उपलब्ध नहीं हैं।'), 'error');
+      return;
+    }
+    const regularWeight = validItems.reduce((sum, item) => sum + Number(item.products?.regular_price || item.products?.sale_price || 0) * Number(item.quantity), 0);
+    const bundleId = String(combo.id);
+    validItems.forEach((item) => {
+      const product = item.products as any;
+      const itemQty = Number(item.quantity) * selectedQty;
+      const weight = Number(product.regular_price || product.sale_price || 0);
+      const allocatedUnitPrice = regularWeight > 0
+        ? offer * weight / regularWeight
+        : offer / totalUnits;
+      addToCart(product, itemQty, {
+        name: product.name_bn || product.name_en,
+        unit_price: allocatedUnitPrice,
+        base_unit_price: allocatedUnitPrice,
+        bundle_id: bundleId,
+      });
+    });
+    router.push('/checkout');
+  };
+
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#f5f8f4] pb-28 text-slate-900">
-      <LandingProductQuickView title={comboTitle} image={mainComboImage || seedImages[0]?.image} description={comboDescription} price={formatPrice(offer)} regularPrice={regular > offer ? formatPrice(regular) : undefined} discountPercent={regular > offer && regular > 0 ? Math.round(((regular - offer) / regular) * 100) : 0} country={country} orderTarget="quick-checkout" labels={{ badge: copy("Combo details", "কম্বো বিবরণ", "कॉम्बो विवरण"), order: copy("Order this combo", "কম্বো অর্ডার করুন", "कॉम्बो ऑर्डर करें"), close: copy("See full page", "সম্পূর্ণ পেজ দেখুন", "पूरा पेज দেখें"), imageAlt: comboTitle }} />
+      <LandingProductQuickView title={comboTitle} image={mainComboImage || seedImages[0]?.image} description={comboDescription} price={formatPrice(offer)} regularPrice={regular > offer ? formatPrice(regular) : undefined} discountPercent={regular > offer && regular > 0 ? Math.round(((regular - offer) / regular) * 100) : 0} country={country} orderTarget="quick-checkout" onOrder={handleComboPopupOrder} labels={{ badge: copy("Combo details", "কম্বো বিবরণ", "कॉम्बो विवरण"), order: copy("Order this combo", "কম্বো অর্ডার করুন", "कॉम्बो ऑर्डर करें"), close: copy("See full page", "সম্পূর্ণ পেজ দেখুন", "पूरा पेज দেখें"), imageAlt: comboTitle }} />
       <style jsx global>{`
         @media (max-width: 1023px) {
           /* Leave room for the site-wide mobile navigation below the order CTA. */
