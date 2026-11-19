@@ -775,7 +775,7 @@ export default function CheckoutPage() {
         </div>
 
         <form id="checkout-form" onSubmit={handleSubmit}>
-          <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 sm:gap-7">
+          <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-start gap-5 sm:gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-7">
             <div className="space-y-6 lg:space-y-7">
               {savedAddresses.length > 0 && (
                 <section className="rounded-[2rem] border border-border/70 bg-card p-5 shadow-sm sm:p-7">
