@@ -41,23 +41,9 @@ export function AddressSelector({ value, onChange, lang: preferredLang, countryC
   if (isIndia) {
     return (
       <div className="space-y-3">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div>
-            <label className="mb-1 block text-sm font-medium">{label.division} *</label>
-            <input aria-label={label.division} value={division} onChange={(e) => setDivision(e.target.value)} className="input-bangla" placeholder={tr('যেমন: West Bengal', 'e.g. West Bengal', 'जैसे: West Bengal')} required />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">{label.district} *</label>
-            <input aria-label={label.district} value={district} onChange={(e) => setDistrict(e.target.value)} className="input-bangla" placeholder={tr('যেমন: Kolkata', 'e.g. Kolkata', 'जैसे: Kolkata')} required />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">{label.thana} *</label>
-            <input aria-label={label.thana} value={thana} onChange={(e) => setThana(e.target.value)} className="input-bangla" placeholder={label.thana} required />
-          </div>
-        </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">{label.detail} *</label>
-          <textarea aria-label={label.detail} value={detail} onChange={(e) => setDetail(e.target.value)} className="input-bangla min-h-[70px]" placeholder={tr('বাড়ি, রাস্তা, ল্যান্ডমার্ক...', 'House, street, landmark...', 'मकान, सड़क, पहचान...')} required />
+          <label className="mb-1 block text-sm font-medium">{tr('সম্পূর্ণ ঠিকানা', 'Full Address', 'पूरा पता')} *</label>
+          <textarea aria-label={tr('সম্পূর্ণ ঠিকানা', 'Full Address', 'पूरा पता')} value={detail} onChange={(e) => setDetail(e.target.value)} className="input-bangla min-h-[100px]" placeholder={tr('বাড়ি নম্বর, রাস্তা, এলাকা, শহর/জেলা, রাজ্য ও ল্যান্ডমার্ক লিখুন', 'House number, street, locality, city/district, state and landmark', 'मकान नंबर, सड़क, इलाका, शहर/जिला, राज्य और पहचान लिखें')} required />
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">{label.postal}</label>
