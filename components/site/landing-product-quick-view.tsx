@@ -13,10 +13,11 @@ type Props = {
   discountPercent?: number;
   country?: 'IN' | 'BD';
   orderTarget: string;
+  onOrder?: () => void | Promise<void>;
   labels: { badge: string; order: string; close: string; imageAlt: string };
 };
 
-export function LandingProductQuickView({ title, image, description, price, regularPrice, discountPercent = 0, orderTarget, labels }: Props) {
+export function LandingProductQuickView({ title, image, description, price, regularPrice, discountPercent = 0, orderTarget, onOrder, labels }: Props) {
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
@@ -68,7 +69,7 @@ export function LandingProductQuickView({ title, image, description, price, regu
           ) : null}
           {description ? <p className="mt-3 break-words text-sm leading-6 text-slate-600 sm:mt-4 sm:leading-7">{description}</p> : null}
           <div className="mt-5 grid shrink-0 gap-2 sm:mt-7">
-            <button type="button" onClick={() => { setOpen(false); window.setTimeout(() => document.getElementById(orderTarget)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100); }} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-5 py-3 font-extrabold text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-800">
+            <button type="button" onClick={() => { if (onOrder) { void onOrder(); setOpen(false); return; } setOpen(false); window.setTimeout(() => document.getElementById(orderTarget)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100); }} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-5 py-3 font-extrabold text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-800">
               <ShoppingBag className="h-5 w-5" />{labels.order}<ArrowRight className="h-4 w-4" />
             </button>
             <button type="button" onClick={() => setOpen(false)} className="min-h-11 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">{labels.close}</button>
