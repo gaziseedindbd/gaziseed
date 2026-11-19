@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getProductBySlug, getLandingPageBySlug, getBundleOffers, formatPrice, trackLandingPageView } from '@/lib/data';
+import { getProductBySlug, getLandingPageBySlug, getBundleOffers, formatPrice, trackLandingPageView, getBulkPricing } from '@/lib/data';
+import { addToCart } from '@/lib/cart';
 import { supabase } from '@/lib/supabase/client';
 import { Check, Truck, ShieldCheck, Star, ChevronDown, ChevronLeft, ChevronRight, Loader2, Zap, Package, Sparkles, Clock, ArrowDownCircle, CheckCircle2, Shield, HeartHandshake } from 'lucide-react';
 import { AddressSelector, formatAddressToString, type AddressValue } from '@/components/site/address-selector';
@@ -27,6 +28,7 @@ interface FaqItem {
 
 export default function OfferLandingPage() {
   const { lang, t } = useLang();
+  const router = useRouter();
   const tr = useCallback((bn: string, en: string, hi: string) => t(bn, en, hi), [t]);
   const params = useParams();
   const searchParams = useSearchParams();
@@ -248,6 +250,18 @@ export default function OfferLandingPage() {
     : deliveryQuoteLoading ? tr('হিসাব হচ্ছে…', 'Calculating…', 'गणना हो रही है…') : '—';
   const savings = comparePrice > offerPrice ? comparePrice - offerPrice : 0;
   const discountPercent = comparePrice > 0 ? Math.round((savings / comparePrice) * 100) : 0;
+
+  const handlePopupOrder = async () => {
+    if (!product) return;
+    const quantity = Math.max(1, Number(selectedTier?.quantity || selectedBundle?.quantity || 1));
+    const tiers = await getBulkPricing(product.id).catch(() => []);
+    addToCart(product, quantity, {
+      name: title,
+      base_unit_price: offerPrice > 0 ? offerPrice / quantity : Number(product.sale_price || product.regular_price || 0),
+      bulk_tiers: tiers,
+    });
+    router.push('/checkout');
+  };
   const averageRating = reviews.length > 0
     ? (reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length).toFixed(1)
     : null;
@@ -360,7 +374,7 @@ export default function OfferLandingPage() {
 
   return (
     <div className="min-h-screen bg-[#fafbfc] text-gray-900 pb-28 lg:pb-12 selection:bg-emerald-500 selection:text-white">
-      <LandingProductQuickView title={title} image={images[0] || product?.image} description={description} price={offerPrice > 0 ? formatPrice(offerPrice) : undefined} regularPrice={comparePrice > offerPrice ? formatPrice(comparePrice) : undefined} discountPercent={discountPercent} orderTarget="order-form" labels={{ badge: tr("পণ্যের বিবরণ", "Product details", "उत्पाद विवरण"), order: tr("অর্ডার করুন", "Order now", "अभी ऑर्डर करें"), close: tr("সম্পূর্ণ পেজ দেখুন", "See full page", "पूरा पेज देखें"), imageAlt: tr("পণ্যের ছবি", "Product image", "उत्पाद की तस्वीर") }} />
+      <LandingProductQuickView title={title} image={images[0] || product?.image} description={description} price={offerPrice > 0 ? formatPrice(offerPrice) : undefined} regularPrice={comparePrice > offerPrice ? formatPrice(comparePrice) : undefined} discountPercent={discountPercent} orderTarget="order-form" onOrder={handlePopupOrder} labels={{ badge: tr("পণ্যের বিবরণ", "Product details", "उत्पाद विवरण"), order: tr("অর্ডার করুন", "Order now", "अभी ऑर्डर करें"), close: tr("সম্পূর্ণ পেজ দেখুন", "See full page", "पूरा पेज देखें"), imageAlt: tr("পণ্যের ছবি", "Product image", "उत्पाद की तस्वीर") }} />
       {/* টপ নোটিফিকেশন বার */}
       <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white text-center py-2 px-3 text-xs sm:text-sm font-semibold tracking-wide flex items-center justify-center gap-2 shadow-sm">
         <Sparkles className="h-4 w-4 text-amber-300 animate-pulse shrink-0" />
