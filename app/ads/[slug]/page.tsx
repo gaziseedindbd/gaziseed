@@ -81,7 +81,7 @@ export default function AdsLandingPage() {
   const rating = reviews.length ? (reviews.reduce((sum, item) => sum + Number(item.rating || 0), 0) / reviews.length).toFixed(1) : null;
   const total = price * quantity;
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     if (!product) return;
     if (product.stock <= 0) {
       toast('এই পণ্যটি বর্তমানে স্টকে নেই', 'error');
