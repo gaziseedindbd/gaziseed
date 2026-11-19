@@ -5,9 +5,9 @@ import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getCart, getValidatedCart, isCartAvailable, updateCartQuantity, addToCart } from '@/lib/cart';
+import { getCart, getValidatedCart, isCartAvailable, updateCartQuantity, addToCart, saveCart } from '@/lib/cart';
 import { getVisitorCountry, supabase } from '@/lib/supabase/client';
-import { formatPrice } from '@/lib/data';
+import { formatPrice, getBulkPricing } from '@/lib/data';
 import type { CustomerAddress, Product } from '@/lib/supabase/types';
 import { AddressSelector, formatAddressToString, type AddressValue } from '@/components/site/address-selector';
 import { getMarketingCartFingerprint, trackMarketingEvent } from '@/lib/marketing';
@@ -163,7 +163,39 @@ export default function CheckoutPage() {
     // Render the locally stored cart immediately; validate product activity/country in the background.
     const localCart = getCart();
     setCart(localCart as CartItemWithDiscount[]);
-    void getValidatedCart(visitorCountry).then(() => setCart(getCart() as CartItemWithDiscount[]));
+
+    let active = true;
+    const refreshCheckoutCart = async () => {
+      try {
+        await getValidatedCart(visitorCountry);
+        const currentCart = getCart();
+        const hydratedCart = await Promise.all(currentCart.map(async (item) => {
+          if (item.bulk_tiers?.length) return item;
+          try {
+            const tiers = await getBulkPricing(item.product_id, item.variant_id);
+            return {
+              ...item,
+              bulk_tiers: tiers.map((tier) => ({
+                id: tier.id,
+                min_quantity: Number(tier.min_quantity),
+                unit_price: Number(tier.unit_price),
+                free_item_text: tier.free_item_text,
+                is_active: tier.is_active,
+              })),
+            };
+          } catch {
+            return item;
+          }
+        }));
+        if (!active) return;
+        if (hydratedCart.some((item, index) => item !== currentCart[index])) saveCart(hydratedCart);
+        setCart(hydratedCart as CartItemWithDiscount[]);
+      } catch {
+        if (active) setCart(getCart() as CartItemWithDiscount[]);
+      }
+    };
+    void refreshCheckoutCart();
+
     // Reflect +/- changes immediately; order submission still validates stock and product activity.
     const handler = () => setCart(getCart() as CartItemWithDiscount[]);
     window.addEventListener('cart-updated', handler);
@@ -203,7 +235,7 @@ export default function CheckoutPage() {
       setWalletLoading(false);
     });
 
-    return () => window.removeEventListener('cart-updated', handler);
+    return () => { active = false; window.removeEventListener('cart-updated', handler); };
   }, []);
 
 
