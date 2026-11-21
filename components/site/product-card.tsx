@@ -183,12 +183,12 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
               )}
             </div>
 
-            <h3 className="line-clamp-2 text-[13px] font-black leading-[1.4] tracking-[-.012em] text-slate-900 sm:text-[15px] lg:text-[16px]">
+            <h3 className="line-clamp-none text-[13px] font-black leading-[1.4] tracking-[-.012em] text-slate-900 sm:line-clamp-2 sm:text-[15px] lg:text-[16px]">
               {name}
             </h3>
 
             {shortDescription && (
-              <p className="mt-1 line-clamp-2 text-[9px] leading-[1.55] text-slate-500 sm:mt-2 sm:text-[10px]">
+              <p className="mt-1 line-clamp-none text-[9px] leading-[1.55] text-slate-500 sm:mt-2 sm:line-clamp-2 sm:text-[10px]">
                 {shortDescription}
               </p>
             )}
@@ -222,7 +222,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
           </span>
         </div>
 
-        <div className={`grid gap-2 ${stackedActions ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
+        {inStock && <div className={`grid gap-2 ${stackedActions ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
           <button
             onClick={handleAddToCart}
             disabled={!inStock}
@@ -240,7 +240,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
             <Zap className="h-3 w-3 fill-current text-lime-300 sm:h-3.5 sm:w-3.5" />
             <span>{t('এখনই কিনুন', 'Buy Now', 'अभी खरीदें')}</span>
           </button>
-        </div>
+        </div>}
 
         <div className="mt-2 flex items-center justify-center gap-2.5 text-[7.5px] font-semibold text-slate-400 sm:text-[9px]">
           <span className="inline-flex items-center gap-1">
