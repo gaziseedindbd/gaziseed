@@ -183,7 +183,7 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
               )}
             </div>
 
-            <h3 className="line-clamp-2 text-[13px] font-black leading-[1.4] tracking-[-.012em] text-slate-900 sm:text-[15px] lg:text-[16px]">
+            <h3 className="line-clamp-none sm:line-clamp-2 text-[13px] font-black leading-[1.4] tracking-[-.012em] text-slate-900 sm:text-[15px] lg:text-[16px]">
               {name}
             </h3>
 
@@ -235,11 +235,16 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
           <button
             onClick={handleBuyNow}
             disabled={!inStock}
-            className="flex min-w-0 items-center justify-center gap-1.5 min-h-11 rounded-xl bg-gradient-to-r from-slate-950 to-slate-900 px-2.5 py-2.5 text-[9px] font-black text-white shadow-[0_10px_24px_-16px_rgba(15,23,42,.75)] transition-all duration-200 hover:-translate-y-0.5 hover:from-emerald-700 hover:to-emerald-600 hover:shadow-[0_14px_28px_-16px_rgba(5,150,105,.6)] active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50 sm:py-3 sm:text-[10px]"
+            className={`${!inStock ? "hidden sm:flex" : "flex"} min-w-0 items-center justify-center gap-1.5 min-h-11 rounded-xl bg-gradient-to-r from-slate-950 to-slate-900 px-2.5 py-2.5 text-[9px] font-black text-white shadow-[0_10px_24px_-16px_rgba(15,23,42,.75)] transition-all duration-200 hover:-translate-y-0.5 hover:from-emerald-700 hover:to-emerald-600 hover:shadow-[0_14px_28px_-16px_rgba(5,150,105,.6)] active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50 sm:py-3 sm:text-[10px]`}
           >
             <Zap className="h-3 w-3 fill-current text-lime-300 sm:h-3.5 sm:w-3.5" />
             <span>{t('এখনই কিনুন', 'Buy Now', 'अभी खरीदें')}</span>
           </button>
+          {!inStock && (
+            <div className="flex min-h-11 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-2.5 py-2.5 text-[9px] font-black text-red-700 sm:hidden">
+              {t('স্টক শেষ', 'Sold Out', 'स्टॉक समाप्त')}
+            </div>
+          )}
         </div>
 
         <div className="mt-2 flex items-center justify-center gap-2.5 text-[7.5px] font-semibold text-slate-400 sm:text-[9px]">
