@@ -96,7 +96,7 @@ const getBulkUnitPrice = (quantity: number, baseUnitPrice: number, tiers?: CartB
   return applicable?.unit_price ?? baseUnitPrice;
 };
 
-export function addToCart(product: Product, quantity: number = 1, overrides?: Partial<Pick<CartItem, 'name' | 'unit_price' | 'base_unit_price' | 'variant_id' | 'variant_name' | 'bundle_id' | 'bulk_tiers'>>) {
+export function addToCart(product: Product, quantity: number = 1, overrides?: Partial<Pick<CartItem, 'name' | 'unit_price' | 'base_unit_price' | 'variant_id' | 'variant_name' | 'bundle_id' | 'bulk_tiers'>> & { replace_existing?: boolean }) {
   const cart = getCart();
   const existing = cart.find((item) =>
     item.product_id === product.id &&
@@ -110,7 +110,7 @@ export function addToCart(product: Product, quantity: number = 1, overrides?: Pa
   const itemName = overrides?.name || product.name_bn || product.name_en;
 
   if (existing) {
-    existing.quantity += quantity;
+    existing.quantity = overrides?.replace_existing ? quantity : existing.quantity + quantity;
     if (overrides?.bulk_tiers) existing.bulk_tiers = overrides.bulk_tiers;
     if (overrides?.base_unit_price) existing.base_unit_price = overrides.base_unit_price;
     const recalcBase = existing.base_unit_price ?? baseUnitPrice;
