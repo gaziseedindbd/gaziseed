@@ -25,7 +25,7 @@ export default function CartFreeDeliveryProgress({ items, subtotal, onDeliveryQu
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
   const [deliveryRules, setDeliveryRules] = useState<DeliveryRule[]>([]);
   const [freeDeliveryProductIds, setFreeDeliveryProductIds] = useState<Set<string>>(new Set());
-  const [deliveryCharge, setDeliveryCharge] = useState<number | null>(null);
+  const [deliveryCharge, setDeliveryCharge] = useState<number | null>(() => getVisitorCountry() === 'IN' ? (subtotal > 500 ? 0 : 80) : null);
   const [deliveryQuoteReady, setDeliveryQuoteReady] = useState(false);
 
   const productIdsKey = useMemo(
@@ -48,7 +48,6 @@ export default function CartFreeDeliveryProgress({ items, subtotal, onDeliveryQu
     let cancelled = false;
 
     const syncDeliveryQuote = async () => {
-      onDeliveryQuoteChange?.(null);
       const productIds = productIdsKey ? productIdsKey.split(',') : [];
       if (productIds.length === 0) {
         setDeliveryRules([]);
