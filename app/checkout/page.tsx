@@ -77,6 +77,7 @@ export default function CheckoutPage() {
   const { t, lang } = useLang();
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
   const [cart, setCart] = useState<CartItemWithDiscount[]>([]);
+  const [cartHydrated, setCartHydrated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<CustomerAddress[]>([]);
   const [selectedAddrId, setSelectedAddrId] = useState('');
@@ -163,6 +164,7 @@ export default function CheckoutPage() {
     // Render the locally stored cart immediately; validate product activity/country in the background.
     const localCart = getCart();
     setCart(localCart as CartItemWithDiscount[]);
+    setCartHydrated(true);
 
     let active = true;
     const refreshCheckoutCart = async () => {
@@ -199,8 +201,13 @@ export default function CheckoutPage() {
     void refreshCheckoutCart();
 
     // Reflect +/- changes immediately; order submission still validates stock and product activity.
-    const handler = () => setCart(getCart() as CartItemWithDiscount[]);
+    const handler = () => {
+      const latestCart = getCart();
+      setCart(latestCart as CartItemWithDiscount[]);
+      setCartHydrated(true);
+    };
     window.addEventListener('cart-updated', handler);
+    window.addEventListener('storage', handler);
 
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session?.user) return;
@@ -237,7 +244,11 @@ export default function CheckoutPage() {
       setWalletLoading(false);
     });
 
-    return () => { active = false; window.removeEventListener('cart-updated', handler); };
+    return () => {
+      active = false;
+      window.removeEventListener('cart-updated', handler);
+      window.removeEventListener('storage', handler);
+    };
   }, []);
 
 
@@ -765,6 +776,10 @@ export default function CheckoutPage() {
     }
   };
 
+  if (!cartHydrated) {
+    return <main className="min-h-screen bg-background"><div className="container-custom flex min-h-[70vh] items-center justify-center py-20"><div className="text-sm font-semibold text-muted-foreground">{t('কার্ট লোড হচ্ছে…', 'Loading your cart…')}</div></div></main>;
+  }
+
   if (cart.length === 0) {
     return (
       <main className="min-h-screen bg-background">
@@ -1172,14 +1187,14 @@ export default function CheckoutPage() {
                   {savingsTotal > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t(`আপনার সাশ্রয়${discountPercent ? ` (${discountPercent}%)` : ''}`, `You save${discountPercent ? ` (${discountPercent}%)` : ''}`)}</span><span className="font-bold">-{formatPrice(savingsTotal)}</span></div>}
                   {couponDiscount > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('কুপন ডিসকাউন্ট', 'Coupon discount')}</span><span className="font-bold">-{formatPrice(couponDiscount)}</span></div>}
                   <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারি', 'Delivery')}</span><span className="font-bold">{deliveryCharge === 0 ? t('ফ্রি', 'Free') : formatPrice(deliveryCharge)}</span></div>
-                  {country === 'IN' && paymentMethod === 'cod' && <><div className="flex justify-between gap-4 text-sm text-primary"><span>{t('COD অগ্রিম','COD advance')}</span><span className="font-bold">{formatPrice(codAdvance)}</span></div><div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারিতে বাকি','Due on delivery')}</span><span className="font-bold">{formatPrice(codDue)}</span></div></>}
+                  {country === 'IN' && paymentMethod === 'cod' && <div className="rounded-xl border border-primary/15 bg-primary/[0.04] px-3 py-2 text-xs font-bold leading-5 text-foreground">{t(`এখন ${formatPrice(codAdvance)} দিন, ডেলিভারিতে ${formatPrice(codDue)} দিন, মোট ${formatPrice(payableTotal)}`, `Pay ${formatPrice(codAdvance)} now, ${formatPrice(codDue)} on delivery, Total ${formatPrice(payableTotal)}`)}</div>}
                   {walletCredit > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('ওয়ালেট ক্রেডিট', 'Wallet credit')}</span><span className="font-bold">-{formatPrice(walletCredit)}</span></div>}
                   <div className="mt-4 flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-primary/15 bg-primary/[0.05] p-4">
                     <div>
                       <span className="block text-base font-black">{t('সর্বমোট', 'Total')}</span>
                       <span className="mt-0.5 block text-[10px] font-semibold text-muted-foreground">{t('চূড়ান্ত পরিশোধযোগ্য', 'Final payable amount')}</span>
                     </div>
-                    <span className="text-3xl font-black tracking-tight text-primary tabular-nums sm:text-4xl">{formatPrice(country === 'IN' && paymentMethod === 'cod' ? codAdvance : payableTotal)}</span>
+                    <span className="text-3xl font-black tracking-tight text-primary tabular-nums sm:text-4xl">{formatPrice(payableTotal)}</span>
                   </div>
 
                 {country === 'IN' && (
@@ -1215,7 +1230,7 @@ export default function CheckoutPage() {
                             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Banknote className="h-4 w-4" /></span>
                             <span className="min-w-0">
                               <span className="block text-base font-black">{t('ক্যাশ অন ডেলিভারি', 'Cash on Delivery')}</span>
-                              <span className="mt-2 block space-y-1 text-sm leading-5 text-muted-foreground"><span className="block">{t("এখন অগ্রিম", "Advance now", "अभी अग्रिम")} <strong className="font-black text-foreground">{formatPrice(codAdvance)}</strong></span><span className="block">{t("ডেলিভারির সময় বাকি", "Due on delivery", "डिलीवरी पर शेष")} <strong className="font-black text-foreground">{formatPrice(codDue)}</strong></span></span>
+                              <span className="mt-2 block text-sm leading-5 text-muted-foreground">{t(`এখন ${formatPrice(codAdvance)}, ডেলিভারিতে ${formatPrice(codDue)}, মোট ${formatPrice(payableTotal)}`, `Pay ${formatPrice(codAdvance)} now, ${formatPrice(codDue)} on delivery, Total ${formatPrice(payableTotal)}`)}</span>
                             </span>
                           </span>
                         </button>
@@ -1242,7 +1257,7 @@ export default function CheckoutPage() {
                     disabled={loading || !deliveryQuoteReady}
                     className="mt-4 inline-flex min-h-[64px] w-full items-center justify-center gap-3 rounded-[18px] bg-primary px-4 py-4 text-base font-black sm:px-6 sm:text-lg tracking-tight text-primary-foreground shadow-xl shadow-primary/30 transition-all hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-2xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-15"
                   >
-                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম পরিশোধ করুন', 'Pay COD advance') : t('অনলাইনে পেমেন্ট করুন', 'Pay online')) : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
+                    {loading ? <><Loader2 className="h-5 w-5 animate-spin" /><span>{country === 'IN' && paymentMethod === 'online' ? t('নিরাপদ পেমেন্টে পাঠানো হচ্ছে, অপেক্ষা করুন…', 'Redirecting to secure payment, please wait…') : t('অর্ডার প্রসেস হচ্ছে…', 'Processing your order…')}</span></> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম পরিশোধ করুন', 'Pay COD advance') : t('অনলাইনে পেমেন্ট করুন', 'Pay online')) : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
                   </button>
 
                   <div className="grid grid-cols-3 gap-2 pt-1 text-center">
