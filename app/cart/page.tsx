@@ -6,13 +6,14 @@ import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, ShieldCheck, Truck } from
 import { useCart } from '@/components/site/cart-provider';
 import { updateCartQuantity, removeFromCart, type CartItem } from '@/lib/cart';
 import { formatPrice } from '@/lib/data';
+import { getVisitorCountry } from '@/lib/supabase/client';
 import { useLang } from '@/components/site/language-provider';
 import CartFreeDeliveryProgress from '@/components/site/cart-free-delivery-progress';
 
 type CartItemWithDiscount = CartItem & { regular_price: number };
 
 export default function CartPage() {
-  const { items, total, refresh } = useCart(); const { t } = useLang(); const [hydrated, setHydrated] = useState(false); const [deliveryCharge, setDeliveryCharge] = useState<number | null>(null); const grandTotal = deliveryCharge === null ? null : total + deliveryCharge;
+  const { items, total, refresh } = useCart(); const { t } = useLang(); const [hydrated, setHydrated] = useState(false); const [deliveryCharge, setDeliveryCharge] = useState<number | null>(() => getVisitorCountry() === 'IN' ? (total > 500 ? 0 : 80) : null); const grandTotal = deliveryCharge === null ? null : total + deliveryCharge;
   useEffect(() => { setHydrated(true); }, []); if (!hydrated) return null;
   if (items.length === 0) return <main className="min-h-[70vh] bg-gradient-to-b from-primary/[0.045] via-background to-background px-4 py-10 sm:py-16"><div className="mx-auto max-w-xl rounded-[2rem] border border-primary/15 bg-card p-10 text-center shadow-[0_24px_70px_-35px_hsl(var(--primary)/0.4)] sm:p-14"><div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10"><ShoppingBag className="h-9 w-9 text-primary" /></div><span className="mt-5 block text-[10px] font-black uppercase tracking-[0.2em] text-primary">GAZI SEED • SHOPPING</span><h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">{t('আপনার কার্ট খালি', 'Your cart is empty')}</h1><p className="mt-2 text-sm leading-6 text-muted-foreground">{t('আপনার পছন্দের বীজ বেছে নিয়ে আজই অর্ডার শুরু করুন।', 'Choose your favorite seeds and start your order today.')}</p><Link href="/all-products" className="mt-7 inline-flex min-h-12 items-center gap-2 btn-primary">{t('শপিং শুরু করুন', 'Start Shopping')}<ArrowRight className="h-4 w-4" /></Link></div></main>;
   const itemsWithDiscount = items as CartItemWithDiscount[]; const originalTotal = itemsWithDiscount.reduce((sum, item) => sum + (Math.max(item.regular_price ?? item.unit_price, item.base_unit_price ?? item.unit_price)) * item.quantity, 0); const savingsTotal = originalTotal - total; const discountPercent = originalTotal > 0 ? Math.round((savingsTotal / originalTotal) * 100) : 0;
