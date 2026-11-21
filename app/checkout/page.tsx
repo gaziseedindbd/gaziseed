@@ -466,7 +466,7 @@ export default function CheckoutPage() {
   const selectedWalletAmount = walletSummary?.unlocked ? Math.min(walletSummary.max_usable, grandTotal) : 0;
   const codAdvance = country === 'IN' ? (deliveryCharge > 0 ? deliveryCharge : 120) : 0;
   const codAvailable = country !== 'IN' || deliveryCharge > 0 || payableTotal >= 120;
-  const codDue = country === 'IN' && paymentMethod === 'cod' ? Math.max(0, payableTotal - codAdvance) : 0;
+  const codDue = country === 'IN' && paymentMethod === 'cod' ? Math.max(0, subtotal - couponDiscount) : 0;
 
   const freeDeliveryThreshold = useMemo(() => {
     const candidates = deliveryRules.filter((rule) => rule.is_free && rule.min_order > 0)
@@ -475,7 +475,7 @@ export default function CheckoutPage() {
       candidates[candidates.length - 1]?.min_order ?? null;
   }, [deliveryRules, subtotal]);
   const freeDeliveryUnlocked = deliveryQuoteReady && (deliveryCharge === 0 || freeDeliveryProductIds.size > 0);
-  const freeDeliveryRemaining = freeDeliveryThreshold == null ? null : Math.max(0, freeDeliveryThreshold - subtotal);
+  const freeDeliveryRemaining = freeDeliveryThreshold == null ? null : Math.round(Math.max(0, freeDeliveryThreshold - subtotal));
   const freeDeliveryPercent = freeDeliveryUnlocked ? 100 : freeDeliveryThreshold
     ? Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100)) : 0;
 
