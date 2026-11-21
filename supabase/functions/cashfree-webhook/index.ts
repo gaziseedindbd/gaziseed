@@ -11,6 +11,22 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: corsHeaders });
 }
 
+async function sendMetaPurchase(orderNumber: string) {
+  const response = await fetch("https://www.gaziseed.com/api/marketing/meta-capi/purchase", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ order_number: orderNumber, country_code: "IN" }),
+  });
+  const result = await response.json().catch(() => ({})) as Record<string, unknown>;
+
+  // Messenger/unsupported sources are intentionally excluded by the existing
+  // CAPI policy. A missing eligible order is not a Cashfree payment failure.
+  if (response.status === 404 && result.status === "not_found") return;
+  if (!response.ok || result.ok !== true) {
+    throw new Error("Meta Purchase delivery was not accepted");
+  }
+}
+
 async function completionResult(response: Response) {
   const responseText = await response.text();
   let result: Record<string, unknown>;
@@ -20,9 +36,14 @@ async function completionResult(response: Response) {
   } catch { result = {}; }
   // A 2xx response can mean processing or unpaid. Acknowledge only a linked order.
   if (!response.ok || result.ok !== true || typeof result.order_id !== "string" ||
-      !result.order_id || !(result.completed === true || result.already_completed === true)) {
+      !result.order_id || typeof result.order_number !== "string" || !result.order_number ||
+      !(result.completed === true || result.already_completed === true)) {
     return json({ ok: false, error: "Order completion is not confirmed. Retry webhook." }, 503);
   }
+
+  // Cashfree has already been verified and the order is committed at this point.
+  // The existing Vercel route owns the Meta token and its idempotency table.
+  await sendMetaPurchase(result.order_number);
   return json({ ok: true, processed: true, order_id: result.order_id });
 }
 
@@ -79,7 +100,25 @@ Deno.serve(async (req: Request) => {
 
   if (intentError) return json({ ok: false, error: "Payment intent lookup failed. Retry webhook." }, 503);
   if (!intent) return json({ ok: true, ignored: true, reason: "Unknown Cashfree order" });
-  if (intent.completed_order_id) return json({ ok: true, already_completed: true, order_id: intent.completed_order_id });
+  if (intent.completed_order_id) {
+    // Cashfree may retry after the order was committed but Meta delivery failed.
+    // Re-running the CAPI route is safe because it uses the same event_id and
+    // service-role idempotency record as the browser fallback.
+    const { data: completedOrder, error: completedOrderError } = await admin
+      .from("orders")
+      .select("order_number,country_code")
+      .eq("id", intent.completed_order_id)
+      .maybeSingle();
+    if (completedOrderError) return json({ ok: false, error: "Completed order lookup failed. Retry webhook." }, 503);
+    if (completedOrder?.country_code === "IN" && completedOrder.order_number) {
+      try {
+        await sendMetaPurchase(completedOrder.order_number);
+      } catch {
+        return json({ ok: false, error: "Meta Purchase delivery unavailable. Retry webhook." }, 503);
+      }
+    }
+    return json({ ok: true, already_completed: true, order_id: intent.completed_order_id });
+  }
 
   try {
     if (type === "PAYMENT_SUCCESS_WEBHOOK" || paymentStatus === "SUCCESS") {
