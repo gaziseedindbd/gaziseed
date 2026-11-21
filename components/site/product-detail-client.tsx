@@ -663,7 +663,8 @@ export default function ProductDetailClient({
               )}
 
               <div className="sticky bottom-0 -mx-4 mt-auto grid gap-2 border-t border-slate-100 bg-white/95 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:pt-6">
-                <button
+                {!inStock && <p className="rounded-xl bg-red-50 px-4 py-3 text-center text-sm font-black text-red-700">{t('স্টক শেষ', 'Sold Out', 'स्टॉक समाप्त')}</p>}
+                {inStock && <> <button
                   type="button"
                   disabled={product.stock <= 0}
                   onClick={() => {
@@ -681,8 +682,8 @@ export default function ProductDetailClient({
                   className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-700 to-emerald-800 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-800/20 transition hover:from-emerald-800 hover:to-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Zap className="h-4 w-4 fill-current text-amber-300" />
-                  {t('এখনই অর্ডার করুন', 'Order Now', 'अभी ऑर्डर करें')}
-                </button>
+                  {t('এখনই অর্ডার করুন', 'Order Now', 'अभी ऑर्डার করুন')}
+                </button> </>}
                 <button
                   type="button"
                   onClick={() => setQuickViewOpen(false)}
