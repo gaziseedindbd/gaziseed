@@ -1135,6 +1135,24 @@ export default function CheckoutPage() {
                     </div>
                   </div>}
 
+                  {cart.length > 0 && <div className="space-y-2 rounded-2xl border border-border/70 bg-background p-3.5">
+                    <p className="text-xs font-black text-foreground">{t('আপনার পণ্য', 'Your items')}</p>
+                    {cart.map((item) => (
+                      <div key={`summary-${item.product_id}-${item.variant_id || ''}-${item.bundle_id || ''}`} className="flex items-center gap-3 border-t border-border/50 pt-3 first:border-t-0 first:pt-0">
+                        <div className="min-w-0 flex-1">
+                          <p className="line-clamp-2 text-xs font-bold text-foreground">{item.name}</p>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">{formatPrice(item.unit_price)} {t('প্রতি প্যাকেট', 'each')}</p>
+                        </div>
+                        <div className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-border/70 bg-card p-1">
+                          <button type="button" aria-label={`Decrease quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, -1)} disabled={item.quantity <= 1} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-35 focus-visible:ring-2 focus-visible:ring-primary"><Minus className="h-4 w-4" /></button>
+                          <span aria-live="polite" className="min-w-6 text-center text-xs font-black tabular-nums">{item.quantity}</span>
+                          <button type="button" aria-label={`Increase quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, 1)} disabled={item.quantity >= 99} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary"><Plus className="h-4 w-4" /></button>
+                        </div>
+                        <span className="shrink-0 text-xs font-black tabular-nums">{formatPrice(item.unit_price * item.quantity)}</span>
+                      </div>
+                    ))}
+                  </div>}
+
                   {cart.length > 0 && <div className="space-y-2">
                     <button type="button" onClick={openMessengerWithCart} disabled={messengerLinkLoading}
                       className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-background px-3 py-2 text-sm font-bold text-primary transition hover:bg-primary/5 disabled:cursor-wait disabled:opacity-60">
