@@ -814,8 +814,8 @@ export default function CheckoutPage() {
         </div>
 
         <form id="checkout-form" onSubmit={handleSubmit}>
-          <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-start gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(350px,0.85fr)] lg:gap-7">
-            <div className="space-y-5 lg:space-y-6">
+          <div className="mx-auto flex w-full max-w-4xl flex-col gap-5 sm:gap-6">
+            <div className="w-full space-y-5 sm:space-y-6">
               {savedAddresses.length > 0 && (
                 <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
                   <div className="mb-4 flex items-center justify-between gap-4">
@@ -1095,7 +1095,7 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            <aside className="w-full space-y-5 lg:sticky lg:top-6">
+            <aside className="w-full space-y-5">
               <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-xl shadow-black/[0.06]">
                 <div className="border-b border-border/60 p-5 sm:p-6">
                   <div className="flex items-center justify-between gap-3">
@@ -1118,6 +1118,47 @@ export default function CheckoutPage() {
                 </div>
 
 
+
+
+                <div className="space-y-3 p-5 sm:p-6">
+                  {(freeDeliveryThreshold !== null || freeDeliveryUnlocked) && <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/[0.04] p-3.5" role="status" aria-live="polite">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-extrabold">
+                      <span>{!deliveryQuoteReady ? t('ডেলিভারি যাচাই হচ্ছে', 'Checking delivery', 'डिलीवरी की जाँच हो रही है') : freeDeliveryUnlocked
+                        ? t('ফ্রি ডেলিভারি আনলক হয়েছে!', 'Free delivery unlocked!', 'मुफ्त डिलीवरी मिल गई!')
+                        : freeDeliveryRemaining !== null
+                          ? t(`আর ${formatPrice(freeDeliveryRemaining)} যোগ করুন ফ্রি ডেলিভারির জন্য`, `Add ${formatPrice(freeDeliveryRemaining)} more for free delivery`, `मुफ्त डिलीवरी के लिए ${formatPrice(freeDeliveryRemaining)} और जोड़ें`)
+                          : t('ডেলিভারি চার্জ প্রযোজ্য', 'Delivery charge applies', 'डिलीवरी शुल्क लागू है')}</span>
+                      {freeDeliveryThreshold !== null && <span className="tabular-nums text-primary">{formatPrice(subtotal)} / {formatPrice(country === 'IN' ? Math.max(0, freeDeliveryThreshold - 0.01) : freeDeliveryThreshold)}</span>}
+                    </div>
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-primary/15" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={freeDeliveryPercent} aria-label="Free delivery progress">
+                      <div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${freeDeliveryPercent}%` }} />
+                    </div>
+                  </div>}
+
+                  {cart.length > 0 && <div className="space-y-2">
+                    <button type="button" onClick={openMessengerWithCart} disabled={messengerLinkLoading}
+                      className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-background px-3 py-2 text-sm font-bold text-primary transition hover:bg-primary/5 disabled:cursor-wait disabled:opacity-60">
+                      {messengerLinkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+                      {messengerLinkLoading
+                        ? t('Messenger খোলা হচ্ছে…', 'Opening Messenger…', 'Messenger खोला जा रहा है…')
+                        : t('Messenger-এ AI-কে জিজ্ঞেস করুন', 'Ask AI on Messenger about this cart', 'इस cart के बारे में Messenger AI से पूछें')}
+                    </button>
+                    {messengerLinkError && <p role="alert" className="text-xs text-rose-600">{messengerLinkError}</p>}
+                  </div>}
+
+                  <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('সাবটোটাল', 'Subtotal')}</span><span className="font-bold">{formatPrice(subtotal)}</span></div>
+                  {savingsTotal > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t(`আপনার সাশ্রয়${discountPercent ? ` (${discountPercent}%)` : ''}`, `You save${discountPercent ? ` (${discountPercent}%)` : ''}`)}</span><span className="font-bold">-{formatPrice(savingsTotal)}</span></div>}
+                  {couponDiscount > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('কুপন ডিসকাউন্ট', 'Coupon discount')}</span><span className="font-bold">-{formatPrice(couponDiscount)}</span></div>}
+                  <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারি', 'Delivery')}</span><span className="font-bold">{deliveryCharge === 0 ? t('ফ্রি', 'Free') : formatPrice(deliveryCharge)}</span></div>
+                  {country === 'IN' && paymentMethod === 'cod' && <><div className="flex justify-between gap-4 text-sm text-primary"><span>{t('COD অগ্রিম','COD advance')}</span><span className="font-bold">{formatPrice(codAdvance)}</span></div><div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারিতে বাকি','Due on delivery')}</span><span className="font-bold">{formatPrice(codDue)}</span></div></>}
+                  {walletCredit > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('ওয়ালেট ক্রেডিট', 'Wallet credit')}</span><span className="font-bold">-{formatPrice(walletCredit)}</span></div>}
+                  <div className="mt-4 flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-primary/15 bg-primary/[0.05] p-4">
+                    <div>
+                      <span className="block text-base font-black">{t('সর্বমোট', 'Total')}</span>
+                      <span className="mt-0.5 block text-[10px] font-semibold text-muted-foreground">{t('চূড়ান্ত পরিশোধযোগ্য', 'Final payable amount')}</span>
+                    </div>
+                    <span className="text-3xl font-black tracking-tight text-primary tabular-nums sm:text-4xl">{formatPrice(country === 'IN' && paymentMethod === 'cod' ? codAdvance : payableTotal)}</span>
+                  </div>
 
                 {country === 'IN' && (
                   <div className="border-b border-border/60 p-5 sm:p-6">
@@ -1165,46 +1206,6 @@ export default function CheckoutPage() {
                     )}
                   </div>
                 )}
-
-                <div className="space-y-3 p-5 sm:p-6">
-                  {(freeDeliveryThreshold !== null || freeDeliveryUnlocked) && <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/[0.04] p-3.5" role="status" aria-live="polite">
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-extrabold">
-                      <span>{!deliveryQuoteReady ? t('ডেলিভারি যাচাই হচ্ছে', 'Checking delivery', 'डिलीवरी की जाँच हो रही है') : freeDeliveryUnlocked
-                        ? t('ফ্রি ডেলিভারি আনলক হয়েছে!', 'Free delivery unlocked!', 'मुफ्त डिलीवरी मिल गई!')
-                        : freeDeliveryRemaining !== null
-                          ? t(`আর ${formatPrice(freeDeliveryRemaining)} যোগ করুন ফ্রি ডেলিভারির জন্য`, `Add ${formatPrice(freeDeliveryRemaining)} more for free delivery`, `मुफ्त डिलीवरी के लिए ${formatPrice(freeDeliveryRemaining)} और जोड़ें`)
-                          : t('ডেলিভারি চার্জ প্রযোজ্য', 'Delivery charge applies', 'डिलीवरी शुल्क लागू है')}</span>
-                      {freeDeliveryThreshold !== null && <span className="tabular-nums text-primary">{formatPrice(subtotal)} / {formatPrice(country === 'IN' ? Math.max(0, freeDeliveryThreshold - 0.01) : freeDeliveryThreshold)}</span>}
-                    </div>
-                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-primary/15" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={freeDeliveryPercent} aria-label="Free delivery progress">
-                      <div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${freeDeliveryPercent}%` }} />
-                    </div>
-                  </div>}
-
-                  {cart.length > 0 && <div className="space-y-2">
-                    <button type="button" onClick={openMessengerWithCart} disabled={messengerLinkLoading}
-                      className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-background px-3 py-2 text-sm font-bold text-primary transition hover:bg-primary/5 disabled:cursor-wait disabled:opacity-60">
-                      {messengerLinkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
-                      {messengerLinkLoading
-                        ? t('Messenger খোলা হচ্ছে…', 'Opening Messenger…', 'Messenger खोला जा रहा है…')
-                        : t('Messenger-এ AI-কে জিজ্ঞেস করুন', 'Ask AI on Messenger about this cart', 'इस cart के बारे में Messenger AI से पूछें')}
-                    </button>
-                    {messengerLinkError && <p role="alert" className="text-xs text-rose-600">{messengerLinkError}</p>}
-                  </div>}
-
-                  <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('সাবটোটাল', 'Subtotal')}</span><span className="font-bold">{formatPrice(subtotal)}</span></div>
-                  {savingsTotal > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t(`আপনার সাশ্রয়${discountPercent ? ` (${discountPercent}%)` : ''}`, `You save${discountPercent ? ` (${discountPercent}%)` : ''}`)}</span><span className="font-bold">-{formatPrice(savingsTotal)}</span></div>}
-                  {couponDiscount > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('কুপন ডিসকাউন্ট', 'Coupon discount')}</span><span className="font-bold">-{formatPrice(couponDiscount)}</span></div>}
-                  <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারি', 'Delivery')}</span><span className="font-bold">{deliveryCharge === 0 ? t('ফ্রি', 'Free') : formatPrice(deliveryCharge)}</span></div>
-                  {country === 'IN' && paymentMethod === 'cod' && <><div className="flex justify-between gap-4 text-sm text-primary"><span>{t('COD অগ্রিম','COD advance')}</span><span className="font-bold">{formatPrice(codAdvance)}</span></div><div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারিতে বাকি','Due on delivery')}</span><span className="font-bold">{formatPrice(codDue)}</span></div></>}
-                  {walletCredit > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('ওয়ালেট ক্রেডিট', 'Wallet credit')}</span><span className="font-bold">-{formatPrice(walletCredit)}</span></div>}
-                  <div className="mt-4 flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-primary/15 bg-primary/[0.05] p-4">
-                    <div>
-                      <span className="block text-base font-black">{t('সর্বমোট', 'Total')}</span>
-                      <span className="mt-0.5 block text-[10px] font-semibold text-muted-foreground">{t('চূড়ান্ত পরিশোধযোগ্য', 'Final payable amount')}</span>
-                    </div>
-                    <span className="text-3xl font-black tracking-tight text-primary tabular-nums sm:text-4xl">{formatPrice(country === 'IN' && paymentMethod === 'cod' ? codAdvance : payableTotal)}</span>
-                  </div>
 
                   {!deliveryQuoteReady && <div role="alert" className="rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-900"><p>{t('ডেলিভারি চার্জ যাচাই হচ্ছে বা সাময়িকভাবে পাওয়া যাচ্ছে না।', 'Delivery charge is being checked or is temporarily unavailable.', 'डिलीवरी शुल्क की जाँच हो रही है या अभी उपलब्ध नहीं है।')}</p><button type="button" onClick={() => setDeliveryQuoteRetry((n) => n + 1)} className="mt-2 rounded-xl border border-amber-400 px-4 py-2 font-black">{t('আবার চেষ্টা করুন', 'Retry delivery check', 'फिर कोशिश करें')}</button></div>}
                   {error && (
