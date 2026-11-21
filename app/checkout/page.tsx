@@ -786,7 +786,7 @@ export default function CheckoutPage() {
   return (
     <main className="min-h-screen overflow-x-clip bg-slate-50/90 pb-28 dark:bg-slate-950 sm:pb-14">
       <div className="container-custom mx-auto max-w-6xl min-w-0 px-3 py-4 sm:px-4 sm:py-8 lg:py-12">
-        <div className="mb-5 rounded-[1.6rem] border border-border/70 bg-card/95 p-4 shadow-sm sm:mb-8 sm:rounded-[2rem] sm:p-7">
+        <div className="mb-4 rounded-2xl border border-border/70 bg-card/95 p-4 shadow-sm sm:mb-5 sm:p-5">
           <div className="flex flex-col gap-3 sm:gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/10 px-3.5 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-primary">
@@ -812,10 +812,10 @@ export default function CheckoutPage() {
         </div>
 
         <form id="checkout-form" onSubmit={handleSubmit}>
-          <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-start gap-5 sm:gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-7">
+          <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-start gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-5">
             <div className="space-y-6 lg:space-y-7">
               {savedAddresses.length > 0 && (
-                <section className="rounded-[2rem] border border-border/70 bg-card p-5 shadow-sm sm:p-7">
+                <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
                   <div className="mb-4 flex items-center justify-between gap-4">
                     <div>
                       <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">{t('এক ক্লিকে নির্বাচন করুন', 'Quick select')}</p>
@@ -1030,7 +1030,7 @@ export default function CheckoutPage() {
 
                 <div className="max-h-72 space-y-3 overflow-y-auto border-b border-border/60 p-5 sm:p-6">
                   {cart.map((item) => (
-                    <div key={`${item.product_id}-${item.variant_id || ''}-${item.bundle_id || ''}`} className="flex items-center gap-3">
+                    <div key={`${item.product_id}-${item.variant_id || ''}-${item.bundle_id || ''}`} className="flex flex-wrap items-start gap-3">
                       <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-secondary/50">
                         <img
                           src={item.image || '/placeholder.svg'}
@@ -1048,13 +1048,14 @@ export default function CheckoutPage() {
                       <div className="min-w-0 flex-1">
                         <p className="line-clamp-2 text-xs font-black leading-5 text-foreground">{item.name}</p>
                         {item.variant_name && <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{item.variant_name}</p>}
-                        {item.bulk_tiers && item.bulk_tiers.filter((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0).length > 0 && (
-                          <div className="mb-3 rounded-2xl border border-orange-200 bg-orange-50/70 p-4 sm:p-5">
+                      </div>
+                      {item.bulk_tiers && item.bulk_tiers.filter((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0).length > 0 && (
+                          <div className="order-3 basis-full rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-3 sm:p-4">
                             <div className="mb-3 flex items-center gap-2 text-xs font-black text-orange-900 sm:text-sm">
                               <Tag className="h-4 w-4 shrink-0" />
                               {t('🔥 বেশি কিনুন, বেশি সাশ্রয় করুন', '🔥 BUY MORE, SAVE MORE')}
                             </div>
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                               {[...item.bulk_tiers]
                                 .filter((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0)
                                 .sort((a, b) => a.min_quantity - b.min_quantity)
@@ -1070,7 +1071,7 @@ export default function CheckoutPage() {
                                       disabled={!canSelect}
                                       aria-pressed={item.quantity === tier.min_quantity}
                                       onClick={() => updateCartQuantity(item.product_id, tier.min_quantity, item.variant_id, item.bundle_id)}
-                                      className={`flex min-h-[116px] w-full flex-col justify-between rounded-xl border p-3.5 text-left shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 sm:min-h-[128px] sm:p-4 ${active ? 'border-emerald-400 bg-emerald-50 ring-1 ring-emerald-200' : 'border-orange-200 bg-white hover:border-orange-400 hover:bg-orange-50'} ${!canSelect ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                                      className={`flex min-h-[92px] w-full flex-col justify-between rounded-xl border p-3 text-left shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 sm:min-h-[100px] sm:p-3.5 ${active ? 'border-emerald-400 bg-emerald-50 ring-1 ring-emerald-200' : 'border-emerald-100 bg-white hover:border-emerald-400 hover:bg-emerald-50/60'} ${!canSelect ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}` }
                                     >
                                       <div className="flex items-center justify-between gap-2">
                                         <span className="text-sm font-extrabold text-foreground sm:text-base">
@@ -1094,6 +1095,7 @@ export default function CheckoutPage() {
                             </div>
                           </div>
                         )}
+                        <div className="min-w-0 flex-1">
                         <div className="mt-2 inline-flex items-center gap-1 rounded-xl border border-border/70 bg-background p-1" aria-label={`Quantity for ${item.name}`}>
                           <button type="button" aria-label={`Decrease quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, -1)} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary"><Minus className="h-4 w-4" /></button>
                           <span aria-live="polite" className="min-w-7 text-center text-sm font-black tabular-nums">{item.quantity}</span>
