@@ -6,7 +6,7 @@ import { Minus, Plus, ShoppingCart, Zap, Truck, ShieldCheck, Check, Star, Messag
 import PageShare from '@/components/site/page-share';
 import { ProductGallery } from '@/components/site/product-gallery';
 import { getProductBySlug, getReviews, getProducts, getEffectivePrice, getDiscountPercent, formatPrice, getRelatedProducts, getProductFaqs, getBundleOffers, getActivePromotions, getProductVariants, getBulkPricing, addRecentlyViewed, toggleWishlist } from '@/lib/data';
-import { addToCart, getCart, saveCart } from '@/lib/cart';
+import { addToCart, getCart } from '@/lib/cart';
 import { toast } from '@/components/site/toast-provider';
 import { ProductCard } from '@/components/site/product-card';
 import { ReviewForm } from '@/components/site/review-form';
