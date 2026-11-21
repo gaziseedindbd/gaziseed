@@ -223,7 +223,7 @@ export function ProductGallery({ images, alt, discount = 0 }: ProductGalleryProp
               aria-label={t(`${idx + 1} নম্বর ছবি নির্বাচন`, `Select image ${idx + 1}`, `तस्वीर ${idx + 1} चुनें`)}
               aria-pressed={idx === activeIdx}
             >
-              <Image src={img} alt="" fill sizes="72px" quality={70} className="object-cover" draggable={false} />
+              <Image src={img} alt="" fill sizes="72px" quality={70} priority={idx < 4} className="bg-slate-100 object-cover" draggable={false} />
               {idx === activeIdx && <span className="absolute inset-x-1 bottom-1 h-0.5 rounded-full bg-primary" />}
             </button>
           ))}
