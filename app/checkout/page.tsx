@@ -812,8 +812,8 @@ export default function CheckoutPage() {
         </div>
 
         <form id="checkout-form" onSubmit={handleSubmit}>
-          <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-start gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-5">
-            <div className="space-y-6 lg:space-y-7">
+          <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-start gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] lg:gap-7">
+            <div className="space-y-5 lg:space-y-6">
               {savedAddresses.length > 0 && (
                 <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
                   <div className="mb-4 flex items-center justify-between gap-4">
@@ -921,7 +921,7 @@ export default function CheckoutPage() {
                   <h2 className="mt-1 text-lg font-black text-foreground sm:text-xl">{t('পণ্য ও প্যাকেট নির্বাচন করুন', 'Select products & packet offers')}</h2>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('আপনার পছন্দের প্যাকেট অফার বেছে নিন এবং বেশি সাশ্রয় করুন।', 'Choose a packet offer to get the best value on your order.')}</p>
                 </div>
-                <div className="max-h-72 space-y-3 overflow-y-auto border-b border-border/60 p-5 sm:p-6">
+                <div className="space-y-4 border-b border-border/60 p-5 sm:p-6">
                   {cart.map((item) => (
                     <div key={`${item.product_id}-${item.variant_id || ''}-${item.bundle_id || ''}`} className="flex flex-wrap items-start gap-3">
                       <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-secondary/50">
@@ -1093,7 +1093,7 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            <aside className="w-full space-y-5">
+            <aside className="w-full space-y-5 lg:sticky lg:top-6">
               <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-xl shadow-black/[0.06]">
                 <div className="border-b border-border/60 p-5 sm:p-6">
                   <div className="flex items-center justify-between gap-3">
