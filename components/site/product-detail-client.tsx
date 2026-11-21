@@ -292,14 +292,7 @@ export default function ProductDetailClient({
     if (product.max_order_qty && quantity > product.max_order_qty) { toast(t(`সর্বোচ্চ ${product.max_order_qty} টি কিনতে পারবেন`, `Maximum ${product.max_order_qty} allowed`), 'error'); return; }
     if (quantity > quantityLimit) { toast(t('স্টকের চেয়ে বেশি পরিমাণ যোগ করা যাবে না', 'Quantity exceeds available stock or order limit'), 'error'); return; }
 
-    // Buy Now replaces this product's existing standalone line instead of incrementing it.
-    const currentCart = getCart();
-    const exactCart = currentCart.filter((item) => !(
-      item.product_id === product.id &&
-      (item.variant_id || '') === (selectedVariant?.id || '') &&
-      !item.bundle_id
-    ));
-    saveCart(exactCart);
+    // Replace this product's existing standalone cart quantity instead of adding to it.
     addToCart(product, quantity, {
       name: selectedVariant ? `${productName} (${selectedVariant.name})` : productName,
       unit_price: finalUnitPrice,
@@ -307,6 +300,7 @@ export default function ProductDetailClient({
       variant_id: selectedVariant?.id,
       variant_name: selectedVariant?.name,
       bulk_tiers: selectedBulkTiers,
+      replace_existing: true,
     });
     router.push('/checkout');
   };
