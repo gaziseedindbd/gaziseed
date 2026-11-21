@@ -462,7 +462,12 @@ export default function CheckoutPage() {
       const verifiedCharge = Number(chargeData);
       if (chargeError || chargeData === null || !Number.isFinite(verifiedCharge) || verifiedCharge < 0) {
         console.error('Delivery charge calculation failed:', chargeError);
-        setDeliveryQuoteReady(false);
+        if (country === 'IN') {
+          setDeliveryCharge(subtotal > 500 ? 0 : 80);
+          setDeliveryQuoteReady(true);
+        } else {
+          setDeliveryQuoteReady(false);
+        }
       } else {
         setDeliveryCharge(verifiedCharge);
         setDeliveryQuoteReady(true);
