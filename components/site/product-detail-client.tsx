@@ -30,7 +30,7 @@ export default function ProductDetailClient({
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [quantity, setQuantity] = useState(1);
-  const [quickViewOpen, setQuickViewOpen] = useState(true);
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isVerifiedPurchase, setIsVerifiedPurchase] = useState(false);
   const [faqs, setFaqs] = useState<ProductFaq[]>([]);
@@ -48,9 +48,9 @@ export default function ProductDetailClient({
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'guide' | 'reviews' | 'faqs'>('desc');
   const { lang, t, tDb } = useLang();
 
-  // Reopen Quick View when navigating between product routes.
+  // Keep the dialog closed when a product route loads or changes.
   useEffect(() => {
-    setQuickViewOpen(true);
+    setQuickViewOpen(false);
     setQuantity(1);
   }, [slug]);
 
@@ -302,6 +302,7 @@ export default function ProductDetailClient({
   return (
     <div className="min-h-screen bg-[#fafbfc] py-6 sm:py-10 pb-36 lg:pb-12 text-gray-900 overflow-x-hidden">
       <div className="max-w-6xl w-full mx-auto px-4">
+        <div className="mb-3 flex justify-end"><button type="button" onClick={() => setQuickViewOpen(true)} className="rounded-xl border border-emerald-700/25 bg-white px-4 py-2 text-xs font-bold text-emerald-800 shadow-sm transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t('কুইক ভিউ', 'Quick View', 'त्वरित दृश्य')}</button></div>
         <ProductOfferSpotlight
           enabled={product.promotional_offer_enabled}
           badge={product.promotional_offer_badge}

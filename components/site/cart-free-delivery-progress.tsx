@@ -131,7 +131,7 @@ export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
     && (deliveryCharge === 0 || freeDeliveryProductIds.size > 0);
   const freeDeliveryRemaining = freeDeliveryThreshold == null
     ? null
-    : Math.max(0, freeDeliveryThreshold - subtotal);
+    : Math.round(Math.max(0, freeDeliveryThreshold - subtotal));
   const freeDeliveryPercent = freeDeliveryUnlocked
     ? 100
     : freeDeliveryThreshold

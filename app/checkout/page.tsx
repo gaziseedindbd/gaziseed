@@ -466,7 +466,7 @@ export default function CheckoutPage() {
   const selectedWalletAmount = walletSummary?.unlocked ? Math.min(walletSummary.max_usable, grandTotal) : 0;
   const codAdvance = country === 'IN' ? (deliveryCharge > 0 ? deliveryCharge : 120) : 0;
   const codAvailable = country !== 'IN' || deliveryCharge > 0 || payableTotal >= 120;
-  const codDue = country === 'IN' && paymentMethod === 'cod' ? Math.max(0, payableTotal - codAdvance) : 0;
+  const codDue = country === 'IN' && paymentMethod === 'cod' ? Math.max(0, subtotal - couponDiscount) : 0;
 
   const freeDeliveryThreshold = useMemo(() => {
     const candidates = deliveryRules.filter((rule) => rule.is_free && rule.min_order > 0)
@@ -475,7 +475,7 @@ export default function CheckoutPage() {
       candidates[candidates.length - 1]?.min_order ?? null;
   }, [deliveryRules, subtotal]);
   const freeDeliveryUnlocked = deliveryQuoteReady && (deliveryCharge === 0 || freeDeliveryProductIds.size > 0);
-  const freeDeliveryRemaining = freeDeliveryThreshold == null ? null : Math.max(0, freeDeliveryThreshold - subtotal);
+  const freeDeliveryRemaining = freeDeliveryThreshold == null ? null : Math.round(Math.max(0, freeDeliveryThreshold - subtotal));
   const freeDeliveryPercent = freeDeliveryUnlocked ? 100 : freeDeliveryThreshold
     ? Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100)) : 0;
 
@@ -1171,7 +1171,7 @@ export default function CheckoutPage() {
                   <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('সাবটোটাল', 'Subtotal')}</span><span className="font-bold">{formatPrice(subtotal)}</span></div>
                   {savingsTotal > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t(`আপনার সাশ্রয়${discountPercent ? ` (${discountPercent}%)` : ''}`, `You save${discountPercent ? ` (${discountPercent}%)` : ''}`)}</span><span className="font-bold">-{formatPrice(savingsTotal)}</span></div>}
                   {couponDiscount > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('কুপন ডিসকাউন্ট', 'Coupon discount')}</span><span className="font-bold">-{formatPrice(couponDiscount)}</span></div>}
-                  <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারি', 'Delivery')}</span><span className="font-bold">{deliveryCharge === 0 ? t('ফ্রি', 'Free') : formatPrice(deliveryCharge)}</span></div>
+                  <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারি', 'Delivery')}</span><span className="font-bold">{!deliveryQuoteReady ? t('ডেলিভারি যাচাই হচ্ছে', 'Checking delivery') : deliveryCharge === 0 ? t('ফ্রি', 'Free') : formatPrice(deliveryCharge)}</span></div>
                   {country === 'IN' && paymentMethod === 'cod' && <><div className="flex justify-between gap-4 text-sm text-primary"><span>{t('COD অগ্রিম','COD advance')}</span><span className="font-bold">{formatPrice(codAdvance)}</span></div><div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারিতে বাকি','Due on delivery')}</span><span className="font-bold">{formatPrice(codDue)}</span></div></>}
                   {walletCredit > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('ওয়ালেট ক্রেডিট', 'Wallet credit')}</span><span className="font-bold">-{formatPrice(walletCredit)}</span></div>}
                   <div className="mt-4 flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-primary/15 bg-primary/[0.05] p-4">
