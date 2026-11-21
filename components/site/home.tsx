@@ -18,7 +18,7 @@ function BannerImage({ banner, priority = false }: { banner: Banner; priority?: 
   return (
     // The mobile carousel is landscape; use the matching landscape artwork instead of cropping the 800×1200 portrait upload.
     <picture className="block h-full w-full">
-      <Image src={banner.desktop_image} alt={banner.title || 'GAZI SEED'} fill sizes="(max-width: 767px) 100vw, (max-width: 1380px) 100vw, 1380px" quality={75} priority={priority} className="block h-full w-full rounded-2xl object-cover shadow-lg" />
+      <Image src={getHomepageOptimizedImage(banner.desktop_image, 1600, 72)} alt={banner.title || 'GAZI SEED'} fill sizes="(max-width: 767px) 100vw, (max-width: 1380px) 100vw, 1380px" quality={72} priority={priority} className="block h-full w-full rounded-2xl object-cover shadow-lg" />
     </picture>
   );
 }
@@ -77,6 +77,20 @@ function BannerCarousel({ banners, currentBanner, onSelect, translateDb, previou
   );
 }
 
+function getHomepageOptimizedImage(src: string, width: number, quality: number) {
+  if (!src) return src;
+  try {
+    const url = new URL(src);
+    if (!url.hostname.endsWith('.supabase.co') || !url.pathname.includes('/storage/v1/object/public/')) return src;
+    url.pathname = url.pathname.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
+    url.searchParams.set('width', String(width));
+    url.searchParams.set('quality', String(quality));
+    url.searchParams.set('resize', 'cover');
+    return url.toString();
+  } catch {
+    return src;
+  }
+}
 function prioritizeAvailableProducts(items: Product[], limit = items.length) {
   const available = items.filter((product) => product.stock > 0);
   const unavailable = items.filter((product) => product.stock <= 0);
@@ -255,7 +269,7 @@ export default function Home({ initialBanners = [], initialCategories = [], init
                     <Link href="/all-products" className="hero-btn inline-flex">{t('বীজ কিনুন', 'Shop Seeds', 'बीज खरीदें')}<ChevronRight className="h-4 w-4" aria-hidden="true" /></Link>
                   </div>
                   <div className="hero-fallback-visual" aria-label={t('গাজী সিড ইন্ডিয়ার বীজের বিভাগ ও সেবা', 'GAZI SEED India seed categories and service highlights', 'GAZI SEED India के बीज वर्ग और सेवा विशेषताएँ')}>
-                    <div className="hero-fallback-media-grid">{[0, 1, 2].map((categoryIndex) => { const category = categories[categoryIndex]; return <div key={categoryIndex} className="hero-fallback-media-card">{category?.image ? <Image src={category.image} alt={tCategoryName(category.name_bn, category.name_en)} fill sizes="(max-width: 767px) 88vw, 220px" quality={65} priority={categoryIndex === 0} className="object-cover" /> : <div className="hero-fallback-media-placeholder"><Sprout className="h-10 w-10" aria-hidden="true" /></div>}</div>; })}</div>
+                    <div className="hero-fallback-media-grid">{[0, 1, 2].map((categoryIndex) => { const category = categories[categoryIndex]; return <div key={categoryIndex} className="hero-fallback-media-card">{category?.image ? <Image src={getHomepageOptimizedImage(category.image, 640, 68)} alt={tCategoryName(category.name_bn, category.name_en)} fill sizes="(max-width: 767px) 88vw, 220px" quality={68} priority={categoryIndex === 0} className="object-cover" /> : <div className="hero-fallback-media-placeholder"><Sprout className="h-10 w-10" aria-hidden="true" /></div>}</div>; })}</div>
                     <div className="hero-fallback-service-card">
                       <div className="hero-fallback-seed-mark"><Sprout className="h-7 w-7" aria-hidden="true" /></div>
                       <div className="hero-fallback-proof-grid">
@@ -285,7 +299,7 @@ export default function Home({ initialBanners = [], initialCategories = [], init
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-5">
             {categoriesLoaded ? categories.slice(0, 8).map((cat, idx) => <Link key={cat.id} href={cat.slug === 'combo-packages' ? '/combos' : `/category/${cat.slug}`} className={`group min-w-0 overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm transition hover:border-emerald-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ${idx >= 4 ? 'hidden sm:block' : 'block'}`}>
-              <div className="relative aspect-[4/3] overflow-hidden bg-emerald-50">{cat.image ? <Image src={cat.image} alt={tCategoryName(cat.name_bn, cat.name_en)} fill sizes="(max-width: 640px) 50vw, 25vw" quality={65} className="object-cover transition duration-300 group-hover:scale-105" /> : <Sprout className="absolute inset-0 m-auto h-10 w-10 text-emerald-600" />}</div>
+              <div className="relative aspect-[4/3] overflow-hidden bg-emerald-50">{cat.image ? <Image src={getHomepageOptimizedImage(cat.image, 640, 68)} alt={tCategoryName(cat.name_bn, cat.name_en)} fill sizes="(max-width: 640px) 50vw, 25vw" quality={65} className="object-cover transition duration-300 group-hover:scale-105" /> : <Sprout className="absolute inset-0 m-auto h-10 w-10 text-emerald-600" />}</div>
               <div className="p-3 sm:p-4"><h3 className="text-sm font-extrabold text-emerald-950 sm:text-base">{tCategoryName(cat.name_bn, cat.name_en)}</h3><p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">{tDb(cat.description)}</p><span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-emerald-700">{t('পণ্য দেখুন', 'Explore Products', 'उत्पाद देखें')}<ChevronRight className="h-3.5 w-3.5" /></span></div>
             </Link>) : Array.from({ length: 8 }, (_, idx) => <div key={idx} aria-hidden="true" className={`overflow-hidden rounded-2xl border border-emerald-100 bg-white ${idx >= 4 ? 'hidden sm:block' : 'block'}`}><div className="aspect-[4/3] animate-pulse bg-emerald-50" /><div className="h-28 animate-pulse bg-slate-50" /></div>)}
           </div>
