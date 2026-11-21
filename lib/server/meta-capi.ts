@@ -22,6 +22,10 @@ type MetaCapiOrder = {
   shipping_fee: number | null;
   coupon_code: string | null;
   order_source: string;
+  payment_method: string | null;
+  payment_status: string | null;
+  payment_advance_amount: number | null;
+  payment_due_amount: number | null;
   created_at: string;
 };
 
@@ -78,11 +82,11 @@ async function getOrder(
   admin: SupabaseClient,
   orderNumber: string,
   countryCode: CountryCode,
-): Promise<{ order: MetaCapiOrder; items: MetaCapiOrderItem[] } | null> {
+): Promise<{ order: MetaCapiOrder; items: MetaCapiOrderItem[]; paidAmount?: number } | null> {
   const { data: order, error } = await admin
     .from('orders')
     .select(
-      'id, order_number, user_id, customer_phone, customer_email, customer_name, district, country_code, subtotal, discount_amount, final_amount, grand_total, delivery_charge, shipping_fee, coupon_code, order_source, created_at',
+      'id, order_number, user_id, customer_phone, customer_email, customer_name, district, country_code, subtotal, discount_amount, final_amount, grand_total, delivery_charge, shipping_fee, coupon_code, order_source, payment_method, payment_status, payment_advance_amount, payment_due_amount, created_at',
     )
     .eq('country_code', countryCode)
     .eq('order_number', orderNumber)
@@ -100,9 +104,31 @@ async function getOrder(
 
   if (itemsError) throw itemsError;
 
+  const typedOrder = order as MetaCapiOrder;
+  let paidAmount: number | undefined;
+  if (countryCode === 'IN') {
+    // India website orders are created only after Cashfree has verified PAID.
+    // Read the completed intent so COD Purchase value is the advance actually
+    // collected, while prepaid Purchase value is the full amount collected.
+    const { data: paymentIntent, error: paymentIntentError } = await admin
+      .from('cashfree_payment_intents')
+      .select('amount, currency, status')
+      .eq('completed_order_id', typedOrder.id)
+      .eq('status', 'completed')
+      .maybeSingle();
+
+    if (paymentIntentError) throw paymentIntentError;
+    const verifiedPaidAmount = Number(paymentIntent?.amount);
+    if (!paymentIntent || paymentIntent.currency !== 'INR' || !Number.isFinite(verifiedPaidAmount) || verifiedPaidAmount <= 0) {
+      return null;
+    }
+    paidAmount = verifiedPaidAmount;
+  }
+
   return {
-    order: order as MetaCapiOrder,
+    order: typedOrder,
     items: (items || []) as MetaCapiOrderItem[],
+    paidAmount,
   };
 }
 
@@ -127,13 +153,14 @@ async function postPurchaseToMeta(
   pixelId: string,
   accessToken: string,
   context: MetaEventContext,
+  paidAmount?: number,
 ): Promise<{ ok: boolean; response: unknown }> {
   const eventId = getMetaPurchaseEventId(order.country_code, order.order_number);
   const currency = getCurrency(order.country_code);
   const eventTime = Math.floor(new Date(order.created_at).getTime() / 1000);
   const merchandiseSubtotal = Number(order.subtotal ?? 0);
   const orderDiscount = Number(order.discount_amount ?? 0);
-  const value = Math.max(0, merchandiseSubtotal - orderDiscount);
+  const value = paidAmount ?? Math.max(0, merchandiseSubtotal - orderDiscount);
   const shipping = Number(order.delivery_charge ?? order.shipping_fee ?? 0);
 
   const phone = normalizePhone(order.customer_phone, order.country_code);
@@ -331,6 +358,7 @@ export async function sendMetaPurchaseForOrder(
       settings.meta_pixel_id,
       accessToken,
       context,
+      record.paidAmount,
     );
 
     if (!result.ok) {
