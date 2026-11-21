@@ -407,6 +407,7 @@ export default function CheckoutPage() {
     let cancelled = false;
 
     const syncDeliveryCharge = async () => {
+      if (!cartHydrated) return;
       if (cart.length === 0) {
         setDeliveryRules([]);
         setDeliveryCharge(0);
@@ -477,7 +478,7 @@ export default function CheckoutPage() {
 
     void syncDeliveryCharge();
     return () => { cancelled = true; };
-  }, [cart.length, country, subtotal, deliveryQuoteRetry]);
+  }, [cartHydrated, cart.length, country, subtotal, deliveryQuoteRetry]);
   const couponDiscount = appliedCoupon
     ? appliedCoupon.type === 'percentage'
       ? Math.min(subtotal * (appliedCoupon.value / 100), appliedCoupon.max_discount || Infinity)
