@@ -76,6 +76,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { t, lang } = useLang();
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
+  const [countryReady, setCountryReady] = useState(false);
   const [cart, setCart] = useState<CartItemWithDiscount[]>([]);
   const [cartHydrated, setCartHydrated] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -161,6 +162,8 @@ export default function CheckoutPage() {
   useEffect(() => {
     const visitorCountry = getVisitorCountry();
     setCountry(visitorCountry);
+    setCountryReady(true);
+    if (visitorCountry === 'IN') setDeliveryCharge(80);
 
     // Render the locally stored cart immediately; validate product activity/country in the background.
     const localCart = getCart();
@@ -470,13 +473,18 @@ export default function CheckoutPage() {
       ? Math.min(subtotal * (appliedCoupon.value / 100), appliedCoupon.max_discount || Infinity)
       : Math.min(Number(appliedCoupon.value || 0), subtotal)
     : 0;
-  const grandTotal = Math.max(0, subtotal - couponDiscount + deliveryCharge);
+  const displayedDeliveryCharge = country === 'IN' && !deliveryQuoteReady
+    ? (subtotal > 500 ? 0 : 80)
+    : deliveryCharge;
+  const grandTotal = Math.max(0, subtotal - couponDiscount + displayedDeliveryCharge);
   const walletCredit = useWallet && walletSummary?.unlocked
     ? Math.min(walletSummary.max_usable, Math.max(0, grandTotal))
     : 0;
   const payableTotal = Math.max(0, grandTotal - walletCredit);
   const selectedWalletAmount = walletSummary?.unlocked ? Math.min(walletSummary.max_usable, grandTotal) : 0;
-  const codAdvance = country === 'IN' ? (deliveryCharge > 0 ? deliveryCharge : 120) : 0;
+  const codAdvance = country === 'IN'
+    ? Math.min(payableTotal, deliveryQuoteReady ? (deliveryCharge > 0 ? deliveryCharge : 120) : 80)
+    : 0;
   const codAvailable = country !== 'IN' || deliveryCharge > 0 || payableTotal >= 120;
   const codDue = country === 'IN' && paymentMethod === 'cod' ? Math.max(0, payableTotal - codAdvance) : 0;
 
@@ -492,7 +500,7 @@ export default function CheckoutPage() {
     ? Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100)) : 0;
 
   const deliveryMessage = useMemo(() => {
-    if (freeDeliveryProductIds.size > 0 || deliveryCharge === 0) {
+    if (deliveryQuoteReady && (freeDeliveryProductIds.size > 0 || deliveryCharge === 0)) {
       return t('ফ্রি ডেলিভারি যোগ হয়েছে', 'Free delivery unlocked');
     }
 
@@ -1187,7 +1195,7 @@ export default function CheckoutPage() {
                   </div>}
 
                   <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('সাবটোটাল', 'Subtotal')}</span><span className="font-bold">{formatPrice(subtotal)}</span></div>
-                  {savingsTotal > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t(`আপনার সাশ্রয়${discountPercent ? ` (${discountPercent}%)` : ''}`, `You save${discountPercent ? ` (${discountPercent}%)` : ''}`)}</span><span className="font-bold">-{formatPrice(savingsTotal)}</span></div>}
+                  {savingsTotal > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t(`আপনার সাশ্রয়${discountPercent ? ` (${discountPercent}%)` : ''}`, `You save${discountPercent ? ` (${discountPercent}%)` : ''}`)}</span><span className="font-bold">{formatPrice(savingsTotal)}</span></div>}
                   {couponDiscount > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('কুপন ডিসকাউন্ট', 'Coupon discount')}</span><span className="font-bold">-{formatPrice(couponDiscount)}</span></div>}
                   <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারি', 'Delivery')}</span><span className="font-bold">{deliveryCharge === 0 ? t('ফ্রি', 'Free') : formatPrice(deliveryCharge)}</span></div>
                   {country === 'IN' && paymentMethod === 'cod' && <div className="rounded-xl border border-primary/15 bg-primary/[0.04] px-3 py-2 text-xs font-bold leading-5 text-foreground">{t(`এখন ${formatPrice(codAdvance)} দিন, ডেলিভারিতে ${formatPrice(codDue)} দিন, মোট ${formatPrice(payableTotal)}`, `Pay ${formatPrice(codAdvance)} now, ${formatPrice(codDue)} on delivery, Total ${formatPrice(payableTotal)}`)}</div>}
@@ -1197,7 +1205,7 @@ export default function CheckoutPage() {
                       <span className="block text-base font-black">{t('সর্বমোট', 'Total')}</span>
                       <span className="mt-0.5 block text-[10px] font-semibold text-muted-foreground">{t('চূড়ান্ত পরিশোধযোগ্য', 'Final payable amount')}</span>
                     </div>
-                    <span className="text-3xl font-black tracking-tight text-primary tabular-nums sm:text-4xl">{formatPrice(payableTotal)}</span>
+                    <span className="text-3xl font-black tracking-tight text-primary tabular-nums sm:text-4xl">{countryReady ? formatPrice(payableTotal) : t('হিসাব হচ্ছে…', 'Calculating…')}</span>
                   </div>
 
                 {country === 'IN' && (
@@ -1233,7 +1241,7 @@ export default function CheckoutPage() {
                             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Banknote className="h-4 w-4" /></span>
                             <span className="min-w-0">
                               <span className="block text-base font-black">{t('ক্যাশ অন ডেলিভারি', 'Cash on Delivery')}</span>
-                              <span className="mt-2 block text-sm leading-5 text-muted-foreground">{t(`এখন ${formatPrice(codAdvance)}, ডেলিভারিতে ${formatPrice(codDue)}, মোট ${formatPrice(payableTotal)}`, `Pay ${formatPrice(codAdvance)} now, ${formatPrice(codDue)} on delivery, Total ${formatPrice(payableTotal)}`)}</span>
+                              <span className="mt-2 block text-sm leading-5 text-muted-foreground">{countryReady ? t(`এখন ${formatPrice(codAdvance)}, ডেলিভারিতে ${formatPrice(codDue)}, মোট ${formatPrice(payableTotal)}`, `Pay ${formatPrice(codAdvance)} now, ${formatPrice(codDue)} on delivery, Total ${formatPrice(payableTotal)}`) : t('হিসাব হচ্ছে…', 'Calculating…')}</span>
                             </span>
                           </span>
                         </button>
