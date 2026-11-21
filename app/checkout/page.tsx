@@ -163,7 +163,10 @@ export default function CheckoutPage() {
     const visitorCountry = getVisitorCountry();
     setCountry(visitorCountry);
     setCountryReady(true);
-    if (visitorCountry === 'IN') setDeliveryCharge(80);
+    if (visitorCountry === 'IN') {
+      setDeliveryCharge(80);
+      setDeliveryQuoteReady(true);
+    }
 
     // Render the locally stored cart immediately; validate product activity/country in the background.
     const localCart = getCart();
@@ -412,7 +415,14 @@ export default function CheckoutPage() {
         return;
       }
 
-      setDeliveryQuoteReady(false);
+      // India checkout has a known ₹80 default delivery charge (free only above ₹500).
+      // Keep the payment area usable on first paint while the server quote refreshes.
+      if (country === 'IN') {
+        setDeliveryCharge(subtotal > 500 ? 0 : 80);
+        setDeliveryQuoteReady(true);
+      } else {
+        setDeliveryQuoteReady(false);
+      }
       const productIds = Array.from(new Set(cart.map((item) => item.product_id)));
       const rulesPromise = supabase
         .from('delivery_charge_rules')
@@ -486,7 +496,8 @@ export default function CheckoutPage() {
     ? Math.min(payableTotal, deliveryQuoteReady ? (deliveryCharge > 0 ? deliveryCharge : 120) : 80)
     : 0;
   const codAvailable = country !== 'IN' || deliveryCharge > 0 || payableTotal >= 120;
-  const codDue = country === 'IN' && paymentMethod === 'cod' ? Math.max(0, payableTotal - codAdvance) : 0;
+  // Always calculate the COD button's full split, even before COD is selected.
+  const codDue = country === 'IN' ? Math.max(0, payableTotal - codAdvance) : 0;
 
   const freeDeliveryThreshold = useMemo(() => {
     const candidates = deliveryRules.filter((rule) => rule.is_free && rule.min_order > 0)
