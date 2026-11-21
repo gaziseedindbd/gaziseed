@@ -79,6 +79,7 @@ export default function CheckoutPage() {
   const [cart, setCart] = useState<CartItemWithDiscount[]>([]);
   const [cartHydrated, setCartHydrated] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isRedirectingToPayment, setIsRedirectingToPayment] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<CustomerAddress[]>([]);
   const [selectedAddrId, setSelectedAddrId] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
@@ -676,6 +677,7 @@ export default function CheckoutPage() {
     }
 
     setLoading(true);
+    setIsRedirectingToPayment(country === 'IN' && paymentMethod === 'online');
     try {
       let available = false;
       try {
@@ -773,6 +775,7 @@ export default function CheckoutPage() {
       setError(t('অর্ডার করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।', 'Order failed. Please try again.'));
     } finally {
       setLoading(false);
+      setIsRedirectingToPayment(false);
     }
   };
 
@@ -1257,7 +1260,7 @@ export default function CheckoutPage() {
                     disabled={loading || !deliveryQuoteReady}
                     className="mt-4 inline-flex min-h-[64px] w-full items-center justify-center gap-3 rounded-[18px] bg-primary px-4 py-4 text-base font-black sm:px-6 sm:text-lg tracking-tight text-primary-foreground shadow-xl shadow-primary/30 transition-all hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-2xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-15"
                   >
-                    {loading ? <><Loader2 className="h-5 w-5 animate-spin" /><span>{country === 'IN' && paymentMethod === 'online' ? t('নিরাপদ পেমেন্টে পাঠানো হচ্ছে, অপেক্ষা করুন…', 'Redirecting to secure payment, please wait…') : t('অর্ডার প্রসেস হচ্ছে…', 'Processing your order…')}</span></> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম পরিশোধ করুন', 'Pay COD advance') : t('অনলাইনে পেমেন্ট করুন', 'Pay online')) : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
+                    {loading ? <><Loader2 className="h-5 w-5 animate-spin" /><span>{isRedirectingToPayment ? t('নিরাপদ পেমেন্টে পাঠানো হচ্ছে, অপেক্ষা করুন…', 'Redirecting to secure payment, please wait…') : t('অর্ডার প্রসেস হচ্ছে…', 'Processing your order…')}</span></> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম পরিশোধ করুন', 'Pay COD advance') : t('অনলাইনে পেমেন্ট করুন', 'Pay online')) : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
                   </button>
 
                   <div className="grid grid-cols-3 gap-2 pt-1 text-center">
