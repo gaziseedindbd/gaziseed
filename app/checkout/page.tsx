@@ -257,9 +257,11 @@ export default function CheckoutPage() {
     const params = new URLSearchParams(window.location.search);
     const returnedFromCashfree = params.get('cashfree_return') === '1';
     const queryOrderId = params.get('order_id');
+    const queryPaymentIntentId = params.get('payment_intent_id');
+    const queryPaymentMethod = params.get('payment_method');
     const pendingOrderId = localStorage.getItem('cashfree_pending_order_id');
-    const pendingPaymentIntentId = localStorage.getItem('cashfree_pending_payment_intent_id');
-    const pendingPaymentMethod = localStorage.getItem('cashfree_pending_payment_method') || 'online';
+    const pendingPaymentIntentId = queryPaymentIntentId || localStorage.getItem('cashfree_pending_payment_intent_id');
+    const pendingPaymentMethod = queryPaymentMethod || localStorage.getItem('cashfree_pending_payment_method') || 'online';
 
     // Never run payment verification on a normal checkout visit just because
     // a previous Cashfree attempt left pending IDs in localStorage.
@@ -303,7 +305,9 @@ export default function CheckoutPage() {
                   body: { payment_intent_id: pendingPaymentIntentId },
                 })
               : await supabase.functions.invoke('cashfree-complete-order', {
-                  body: { cashfree_order_id: cashfreeOrderId },
+                  body: pendingPaymentIntentId
+                    ? { payment_intent_id: pendingPaymentIntentId }
+                    : { cashfree_order_id: cashfreeOrderId },
                 });
 
             if (!active) return;
