@@ -45,11 +45,11 @@ export default function ContactPage() {
     }
   };
 
-  const phone = settings?.phone || '+916002786881';
+  const phone = '+916002786881';
   const whatsapp = settings?.whatsapp;
-  const email = settings?.email || 'help@gaziseed.com';
-  const address = settings?.address || 'Damra Road, Dudhnoi, Assam 783126, India';
-  const businessHours = settings?.business_hours || '24x7 Support';
+  const email = 'help@gaziseed.com';
+  const address = 'Damra Road, Dudhnoi, Assam 783126, India';
+  const businessHours = '24x7 Support';
   const contacts = [
     { Icon: Phone, title: t('ফোন', 'Phone'), value: phone, href: 'tel:' + phone },
     { Icon: MessageCircle, title: 'WhatsApp', value: whatsapp, href: whatsapp ? 'https://wa.me/' + whatsapp.replace(/[^0-9]/g, '') : undefined },
@@ -78,7 +78,7 @@ export default function ContactPage() {
         <div className="grid gap-7 lg:grid-cols-[.85fr_1.15fr]">
           <div>
             <div className="mb-5">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">CONTACT OPTIONS</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">{t('যোগাযোগের মাধ্যম', 'CONTACT OPTIONS')}</p>
               <h2 className="mt-1 text-2xl font-black sm:text-3xl">{t('সরাসরি যোগাযোগ', 'Direct Contact')}</h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">{t('আপনার সুবিধামতো যেকোনো মাধ্যমে আমাদের জানান।', 'Reach us through whichever channel is convenient for you.')}</p>
             </div>
@@ -110,7 +110,7 @@ export default function ContactPage() {
             <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/5 blur-3xl" />
             <div className="relative">
               <div className="mb-6">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">SEND A MESSAGE</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">{t('বার্তা পাঠান', 'SEND A MESSAGE')}</p>
                 <h2 className="mt-1 text-2xl font-black sm:text-3xl">{t('বার্তা পাঠান', 'Send a Message')}</h2>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">{t('আপনার প্রশ্ন বা প্রয়োজনীয় তথ্য লিখুন। আমরা যত দ্রুত সম্ভব যোগাযোগ করব।', 'Write your question or details. We will get back to you as soon as possible.')}</p>
               </div>
