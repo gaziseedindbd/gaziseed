@@ -17,9 +17,10 @@ type DeliveryRule = {
 type Props = {
   items: CartItem[];
   subtotal: number;
+  onDeliveryQuoteChange?: (charge: number | null) => void;
 };
 
-export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
+export default function CartFreeDeliveryProgress({ items, subtotal, onDeliveryQuoteChange }: Props) {
   const { t } = useLang();
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
   const [deliveryRules, setDeliveryRules] = useState<DeliveryRule[]>([]);
@@ -47,12 +48,14 @@ export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
     let cancelled = false;
 
     const syncDeliveryQuote = async () => {
+      onDeliveryQuoteChange?.(null);
       const productIds = productIdsKey ? productIdsKey.split(',') : [];
       if (productIds.length === 0) {
         setDeliveryRules([]);
         setFreeDeliveryProductIds(new Set());
         setDeliveryCharge(null);
         setDeliveryQuoteReady(false);
+        onDeliveryQuoteChange?.(null);
         return;
       }
 
@@ -101,12 +104,14 @@ export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
         }
 
         setDeliveryCharge(verifiedCharge);
+        onDeliveryQuoteChange?.(verifiedCharge);
         setDeliveryQuoteReady(true);
       } catch (error) {
         if (!cancelled) {
           console.error('Cart free delivery quote failed:', error);
           setDeliveryQuoteReady(false);
           setDeliveryCharge(null);
+          onDeliveryQuoteChange?.(null);
         }
       }
     };
@@ -115,7 +120,7 @@ export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [country, productIdsKey, subtotal]);
+  }, [country, productIdsKey, subtotal, onDeliveryQuoteChange]);
 
   const freeDeliveryThreshold = useMemo(() => {
     const candidates = deliveryRules
@@ -168,6 +173,12 @@ export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
         )}
         {freeDeliveryUnlocked && <Check className="h-4 w-4 text-primary" />}
       </div>
+      {deliveryQuoteReady && deliveryCharge !== null && (
+        <div className="border-t border-primary/10 pt-2 text-xs font-semibold text-foreground">
+          <span>{formatPrice(subtotal, country)} + {deliveryCharge === 0 ? t('ফ্রি', 'Free') : formatPrice(deliveryCharge, country)} {t('ডেলিভারি', 'delivery')} = <strong className="text-primary">{formatPrice(subtotal + deliveryCharge, country)} {t('সর্বমোট', 'total')}</strong></span>
+        </div>
+      )}
+      {country === 'IN' && <p className="text-[11px] font-medium text-muted-foreground">{t('₹৫০০-এর বেশি অর্ডারে ফ্রি ডেলিভারি', 'Free delivery on orders above ₹500')}</p>}
       <div
         className="h-2.5 w-full overflow-hidden rounded-full bg-primary/15"
         role="progressbar"
