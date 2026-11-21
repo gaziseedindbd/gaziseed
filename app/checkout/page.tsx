@@ -786,33 +786,35 @@ export default function CheckoutPage() {
   return (
     <main className="min-h-screen overflow-x-clip bg-slate-50/90 pb-28 dark:bg-slate-950 sm:pb-14">
       <div className="container-custom mx-auto max-w-6xl min-w-0 px-3 py-4 sm:px-4 sm:py-8 lg:py-12">
-        <div className="mb-4 rounded-2xl border border-border/70 bg-card/95 p-4 shadow-sm sm:mb-5 sm:p-5">
-          <div className="flex flex-col gap-3 sm:gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/10 px-3.5 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-primary">
-                <Sparkles className="h-3.5 w-3.5" />
-                {t('নিরাপদ চেকআউট', 'Secure checkout')}
+        <div className="mb-5 overflow-hidden rounded-[28px] border border-emerald-200/70 bg-gradient-to-br from-white via-white to-emerald-50/80 p-5 shadow-sm dark:border-emerald-900/50 dark:from-card dark:via-card dark:to-emerald-950/20 sm:mb-7 sm:p-7">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300">
+                <Lock className="h-3.5 w-3.5" />
+                {t('নিরাপদ এক-পেজ চেকআউট', 'SECURE ONE-PAGE CHECKOUT')}
               </div>
-              <h1 className="mt-2 text-2xl font-black tracking-tight sm:mt-3 sm:text-4xl">{t('চেকআউট সম্পন্ন করুন', 'Complete your checkout')}</h1>
-              <p className="mt-1 max-w-xl text-xs leading-5 text-muted-foreground sm:mt-2 sm:text-base sm:leading-6">
+              <h1 className="mt-3 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">{t('এক পেজেই অর্ডার সম্পন্ন করুন', 'Complete your order in one page')}</h1>
+              <p className="mt-2 max-w-2xl text-xs leading-6 text-slate-600 dark:text-slate-300 sm:text-sm">
                 {country === 'BD'
-                  ? t('ঠিকানা নিশ্চিত করুন, তারপর ক্যাশ অন ডেলিভারিতে অর্ডার কনফার্ম করুন।', 'Confirm your address, then place your cash-on-delivery order.')
-                  : t('ঠিকানা নিশ্চিত করুন, প্রয়োজনে কুপন বা ওয়ালেট ব্যবহার করুন, তারপর অর্ডার কনফার্ম করুন।', 'Confirm your delivery details, apply any coupon or wallet credit, then place your order.')}
+                  ? t('নাম, মোবাইল ও ডেলিভারি ঠিকানা দিন। প্যাকেটের অফার বেছে নিয়ে নিচের অর্ডার বাটনে চাপ দিন।', 'Enter your name, phone and delivery address. Choose your packet offer, review the total and place your order.')
+                  : t('আপনার ডেলিভারি তথ্য দিন, প্যাকেট নির্বাচন করুন এবং পেমেন্ট পদ্ধতি বেছে অর্ডার সম্পন্ন করুন।', 'Add your delivery details, select packet offers and choose a payment method to finish your order.')}
               </p>
             </div>
-
-            <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-muted-foreground sm:justify-end sm:text-xs">
-              <span className="inline-flex items-center gap-1.5 text-primary"><Check className="h-3.5 w-3.5" /> {t('কার্ট', 'Cart')}</span>
-              <ChevronRight className="h-3.5 w-3.5 opacity-40" />
-              <span className="inline-flex items-center gap-1.5 text-foreground"><Lock className="h-3.5 w-3.5 text-primary" /> {t('চেকআউট', 'Checkout')}</span>
-              <ChevronRight className="h-3.5 w-3.5 opacity-40" />
-              <span className="opacity-50">{t('কনফার্মেশন', 'Confirmation')}</span>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:gap-3">
+              <div className="flex items-center gap-2 rounded-2xl border border-emerald-100 bg-white/90 px-3 py-3 text-xs font-bold text-slate-700 shadow-sm dark:border-emerald-900/60 dark:bg-slate-900/60 dark:text-slate-200">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
+                <span>{t('নিরাপদ অর্ডার', 'Secure order')}</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-2xl border border-emerald-100 bg-white/90 px-3 py-3 text-xs font-bold text-slate-700 shadow-sm dark:border-emerald-900/60 dark:bg-slate-900/60 dark:text-slate-200">
+                <Truck className="h-4 w-4 shrink-0 text-emerald-600" />
+                <span>{t('হোম ডেলিভারি', 'Home delivery')}</span>
+              </div>
             </div>
           </div>
         </div>
 
         <form id="checkout-form" onSubmit={handleSubmit}>
-          <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-start gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] lg:gap-7">
+          <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-start gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(350px,0.85fr)] lg:gap-7">
             <div className="space-y-5 lg:space-y-6">
               {savedAddresses.length > 0 && (
                 <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
