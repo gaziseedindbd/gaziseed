@@ -77,7 +77,7 @@ export default function ProductDetailClient({
     const target = mainBuyActionsRef.current;
     if (!target || typeof IntersectionObserver === 'undefined') return;
     const observer = new IntersectionObserver(([entry]) => {
-      setShowStickyBuyBar(!entry.isIntersecting);
+      setShowStickyBuyBar(entry.boundingClientRect.top < 0);
     }, { threshold: 0.05 });
     observer.observe(target);
     return () => observer.disconnect();
