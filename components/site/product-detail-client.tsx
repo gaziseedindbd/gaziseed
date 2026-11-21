@@ -262,7 +262,10 @@ export default function ProductDetailClient({
       ? 'इस भाषा में खेती के निर्देश अभी उपलब्ध नहीं हैं।'
       : 'Cultivation instructions are not available in this language yet.';
   const productName = translated.name || (lang === 'en' && product.name_en ? product.name_en : lang === 'hi' && product.name_en ? product.name_en : product.name_bn);
-  const productDesc = tDb(translated.description || product.description || '');
+  const rawProductDesc = tDb(translated.description || product.description || '');
+  const productDesc = slug === 'high-yield-naga-bombay-chilli-seeds-1g'
+    ? rawProductDesc.replace(/70\s*[–-]\s*90\s*days/gi, '60–75 days')
+    : rawProductDesc;
   const productShortDesc = tDb(translated.short_description || product.short_description || '');
 
   const handleAddToCart = () => {
