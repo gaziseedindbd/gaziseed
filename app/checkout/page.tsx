@@ -338,7 +338,15 @@ export default function CheckoutPage() {
             if (data?.completed === true && data?.order_number && goToOrderSuccess(data, isCodReturn)) return;
 
             if (data?.paid === false) {
-              setError(t('পেমেন্ট সম্পন্ন হয়নি। আবার পেমেন্ট করার আগে অর্ডার স্ট্যাটাস যাচাই করুন।', 'Payment was not completed. Check the payment status before trying to pay again.'));
+              const paymentStatus = String(data?.order_status || '').toUpperCase();
+              const isTerminalPaymentStatus = paymentStatus === 'EXPIRED' || paymentStatus === 'TERMINATED';
+              if (!isTerminalPaymentStatus && attempt < maxAttempts - 1) {
+                await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+                continue;
+              }
+              setError(isTerminalPaymentStatus
+                ? t('পেমেন্ট সম্পন্ন হয়নি। নতুন করে পেমেন্ট করার আগে অর্ডার স্ট্যাটাস যাচাই করুন।', 'Payment was not completed. Check the order status before starting another payment.')
+                : t('পেমেন্টের অবস্থা এখনও নিশ্চিত হয়নি। আবার যাচাই করুন।', 'Payment status is still being confirmed. Please check again.'));
               setCashfreeReturnState('failed');
               return;
             }
@@ -779,8 +787,8 @@ export default function CheckoutPage() {
           {cashfreeReturnState === 'verifying' ? (
             <>
               <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
-              <h1 className="mt-5 text-xl font-black sm:text-2xl">{t('পেমেন্ট সফল — অর্ডার নিশ্চিত করা হচ্ছে…', 'Payment successful — confirming your order…')}</h1>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">{t('অনুগ্রহ করে এই পেজটি বন্ধ করবেন না।', 'Please keep this page open while we confirm your order.')}</p>
+              <h1 className="mt-5 text-xl font-black sm:text-2xl">{t('পেমেন্টের অবস্থা যাচাই করা হচ্ছে…', 'Checking payment status…')}</h1>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">{t('Cashfree থেকে পেমেন্ট নিশ্চিত না হওয়া পর্যন্ত অপেক্ষা করুন।', 'Please wait while we verify the payment with Cashfree.')}</p>
             </>
           ) : (
             <>
