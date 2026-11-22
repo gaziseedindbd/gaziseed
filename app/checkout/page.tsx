@@ -391,40 +391,7 @@ export default function CheckoutPage() {
     let cancelled = false;
 
     const syncDeliveryCharge = async () => {
-      if (cashfreeReturnState) {
-    const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
-    const reference = params.get('order_id') ||
-      params.get('payment_intent_id') ||
-      (typeof window !== 'undefined' ? localStorage.getItem('cashfree_pending_order_id') || localStorage.getItem('cashfree_pending_payment_intent_id') : null);
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
-        <section className="w-full max-w-lg rounded-3xl border border-border bg-card p-7 text-center shadow-lg sm:p-10">
-          {cashfreeReturnState === 'verifying' ? (
-            <>
-              <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
-              <h1 className="mt-5 text-xl font-black sm:text-2xl">{t('পেমেন্ট সফল — অর্ডার নিশ্চিত করা হচ্ছে…', 'Payment successful — confirming your order…')}</h1>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">{t('অনুগ্রহ করে এই পেজটি বন্ধ করবেন না।', 'Please keep this page open while we confirm your order.')}</p>
-            </>
-          ) : (
-            <>
-              <ShieldCheck className="mx-auto h-12 w-12 text-primary" />
-              <h1 className="mt-5 text-xl font-black sm:text-2xl">{t('অর্ডারের অবস্থা যাচাই করুন', 'Check your order status')}</h1>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">{error || t('পেমেন্ট রেফারেন্সটি সংরক্ষণ করুন এবং আবার চেষ্টা করুন।', 'Keep your payment reference and try verification again.')}</p>
-              {reference && <p className="mt-4 break-all rounded-xl bg-secondary p-3 text-xs font-semibold">{t('পেমেন্ট রেফারেন্স', 'Payment reference')}: {reference}</p>}
-              <button
-                type="button"
-                onClick={() => { setError(''); setCashfreeReturnState('verifying'); setCashfreeRetryCount((count) => count + 1); }}
-                className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground"
-              >
-                {t('আবার যাচাই করুন', 'Check order status / Try again')}
-              </button>
-            </>
-          )}
-        </section>
-      </main>
-    );
-  }
-
+    
   if (cart.length === 0) {
         setDeliveryRules([]);
         setDeliveryCharge(0);
@@ -800,6 +767,41 @@ export default function CheckoutPage() {
       setLoading(false);
     }
   };
+
+  if (cashfreeReturnState) {
+    const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+    const reference = params.get('order_id') ||
+      params.get('payment_intent_id') ||
+      (typeof window !== 'undefined' ? localStorage.getItem('cashfree_pending_order_id') || localStorage.getItem('cashfree_pending_payment_intent_id') : null);
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+        <section className="w-full max-w-lg rounded-3xl border border-border bg-card p-7 text-center shadow-lg sm:p-10">
+          {cashfreeReturnState === 'verifying' ? (
+            <>
+              <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+              <h1 className="mt-5 text-xl font-black sm:text-2xl">{t('পেমেন্ট সফল — অর্ডার নিশ্চিত করা হচ্ছে…', 'Payment successful — confirming your order…')}</h1>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">{t('অনুগ্রহ করে এই পেজটি বন্ধ করবেন না।', 'Please keep this page open while we confirm your order.')}</p>
+            </>
+          ) : (
+            <>
+              <ShieldCheck className="mx-auto h-12 w-12 text-primary" />
+              <h1 className="mt-5 text-xl font-black sm:text-2xl">{t('অর্ডারের অবস্থা যাচাই করুন', 'Check your order status')}</h1>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">{error || t('পেমেন্ট রেফারেন্সটি সংরক্ষণ করুন এবং আবার চেষ্টা করুন।', 'Keep your payment reference and try verification again.')}</p>
+              {reference && <p className="mt-4 break-all rounded-xl bg-secondary p-3 text-xs font-semibold">{t('পেমেন্ট রেফারেন্স', 'Payment reference')}: {reference}</p>}
+              <button
+                type="button"
+                onClick={() => { setError(''); setCashfreeReturnState('verifying'); setCashfreeRetryCount((count) => count + 1); }}
+                className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground"
+              >
+                {t('আবার যাচাই করুন', 'Check order status / Try again')}
+              </button>
+            </>
+          )}
+        </section>
+      </main>
+    );
+  }
+
 
   if (cart.length === 0) {
     return (
