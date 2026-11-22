@@ -950,6 +950,14 @@ export default function CheckoutPage() {
                   <AddressSelector value={addrValue} onChange={setAddrValue} countryCode={country} />
                 </div>
 
+                <button
+                  type="submit"
+                  disabled={loading || !deliveryQuoteReady}
+                  className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 text-base font-black text-primary-foreground shadow-lg shadow-primary/20 transition active:scale-[.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 md:hidden"
+                >
+                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম পরিশোধ করুন', 'Pay COD advance', 'COD अग्रिम भुगतान करें') : t('এখনই পেমেন্ট করুন', 'Pay Now', 'अभी भुगतान करें')) : t('অর্ডার কনফার্ম করুন', 'Confirm order', 'ऑर्डर की पुष्टि करें')} <ChevronRight className="h-4 w-4" /></>}
+                </button>
+
                 <div className="mt-5 space-y-1.5">
                   <label htmlFor="checkout-instructions" className="text-sm font-extrabold text-foreground">{t('অতিরিক্ত নির্দেশনা', 'Special instructions')}</label>
                   <textarea
@@ -1337,7 +1345,7 @@ export default function CheckoutPage() {
           </div>
         </form>
 
-        <div className="fixed inset-x-3 bottom-3 z-40 lg:hidden">
+        <div className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 lg:hidden">
           <div className="flex items-center gap-3 rounded-[22px] border border-border/80 bg-background/95 p-3 shadow-2xl shadow-black/20 backdrop-blur-xl" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
             <div className="min-w-0 flex-1 pl-1">
               <p className="text-[10px] font-bold text-muted-foreground">{t('পরিশোধযোগ্য', 'Payable')}</p>
@@ -1349,7 +1357,7 @@ export default function CheckoutPage() {
               disabled={loading}
               className="inline-flex min-h-12 shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-primary px-5 text-xs font-black text-primary-foreground shadow-lg shadow-primary/25 transition active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:opacity-60"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম', 'COD advance') : t('অনলাইন পেমেন্ট', 'Pay online')) : t('অর্ডার করুন', 'Place order')} <ChevronRight className="h-4 w-4" /></>}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম পরিশোধ করুন', 'Pay COD advance', 'COD अग्रिम भुगतान करें') : t('এখনই পেমেন্ট করুন', 'Pay Now', 'अभी भुगतान करें')) : t('অর্ডার কনফার্ম করুন', 'Confirm order', 'ऑर्डर की पुष्टि करें')} <ChevronRight className="h-4 w-4" /></>}
             </button>
           </div>
         </div>
