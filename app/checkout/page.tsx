@@ -476,8 +476,10 @@ export default function CheckoutPage() {
   const payableTotal = Math.max(0, grandTotal - walletCredit);
   const selectedWalletAmount = walletSummary?.unlocked ? Math.min(walletSummary.max_usable, grandTotal) : 0;
   const codAdvance = country === 'IN' ? (deliveryCharge > 0 ? deliveryCharge : 120) : 0;
-  const codAvailable = country !== 'IN' || deliveryCharge > 0 || payableTotal >= 120;
-  const codDue = country === 'IN' && paymentMethod === 'cod' ? Math.max(0, subtotal - couponDiscount) : 0;
+  const codAvailable = country !== 'IN' || (deliveryQuoteReady && payableTotal + 0.01 >= codAdvance);
+  const codDue = country === 'IN' && paymentMethod === 'cod'
+    ? Math.max(0, payableTotal - codAdvance)
+    : 0;
 
   const freeDeliveryThreshold = useMemo(() => {
     const candidates = deliveryRules.filter((rule) => rule.is_free && rule.min_order > 0)
@@ -650,6 +652,10 @@ export default function CheckoutPage() {
     setError('');
     if (!deliveryQuoteReady) {
       setError(t('ডেলিভারি চার্জ নিশ্চিত হয়নি। আবার চেষ্টা করুন।', 'Delivery charge is not verified. Please retry.', 'डिलीवरी शुल्क की पुष्टि नहीं हुई। फिर कोशिश करें।'));
+      return;
+    }
+    if (country === 'IN' && paymentMethod === 'cod' && !codAvailable) {
+      setError(t('এই অর্ডারের জন্য COD অগ্রিমের পরিমাণ যথেষ্ট নয়।', 'The payable amount is below the required COD advance.'));
       return;
     }
 
