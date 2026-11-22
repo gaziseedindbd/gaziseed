@@ -82,6 +82,8 @@ export default function CheckoutPage() {
   const [selectedAddrId, setSelectedAddrId] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [cashfreeReturnState, setCashfreeReturnState] = useState<'verifying' | 'failed' | null>(null);
+  const [cashfreeRetryCount, setCashfreeRetryCount] = useState(0);
   const [form, setForm] = useState({ name: '', phone: '', instructions: '' });
   const [addrValue, setAddrValue] = useState<AddressValue>({ division: '', district: '', thana: '', detail: '', postalCode: '' });
   const [couponCode, setCouponCode] = useState('');
@@ -243,17 +245,6 @@ export default function CheckoutPage() {
 
 
   useEffect(() => {
-    // Cashfree return/verification belongs to the India checkout only.
-    // Clear stale payment state on the Bangladesh checkout so an old test
-    // cannot surface a false payment-verification error.
-    const visitorCountry = getVisitorCountry();
-    if (visitorCountry !== 'IN') {
-      localStorage.removeItem('cashfree_pending_order_id');
-      localStorage.removeItem('cashfree_pending_payment_intent_id');
-      localStorage.removeItem('cashfree_pending_payment_method');
-      return;
-    }
-
     const params = new URLSearchParams(window.location.search);
     const returnedFromCashfree = params.get('cashfree_return') === '1';
     const queryOrderId = params.get('order_id');
@@ -262,35 +253,63 @@ export default function CheckoutPage() {
     const pendingOrderId = localStorage.getItem('cashfree_pending_order_id');
     const pendingPaymentIntentId = queryPaymentIntentId || localStorage.getItem('cashfree_pending_payment_intent_id');
     const pendingPaymentMethod = queryPaymentMethod || localStorage.getItem('cashfree_pending_payment_method') || 'online';
+    const isCashfreeReturn = returnedFromCashfree || Boolean(queryOrderId) || Boolean(queryPaymentIntentId);
 
-    // Never run payment verification on a normal checkout visit just because
-    // a previous Cashfree attempt left pending IDs in localStorage.
-    if (!returnedFromCashfree && !queryOrderId) {
+    // Do not let visitor-country detection suppress a Cashfree return.
+    // A normal checkout visit still clears stale IDs as before.
+    if (!isCashfreeReturn) {
       localStorage.removeItem('cashfree_pending_order_id');
       localStorage.removeItem('cashfree_pending_payment_intent_id');
       localStorage.removeItem('cashfree_pending_payment_method');
+      setCashfreeReturnState(null);
       return;
     }
 
     const cashfreeOrderId = queryOrderId || pendingOrderId;
-    if (!cashfreeOrderId && !pendingPaymentIntentId) return;
+    if (!cashfreeOrderId && !pendingPaymentIntentId) {
+      setCashfreeReturnState('failed');
+      return;
+    }
 
     let active = true;
-    let navigatedToSuccess = false;
-    setLoading(true);
+    setCashfreeReturnState('verifying');
     setError('');
 
+    const clearPendingPayment = () => {
+      localStorage.removeItem('cashfree_pending_order_id');
+      localStorage.removeItem('cashfree_pending_payment_intent_id');
+      localStorage.removeItem('cashfree_pending_payment_method');
+    };
+
+    const goToOrderSuccess = (data: any, isCodReturn: boolean) => {
+      if (!data?.order_number) return false;
+      localStorage.removeItem('gazi_cart');
+      clearPendingPayment();
+      window.dispatchEvent(new Event('cart-updated'));
+      const amount = data.amount ?? data.advance_amount ?? '';
+      const dueAmount = isCodReturn ? data.due_amount ?? '' : '';
+      const successStatus = isCodReturn ? 'cod' : 'paid';
+      router.replace('/order-success?number=' + encodeURIComponent(data.order_number) +
+        '&amount=' + encodeURIComponent(amount) +
+        '&payment_status=' + successStatus +
+        '&due_amount=' + encodeURIComponent(dueAmount));
+      return true;
+    };
+
+    const readFunctionErrorData = async (functionError: any) => {
+      const response = functionError?.context;
+      if (response && typeof response.clone === 'function') {
+        try { return await response.clone().json(); } catch { /* use normal retry path */ }
+      }
+      return null;
+    };
+
     (async () => {
-      const maxAttempts = 5;
-      const retryDelayMs = 1500;
+      const maxAttempts = 24;
+      const retryDelayMs = 2000;
+      const isCodReturn = pendingPaymentMethod === 'cod' && Boolean(pendingPaymentIntentId);
 
       try {
-        const isCodReturn = pendingPaymentMethod === 'cod' && Boolean(pendingPaymentIntentId);
-
-        // Cashfree can return to checkout while Supabase is still restoring the
-        // persisted browser session. Hydrate it before invoking the protected
-        // COD completion function, otherwise a paid order may be completed by
-        // the webhook while this client receives a misleading 401/403.
         const { data: authState } = await supabase.auth.getSession();
         if (authState.session?.expires_at && authState.session.expires_at <= Math.floor(Date.now() / 1000) + 60) {
           await supabase.auth.refreshSession();
@@ -300,7 +319,7 @@ export default function CheckoutPage() {
           if (!active) return;
 
           try {
-            const { data, error: verifyError } = isCodReturn
+            const result = isCodReturn
               ? await supabase.functions.invoke('cashfree-complete-cod-order', {
                   body: { payment_intent_id: pendingPaymentIntentId },
                 })
@@ -311,67 +330,50 @@ export default function CheckoutPage() {
                 });
 
             if (!active) return;
-            if (verifyError) throw verifyError;
+            const data = result.data || await readFunctionErrorData(result.error);
 
-            if (data?.completed && data?.order_number) {
-              localStorage.removeItem('gazi_cart');
-              localStorage.removeItem('cashfree_pending_order_id');
-              localStorage.removeItem('cashfree_pending_payment_intent_id');
-              localStorage.removeItem('cashfree_pending_payment_method');
-              window.dispatchEvent(new Event('cart-updated'));
-              navigatedToSuccess = true;
-              const successStatus = isCodReturn ? 'cod' : 'paid';
-              router.replace(`/order-success?number=${encodeURIComponent(data.order_number)}&amount=${encodeURIComponent(data.amount ?? data.advance_amount ?? "")}&payment_status=${successStatus}&due_amount=${encodeURIComponent(isCodReturn ? data.due_amount ?? "" : "")}`);
+            // The webhook may win the race. Treat an already-linked order as
+            // success even when the Edge Function returned a non-2xx response.
+            if (data?.already_completed === true && data?.order_id && goToOrderSuccess(data, isCodReturn)) return;
+            if (data?.completed === true && data?.order_number && goToOrderSuccess(data, isCodReturn)) return;
+
+            if (data?.paid === false) {
+              setError(t('পেমেন্ট সম্পন্ন হয়নি। আবার পেমেন্ট করার আগে অর্ডার স্ট্যাটাস যাচাই করুন।', 'Payment was not completed. Check the payment status before trying to pay again.'));
+              setCashfreeReturnState('failed');
               return;
             }
 
-            if (data?.already_completed && data?.order_id) {
-              localStorage.removeItem('gazi_cart');
-              window.dispatchEvent(new Event('cart-updated'));
-              localStorage.removeItem('cashfree_pending_order_id');
-              localStorage.removeItem('cashfree_pending_payment_intent_id');
-              localStorage.removeItem('cashfree_pending_payment_method');
-              navigatedToSuccess = true;
-              router.replace(data.order_number ? `/order-success?number=${encodeURIComponent(data.order_number)}&amount=${encodeURIComponent(data.amount ?? data.advance_amount ?? "")}&payment_status=${isCodReturn ? 'cod' : 'paid'}&due_amount=${encodeURIComponent(isCodReturn ? data.due_amount ?? "" : "")}` : `/order-success?order_id=${data.order_id}`);
-              return;
-            }
-
-            const shouldRetry = attempt < maxAttempts - 1 && (
-              data?.processing === true ||
-              data?.paid === false
-            );
-
-            if (shouldRetry) {
+            const shouldRetry = data?.processing === true || Boolean(result.error) || !data?.completed;
+            if (shouldRetry && attempt < maxAttempts - 1) {
               await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
               continue;
             }
 
-            if (data?.processing === true) {
-              setError(t('পেমেন্ট সম্পন্ন হয়েছে, অর্ডার চূড়ান্ত করা হচ্ছে। একটু পরে আবার দেখুন।', 'Payment received, but the order is still being finalized. Please wait a moment and try again.'));
-            } else if (data?.paid === false) {
-              setError(t('পেমেন্ট সম্পন্ন হয়নি। আবার চেষ্টা করুন।', 'Payment was not completed. Please try again.'));
-            } else {
-              setError(data?.error || t('পেমেন্ট যাচাই করা যায়নি।', 'Payment could not be verified.'));
-            }
+            setError(t(
+              'পেমেন্টের রেফারেন্সসহ অর্ডার নিশ্চিত করা যাচ্ছে না। নিচের বোতামে আবার যাচাই করুন।',
+              'We could not confirm the order yet. Use the button below to check the payment status again.'
+            ));
+            setCashfreeReturnState('failed');
             return;
           } catch {
             if (attempt < maxAttempts - 1) {
               await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
               continue;
             }
-            if (active) setError(t('পেমেন্ট যাচাই করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।', 'Unable to verify the payment. Please try again.'));
+            if (active) {
+              setError(t('পেমেন্ট যাচাই করা যাচ্ছে না। রেফারেন্স নম্বরটি রেখে আবার চেষ্টা করুন।', 'Payment verification is unavailable. Keep the reference below and try again.'));
+              setCashfreeReturnState('failed');
+            }
           }
         }
       } finally {
-        if (active) setLoading(false);
-        if (!navigatedToSuccess) {
-          window.history.replaceState({}, '', '/checkout');
-        }
+        // Keep the Cashfree return URL and pending identifiers intact until
+        // a confirmed order is redirected to /order-success.
       }
     })();
 
     return () => { active = false; };
-  }, [router, t]);
+  }, [router, t, cashfreeRetryCount]);
 
   const selectSavedAddress = (id: string) => {
     setSelectedAddrId(id);
@@ -389,7 +391,41 @@ export default function CheckoutPage() {
     let cancelled = false;
 
     const syncDeliveryCharge = async () => {
-      if (cart.length === 0) {
+      if (cashfreeReturnState) {
+    const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+    const reference = params.get('order_id') ||
+      params.get('payment_intent_id') ||
+      (typeof window !== 'undefined' ? localStorage.getItem('cashfree_pending_order_id') || localStorage.getItem('cashfree_pending_payment_intent_id') : null);
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+        <section className="w-full max-w-lg rounded-3xl border border-border bg-card p-7 text-center shadow-lg sm:p-10">
+          {cashfreeReturnState === 'verifying' ? (
+            <>
+              <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+              <h1 className="mt-5 text-xl font-black sm:text-2xl">{t('পেমেন্ট সফল — অর্ডার নিশ্চিত করা হচ্ছে…', 'Payment successful — confirming your order…')}</h1>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">{t('অনুগ্রহ করে এই পেজটি বন্ধ করবেন না।', 'Please keep this page open while we confirm your order.')}</p>
+            </>
+          ) : (
+            <>
+              <ShieldCheck className="mx-auto h-12 w-12 text-primary" />
+              <h1 className="mt-5 text-xl font-black sm:text-2xl">{t('অর্ডারের অবস্থা যাচাই করুন', 'Check your order status')}</h1>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">{error || t('পেমেন্ট রেফারেন্সটি সংরক্ষণ করুন এবং আবার চেষ্টা করুন।', 'Keep your payment reference and try verification again.')}</p>
+              {reference && <p className="mt-4 break-all rounded-xl bg-secondary p-3 text-xs font-semibold">{t('পেমেন্ট রেফারেন্স', 'Payment reference')}: {reference}</p>}
+              <button
+                type="button"
+                onClick={() => { setError(''); setCashfreeReturnState('verifying'); setCashfreeRetryCount((count) => count + 1); }}
+                className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground"
+              >
+                {t('আবার যাচাই করুন', 'Check order status / Try again')}
+              </button>
+            </>
+          )}
+        </section>
+      </main>
+    );
+  }
+
+  if (cart.length === 0) {
         setDeliveryRules([]);
         setDeliveryCharge(0);
         setDeliveryQuoteReady(false);
