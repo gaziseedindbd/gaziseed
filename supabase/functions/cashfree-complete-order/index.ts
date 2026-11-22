@@ -1,12 +1,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-const corsHeaders={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type, x-gazi-country, x-cashfree-internal-secret","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
+const corsHeaders={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type, x-gazi-country, x-cashfree-internal-secret, x-supabase-api-version, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version","Access-Control-Allow-Methods":"POST, OPTIONS","Access-Control-Max-Age":"86400","Content-Type":"application/json"};
+const preflightHeaders=(req:Request)=>({...corsHeaders,"Access-Control-Allow-Headers":req.headers.get("Access-Control-Request-Headers")||corsHeaders["Access-Control-Allow-Headers"],"Vary":"Access-Control-Request-Headers"});
 const CASHFREE_API_VERSION="2025-01-01";const CASHFREE_ORDERS_URL="https://api.cashfree.com/pg/orders";
 function json(body:unknown,status=200){return new Response(JSON.stringify(body),{status,headers:corsHeaders});}
 function secretKey(){const raw=Deno.env.get("SUPABASE_SECRET_KEYS");if(!raw)throw new Error("Supabase secret keys unavailable");return JSON.parse(raw)["default"] as string;}
 function publishableKey(){const raw=Deno.env.get("SUPABASE_PUBLISHABLE_KEYS");return raw?JSON.parse(raw)["default"] as string:null;}
 Deno.serve(async(req:Request)=>{
- if(req.method==="OPTIONS")return new Response("ok",{status:200,headers:corsHeaders});if(req.method!=="POST")return json({ok:false,error:"Method not allowed"},405);
+ if(req.method==="OPTIONS")return new Response("ok",{status:200,headers:preflightHeaders(req)});if(req.method!=="POST")return json({ok:false,error:"Method not allowed"},405);
  const appId=Deno.env.get("CASHFREE_APP_ID"),cashfreeSecret=Deno.env.get("CASHFREE_SECRET_KEY");if(!appId||!cashfreeSecret)return json({ok:false,error:"Cashfree credentials are not configured"},500);
  const internalSecret=req.headers.get("x-cashfree-internal-secret"),isInternal=!!internalSecret&&internalSecret===cashfreeSecret;
  let body:Record<string,unknown>;try{body=await req.json();}catch{return json({ok:false,error:"Invalid JSON body"},400);}
