@@ -505,10 +505,10 @@ export default function ProductDetailClient({
                 <>
                   <p className="text-lg font-black text-emerald-950">
                     {currentProductInCart
-                      ? `${formatProductPrice(cartTotal)} + ${formatProductPrice(cartFreeDeliveryUnlocked ? 0 : currentDeliveryQuote.charge)} = ${formatProductPrice(cartTotal + (cartFreeDeliveryUnlocked ? 0 : deliveryQuote.charge))}`
-                      : deliveryQuote.charge === 0
+                      ? `${formatProductPrice(cartTotal)} + ${formatProductPrice(cartFreeDeliveryUnlocked ? 0 : currentDeliveryQuote.charge)} = ${formatProductPrice(cartTotal + (cartFreeDeliveryUnlocked ? 0 : currentDeliveryQuote.charge))}`
+                      : currentDeliveryQuote.charge === 0
                         ? `${formatProductPrice(totalPrice)} — ${t('ফ্রি ডেলিভারি', 'FREE delivery', 'मुफ्त डिलीवरी')} = ${formatProductPrice(totalPrice)}`
-                        : `${formatProductPrice(totalPrice)} + ${formatProductPrice(deliveryQuote.charge)} = ${formatProductPrice(totalPrice + deliveryQuote.charge)}`}
+                        : `${formatProductPrice(totalPrice)} + ${formatProductPrice(currentDeliveryQuote.charge)} = ${formatProductPrice(totalPrice + currentDeliveryQuote.charge)}`}
                   </p>
                   {displayFreeDeliveryThreshold !== null && (
                     <><p className="flex items-center gap-2 text-sm font-black text-emerald-800"><Truck className="h-4 w-4" />{t(`${formatProductPrice(displayFreeDeliveryThreshold)}-এর বেশি অর্ডারে ফ্রি ডেলিভারি`, `FREE delivery on orders above ${formatProductPrice(displayFreeDeliveryThreshold)}`, `${formatProductPrice(displayFreeDeliveryThreshold)} से अधिक ऑर्डर पर FREE delivery`)}</p>
@@ -529,9 +529,9 @@ export default function ProductDetailClient({
             </div>
             {currentDeliveryQuote && (() => {
               const orderTotal = currentProductInCart
-                ? cartTotal + (cartFreeDeliveryUnlocked ? 0 : deliveryQuote.charge)
-                : totalPrice + deliveryQuote.charge;
-              const advance = cartFreeDeliveryUnlocked ? 120 : deliveryQuote.charge > 0 ? deliveryQuote.charge : 120;
+                ? cartTotal + (cartFreeDeliveryUnlocked ? 0 : currentDeliveryQuote.charge)
+                : totalPrice + currentDeliveryQuote.charge;
+              const advance = cartFreeDeliveryUnlocked ? 120 : currentDeliveryQuote.charge > 0 ? currentDeliveryQuote.charge : 120;
               const codAvailable = productCountry !== 'IN' || orderTotal + 0.01 >= advance;
               const due = Math.max(0, orderTotal - advance);
               return (
