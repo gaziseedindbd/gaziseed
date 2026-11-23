@@ -94,7 +94,7 @@ export default function CheckoutPage() {
   const [bdCouponsEnabled, setBdCouponsEnabled] = useState(false);
   const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null);
   const [useWallet, setUseWallet] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
+  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('cod');
   const [walletLoading, setWalletLoading] = useState(false);
   const [freeDeliveryProductIds, setFreeDeliveryProductIds] = useState<Set<string>>(new Set());
   const [deliveryRules, setDeliveryRules] = useState<Array<{ min_order: number; max_order: number | null; charge: number; is_free: boolean }>>([]);
@@ -484,6 +484,12 @@ export default function CheckoutPage() {
   const selectedWalletAmount = walletSummary?.unlocked ? Math.min(walletSummary.max_usable, grandTotal) : 0;
   const codAdvance = country === 'IN' ? (deliveryCharge > 0 ? deliveryCharge : 120) : 0;
   const codAvailable = country !== 'IN' || (deliveryQuoteReady && payableTotal + 0.01 >= codAdvance);
+
+  useEffect(() => {
+    if (country === 'IN' && deliveryQuoteReady && !codAvailable && paymentMethod === 'cod') {
+      setPaymentMethod('online');
+    }
+  }, [country, deliveryQuoteReady, codAvailable, paymentMethod]);
   // Keep the COD delivery balance visible before the customer selects COD,
   // so the option preview never shows a misleading zero due amount.
   const codDue = country === 'IN'
@@ -1256,23 +1262,6 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
-                  <button
-                    type="submit"
-                    style={{ display: deliveryQuoteReady ? undefined : 'none' }}
-                    disabled={loading || !deliveryQuoteReady}
-                    className="mt-4 inline-flex min-h-[60px] w-full items-center justify-center gap-3 rounded-2xl bg-emerald-800 px-4 py-4 text-base font-black tracking-tight text-white shadow-lg shadow-emerald-900/20 transition-all hover:bg-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700/50 focus-visible:ring-offset-2 active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-60 sm:px-6 sm:text-lg"
-                  >
-                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t(`এখন ${formatPrice(codAdvance)} অগ্রিম দিন`, `Pay ${formatPrice(codAdvance)} COD advance now`) : t('অনলাইনে পেমেন্ট করুন', 'Pay online')) : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
-                  </button>
-
-                  <div className="grid grid-cols-3 gap-2 pt-1 text-center">
-                    <div className="rounded-2xl bg-secondary/70 p-3"><Truck className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">{country === 'IN' ? 'India Delivery' : t('দেশজুড়ে', 'Nationwide')}</span></div>
-                    <div className="rounded-2xl bg-secondary/70 p-3"><Banknote className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">{country === 'IN' ? (paymentMethod === 'cod' ? 'COD' : 'UPI / Card') : 'COD'}</span></div>
-                    <div className="rounded-2xl bg-secondary/70 p-3"><Lock className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">SSL</span></div>
-                  </div>
-                </div>
-              </section>
-
               {(country !== 'BD' || bdCouponsEnabled) && <section className="rounded-[2rem] border border-border/70 bg-card p-5 shadow-sm sm:p-7">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -1320,6 +1309,25 @@ export default function CheckoutPage() {
                   </div>
                 )}
               </section>}
+
+                  <button
+                    type="submit"
+                    style={{ display: deliveryQuoteReady ? undefined : 'none' }}
+                    disabled={loading || !deliveryQuoteReady}
+                    className="mt-4 inline-flex min-h-[60px] w-full items-center justify-center gap-3 rounded-2xl bg-emerald-800 px-4 py-4 text-base font-black tracking-tight text-white shadow-lg shadow-emerald-900/20 transition-all hover:bg-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700/50 focus-visible:ring-offset-2 active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-60 sm:px-6 sm:text-lg"
+                  >
+                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t(`এখন ${formatPrice(codAdvance)} অগ্রিম দিন`, `Pay ${formatPrice(codAdvance)} COD advance now`) : t('অনলাইনে পেমেন্ট করুন', 'Pay online')) : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
+                  </button>
+
+                  <div className="grid grid-cols-3 gap-2 pt-1 text-center">
+                    <div className="rounded-2xl bg-secondary/70 p-3"><Truck className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">{country === 'IN' ? 'India Delivery' : t('দেশজুড়ে', 'Nationwide')}</span></div>
+                    <div className="rounded-2xl bg-secondary/70 p-3"><Banknote className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">{country === 'IN' ? (paymentMethod === 'cod' ? 'COD' : 'UPI / Card') : 'COD'}</span></div>
+                    <div className="rounded-2xl bg-secondary/70 p-3"><Lock className="mx-auto mb-1 h-4 w-4 text-primary" /><span className="text-[10px] font-bold text-muted-foreground">SSL</span></div>
+                  </div>
+                </div>
+              </section>
+
+
 
 {cart.some((item) => item.bulk_tiers?.some((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0)) && (
               <section className="overflow-hidden rounded-[2rem] border border-emerald-200/70 bg-card shadow-sm dark:border-emerald-900/50">
