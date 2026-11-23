@@ -188,10 +188,23 @@ export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
         </div>
       )}
       {deliveryQuoteReady && deliveryCharge !== null && (
-        <div className="flex items-center justify-between gap-3 rounded-xl bg-emerald-100/70 px-3 py-2">
-          <span className="font-black text-emerald-950">{t('সর্বমোট', 'Total including delivery')}</span>
-          <span className="text-lg font-black tabular-nums text-emerald-900">{formatPrice(subtotal + deliveryCharge, country)}</span>
-        </div>
+        <>
+          {freeDeliveryUnlocked && (() => {
+            const waivedCharge = deliveryRules
+              .filter((rule) => !rule.is_free && rule.charge > 0 && subtotal >= rule.min_order && (rule.max_order == null || subtotal <= rule.max_order))
+              .sort((a, b) => b.min_order - a.min_order)[0]?.charge
+              ?? deliveryRules.filter((rule) => !rule.is_free && rule.charge > 0).sort((a, b) => a.min_order - b.min_order)[0]?.charge;
+            return waivedCharge ? (
+              <p className="rounded-xl bg-emerald-100/70 px-3 py-2 text-xs font-black text-emerald-800">
+                ✅ {t('ফ্রি ডেলিভারি আনলক হয়েছে! আপনি সাশ্রয় করেছেন', 'FREE delivery unlocked! You saved')} {formatPrice(waivedCharge, country)}
+              </p>
+            ) : null;
+          })()}
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-emerald-100/70 px-3 py-2">
+            <span className="font-black text-emerald-950">{t('সর্বমোট', 'Total including delivery')}</span>
+            <span className="text-lg font-black tabular-nums text-emerald-900">{formatPrice(subtotal + deliveryCharge, country)}</span>
+          </div>
+        </>
       )}
     </div>
   );
