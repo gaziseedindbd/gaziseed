@@ -1,6 +1,7 @@
 'use client';
 
 import { useLang } from './language-provider';
+import IndiaPinCheck from '@/components/site/india-pin-check';
 import { bangladeshLocations, getDistricts, getThanas } from '@/lib/bangladesh-locations';
 
 export type AddressValue = {
@@ -46,6 +47,7 @@ export function AddressSelector({ value, onChange, lang: preferredLang, countryC
           <div>
             <label className="mb-1 block text-sm font-medium">{label.postal}</label>
             <input type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} aria-label={label.postal} value={postalCode} onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, '').slice(0, 6))} className="input-bangla" placeholder="700001" required />
+            <IndiaPinCheck pin={postalCode} />
           </div>
         )}
         <div>
