@@ -463,7 +463,7 @@ export default function ProductDetailClient({
                       : `${formatProductPrice(totalPrice)} + ${formatProductPrice(deliveryQuote.charge)} = ${formatProductPrice(totalPrice + deliveryQuote.charge)}`}
                   </p>
                   {displayFreeDeliveryThreshold !== null && (
-                    <p className="flex items-center gap-2 text-sm font-black text-emerald-800"><Truck className="h-4 w-4" />{t("₹৫০০-এর বেশি অর্ডারে ফ্রি ডেলিভারি", "FREE delivery on orders above ₹500", "₹500 से अधिक ऑर्डर पर FREE delivery")}</p>
+                    <><p className="flex items-center gap-2 text-sm font-black text-emerald-800"><Truck className="h-4 w-4" />{t("₹৫০০-এর বেশি অর্ডারে ফ্রি ডেলিভারি", "FREE delivery on orders above ₹500", "₹500 से अधिक ऑर्डर पर FREE delivery")}</p>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between gap-2 text-xs font-bold text-emerald-900">
                         <span>{deliveryQuote.free ? t('✓ ফ্রি ডেলিভারি পেয়েছেন', '✓ FREE delivery unlocked', '✓ मुफ्त डिलीवरी मिल गई') : t(`আর ${formatProductPrice(Math.max(0, displayFreeDeliveryThreshold - totalPrice))} যোগ করলে ডেলিভারি ফ্রি`, `Add ${formatProductPrice(Math.max(0, displayFreeDeliveryThreshold - totalPrice))} more for FREE delivery`, `मुफ्त डिलीवरी के लिए ${formatProductPrice(Math.max(0, displayFreeDeliveryThreshold - totalPrice))} और जोड़ें`)}</span>
@@ -472,7 +472,7 @@ export default function ProductDetailClient({
                       <div className="h-2.5 overflow-hidden rounded-full bg-emerald-200">
                         <div className="h-full rounded-full bg-emerald-600 transition-[width]" style={{ width: `${deliveryQuote.free ? 100 : Math.min(100, (totalPrice / displayFreeDeliveryThreshold) * 100)}%` }} />
                       </div>
-                    </div>
+                    </div></>
                   )}
                 </>
               ) : (
