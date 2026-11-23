@@ -159,7 +159,7 @@ export default function FloatingCartDrawer() {
             <div className="flex items-center justify-between border-b border-emerald-100 bg-gradient-to-r from-emerald-50 to-lime-50/60 px-4 py-3">
               <div className="flex min-w-0 items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm"><ShoppingCart className="h-4 w-4" /></span>
-                <div className="min-w-0"><p className="text-sm font-black text-slate-950">{t('আপনার কার্ট', 'Your Cart')}</p><p className="text-[10px] font-bold text-slate-500">{count} {t('টি আইটেম', 'items')}</p></div>
+                <div className="min-w-0"><p className="text-sm font-black text-slate-950">{t('আপনার কার্ট', 'Your Cart')}</p><p className="text-[10px] font-bold text-slate-500">{count} {t('টি আইটেম', count === 1 ? 'item' : 'items')}</p></div>
               </div>
               <button type="button" onClick={() => setOpen(false)} aria-label={t('কার্ট বন্ধ করুন', 'Close cart')} className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white hover:text-slate-800"><X className="h-4 w-4" /></button>
             </div>
