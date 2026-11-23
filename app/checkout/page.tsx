@@ -75,7 +75,7 @@ declare global {
 export default function CheckoutPage() {
   const router = useRouter();
   const { t, lang } = useLang();
-  const [country, setCountry] = useState<'BD' | 'IN'>('BD');
+  const [country, setCountry] = useState<'BD' | 'IN'>(() => getVisitorCountry());
   const [cart, setCart] = useState<CartItemWithDiscount[]>([]);
   const [cartInitialized, setCartInitialized] = useState(false);
   const [loading, setLoading] = useState(false);
