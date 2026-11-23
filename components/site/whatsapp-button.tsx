@@ -40,7 +40,7 @@ export function WhatsAppButton() {
     getSiteSettings().then(setSettings);
   }, []);
 
-  if (isCartOrCheckoutPage || !settings?.whatsapp_enabled || !settings?.whatsapp) return null;
+  if (!settings?.whatsapp_enabled || !settings?.whatsapp) return null;
 
   const phoneNumber = settings.whatsapp.replace(/[^0-9]/g, '');
   const message = encodeURIComponent(settings.whatsapp_message || '');
@@ -52,7 +52,11 @@ export function WhatsAppButton() {
       target="_blank"
       rel="noopener noreferrer"
       className={`fixed right-4 sm:right-6 z-40 inline-flex h-14 items-center justify-center gap-2.5 rounded-full bg-[#25D366] px-4 text-white shadow-lg transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:bg-[#20BD5A] hover:shadow-xl active:translate-y-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-green-200 ${
-        isProductPage || isCheckoutPage ? 'bottom-[calc(10.5rem+env(safe-area-inset-bottom))] md:bottom-20' : 'bottom-20'
+        isCartOrCheckoutPage
+          ? 'bottom-[calc(16rem+env(safe-area-inset-bottom))] md:bottom-20'
+          : isProductPage
+            ? 'bottom-[calc(10.5rem+env(safe-area-inset-bottom))] md:bottom-20'
+            : 'bottom-20'
       }`}
       aria-label="Chat with us on WhatsApp"
     >
