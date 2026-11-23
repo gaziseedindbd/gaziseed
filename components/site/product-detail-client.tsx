@@ -450,7 +450,9 @@ export default function ProductDetailClient({
               ) : deliveryQuote ? (
                 <>
                   <p className="text-lg font-black text-emerald-950">
-                    {formatProductPrice(totalPrice)} + {deliveryQuote.charge === 0 ? t('ফ্রি ডেলিভারি', 'FREE delivery', 'मुफ्त डिलीवरी') : formatProductPrice(deliveryQuote.charge)} = {formatProductPrice(totalPrice + deliveryQuote.charge)}
+                    {deliveryQuote.charge === 0
+                      ? `${formatProductPrice(totalPrice)} — ${t('ফ্রি ডেলিভারি', 'FREE delivery', 'मुफ्त डिलीवरी')} = ${formatProductPrice(totalPrice)}`
+                      : `${formatProductPrice(totalPrice)} + ${formatProductPrice(deliveryQuote.charge)} = ${formatProductPrice(totalPrice + deliveryQuote.charge)}`}
                   </p>
                   {deliveryQuote.threshold !== null && (
                     <div className="space-y-1.5">
