@@ -76,7 +76,10 @@ const DB_TRANSLATIONS: Record<string, string> = {
   'অর্ডার ৳২০০ এর কম': 'Orders below ৳200',
   'অর্ডার ₹৫০০ পর্যন্ত': 'Orders up to ₹500',
   'অর্ডার ₹৫০০-এর বেশি': 'Orders above ₹500',
-  'ডেলিভারি সম্পূর্ণ ফ্রি 🎉': 'Delivery is free 🎉'
+  'ডেলিভারি সম্পূর্ণ ফ্রি 🎉': 'Delivery is free 🎉',
+  'আপনার অর্ডারের ডেলিভারি সম্পূর্ণ ফ্রি 🎉': 'Free delivery on your order 🎉',
+  '₹১০০০ বা তার বেশি অর্ডারে ডেলিভারি সম্পূর্ণ ফ্রি।': 'Delivery is free on orders of ₹1,000 or more.',
+  'বিশেষ এলাকা বা পরিস্থিতিতে চার্জ/সময় পরিবর্তিত হলে অর্ডারের সময় জানানো হবে।': 'Delivery charges or transit times may vary for special areas. We will confirm this when you order.'
 };
 
 type LangContextType = {
