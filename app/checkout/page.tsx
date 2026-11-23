@@ -1359,7 +1359,7 @@ export default function CheckoutPage() {
           </div>
         </form>
 
-        <div hidden={!deliveryQuoteReady} className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 mt-4 md:hidden">
+        <div hidden={!deliveryQuoteReady} className="sticky bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-40 mt-4 md:hidden">
           <div className="flex items-center gap-3 rounded-[22px] border border-border/80 bg-background/95 p-3 shadow-2xl shadow-black/20 backdrop-blur-xl" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
             <div className="min-w-0 flex-1 pl-1">
               <p className="text-[10px] font-bold text-muted-foreground">{t('পরিশোধযোগ্য', 'Payable')}</p>
