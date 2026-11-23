@@ -127,7 +127,7 @@ export default function CartPage() {
           </aside>
         </div>
       </div>
-      <div className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 lg:hidden">
+      <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mt-4 lg:hidden">
         <div className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-white/95 p-3 shadow-[0_18px_50px_-20px_rgba(6,78,42,.45)] backdrop-blur-xl">
           <div className="min-w-0 flex-1 pl-1"><p className="text-[10px] font-bold text-slate-500">{t('পণ্যের মোট', 'Product total')}</p><p className="truncate text-lg font-black text-emerald-900">{formatPrice(total)}</p></div>
           <Link href="/checkout" className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-800 px-4 text-xs font-black text-white">{t('চেকআউট', 'Checkout')}<ArrowRight className="h-4 w-4" /></Link>
