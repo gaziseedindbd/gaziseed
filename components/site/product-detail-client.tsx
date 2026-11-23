@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Minus, Plus, ShoppingCart, Zap, Truck, ShieldCheck, Check, Star, MessageCircle, Gift, Package, ChevronDown, Heart, Sparkles, Sprout, Info, BookOpen, HelpCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
 import PageShare from '@/components/site/page-share';
 import { ProductGallery } from '@/components/site/product-gallery';
-import { getProductBySlug, getReviews, getProducts, getEffectivePrice, getDiscountPercent, formatPrice, getRelatedProducts, getProductFaqs, getBundleOffers, getActivePromotions, getProductVariants, getBulkPricing, addRecentlyViewed, toggleWishlist } from '@/lib/data';
+import { getProductBySlug, getReviews, getProducts, getEffectivePrice, getDiscountPercent, formatPrice, getRelatedProducts, getProductFaqs, getBundleOffers, getActivePromotions, getProductVariants, getBulkPricing, addRecentlyViewed, toggleWishlist, getSiteSettings } from '@/lib/data';
 import { addToCart, getCart } from '@/lib/cart';
 import { toast } from '@/components/site/toast-provider';
 import { ProductCard } from '@/components/site/product-card';
@@ -26,6 +26,7 @@ export default function ProductDetailClient({
 }) {
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(initialProduct);
+  const [siteSettings, setSiteSettings] = useState<Awaited<ReturnType<typeof getSiteSettings>> | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [related, setRelated] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,6 +52,10 @@ export default function ProductDetailClient({
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'guide' | 'reviews' | 'faqs'>('desc');
   const { lang, setLang, t, tDb } = useLang();
   const { items: cartItems, total: cartTotal } = useCart();
+
+  useEffect(() => {
+    getSiteSettings().then(setSiteSettings).catch(() => setSiteSettings(null));
+  }, []);
 
   useEffect(() => {
     if (!product) {
@@ -406,7 +411,7 @@ export default function ProductDetailClient({
   const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(ellipse_at_top,_#e8f5ec_0%,_#f7faf7_42%,_#ffffff_100%)] pb-36 pt-4 text-gray-900 sm:py-10 sm:pb-12">
+    <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(ellipse_at_top,_#e8f5ec_0%,_#f7faf7_42%,_#ffffff_100%)] pb-[calc(13rem+env(safe-area-inset-bottom))] pt-4 text-gray-900 sm:py-10 sm:pb-12">
       <div className="mx-auto w-full max-w-7xl px-3 sm:px-5 lg:px-8">
         <div className="mb-3 flex items-center justify-end gap-2" role="group" aria-label={t('ভাষা নির্বাচন', 'Choose language')}>
           {([{ code: 'en', label: 'EN' }, { code: 'bn', label: 'বাংলা' }, { code: 'hi', label: 'हिन्दी' }] as const)
@@ -469,7 +474,7 @@ export default function ProductDetailClient({
                   </span>
                   {product.sku && <span className="text-xs text-gray-400 font-medium">SKU: {product.sku}</span>}
                 </div>
-                <div className="flex items-center gap-2"><PageShare inline /><button onClick={handleWishlist} aria-label={inWishlist ? t('উইশলিস্ট থেকে সরান', 'Remove from wishlist') : t('উইশলিস্টে রাখুন', 'Add to wishlist')} aria-pressed={inWishlist} className={`rounded-full p-2.5 border transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${inWishlist ? 'border-red-200 bg-red-50 text-red-500' : 'border-gray-200 bg-white text-gray-400 hover:text-red-500'}`} title={t('উইশলিস্টে রাখুন', 'Add to wishlist', 'पसंदीदा में जोड़ें')}>
+                <div className="flex items-center gap-2">{siteSettings?.whatsapp_enabled && siteSettings?.whatsapp && <a href={`https://wa.me/${siteSettings.whatsapp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(siteSettings.whatsapp_message || '')}`} target="_blank" rel="noopener noreferrer" aria-label={t('WhatsApp-এ যোগাযোগ করুন', 'Contact on WhatsApp')} className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 text-xs font-bold text-green-800 transition hover:bg-green-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600"><MessageCircle className="h-4 w-4" /><span>WhatsApp</span></a>}<PageShare inline /><button onClick={handleWishlist} aria-label={inWishlist ? t('উইশলিস্ট থেকে সরান', 'Remove from wishlist') : t('উইশলিস্টে রাখুন', 'Add to wishlist')} aria-pressed={inWishlist} className={`rounded-full p-2.5 border transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${inWishlist ? 'border-red-200 bg-red-50 text-red-500' : 'border-gray-200 bg-white text-gray-400 hover:text-red-500'}`} title={t('উইশলিস্টে রাখুন', 'Add to wishlist', 'पसंदीदा में जोड़ें')}>
                   <Heart className={`h-4 w-4 ${inWishlist ? 'fill-current' : ''}`} />
                 </button></div>
               </div>
