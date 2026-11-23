@@ -17,6 +17,33 @@ import { useLang } from '@/components/site/language-provider';
 import { useCart } from '@/components/site/cart-provider';
 import type { Product, Review, ProductFaq, BundleOffer, Promotion, PromotionGift, ProductVariant, BulkPricing } from '@/lib/supabase/types';
 
+function renderProductDescriptionInline(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) =>
+    part.startsWith('**') && part.endsWith('**')
+      ? <strong key={index} className="font-bold text-gray-800">{part.slice(2, -2)}</strong>
+      : part,
+  );
+}
+
+function FormattedProductDescription({ value }: { value: string }) {
+  const blocks = value.replace(/\r\n?/g, '\n').trim().split(/\n\s*\n/).filter(Boolean);
+  return (
+    <div className="space-y-3 break-words text-sm font-normal leading-relaxed text-gray-600 sm:text-base">
+      {blocks.map((block, index) => {
+        const trimmed = block.trim();
+        const heading = trimmed.match(/^#{1,6}\s+(.+)$/);
+        if (heading) return <h4 key={index} className="pt-1 text-base font-black text-gray-900 sm:text-lg">{renderProductDescriptionInline(heading[1])}</h4>;
+        const lines = trimmed.split('\n');
+        const bullets = lines.map((line) => line.match(/^\s*[-*]\s+(.+)$/));
+        if (bullets.every(Boolean)) {
+          return <ul key={index} className="list-disc space-y-1.5 pl-5 marker:text-emerald-700">{bullets.map((bullet, bulletIndex) => <li key={bulletIndex}>{renderProductDescriptionInline(bullet![1])}</li>)}</ul>;
+        }
+        return <p key={index} className="whitespace-pre-line">{lines.map((line, lineIndex) => <span key={lineIndex}>{lineIndex > 0 ? '\n' : ''}{renderProductDescriptionInline(line)}</span>)}</p>;
+      })}
+    </div>
+  );
+}
+
 export default function ProductDetailClient({
   slug,
   initialProduct,
@@ -349,8 +376,13 @@ export default function ProductDetailClient({
       ? 'इस भाषा में खेती के निर्देश अभी उपलब्ध नहीं हैं।'
       : 'Cultivation instructions are not available in this language yet.';
   const productName = translated.name || (lang === 'en' && product.name_en ? product.name_en : lang === 'hi' && product.name_en ? product.name_en : product.name_bn);
-  const productDesc = tDb(translated.description || product.description || '');
-  const productShortDesc = tDb(translated.short_description || product.short_description || '');
+  const localizeIndiaStoreCopy = (value: string) => productCountry === 'IN'
+    ? value.replace(/AB Seed Company/gi, 'GAZI SEED')
+      .replace(/Cash on Delivery across Bangladesh/gi, 'Cash on Delivery at eligible PIN codes in India')
+      .replace(/Cash on Delivery Nationwide/gi, 'Cash on Delivery at eligible PIN codes in India')
+    : value;
+  const productDesc = localizeIndiaStoreCopy(tDb(translated.description || product.description || ''));
+  const productShortDesc = localizeIndiaStoreCopy(tDb(translated.short_description || product.short_description || ''));
 
   const handleAddToCart = () => {
     if (!inStock) { toast(t('পণ্যটি স্টকে নেই', 'Product is out of stock'), 'error'); return false; }
@@ -586,7 +618,7 @@ export default function ProductDetailClient({
                           : `Choose ${b.min_quantity} packet offer`
                       )}
                     >
-                      {isActive && <span className="absolute right-2 top-2 rounded-full bg-red-600 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white shadow-sm animate-pulse">{t('সক্রিয়', 'ACTIVE')}</span>}
+                      {isActive && <span className="mb-2 inline-flex w-fit rounded-full bg-red-600 px-2.5 py-1 text-[9px] font-black uppercase tracking-wide text-white shadow-sm">{t('সক্রিয়', 'ACTIVE')}</span>}
                       <div className="flex items-center gap-2">
                         <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-orange-100 px-2 text-xs font-black text-orange-900 ring-1 ring-orange-200">{b.min_quantity}×</span>
                         <span className="text-xs sm:text-sm font-black text-gray-950">{t('প্যাকেট', 'PACKETS')}</span>
@@ -637,7 +669,7 @@ export default function ProductDetailClient({
         <ProductReviewShowcase reviews={reviews} label={t} />
         <div className="mt-14"><div className="flex overflow-x-auto border-b border-gray-200 gap-2 sm:gap-4 no-scrollbar" role="tablist" aria-label={t('পণ্যের তথ্য', 'Product information')}><button type="button" role="tab" aria-selected={activeTab === 'desc'} onClick={() => setActiveTab('desc')} className={`flex items-center gap-2 pb-3.5 text-xs sm:text-sm font-extrabold border-b-2 transition whitespace-nowrap px-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeTab === 'desc' ? 'border-emerald-700 text-emerald-800' : 'border-transparent text-gray-500 hover:text-gray-900'}`}><Info className="h-4 w-4" /> {t('বিস্তারিত বিবরণ', 'Description')}</button>{seedInfoFields.length > 0 && <button type="button" role="tab" aria-selected={activeTab === 'specs'} onClick={() => setActiveTab('specs')} className={`flex items-center gap-2 pb-3.5 text-xs sm:text-sm font-extrabold border-b-2 transition whitespace-nowrap px-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeTab === 'specs' ? 'border-emerald-700 text-emerald-800' : 'border-transparent text-gray-500 hover:text-gray-900'}`}><Sprout className="h-4 w-4" /> {t('বীজের জাত ও স্পেকস', 'Seed Specs')}</button>}{(hasCultivationInstructions || product.storage_instructions) && <button type="button" role="tab" aria-selected={activeTab === 'guide'} onClick={() => setActiveTab('guide')} className={`flex items-center gap-2 pb-3.5 text-xs sm:text-sm font-extrabold border-b-2 transition whitespace-nowrap px-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeTab === 'guide' ? 'border-emerald-700 text-emerald-800' : 'border-transparent text-gray-500 hover:text-gray-900'}`}><BookOpen className="h-4 w-4" /> {t('চাষ ও পরিচর্যা', 'Cultivation Guide')}</button>}<button type="button" role="tab" aria-selected={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} className={`flex items-center gap-2 pb-3.5 text-xs sm:text-sm font-extrabold border-b-2 transition whitespace-nowrap px-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeTab === 'reviews' ? 'border-emerald-700 text-emerald-800' : 'border-transparent text-gray-500 hover:text-gray-900'}`}><Star className="h-4 w-4" /> {t('রিভিউ', 'Reviews')} ({reviews.length})</button>{faqs.length > 0 && <button type="button" role="tab" aria-selected={activeTab === 'faqs'} onClick={() => setActiveTab('faqs')} className={`flex items-center gap-2 pb-3.5 text-xs sm:text-sm font-extrabold border-b-2 transition whitespace-nowrap px-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeTab === 'faqs' ? 'border-emerald-700 text-emerald-800' : 'border-transparent text-gray-500 hover:text-gray-900'}`}><HelpCircle className="h-4 w-4" /> {t('সাধারণ জিজ্ঞাসা', 'FAQ')}</button>}</div>
           <div className="mt-4 rounded-3xl border border-gray-200/80 bg-white p-5 shadow-2xs sm:p-8" role="tabpanel">
-            {activeTab === 'desc' && <div className="space-y-6">{productDesc && <div><h3 className="mb-3 text-base font-black text-gray-900 sm:text-lg">{t('পণ্যের বিবরণ', 'Product Description')}</h3><p className="whitespace-pre-line break-words text-sm font-normal leading-relaxed text-gray-600 sm:text-base">{productDesc}</p></div>}</div>}
+            {activeTab === 'desc' && <div className="space-y-6">{productDesc && <div><h3 className="mb-3 text-base font-black text-gray-900 sm:text-lg">{t('পণ্যের বিবরণ', 'Product Description')}</h3><FormattedProductDescription value={productDesc} /></div>}</div>}
             {activeTab === 'specs' && <div><h3 className="mb-4 text-base font-black text-gray-900 sm:text-lg">{t('বীজ সম্পর্কিত তথ্যাবলী', 'Seed Specifications')}</h3><div className="overflow-x-auto rounded-2xl border border-gray-200"><table className="w-full text-xs sm:text-sm"><tbody className="divide-y divide-gray-200">{seedInfoFields.map((field, idx) => <tr key={idx} className={idx % 2 === 0 ? 'bg-gray-50/70' : 'bg-white'}><td className="w-1/3 px-4 py-3 font-bold text-gray-700">{field.label}</td><td className="px-4 py-3 text-gray-600 font-medium">{field.value}</td></tr>)}</tbody></table></div></div>}
             {activeTab === 'guide' && <div className="space-y-6">{hasCultivationInstructions && <div className="rounded-2xl bg-emerald-50/60 border border-emerald-200/80 p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
