@@ -1,6 +1,7 @@
 'use client';
 
 import { PRODUCT_SAFE_SELECT } from '@/lib/supabase/product-select';
+import { productMatchesSearch } from '@/lib/product-search';
 
 import { supabase } from './supabase/client';
 import { formatPrice, formatPriceEn, getVisitorCountry } from './supabase/client';
@@ -121,10 +122,7 @@ export async function getProducts(filters?: {
   if (filters?.category_id) {
     query = query.eq('category_id', filters.category_id);
   }
-  if (filters?.search) {
-    query = query.or(`name_bn.ilike.%${filters.search}%,name_en.ilike.%${filters.search}%,sku.ilike.%${filters.search}%`);
-  }
-  if (filters?.is_featured) {
+    if (filters?.is_featured) {
     query = query.eq('is_featured', true);
   }
   if (filters?.is_best_seller) {
@@ -141,7 +139,8 @@ export async function getProducts(filters?: {
   }
 
   const { data } = await query;
-  return (data || []) as Product[];
+  const products = (data || []) as Product[];
+  return filters?.search ? products.filter((product) => productMatchesSearch(product, filters.search!)) : products;
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {

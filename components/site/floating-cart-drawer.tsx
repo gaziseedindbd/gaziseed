@@ -7,7 +7,7 @@ import { Check, ChevronRight, Minus, Plus, ShoppingCart, Trash2, Truck, X } from
 import { useCart } from '@/components/site/cart-provider';
 import { removeFromCart, updateCartQuantity, type CartItem } from '@/lib/cart';
 import { formatPrice } from '@/lib/data';
-import { getVisitorCountry } from '@/lib/supabase/client';
+import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { useLang } from '@/components/site/language-provider';
 
 type CartFlyEvent = CustomEvent<{
@@ -24,11 +24,23 @@ export default function FloatingCartDrawer() {
   const { t } = useLang();
   const [open, setOpen] = useState(false);
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
+  const [freeDeliveryTarget, setFreeDeliveryTarget] = useState(600);
+  const [deliveryRules, setDeliveryRules] = useState<Array<{ min_order: number; max_order: number | null; charge: number; is_free: boolean }>>([]);
   const [cartBump, setCartBump] = useState(false);
   const cartButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    setCountry(getVisitorCountry());
+    const visitorCountry = getVisitorCountry();
+    setCountry(visitorCountry);
+    setFreeDeliveryTarget(visitorCountry === 'IN' ? 500 : 600);
+    let active = true;
+    void supabase.from('delivery_charge_rules').select('min_order, max_order, charge, is_free').eq('country_code', visitorCountry).eq('is_active', true).order('min_order', { ascending: false }).then(({ data, error }) => {
+      if (!active || error || !data) return;
+      const rules = data.map((rule) => ({ min_order: Number(rule.min_order || 0), max_order: rule.max_order == null ? null : Number(rule.max_order), charge: Number(rule.charge || 0), is_free: Boolean(rule.is_free) }));
+      setDeliveryRules(rules);
+      const target = rules.filter((rule) => rule.is_free && rule.min_order > 0).sort((a, b) => b.min_order - a.min_order)[0];
+      if (target) setFreeDeliveryTarget(target.min_order);
+    });
 
     const openCart = () => setOpen(true);
     const closeCart = () => setOpen(false);
@@ -104,6 +116,7 @@ export default function FloatingCartDrawer() {
     window.addEventListener('gazi-cart-fly', flyToCart);
 
     return () => {
+      active = false;
       window.removeEventListener('gazi-cart-open', openCart);
       window.removeEventListener('gazi-cart-close', closeCart);
       window.removeEventListener('gazi-cart-fly', flyToCart);
@@ -119,9 +132,12 @@ export default function FloatingCartDrawer() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open]);
 
-  const freeDeliveryTarget = country === 'IN' ? 999 : 600;
-  const remaining = Math.max(0, freeDeliveryTarget - total);
+  const remaining = Math.round(Math.max(0, freeDeliveryTarget - total));
   const progress = Math.min(100, Math.round((total / freeDeliveryTarget) * 100));
+  const waivedDeliveryCharge = deliveryRules
+    .filter((rule) => !rule.is_free && rule.charge > 0 && total >= rule.min_order && (rule.max_order == null || total <= rule.max_order))
+    .sort((a, b) => b.min_order - a.min_order)[0]?.charge
+    ?? deliveryRules.filter((rule) => !rule.is_free && rule.charge > 0).sort((a, b) => a.min_order - b.min_order)[0]?.charge;
 
   const deliveryMessage = useMemo(() => {
     if (remaining <= 0) return t('ফ্রি ডেলিভারি আনলক হয়েছে', 'Free delivery unlocked');
@@ -143,7 +159,7 @@ export default function FloatingCartDrawer() {
             <div className="flex items-center justify-between border-b border-emerald-100 bg-gradient-to-r from-emerald-50 to-lime-50/60 px-4 py-3">
               <div className="flex min-w-0 items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm"><ShoppingCart className="h-4 w-4" /></span>
-                <div className="min-w-0"><p className="text-sm font-black text-slate-950">{t('আপনার কার্ট', 'Your Cart')}</p><p className="text-[10px] font-bold text-slate-500">{count} {t('টি আইটেম', 'items')}</p></div>
+                <div className="min-w-0"><p className="text-sm font-black text-slate-950">{t('আপনার কার্ট', 'Your Cart')}</p><p className="text-[10px] font-bold text-slate-500">{count} {t('টি আইটেম', count === 1 ? 'item' : 'items')}</p></div>
               </div>
               <button type="button" onClick={() => setOpen(false)} aria-label={t('কার্ট বন্ধ করুন', 'Close cart')} className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white hover:text-slate-800"><X className="h-4 w-4" /></button>
             </div>
@@ -166,7 +182,8 @@ export default function FloatingCartDrawer() {
               <div className="border-t border-emerald-100 bg-white px-3.5 pb-3.5 pt-3">
                 <div className="mb-2 flex items-center gap-2"><Truck className="h-3.5 w-3.5 shrink-0 text-emerald-600" /><p className="min-w-0 flex-1 truncate text-[10px] font-bold text-slate-500">{deliveryMessage}</p>{remaining <= 0 && <Check className="h-3.5 w-3.5 text-emerald-600" />}</div>
                 <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-emerald-50"><div className="h-full rounded-full bg-emerald-500 transition-all duration-500" style={{ width: `${progress}%` }} /></div>
-                <div className="flex items-center justify-between gap-3"><div><p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">{t('মোট', 'Total')}</p><p className="text-lg font-black tracking-tight text-slate-950">{formatPrice(total)}</p></div><div className="flex items-center gap-1.5"><Link href="/cart" onClick={() => setOpen(false)} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[10px] font-black text-emerald-800">{t('কার্ট', 'Cart')}</Link><Link href="/checkout" onClick={() => setOpen(false)} className="inline-flex items-center gap-1 rounded-lg bg-emerald-700 px-3 py-2 text-[10px] font-black text-white shadow-sm">{t('চেকআউট', 'Checkout')}<ChevronRight className="h-3 w-3" /></Link></div></div>
+                {remaining <= 0 && waivedDeliveryCharge ? <p className="mb-2 rounded-lg bg-emerald-100/70 px-2.5 py-2 text-[10px] font-black text-emerald-800">✅ {t('ফ্রি ডেলিভারি আনলক হয়েছে! আপনি সাশ্রয় করেছেন', 'FREE delivery unlocked! You saved')} {formatPrice(waivedDeliveryCharge, country)}</p> : null}
+                <div className="flex items-center justify-between gap-3"><div><p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">{t('পণ্যের সাবটোটাল', 'Subtotal')}</p><p className="text-lg font-black tracking-tight text-slate-950">{formatPrice(total)}</p></div><div className="flex items-center gap-1.5"><Link href="/cart" onClick={() => setOpen(false)} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[10px] font-black text-emerald-800">{t('কার্ট দেখুন', 'View Cart')}</Link><Link href="/checkout" onClick={() => setOpen(false)} className="inline-flex items-center gap-1 rounded-lg bg-emerald-700 px-3 py-2 text-[10px] font-black text-white shadow-sm">{t('এখনই কিনুন', 'Buy Now')}<ChevronRight className="h-3 w-3" /></Link></div></div>
               </div>
             )}
           </div>

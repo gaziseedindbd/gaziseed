@@ -5,16 +5,45 @@ import { useRouter } from 'next/navigation';
 import { Minus, Plus, ShoppingCart, Zap, Truck, ShieldCheck, Check, Star, MessageCircle, Gift, Package, ChevronDown, Heart, Sparkles, Sprout, Info, BookOpen, HelpCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
 import PageShare from '@/components/site/page-share';
 import { ProductGallery } from '@/components/site/product-gallery';
-import { getProductBySlug, getReviews, getProducts, getEffectivePrice, getDiscountPercent, formatPrice, getRelatedProducts, getProductFaqs, getBundleOffers, getActivePromotions, getProductVariants, getBulkPricing, addRecentlyViewed, toggleWishlist } from '@/lib/data';
+import { getProductBySlug, getReviews, getProducts, getEffectivePrice, getDiscountPercent, formatPrice, getRelatedProducts, getProductFaqs, getBundleOffers, getActivePromotions, getProductVariants, getBulkPricing, addRecentlyViewed, toggleWishlist, getSiteSettings } from '@/lib/data';
 import { addToCart, getCart } from '@/lib/cart';
 import { toast } from '@/components/site/toast-provider';
 import { ProductCard } from '@/components/site/product-card';
 import { ReviewForm } from '@/components/site/review-form';
 import ProductReviewShowcase from '@/components/site/product-review-showcase';
 import ProductOfferSpotlight from '@/components/site/product-offer-spotlight';
+import IndiaPinCheck from '@/components/site/india-pin-check';
 import { supabase, getVisitorCountry } from '@/lib/supabase/client';
 import { useLang } from '@/components/site/language-provider';
+import { useCart } from '@/components/site/cart-provider';
 import type { Product, Review, ProductFaq, BundleOffer, Promotion, PromotionGift, ProductVariant, BulkPricing } from '@/lib/supabase/types';
+
+function renderProductDescriptionInline(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) =>
+    part.startsWith('**') && part.endsWith('**')
+      ? <strong key={index} className="font-bold text-gray-800">{part.slice(2, -2)}</strong>
+      : part,
+  );
+}
+
+function FormattedProductDescription({ value }: { value: string }) {
+  const blocks = value.replace(/\r\n?/g, '\n').trim().split(/\n\s*\n/).filter(Boolean);
+  return (
+    <div className="space-y-3 break-words text-sm font-normal leading-relaxed text-gray-600 sm:text-base">
+      {blocks.map((block, index) => {
+        const trimmed = block.trim();
+        const heading = trimmed.match(/^#{1,6}\s+(.+)$/);
+        if (heading) return <h4 key={index} className="pt-1 text-base font-black text-gray-900 sm:text-lg">{renderProductDescriptionInline(heading[1])}</h4>;
+        const lines = trimmed.split('\n');
+        const bullets = lines.map((line) => line.match(/^\s*[-*]\s+(.+)$/));
+        if (bullets.every(Boolean)) {
+          return <ul key={index} className="list-disc space-y-1.5 pl-5 marker:text-emerald-700">{bullets.map((bullet, bulletIndex) => <li key={bulletIndex}>{renderProductDescriptionInline(bullet![1])}</li>)}</ul>;
+        }
+        return <p key={index} className="whitespace-pre-line">{lines.map((line, lineIndex) => <span key={lineIndex}>{lineIndex > 0 ? '\n' : ''}{renderProductDescriptionInline(line)}</span>)}</p>;
+      })}
+    </div>
+  );
+}
 
 export default function ProductDetailClient({
   slug,
@@ -25,6 +54,7 @@ export default function ProductDetailClient({
 }) {
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(initialProduct);
+  const [siteSettings, setSiteSettings] = useState<Awaited<ReturnType<typeof getSiteSettings>> | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [related, setRelated] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,9 +74,32 @@ export default function ProductDetailClient({
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [bulkTiers, setBulkTiers] = useState<BulkPricing[]>([]);
+  const [deliveryQuote, setDeliveryQuote] = useState<{ charge: number; threshold: number | null; free: boolean; quantity: number; variantId: string | null } | null>(null);
+  const [deliveryQuoteLoading, setDeliveryQuoteLoading] = useState(false);
   const [inWishlist, setInWishlist] = useState(false);
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'guide' | 'reviews' | 'faqs'>('desc');
-  const { lang, t, tDb } = useLang();
+  const { lang, setLang, t, tDb } = useLang();
+  const { items: cartItems, total: cartTotal } = useCart();
+
+  useEffect(() => {
+    getSiteSettings().then(setSiteSettings).catch(() => setSiteSettings(null));
+  }, []);
+
+  useEffect(() => {
+    if (!product) {
+      setBulkTiers([]);
+      return;
+    }
+    let active = true;
+    getBulkPricing(product.id, selectedVariant?.id)
+      .then((tiers) => {
+        if (active) setBulkTiers(tiers || []);
+      })
+      .catch(() => {
+        if (active) setBulkTiers([]);
+      });
+    return () => { active = false; };
+  }, [product?.id, selectedVariant?.id]);
 
   // Keep the dialog closed when a product route loads or changes.
   useEffect(() => {
@@ -82,6 +135,92 @@ export default function ProductDetailClient({
   }, [preferredGuideLanguage]);
   const productCountry = (initialProduct as Product & { country_code?: string }).country_code === 'IN' ? 'IN' : 'BD';
   const formatProductPrice = (price: number) => formatPrice(price, productCountry);
+
+  // Read the same delivery quote used by checkout. This is display-only and
+  // does not alter cart, payment, COD, or order calculations.
+  useEffect(() => {
+    if (!product) {
+      setDeliveryQuote(null);
+      return;
+    }
+
+    let active = true;
+    setDeliveryQuoteLoading(true);
+    setDeliveryQuote(null);
+
+    const loadDeliveryQuote = async () => {
+      const cartProductIds = Array.from(new Set([product.id, ...cartItems.map((item) => item.product_id)].filter(Boolean)));
+      const [{ data: rules }, { data: cartDeliveryProducts, error: cartDeliveryError }] = await Promise.all([
+        supabase
+          .from('delivery_charge_rules')
+          .select('min_order, is_free')
+          .eq('country_code', productCountry)
+          .eq('is_active', true),
+        supabase
+          .from('products')
+          .select('id, free_delivery')
+          .in('id', cartProductIds)
+          .eq('country_code', productCountry),
+      ]);
+
+      if (!active) return;
+      if (cartDeliveryError || !cartDeliveryProducts) {
+        setDeliveryQuote(null);
+        setDeliveryQuoteLoading(false);
+        return;
+      }
+
+      const selectedBasePrice = selectedVariant
+        ? selectedVariant.sale_price && selectedVariant.sale_price > 0 && selectedVariant.sale_price < selectedVariant.regular_price
+          ? selectedVariant.sale_price
+          : selectedVariant.regular_price
+        : getEffectivePrice(product);
+      const applicableTier = bulkTiers
+        .filter((tier) => tier.is_active && (selectedVariant ? tier.variant_id === selectedVariant.id : tier.variant_id === null))
+        .filter((tier) => tier.min_quantity <= quantity)
+        .sort((a, b) => b.min_quantity - a.min_quantity)[0];
+      const currentProductAlreadyInCart = cartItems.some(
+        (item) => item.product_id === product.id && (item.variant_id || '') === (selectedVariant?.id || ''),
+      );
+      const currentProductValue = (applicableTier?.unit_price ?? selectedBasePrice) * quantity;
+      const projectedCartSubtotal = cartTotal + (currentProductAlreadyInCart ? 0 : currentProductValue);
+      const hasFreeDelivery = cartDeliveryProducts.some((item) => Boolean(item.free_delivery));
+
+      const { data: charge, error } = await supabase.rpc('calculate_delivery_charge', {
+        p_order_value: projectedCartSubtotal,
+        p_free_delivery: hasFreeDelivery,
+      });
+
+      if (!active) return;
+
+      const verifiedCharge = Number(charge);
+      if (error || charge === null || !Number.isFinite(verifiedCharge) || verifiedCharge < 0) {
+        setDeliveryQuote(null);
+      } else {
+        const freeThreshold = (rules || [])
+          .filter((rule) => Boolean(rule.is_free) && Number(rule.min_order) > 0)
+          .map((rule) => Number(rule.min_order))
+          .sort((a, b) => a - b)[0] ?? null;
+        setDeliveryQuote({
+          charge: verifiedCharge,
+          threshold: freeThreshold,
+          free: hasFreeDelivery || verifiedCharge === 0,
+          quantity,
+          variantId: selectedVariant?.id || null,
+        });
+      }
+      setDeliveryQuoteLoading(false);
+    };
+
+    void loadDeliveryQuote().catch(() => {
+      if (active) {
+        setDeliveryQuote(null);
+        setDeliveryQuoteLoading(false);
+      }
+    });
+
+    return () => { active = false; };
+  }, [product, quantity, selectedVariant, bulkTiers, productCountry, cartItems, cartTotal]);
 
   useEffect(() => {
     let cancelled = false;
@@ -219,6 +358,18 @@ export default function ProductDetailClient({
   const applicableBulk = selectedBulkTiers.filter((b) => b.min_quantity <= quantity).sort((a, b) => b.min_quantity - a.min_quantity)[0];
   const finalUnitPrice = applicableBulk ? applicableBulk.unit_price : effectivePrice;
   const totalPrice = finalUnitPrice * quantity;
+  const deliveryQuoteIsCurrent = Boolean(
+    deliveryQuote &&
+    deliveryQuote.quantity === quantity &&
+    deliveryQuote.variantId === (selectedVariant?.id || null),
+  );
+  const currentDeliveryQuote = deliveryQuoteIsCurrent ? deliveryQuote : null;
+  const displayFreeDeliveryThreshold = currentDeliveryQuote?.threshold == null
+    ? null
+    : Math.max(0, currentDeliveryQuote.threshold - (productCountry === 'IN' ? 0.01 : 0));
+  const currentProductInCart = cartItems.some((item) => item.product_id === product.id && (item.variant_id || '') === (selectedVariant?.id || ''));
+  const freeDeliveryProgressSubtotal = currentProductInCart ? cartTotal : cartTotal + totalPrice;
+  const cartFreeDeliveryUnlocked = Boolean(currentDeliveryQuote?.free || (displayFreeDeliveryThreshold !== null && freeDeliveryProgressSubtotal >= displayFreeDeliveryThreshold));
 
   const translated = product.translations?.[lang] || {};
   const hasCultivationInstructions = Boolean(product.cultivation_instructions?.trim()) || localizedGuideLanguages.length > 0;
@@ -231,8 +382,13 @@ export default function ProductDetailClient({
       ? 'इस भाषा में खेती के निर्देश अभी उपलब्ध नहीं हैं।'
       : 'Cultivation instructions are not available in this language yet.';
   const productName = translated.name || (lang === 'en' && product.name_en ? product.name_en : lang === 'hi' && product.name_en ? product.name_en : product.name_bn);
-  const productDesc = tDb(translated.description || product.description || '');
-  const productShortDesc = tDb(translated.short_description || product.short_description || '');
+  const localizeIndiaStoreCopy = (value: string) => productCountry === 'IN'
+    ? value.replace(/AB Seed Company/gi, 'GAZI SEED')
+      .replace(/Cash on Delivery across Bangladesh/gi, 'Cash on Delivery at eligible PIN codes in India')
+      .replace(/Cash on Delivery Nationwide/gi, 'Cash on Delivery at eligible PIN codes in India')
+    : value;
+  const productDesc = localizeIndiaStoreCopy(tDb(translated.description || product.description || ''));
+  const productShortDesc = localizeIndiaStoreCopy(tDb(translated.short_description || product.short_description || ''));
 
   const handleAddToCart = () => {
     if (!inStock) { toast(t('পণ্যটি স্টকে নেই', 'Product is out of stock'), 'error'); return false; }
@@ -251,6 +407,7 @@ export default function ProductDetailClient({
 
 
 
+    window.dispatchEvent(new Event('gazi-cart-open'));
     toast(t('কার্টে যোগ করা হয়েছে', 'Added to cart'));
     return true;
   };
@@ -300,9 +457,19 @@ export default function ProductDetailClient({
   const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
 
   return (
-    <div className="min-h-screen bg-[#fafbfc] py-6 sm:py-10 pb-36 lg:pb-12 text-gray-900 overflow-x-hidden">
-      <div className="max-w-6xl w-full mx-auto px-4">
-        <div className="mb-3 flex justify-end"><button type="button" onClick={() => setQuickViewOpen(true)} className="rounded-xl border border-emerald-700/25 bg-white px-4 py-2 text-xs font-bold text-emerald-800 shadow-sm transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t('কুইক ভিউ', 'Quick View', 'त्वरित दृश्य')}</button></div>
+    <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(ellipse_at_top,_#e8f5ec_0%,_#f7faf7_42%,_#ffffff_100%)] pb-[calc(13rem+env(safe-area-inset-bottom))] pt-4 text-gray-900 sm:py-10 sm:pb-12">
+      <div className="mx-auto w-full max-w-7xl px-3 sm:px-5 lg:px-8">
+        <div className="mb-3 flex items-center justify-end gap-2" role="group" aria-label={t('ভাষা নির্বাচন', 'Choose language')}>
+          {([{ code: 'en', label: 'EN' }, { code: 'bn', label: 'বাংলা' }, { code: 'hi', label: 'हिन्दी' }] as const)
+            .filter((option) => option.code !== 'hi' || productCountry === 'IN')
+            .map((option) => (
+              <button key={option.code} type="button" onClick={() => setLang(option.code)} aria-pressed={lang === option.code}
+                className={`min-h-10 rounded-xl border px-3.5 py-2 text-xs font-black transition ${lang === option.code ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-emerald-200 bg-white text-emerald-900 hover:bg-emerald-50'}`}>
+                {option.label}
+              </button>
+            ))}
+        </div>
+        <div className="mb-4 flex justify-end"><button type="button" onClick={() => setQuickViewOpen(true)} className="rounded-xl border border-emerald-700/25 bg-white px-4 py-2 text-xs font-bold text-emerald-800 shadow-sm transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t('কুইক ভিউ', 'Quick View', 'त्वरित दृश्य')}</button></div>
         <ProductOfferSpotlight
           enabled={product.promotional_offer_enabled}
           badge={product.promotional_offer_badge}
@@ -338,13 +505,13 @@ export default function ProductDetailClient({
             });
           }}
         />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-start w-full">
+        <div className="grid w-full grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,.95fr)] lg:gap-8">
           <div className="w-full min-w-0">
-            <div className="rounded-3xl border border-gray-200/80 bg-white p-3 shadow-md w-full overflow-hidden">
+            <div className="w-full overflow-hidden rounded-[2rem] border border-emerald-100 bg-white p-2.5 shadow-[0_24px_70px_-38px_rgba(6,78,42,.35)] sm:p-4 lg:sticky lg:top-24">
               <ProductGallery images={images} alt={productName} discount={discount} />
             </div>
           </div>
-          <div id="product-purchase" className="scroll-mt-24 space-y-5 w-full min-w-0">
+          <div id="product-purchase" className="scroll-mt-24 w-full min-w-0 space-y-4 rounded-[2rem] border border-emerald-100/90 bg-white/95 p-4 shadow-[0_20px_60px_-38px_rgba(6,78,42,.32)] sm:p-6 lg:p-7">
             <div>
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -357,16 +524,64 @@ export default function ProductDetailClient({
                   <Heart className={`h-4 w-4 ${inWishlist ? 'fill-current' : ''}`} />
                 </button></div>
               </div>
+              {siteSettings?.whatsapp_enabled && siteSettings?.whatsapp && <a href={`https://wa.me/${siteSettings.whatsapp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(siteSettings.whatsapp_message || '')}`} target="_blank" rel="noopener noreferrer" aria-label={t('WhatsApp-এ যোগাযোগ করুন', 'Contact on WhatsApp')} className="mt-3 hidden min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-green-600 bg-green-600 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 md:inline-flex"><MessageCircle className="h-5 w-5" /><span>{t('WhatsApp-এ যোগাযোগ করুন', 'Chat on WhatsApp', 'WhatsApp पर बात करें')}</span></a>}
               <h1 className="mt-1 text-xl sm:text-3xl font-black text-gray-900 leading-tight break-words">{productName}</h1>
               {reviews.length > 0 ? <div className="mt-2.5 flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full text-xs font-bold text-amber-700"><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /><span>{avgRating} / 5.0</span></div>
                 <span className="text-xs font-medium text-gray-500">{reviews.length} {t('টি রিভিউ', 'Reviews', 'समीक्षाएँ')}</span>
-              </div> : <p className="mt-3 text-xs text-gray-500">{t('এখনো কোনো রিভিউ নেই। কেনার পর আপনার অভিজ্ঞতা শেয়ার করুন।', 'No reviews yet. Share your experience after purchase.', 'अभी कोई समीक्षा नहीं है। खरीद के बाद अपना अनुभव साझा करें।')}</p>}
+              </div> : null}
             </div>
-            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-white border border-emerald-200/80 flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-lime-50 p-4 shadow-sm sm:p-5">
               <div className="min-w-0 flex-1"><span className="text-xs font-medium text-gray-500 block">{t('বর্তমান মূল্য', 'Current Price')}</span><div className="flex items-baseline gap-2.5 flex-wrap"><span className="text-2xl sm:text-3xl font-black text-emerald-800">{formatProductPrice(finalUnitPrice)}</span>{discount > 0 && !selectedVariant && <span className="text-sm sm:text-base text-gray-400 line-through font-semibold">{formatProductPrice(product.regular_price)}</span>}{selectedVariant && selectedVariant.sale_price && selectedVariant.sale_price > 0 && selectedVariant.sale_price < selectedVariant.regular_price && <span className="text-sm sm:text-base text-gray-400 line-through font-semibold">{formatProductPrice(selectedVariant.regular_price)}</span>}</div></div>
               {discount > 0 && <div className="rounded-full bg-red-500 text-white text-xs font-black px-3.5 py-1.5 shadow-xs shrink-0 whitespace-nowrap">{discount}% {t('ছাড়', 'OFF')}</div>}
             </div>
+            {productCountry === 'IN' && <IndiaPinCheck showInput />}
+            <div className="space-y-3 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4 shadow-sm sm:p-5" aria-live="polite">
+              <p className="text-xs font-extrabold text-emerald-950">{t('মোট কত টাকা দিতে হবে?', 'How much will you pay?', 'कुल कितना देना होगा?')}</p>
+              {deliveryQuoteLoading || !currentDeliveryQuote ? (
+                <p className="text-base font-black text-emerald-900">{t('ডেলিভারি চার্জ দেখা হচ্ছে…', 'Checking delivery…', 'डिलीवरी शुल्क जाँचा जा रहा है…')}</p>
+              ) : currentDeliveryQuote ? (
+                <>
+                  <p className="text-lg font-black text-emerald-950">
+                    {currentProductInCart
+                      ? `${formatProductPrice(cartTotal)} + ${formatProductPrice(cartFreeDeliveryUnlocked ? 0 : currentDeliveryQuote.charge)} = ${formatProductPrice(cartTotal + (cartFreeDeliveryUnlocked ? 0 : currentDeliveryQuote.charge))}`
+                      : currentDeliveryQuote.charge === 0
+                        ? `${formatProductPrice(totalPrice)} — ${t('ফ্রি ডেলিভারি', 'FREE delivery', 'मुफ्त डिलीवरी')} = ${formatProductPrice(totalPrice)}`
+                        : `${formatProductPrice(totalPrice)} + ${formatProductPrice(currentDeliveryQuote.charge)} = ${formatProductPrice(totalPrice + currentDeliveryQuote.charge)}`}
+                  </p>
+                  {displayFreeDeliveryThreshold !== null && (
+                    <><p className="flex items-center gap-2 text-sm font-black text-emerald-800"><Truck className="h-4 w-4" />{t(`${formatProductPrice(displayFreeDeliveryThreshold)}-এর বেশি অর্ডারে ফ্রি ডেলিভারি`, `FREE delivery on orders above ${formatProductPrice(displayFreeDeliveryThreshold)}`, `${formatProductPrice(displayFreeDeliveryThreshold)} से अधिक ऑर्डर पर FREE delivery`)}</p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2 text-xs font-bold text-emerald-900">
+                        <span>{cartFreeDeliveryUnlocked ? t('✓ ফ্রি ডেলিভারি পেয়েছেন', '✓ FREE delivery unlocked', '✓ मुफ्त डिलीवरी मिल गई') : t(`আর ${formatProductPrice(Math.max(0, displayFreeDeliveryThreshold - freeDeliveryProgressSubtotal))} যোগ করলে ডেলিভারি ফ্রি`, `Add ${formatProductPrice(Math.max(0, displayFreeDeliveryThreshold - freeDeliveryProgressSubtotal))} more for FREE delivery`, `मुफ्त डिलीवरी के लिए ${formatProductPrice(Math.max(0, displayFreeDeliveryThreshold - freeDeliveryProgressSubtotal))} और जोड़ें`)}</span>
+                        <span className="tabular-nums">{formatProductPrice(freeDeliveryProgressSubtotal)} / {formatProductPrice(displayFreeDeliveryThreshold)}</span>
+                      </div>
+                      <div className="h-2.5 overflow-hidden rounded-full bg-emerald-200">
+                        <div className="h-full rounded-full bg-emerald-600 transition-[width]" style={{ width: `${cartFreeDeliveryUnlocked ? 100 : Math.min(100, (freeDeliveryProgressSubtotal / displayFreeDeliveryThreshold) * 100)}%` }} />
+                      </div>
+                    </div></>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm font-bold text-amber-800">{t('এখন ডেলিভারি চার্জ নিশ্চিত করা যাচ্ছে না।', 'Delivery charge could not be confirmed right now.', 'अभी डिलीवरी शुल्क की पुष्टि नहीं हो सकी।')}</p>
+              )}
+            </div>
+            {currentDeliveryQuote && (() => {
+              const projectedCartSubtotal = cartTotal + (currentProductInCart ? 0 : totalPrice);
+              const orderTotal = projectedCartSubtotal + currentDeliveryQuote.charge;
+              const advance = currentDeliveryQuote.charge > 0 ? currentDeliveryQuote.charge : 120;
+              const codAvailable = productCountry !== 'IN' || orderTotal + 0.01 >= advance;
+              const due = Math.max(0, orderTotal - advance);
+              return (
+                <p className={`rounded-xl border px-4 py-4 text-base sm:text-lg font-black leading-7 shadow-sm ${codAvailable ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
+                  {codAvailable
+                    ? productCountry === 'IN'
+                      ? t(`💵 COD: আগে ${formatProductPrice(advance)} অনলাইনে + হাতে পেয়ে ${formatProductPrice(due)} দেবেন`, `💵 COD: Pay ${formatProductPrice(advance)} online first + ${formatProductPrice(due)} when delivered`, `💵 COD: पहले ${formatProductPrice(advance)} ऑनलाइन + डिलीवरी पर ${formatProductPrice(due)} दें`)
+                      : t(`💵 ক্যাশ অন ডেলিভারি — ${formatProductPrice(orderTotal)} হাতে পেয়ে দেবেন, আগে টাকা দিতে হবে না`, `💵 Cash on Delivery — Pay ${formatProductPrice(orderTotal)} when it arrives. Nothing to pay now.`, `💵 कैश ऑन डिलीवरी — ${formatProductPrice(orderTotal)} सामान मिलने पर दें। अभी कुछ नहीं देना है।`)
+                    : t('এই অর্ডারের জন্য COD পাওয়া যাবে না।', 'COD is not available for this order.', 'इस ऑर्डर पर COD उपलब्ध नहीं है।')}
+                </p>
+              );
+            })()}
             {inStock && <button type="button" onClick={handleBuyNow} className="md:hidden mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-800 px-4 py-3 text-sm font-black text-white shadow-md shadow-emerald-800/20 active:scale-[.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2"><Zap className="h-4 w-4 fill-current text-amber-300" />{t('এখনই অর্ডার করুন', 'Order Now', 'अभी ऑर्डर करें')}</button>}
             {variants.length > 0 && <div className="space-y-2"><label className="block text-xs font-bold text-gray-700 uppercase tracking-wide">{t('প্যাকেট বা জাত নির্বাচন করুন', 'Select Packet or Variety')}</label><div className="flex flex-wrap gap-2">{variants.map((v) => { const isSelected = selectedVariant?.id === v.id; const vPrice = v.sale_price && v.sale_price > 0 && v.sale_price < v.regular_price ? v.sale_price : v.regular_price; return <button key={v.id} type="button" onClick={() => { setSelectedVariant(v); setQuantity(product.min_order_qty || 1); }} aria-pressed={isSelected} className={`rounded-2xl border-2 px-3.5 py-2 min-h-11 text-xs sm:text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${isSelected ? 'border-emerald-600 bg-emerald-50/80 text-emerald-900 shadow-xs ring-1 ring-emerald-500/30' : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-300'}`}>{v.name} — <span className="text-emerald-700 font-extrabold">{formatProductPrice(vPrice)}</span></button>; })}</div></div>}
             {selectedBulkTiers.length > 0 && <div className="relative overflow-hidden rounded-2xl border-2 border-orange-300 bg-gradient-to-br from-orange-50 via-amber-50 to-white p-3.5 sm:p-4 shadow-lg shadow-orange-100/70">
@@ -409,10 +624,11 @@ export default function ProductDetailClient({
                           : `Choose ${b.min_quantity} packet offer`
                       )}
                     >
-                      {isActive && <span className="absolute right-2 top-2 rounded-full bg-red-600 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white shadow-sm animate-pulse">{t('সক্রিয়', 'ACTIVE')}</span>}
+                      {isActive && <span className="mb-2 inline-flex w-fit rounded-full bg-red-600 px-2.5 py-1 text-[9px] font-black uppercase tracking-wide text-white shadow-sm">{t('সক্রিয়', 'ACTIVE')}</span>}
                       <div className="flex items-center gap-2">
                         <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-orange-100 px-2 text-xs font-black text-orange-900 ring-1 ring-orange-200">{b.min_quantity}×</span>
                         <span className="text-xs sm:text-sm font-black text-gray-950">{t('প্যাকেট', 'PACKETS')}</span>
+                        {b.min_quantity === 5 && <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white">BEST VALUE</span>}
                         {discountPct > 0 && <span className="ml-auto rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black text-emerald-800">-{discountPct}%</span>}
                       </div>
                       {b.free_item_text && (
@@ -437,7 +653,7 @@ export default function ProductDetailClient({
                       </div>
                       <div className="mt-2 border-t border-orange-100 pt-1.5 text-[10px] font-bold text-gray-400">
                         <span className="line-through">{formatProductPrice(normalTotal)}</span>
-                        <span className="ml-2 text-emerald-700">{t('সেরা দাম অটোমেটিক প্রযোজ্য', 'Best price applied automatically')}</span>
+                        <span className="ml-2 text-emerald-700">{t('এই পরিমাণের সেরা দাম প্রযোজ্য', 'Best eligible price applied', 'इस मात्रा पर सबसे अच्छी कीमत लागू')}</span>
                       </div>
                     </button>
                   );
@@ -448,18 +664,18 @@ export default function ProductDetailClient({
                 {t(`${applicableBulk.min_quantity} প্যাকেটের সেরা অফারটি এখন আপনার অর্ডারে প্রযোজ্য`, `Best offer for ${applicableBulk.min_quantity}+ packs is now applied to your order`)}
               </div>}
             </div>}
-            <div>{inStock ? <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200"><Check className="h-3.5 w-3.5" /> {t('স্টকে এভেইলেবল আছে', 'In Stock')}{product.show_low_stock && effectiveStock <= (product.low_stock_threshold || 5) && <span className="text-red-600"> ({t(`মাত্র ${effectiveStock} টি বাকি!`, `Only ${effectiveStock} left!`)})</span>}</div> : <div className="inline-flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">{t('স্টক শেষ হয়ে গেছে', 'Out of Stock')}</div>}</div>
+            <div>{inStock ? <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200"><Check className="h-3.5 w-3.5" /> {t('স্টকে আছে', 'Stock available', 'स्टॉक उपलब्ध है')}{product.show_low_stock && effectiveStock <= (product.low_stock_threshold || 5) && <span className="text-red-600"> ({t(`মাত্র ${effectiveStock} টি বাকি!`, `Only ${effectiveStock} left!`)})</span>}</div> : <div className="inline-flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">{t('স্টক শেষ হয়ে গেছে', 'Out of Stock')}</div>}</div>
             {productShortDesc && <div className="rounded-2xl bg-gray-50/90 border border-gray-200/80 p-4 text-xs sm:text-sm text-gray-700 leading-relaxed font-medium whitespace-pre-line space-y-2 shadow-2xs">{productShortDesc}</div>}
-            {inStock && <div className="flex items-center gap-4 pt-1 flex-wrap"><div className="flex items-center rounded-2xl border-2 border-gray-200 bg-white p-1 shadow-2xs"><button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="h-11 w-11 rounded-xl disabled:opacity-40 flex items-center justify-center hover:bg-gray-100 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label={t('কমান', 'Decrease quantity')}><Minus className="h-4 w-4" /></button><span className="w-10 text-center font-black text-sm" aria-live="polite">{quantity}</span><button type="button" disabled={quantity >= quantityLimit} onClick={() => setQuantity(Math.min(quantityLimit, quantity + 1))} className="h-11 w-11 rounded-xl disabled:opacity-40 flex items-center justify-center hover:bg-gray-100 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label={t('বাড়ান', 'Increase quantity')}><Plus className="h-4 w-4" /></button></div><div className="text-xs"><span className="text-gray-400 block font-medium">{t('সর্বমোট মূল্য', 'Total Price')}</span><span className="text-lg font-black text-gray-900">{formatProductPrice(totalPrice)}</span></div></div>}
-            {inStock ? <div className="flex flex-col sm:flex-row gap-3 pt-2"><button type="button" onClick={handleAddToCart} className="min-h-12 flex-1 flex items-center justify-center gap-2 rounded-2xl border-2 border-emerald-600/30 bg-emerald-50/60 py-3.5 font-extrabold text-emerald-900 hover:bg-emerald-100 transition active:scale-[.98] cursor-pointer shadow-xs text-xs sm:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><ShoppingCart className="h-5 w-5 text-emerald-700" /> {t('কার্টে যোগ করুন', 'Add to Cart')}</button><button type="button" onClick={handleBuyNow} className="min-h-12 flex-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-800 py-3.5 font-extrabold text-white shadow-lg shadow-emerald-700/25 hover:from-emerald-800 hover:to-emerald-900 transition active:scale-[.98] cursor-pointer text-xs sm:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><Zap className="h-5 w-5 fill-current text-amber-300" /> {t('এখনই অর্ডার করুন', 'Buy Now')}</button></div> : <div className="pt-2">{!notifySent ? <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 space-y-3"><p className="font-bold text-xs text-amber-800">{t('পণ্যটি আবার স্টকে এলে SMS পেতে আপনার মোবাইল নম্বর দিন।', 'Enter your mobile number for an SMS when this product is back in stock.', 'उत्पाद फिर से स्टॉक में आने पर SMS पाने के लिए अपना मोबाइल नंबर दें।')}</p>{!notifyOpen ? <button type="button" onClick={() => setNotifyOpen(true)} className="min-h-11 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2">{t('স্টকে এলে SMS দিন', 'Notify me when available', 'स्टॉक में आने पर सूचित करें')}</button> : <div className="space-y-2"><input value={notifyPhone} onChange={(e) => setNotifyPhone(e.target.value)} inputMode="tel" aria-label={t('মোবাইল নম্বর', 'Mobile number')} placeholder={productCountry === 'IN' ? t('১০ সংখ্যার মোবাইল নম্বর *', '10-digit mobile number *', '10 अंकों का मोबाइल नंबर *') : t('১১ সংখ্যার মোবাইল নম্বর *', '11-digit mobile number *', '11 अंकों का मोबाइल नंबर *')} className="input-bangla w-full text-xs" /><button type="button" onClick={handleNotifyMe} className="min-h-11 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2">{t('নোটিফিকেশন সক্রিয় করুন', 'Activate Notification')}</button></div>}</div> : <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-xs font-bold text-emerald-800 flex items-center gap-2"><Check className="h-4 w-4" /> {t('পণ্যটি আবার স্টকে এলে আপনাকে SMS পাঠানো হবে।', 'We will send you an SMS when this product is back in stock.', 'यह उत्पाद फिर से स्टॉक में आने पर हम आपको SMS भेजेंगे।')}</div>}</div>}
-            <div className="grid grid-cols-3 gap-2 pt-2"><div className="p-3 rounded-2xl bg-white border border-gray-200/70 text-center shadow-2xs"><Truck className="h-5 w-5 text-emerald-700 mx-auto mb-1" /><span className="text-[11px] font-bold text-gray-800 block">{t('ডেলিভারি এলাকা চেকআউটে দেখুন', 'Check delivery availability at checkout', 'चेकआउट पर डिलीवरी उपलब्धता देखें')}</span></div><div className="p-3 rounded-2xl bg-white border border-gray-200/70 text-center shadow-2xs"><ShieldCheck className="h-5 w-5 text-emerald-700 mx-auto mb-1" /><span className="text-[11px] font-bold text-gray-800 block">{t('যোগ্য এলাকায় ক্যাশ অন ডেলিভারি', 'Cash on delivery where available', 'उपलब्ध स्थानों पर कैश ऑन डिलीवरी')}</span></div><div className="p-3 rounded-2xl bg-white border border-gray-200/70 text-center shadow-2xs"><CheckCircle2 className="h-5 w-5 text-emerald-700 mx-auto mb-1" /><span className="text-[11px] font-bold text-gray-800 block">{t('বীজের স্পেসিফিকেশন', 'Seed specifications', 'बीज का विवरण')}</span></div></div>
+            {inStock && <div className="flex items-center gap-4 pt-1 flex-wrap"><div className="space-y-1"><label className="block text-xs font-bold text-gray-700">{t('পরিমাণ', 'Quantity', 'मात्रा')}</label><div className="flex items-center rounded-2xl border-2 border-gray-200 bg-white p-1 shadow-2xs"><button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="h-12 w-12 rounded-xl disabled:opacity-40 flex items-center justify-center hover:bg-gray-100 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label={t('কমান', 'Decrease quantity')}><Minus className="h-4 w-4" /></button><span className="w-10 text-center font-black text-sm" aria-live="polite">{quantity}</span><button type="button" disabled={quantity >= quantityLimit} onClick={() => setQuantity(Math.min(quantityLimit, quantity + 1))} className="flex h-12 w-12 items-center justify-center rounded-xl transition hover:bg-emerald-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-40" aria-label={t('বাড়ান', 'Increase quantity')}><Plus className="h-4 w-4" /></button></div></div><div className="text-xs"><span className="text-gray-400 block font-medium">{t('সর্বমোট মূল্য', 'Total Price')}</span><span className="text-lg font-black text-gray-900">{formatProductPrice(totalPrice)}</span></div></div>}
+            {inStock ? <><div className="flex flex-col sm:flex-row gap-3 pt-2"><button type="button" onClick={handleAddToCart} className="min-h-12 flex-1 flex items-center justify-center gap-2 rounded-2xl border-2 border-emerald-600/30 bg-emerald-50/60 py-3.5 font-extrabold text-emerald-900 hover:bg-emerald-100 transition active:scale-[.98] cursor-pointer shadow-xs text-xs sm:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><ShoppingCart className="h-5 w-5 text-emerald-700" /> {t('কার্টে যোগ করুন', 'Add to Cart', 'कार्ट में जोड़ें')}</button><button type="button" onClick={handleBuyNow} className="min-h-12 flex-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-800 py-3.5 font-extrabold text-white shadow-lg shadow-emerald-700/25 hover:from-emerald-800 hover:to-emerald-900 transition active:scale-[.98] cursor-pointer text-xs sm:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><Zap className="h-5 w-5 fill-current text-amber-300" /> {t('এখনই অর্ডার করুন', 'Buy Now', 'अभी ऑर्डर करें')}</button></div><p className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3 py-2.5 text-xs font-bold leading-5 text-emerald-900">🌱 {t("বীজ না গজালে প্রমাণসহ যোগাযোগ করুন — আমরা সহায়তা করব", "Germination guarantee — contact us with proof if seeds do not germinate", "अंकुरण न होने पर प्रमाण के साथ संपर्क करें — हम मदद करेंगे")}</p></> : <div className="pt-2">{!notifySent ? <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 space-y-3"><p className="font-bold text-xs text-amber-800">{t('পণ্যটি আবার স্টকে এলে SMS পেতে আপনার মোবাইল নম্বর দিন।', 'Enter your mobile number for an SMS when this product is back in stock.', 'उत्पाद फिर से स्टॉक में आने पर SMS पाने के लिए अपना मोबाइल नंबर दें।')}</p>{!notifyOpen ? <button type="button" onClick={() => setNotifyOpen(true)} className="min-h-11 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2">{t('স্টকে এলে SMS দিন', 'Notify me when available', 'स्टॉक में आने पर सूचित करें')}</button> : <div className="space-y-2"><input value={notifyPhone} onChange={(e) => setNotifyPhone(e.target.value)} inputMode="tel" aria-label={t('মোবাইল নম্বর', 'Mobile number')} placeholder={productCountry === 'IN' ? t('১০ সংখ্যার মোবাইল নম্বর *', '10-digit mobile number *', '10 अंकों का मोबाइल नंबर *') : t('১১ সংখ্যার মোবাইল নম্বর *', '11-digit mobile number *', '11 अंकों का मोबाइल नंबर *')} className="input-bangla w-full text-xs" /><button type="button" onClick={handleNotifyMe} className="min-h-11 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2">{t('নোটিফিকেশন সক্রিয় করুন', 'Activate Notification')}</button></div>}</div> : <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-xs font-bold text-emerald-800 flex items-center gap-2"><Check className="h-4 w-4" /> {t('পণ্যটি আবার স্টকে এলে আপনাকে SMS পাঠানো হবে।', 'We will send you an SMS when this product is back in stock.', 'यह उत्पाद फिर से स्टॉक में आने पर हम आपको SMS भेजेंगे।')}</div>}</div>}
+            <div className="grid grid-cols-3 gap-2 pt-2"><div className="p-3 rounded-2xl bg-white border border-gray-200/70 text-center shadow-2xs"><Truck className="h-5 w-5 text-emerald-700 mx-auto mb-1" /><span className="text-[11px] font-bold text-gray-800 block">{t('ডেলিভারি চার্জ উপরে দেখুন', 'Delivery charge shown above', 'डिलीवरी शुल्क ऊपर दिखाया गया है')}</span></div><div className="p-3 rounded-2xl bg-white border border-gray-200/70 text-center shadow-2xs"><ShieldCheck className="h-5 w-5 text-emerald-700 mx-auto mb-1" /><span className="text-[11px] font-bold text-gray-800 block">{t('COD-এর অগ্রিম ও বাকি টাকা উপরে দেখুন', 'COD advance and balance shown above', 'COD अग्रिम और बाकी रकम ऊपर दिखाई गई है')}</span></div><div className="p-3 rounded-2xl bg-white border border-gray-200/70 text-center shadow-2xs"><CheckCircle2 className="h-5 w-5 text-emerald-700 mx-auto mb-1" /><span className="text-[11px] font-bold text-gray-800 block">{t('বীজের স্পেসিফিকেশন', 'Seed specifications', 'बीज का विवरण')}</span></div></div>
           </div>
         </div>
         {bundles.length > 0 && <div className="mt-12 rounded-3xl border border-emerald-200 bg-emerald-50/40 p-5 sm:p-6 shadow-sm"><h2 className="text-base sm:text-lg font-black text-gray-900 flex items-center gap-2 mb-4"><Package className="h-5 w-5 text-emerald-700" /> {t('একসাথে নিলে বিশেষ ছাড় (বান্ডেল ডিল)', 'Special Bundle Deal')}</h2><div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{bundles.map((b) => <div key={b.id} className="flex items-center justify-between bg-white p-4 rounded-2xl border border-gray-200/80 shadow-2xs gap-3"><div><p className="font-extrabold text-sm text-gray-900">{b.bundle_name}</p><p className="text-xs text-gray-500 mt-0.5">{b.quantity} {t('টি প্যাকেট বান্ডেল', 'pcs bundle')}</p><div className="mt-1 flex items-baseline gap-2"><span className="font-black text-emerald-800 text-base">{formatProductPrice(b.bundle_price)}</span><span className="text-xs text-gray-400 line-through font-semibold">{formatProductPrice(((product.regular_price || product.sale_price || 0) * b.quantity))}</span></div></div><button type="button" disabled={!inStock || b.quantity > quantityLimit} onClick={() => addBundleToCartHelper(b)} className="min-h-11 flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800 transition active:scale-95 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">{t('যোগ করুন', 'Add')} <ArrowRight className="h-3.5 w-3.5" /></button></div>)}</div></div>}
         <ProductReviewShowcase reviews={reviews} label={t} />
         <div className="mt-14"><div className="flex overflow-x-auto border-b border-gray-200 gap-2 sm:gap-4 no-scrollbar" role="tablist" aria-label={t('পণ্যের তথ্য', 'Product information')}><button type="button" role="tab" aria-selected={activeTab === 'desc'} onClick={() => setActiveTab('desc')} className={`flex items-center gap-2 pb-3.5 text-xs sm:text-sm font-extrabold border-b-2 transition whitespace-nowrap px-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeTab === 'desc' ? 'border-emerald-700 text-emerald-800' : 'border-transparent text-gray-500 hover:text-gray-900'}`}><Info className="h-4 w-4" /> {t('বিস্তারিত বিবরণ', 'Description')}</button>{seedInfoFields.length > 0 && <button type="button" role="tab" aria-selected={activeTab === 'specs'} onClick={() => setActiveTab('specs')} className={`flex items-center gap-2 pb-3.5 text-xs sm:text-sm font-extrabold border-b-2 transition whitespace-nowrap px-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeTab === 'specs' ? 'border-emerald-700 text-emerald-800' : 'border-transparent text-gray-500 hover:text-gray-900'}`}><Sprout className="h-4 w-4" /> {t('বীজের জাত ও স্পেকস', 'Seed Specs')}</button>}{(hasCultivationInstructions || product.storage_instructions) && <button type="button" role="tab" aria-selected={activeTab === 'guide'} onClick={() => setActiveTab('guide')} className={`flex items-center gap-2 pb-3.5 text-xs sm:text-sm font-extrabold border-b-2 transition whitespace-nowrap px-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeTab === 'guide' ? 'border-emerald-700 text-emerald-800' : 'border-transparent text-gray-500 hover:text-gray-900'}`}><BookOpen className="h-4 w-4" /> {t('চাষ ও পরিচর্যা', 'Cultivation Guide')}</button>}<button type="button" role="tab" aria-selected={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} className={`flex items-center gap-2 pb-3.5 text-xs sm:text-sm font-extrabold border-b-2 transition whitespace-nowrap px-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeTab === 'reviews' ? 'border-emerald-700 text-emerald-800' : 'border-transparent text-gray-500 hover:text-gray-900'}`}><Star className="h-4 w-4" /> {t('রিভিউ', 'Reviews')} ({reviews.length})</button>{faqs.length > 0 && <button type="button" role="tab" aria-selected={activeTab === 'faqs'} onClick={() => setActiveTab('faqs')} className={`flex items-center gap-2 pb-3.5 text-xs sm:text-sm font-extrabold border-b-2 transition whitespace-nowrap px-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${activeTab === 'faqs' ? 'border-emerald-700 text-emerald-800' : 'border-transparent text-gray-500 hover:text-gray-900'}`}><HelpCircle className="h-4 w-4" /> {t('সাধারণ জিজ্ঞাসা', 'FAQ')}</button>}</div>
           <div className="mt-4 rounded-3xl border border-gray-200/80 bg-white p-5 shadow-2xs sm:p-8" role="tabpanel">
-            {activeTab === 'desc' && <div className="space-y-6">{productDesc && <div><h3 className="mb-3 text-base font-black text-gray-900 sm:text-lg">{t('পণ্যের বিবরণ', 'Product Description')}</h3><p className="whitespace-pre-line break-words text-sm font-normal leading-relaxed text-gray-600 sm:text-base">{productDesc}</p></div>}</div>}
+            {activeTab === 'desc' && <div className="space-y-6">{productDesc && <div><h3 className="mb-3 text-base font-black text-gray-900 sm:text-lg">{t('পণ্যের বিবরণ', 'Product Description')}</h3><FormattedProductDescription value={productDesc} /></div>}</div>}
             {activeTab === 'specs' && <div><h3 className="mb-4 text-base font-black text-gray-900 sm:text-lg">{t('বীজ সম্পর্কিত তথ্যাবলী', 'Seed Specifications')}</h3><div className="overflow-x-auto rounded-2xl border border-gray-200"><table className="w-full text-xs sm:text-sm"><tbody className="divide-y divide-gray-200">{seedInfoFields.map((field, idx) => <tr key={idx} className={idx % 2 === 0 ? 'bg-gray-50/70' : 'bg-white'}><td className="w-1/3 px-4 py-3 font-bold text-gray-700">{field.label}</td><td className="px-4 py-3 text-gray-600 font-medium">{field.value}</td></tr>)}</tbody></table></div></div>}
             {activeTab === 'guide' && <div className="space-y-6">{hasCultivationInstructions && <div className="rounded-2xl bg-emerald-50/60 border border-emerald-200/80 p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -621,8 +837,9 @@ export default function ProductDetailClient({
           </section>
         </div>
       )}
-      {inStock && <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur-md px-3.5 pt-3.5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-2xl lg:hidden"><div className="max-w-md mx-auto flex items-center justify-between gap-3"><div className="min-w-0"><span className="text-[10px] text-gray-400 font-semibold block">{quantity} {t('টি পণ্যের মোট মূল্য', 'Total items price')}</span><p className="text-lg font-black text-emerald-800 truncate">{formatProductPrice(totalPrice)}</p></div><div className="flex gap-2 shrink-0"><button type="button" onClick={handleAddToCart} aria-label={t('কার্টে যোগ করুন', 'Add to cart')} className="min-h-12 min-w-12 p-3 rounded-xl border border-emerald-600/30 bg-emerald-50 text-emerald-900 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><ShoppingCart className="h-5 w-5 text-emerald-700" /></button><button type="button" onClick={handleBuyNow} className="min-h-12 flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-700 to-emerald-800 px-5 py-3 text-xs font-extrabold text-white shadow-md shadow-emerald-700/30 active:scale-95 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><Zap className="h-4 w-4 fill-current text-amber-300" />{t('অর্ডার করুন', 'Order Now')}</button></div></div></div>}
-      {inStock && <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[60] border-t border-gray-200 bg-white/95 px-3.5 pt-2.5 pb-2 shadow-2xl backdrop-blur-md md:hidden"><div className="mx-auto flex max-w-md items-center justify-between gap-3"><div className="min-w-0"><span className="block text-[10px] font-semibold text-gray-500">{t('পণ্যের মূল্য', 'Product price', 'उत्पाद की कीमत')}</span><p className="truncate text-lg font-black text-emerald-800">{formatProductPrice(totalPrice)}</p></div><button type="button" onClick={handleBuyNow} className="flex min-h-12 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-emerald-700 to-emerald-800 px-5 py-3 text-xs font-extrabold text-white shadow-md shadow-emerald-700/30 active:scale-95"><Zap className="h-4 w-4 fill-current text-amber-300" />{t('এখনই অর্ডার করুন', 'Order Now', 'अभी ऑर्डर करें')}</button></div></div>}
+
+      {siteSettings?.whatsapp_enabled && siteSettings?.whatsapp && <a href={`https://wa.me/${siteSettings.whatsapp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(siteSettings.whatsapp_message || '')}`} target="_blank" rel="noopener noreferrer" aria-label={t('WhatsApp-এ যোগাযোগ করুন', 'Contact on WhatsApp', 'WhatsApp पर बात करें')} title={t('WhatsApp-এ যোগাযোগ করুন', 'Contact on WhatsApp', 'WhatsApp पर बात करें')} className="fixed right-4 bottom-[calc(9rem+env(safe-area-inset-bottom)+12px)] z-[59] inline-flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-white bg-green-600 px-5 py-3 text-sm font-extrabold tracking-wide text-white shadow-[0_8px_24px_rgba(22,101,52,.35)] transition hover:bg-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 md:hidden"><MessageCircle className="h-5 w-5" /><span>WhatsApp</span></a>}
+      {inStock && <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[60] border-t border-emerald-100 bg-white/95 px-3 pt-2.5 pb-2 shadow-2xl backdrop-blur-md md:hidden"><div className="mx-auto flex max-w-md items-center gap-2"><div className="min-w-0 flex-1"><span className="block text-[10px] font-semibold text-gray-600">{t('ডেলিভারিসহ মোট', 'Total with delivery', 'डिलीवरी सहित कुल')}</span><p className="truncate text-lg font-black text-emerald-800">{deliveryQuote ? (currentProductInCart ? formatProductPrice(cartTotal + (cartFreeDeliveryUnlocked ? 0 : deliveryQuote.charge)) : formatProductPrice(totalPrice + deliveryQuote.charge)) : deliveryQuoteLoading ? t('যাচাই হচ্ছে…', 'Checking…', 'जाँच हो रही है…') : formatProductPrice(currentProductInCart ? cartTotal : totalPrice)}</p></div><button type="button" onClick={handleAddToCart} className="flex min-h-12 shrink-0 items-center justify-center gap-1 rounded-xl border border-emerald-700 bg-white px-3 text-xs font-extrabold text-emerald-800"><ShoppingCart className="h-4 w-4" />{t('কার্টে যোগ', 'Add to Cart')}</button><button type="button" onClick={handleBuyNow} className="flex min-h-12 shrink-0 items-center justify-center gap-1 rounded-xl bg-emerald-800 px-3.5 text-xs font-extrabold text-white"><Zap className="h-4 w-4 fill-current text-amber-300" />{t('এখনই কিনুন', 'Buy Now')}</button></div></div>}
     </div>
   );
 }

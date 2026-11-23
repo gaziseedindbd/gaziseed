@@ -5,7 +5,7 @@ import { Check, Truck } from 'lucide-react';
 import { useLang } from '@/components/site/language-provider';
 import { formatPrice } from '@/lib/data';
 import { supabase, getVisitorCountry } from '@/lib/supabase/client';
-import type { CartItem } from '@/lib/cart';
+import { updateCartQuantity, type CartItem } from '@/lib/cart';
 
 type DeliveryRule = {
   min_order: number;
@@ -21,7 +21,7 @@ type Props = {
 
 export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
   const { t } = useLang();
-  const [country, setCountry] = useState<'BD' | 'IN'>('BD');
+  const [country, setCountry] = useState<'BD' | 'IN'>(() => getVisitorCountry());
   const [deliveryRules, setDeliveryRules] = useState<DeliveryRule[]>([]);
   const [freeDeliveryProductIds, setFreeDeliveryProductIds] = useState<Set<string>>(new Set());
   const [deliveryCharge, setDeliveryCharge] = useState<number | null>(null);
@@ -131,18 +131,38 @@ export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
     && (deliveryCharge === 0 || freeDeliveryProductIds.size > 0);
   const freeDeliveryRemaining = freeDeliveryThreshold == null
     ? null
-    : Math.round(Math.max(0, freeDeliveryThreshold - subtotal));
+    : country === 'IN'
+      ? Math.ceil(Math.max(0, freeDeliveryThreshold - subtotal))
+      : Math.round(Math.max(0, freeDeliveryThreshold - subtotal));
   const freeDeliveryPercent = freeDeliveryUnlocked
     ? 100
     : freeDeliveryThreshold
       ? Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100))
       : 0;
 
-  if (freeDeliveryThreshold === null && !freeDeliveryUnlocked) return null;
+  const progressTarget = freeDeliveryThreshold ?? subtotal;
 
-  const progressTarget = country === 'IN'
-    ? Math.max(0, (freeDeliveryThreshold ?? subtotal) - 0.01)
-    : (freeDeliveryThreshold ?? subtotal);
+  const addOn = useMemo(() => {
+    if (!deliveryQuoteReady || freeDeliveryUnlocked || freeDeliveryThreshold == null || subtotal >= progressTarget) return null;
+    let best: { item: CartItem; extra: number; nextSubtotal: number; overage: number } | null = null;
+    for (const item of items) {
+      if (item.bundle_id) continue;
+      const basePrice = Number(item.base_unit_price ?? item.unit_price);
+      for (let extra = 1; extra <= Math.max(0, 99 - item.quantity); extra += 1) {
+        const quantity = item.quantity + extra;
+        const tier = (item.bulk_tiers || []).filter((candidate) => candidate.is_active !== false && candidate.min_quantity <= quantity && candidate.unit_price > 0).sort((a, b) => b.min_quantity - a.min_quantity)[0];
+        const unitPrice = Number(tier?.unit_price ?? basePrice);
+        const nextSubtotal = subtotal - item.unit_price * item.quantity + unitPrice * quantity;
+        if (nextSubtotal < progressTarget) continue;
+        const overage = nextSubtotal - progressTarget;
+        if (!best || overage < best.overage || (overage === best.overage && extra < best.extra)) best = { item, extra, nextSubtotal, overage };
+        break;
+      }
+    }
+    return best;
+  }, [deliveryQuoteReady, freeDeliveryUnlocked, freeDeliveryThreshold, items, progressTarget, subtotal]);
+
+  if (freeDeliveryThreshold === null && !freeDeliveryUnlocked) return null;
 
   return (
     <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/[0.04] p-3.5" role="status" aria-live="polite">
@@ -181,6 +201,39 @@ export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
           style={{ width: `${freeDeliveryPercent}%` }}
         />
       </div>
+      {addOn && (
+        <div className="space-y-2 rounded-xl border border-emerald-300 bg-emerald-50 p-3">
+          <p className="text-xs font-black text-emerald-900">{t('ফ্রি ডেলিভারি পেতে আরও পণ্য যোগ করুন', 'Add more to unlock FREE delivery')}</p>
+          <p className="text-sm font-bold text-emerald-800">{t(`${addOn.extra}টি ${addOn.item.name} যোগ করুন`, `Add ${addOn.extra} more ${addOn.item.name}`)}</p>
+          <div className="flex items-center justify-between gap-2 text-xs text-emerald-800"><span>{t('নতুন পণ্যের মোট', 'New product subtotal')}</span><strong>{formatPrice(addOn.nextSubtotal, country)}</strong></div>
+          <button type="button" onClick={() => updateCartQuantity(addOn.item.product_id, addOn.item.quantity + addOn.extra, addOn.item.variant_id, addOn.item.bundle_id)} className="min-h-10 w-full rounded-lg bg-emerald-700 px-3 py-2 text-xs font-black text-white">+ {t('যোগ করুন', 'Add')}</button>
+        </div>
+      )}
+      {deliveryQuoteReady && deliveryCharge !== null && (
+        <div className="flex items-center justify-between gap-3 border-t border-primary/15 pt-2 text-sm">
+          <span className="font-semibold text-muted-foreground">{t('ডেলিভারি চার্জ', 'Delivery')}</span>
+          <span className="font-bold text-foreground">{deliveryCharge === 0 ? t('ফ্রি', 'FREE') : formatPrice(deliveryCharge, country)}</span>
+        </div>
+      )}
+      {deliveryQuoteReady && deliveryCharge !== null && (
+        <>
+          {freeDeliveryUnlocked && (() => {
+            const waivedCharge = deliveryRules
+              .filter((rule) => !rule.is_free && rule.charge > 0 && subtotal >= rule.min_order && (rule.max_order == null || subtotal <= rule.max_order))
+              .sort((a, b) => b.min_order - a.min_order)[0]?.charge
+              ?? deliveryRules.filter((rule) => !rule.is_free && rule.charge > 0).sort((a, b) => a.min_order - b.min_order)[0]?.charge;
+            return waivedCharge ? (
+              <p className="rounded-xl bg-emerald-100/70 px-3 py-2 text-xs font-black text-emerald-800">
+                ✅ {t('ফ্রি ডেলিভারি আনলক হয়েছে! আপনি সাশ্রয় করেছেন', 'FREE delivery unlocked! You saved')} {formatPrice(waivedCharge, country)}
+              </p>
+            ) : null;
+          })()}
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-emerald-100/70 px-3 py-2">
+            <span className="font-black text-emerald-950">{t('সর্বমোট', 'Total including delivery')}</span>
+            <span className="text-lg font-black tabular-nums text-emerald-900">{formatPrice(subtotal + deliveryCharge, country)}</span>
+          </div>
+        </>
+      )}
     </div>
   );
 }

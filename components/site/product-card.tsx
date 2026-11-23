@@ -27,8 +27,13 @@ export function ProductCard({ product, stackedActions = false }: { product: Prod
       : lang === 'hi'
         ? (product.name_en || product.name_bn)
         : (product.name_bn || product.name_en));
-  const shortDescription = tDb(translated.short_description || product.short_description || '');
   const productCountry = (product as Product & { country_code?: string }).country_code === 'IN' ? 'IN' : 'BD';
+  const rawShortDescription = tDb(translated.short_description || product.short_description || '');
+  const shortDescription = productCountry === 'IN'
+    ? rawShortDescription.replace(/AB Seed Company/gi, 'GAZI SEED')
+      .replace(/Cash on Delivery across Bangladesh/gi, 'Cash on Delivery at eligible PIN codes in India')
+      .replace(/Cash on Delivery Nationwide/gi, 'Cash on Delivery at eligible PIN codes in India')
+    : rawShortDescription;
   const productBranch = productCountry.toLowerCase();
   const imageCandidates = Array.from(new Set([product.image, ...(product.images || [])].filter((value): value is string => Boolean(value))));
   const currentImage = imageCandidates[imageIndex];

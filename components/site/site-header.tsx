@@ -35,11 +35,12 @@ import { getVisitorCountry } from '@/lib/supabase/client';
 import type { SiteSettings, Product } from '@/lib/supabase/types';
 import { useLang } from '@/components/site/language-provider';
 import CountrySelector from '@/components/site/country-selector';
+import { useCart } from '@/components/site/cart-provider';
 
 export function SiteHeader({ initialCountry = 'BD' }: { initialCountry?: 'BD' | 'IN' }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [cartCount, setCartCount] = useState(0);
+  const { count: cartCount } = useCart();
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -138,25 +139,6 @@ export function SiteHeader({ initialCountry = 'BD' }: { initialCountry?: 'BD' | 
       window.clearTimeout(timer);
     };
   }, [searchQuery, searchOpen]);
-
-  const updateCartCount = () => {
-    try {
-      const cart = JSON.parse(localStorage.getItem('gazi_cart') || '[]');
-      setCartCount(cart.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 1), 0));
-    } catch {
-      setCartCount(0);
-    }
-  };
-
-  useEffect(() => {
-    updateCartCount();
-    window.addEventListener('cart-updated', updateCartCount);
-    window.addEventListener('storage', updateCartCount);
-    return () => {
-      window.removeEventListener('cart-updated', updateCartCount);
-      window.removeEventListener('storage', updateCartCount);
-    };
-  }, []);
 
   const submitSearch = () => {
     const query = searchQuery.trim();
