@@ -36,6 +36,7 @@ export default function CartPage() {
   const itemsWithDiscount = items as CartItemWithDiscount[];
   const originalTotal = itemsWithDiscount.reduce((sum, item) => sum + Math.max(item.regular_price ?? item.unit_price, item.base_unit_price ?? item.unit_price) * item.quantity, 0);
   const savingsTotal = Math.max(0, originalTotal - total);
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const discountPercent = originalTotal > 0 ? Math.round((savingsTotal / originalTotal) * 100) : 0;
 
   return (
@@ -48,7 +49,7 @@ export default function CartPage() {
               <div>
                 <span className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[.18em] text-emerald-800"><Leaf className="h-3.5 w-3.5" /> GAZI SEED · SHOPPING</span>
                 <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">{t('আপনার শপিং কার্ট', 'Your Shopping Cart')}</h1>
-                <p className="mt-1 text-sm text-slate-500">{items.length} {t('টি পণ্য আপনার কার্টে আছে', 'items in your cart')}</p>
+                <p className="mt-1 text-sm text-slate-500">{itemCount} {t(itemCount === 1 ? 'টি পণ্য আপনার কার্টে আছে' : 'টি পণ্য আপনার কার্টে আছে', itemCount === 1 ? 'item in your cart' : 'items in your cart')}</p>
               </div>
               <div className="inline-flex items-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-3 text-xs font-bold text-emerald-900"><ShieldCheck className="h-5 w-5 text-emerald-700" />{t('নিরাপদ শপিং', 'Secure shopping')}</div>
             </div>
@@ -64,7 +65,7 @@ export default function CartPage() {
           <section className="min-w-0">
             <div className="mb-3 flex items-center justify-between gap-3 px-1">
               <h2 className="text-base font-black text-slate-900 sm:text-lg">{t('কার্টের পণ্য', 'Items in your cart')}</h2>
-              <span className="rounded-full bg-white px-3 py-1 text-[11px] font-bold text-slate-500 shadow-sm">{items.length} {t('টি আইটেম', 'items')}</span>
+              <span className="rounded-full bg-white px-3 py-1 text-[11px] font-bold text-slate-500 shadow-sm">{itemCount} {t(itemCount === 1 ? 'টি আইটেম' : 'টি আইটেম', itemCount === 1 ? 'item' : 'items')}</span>
             </div>
             <div className="space-y-3">
               {itemsWithDiscount.map((item) => {
@@ -114,14 +115,12 @@ export default function CartPage() {
                 {savingsTotal > 0 && <div className="flex justify-between gap-3 text-sm text-emerald-700"><span className="font-bold">{t('আপনার ছাড়', 'Your discount')} ({discountPercent}%)</span><span className="font-black">-{formatPrice(savingsTotal)}</span></div>}
                 <div className="flex justify-between gap-3 text-sm"><span className="text-slate-500">{t('অফারসহ পণ্যের মোট', 'Offer / product total')}</span><span className="font-bold text-slate-900">{formatPrice(total)}</span></div>
                 <CartFreeDeliveryProgress items={items} subtotal={total} />
-                <div className="flex justify-between gap-3 text-xs"><span className="text-slate-500">{t('ডেলিভারি চার্জ', 'Delivery charge')}</span><span className="text-right font-semibold text-slate-500">{t('চেকআউটে হিসাব হবে', 'Calculated at checkout')}</span></div>
                 <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
                   <p className="text-[10px] font-black uppercase tracking-[.14em] text-emerald-800">{t('পণ্যের মোট', 'Product subtotal')}</p>
-                  <div className="mt-1 flex items-end justify-between gap-3"><span className="text-sm font-bold text-slate-700">{items.length} {t('টি পণ্য', 'items')}</span><span className="text-2xl font-black tracking-tight text-emerald-900">{formatPrice(total)}</span></div>
+                  <div className="mt-1 flex items-end justify-between gap-3"><span className="text-sm font-bold text-slate-700">{itemCount} {t(itemCount === 1 ? 'টি পণ্য' : 'টি পণ্য', itemCount === 1 ? 'item' : 'items')}</span><span className="text-2xl font-black tracking-tight text-emerald-900">{formatPrice(total)}</span></div>
                   {savingsTotal > 0 && <p className="mt-1 text-xs font-bold text-emerald-700">{t('আপনি সাশ্রয় করছেন', 'You save')} {formatPrice(savingsTotal)}</p>}
                 </div>
                 <Link href="/checkout" className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-800 px-4 py-4 text-base font-black text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-900 active:scale-[.99]">{t('চেকআউটে এগিয়ে যান', 'Proceed to checkout')}<ArrowRight className="h-4 w-4" /></Link>
-                <p className="text-center text-[10px] leading-5 text-slate-400">{t('ডেলিভারি চার্জ ও প্রযোজ্য পেমেন্ট চেকআউটে দেখানো হবে।', 'Delivery charges and available payment options are shown at checkout.')}</p>
               </div>
             </div>
           </aside>
