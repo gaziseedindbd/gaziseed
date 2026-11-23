@@ -21,7 +21,7 @@ type Props = {
 
 export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
   const { t } = useLang();
-  const [country, setCountry] = useState<'BD' | 'IN'>('BD');
+  const [country, setCountry] = useState<'BD' | 'IN'>(() => getVisitorCountry());
   const [deliveryRules, setDeliveryRules] = useState<DeliveryRule[]>([]);
   const [freeDeliveryProductIds, setFreeDeliveryProductIds] = useState<Set<string>>(new Set());
   const [deliveryCharge, setDeliveryCharge] = useState<number | null>(null);
