@@ -493,6 +493,9 @@ export default function CheckoutPage() {
     ? Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100)) : 0;
 
   const deliveryMessage = useMemo(() => {
+    if (!deliveryQuoteReady) {
+      return t('ডেলিভারি যাচাই হচ্ছে…', 'Checking delivery…', 'डिलीवरी की जाँच हो रही है…');
+    }
     if (freeDeliveryProductIds.size > 0 || deliveryCharge === 0) {
       return t('ফ্রি ডেলিভারি যোগ হয়েছে', 'Free delivery unlocked');
     }
@@ -959,7 +962,7 @@ export default function CheckoutPage() {
                   <AddressSelector value={addrValue} onChange={setAddrValue} countryCode={country} />
                 </div>
 
-                <button type="submit" disabled={loading || !deliveryQuoteReady} className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 text-base font-black text-primary-foreground shadow-lg shadow-primary/20 transition active:scale-[.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 md:hidden">{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম পরিশোধ করুন', 'Pay COD advance', 'COD अग्रिम भुगतान करें') : t('এখনই পেমেন্ট করুন', 'Pay Now', 'अभी भुगतान करें')) : t('অর্ডার কনফার্ম করুন', 'Confirm order', 'ऑर्डर की पुष्टि करें')} <ChevronRight className="h-4 w-4" /></>}</button>
+                <button type="submit" disabled={loading || !deliveryQuoteReady} className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 text-base font-black text-primary-foreground shadow-lg shadow-primary/20 transition active:scale-[.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 md:hidden">{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t(`এখন ${formatPrice(codAdvance)} অগ্রিম দিন`, `Pay ${formatPrice(codAdvance)} COD advance now`, `अभी ${formatPrice(codAdvance)} COD अग्रिम दें`) : t('এখনই পেমেন্ট করুন', 'Pay Now', 'अभी भुगतान करें')) : t('অর্ডার কনফার্ম করুন', 'Confirm order', 'ऑर्डर की पुष्टि करें')} <ChevronRight className="h-4 w-4" /></>}</button>
 
                 <div className="mt-5 space-y-1.5">
                   <label htmlFor="checkout-instructions" className="text-sm font-extrabold text-foreground">{t('অতিরিক্ত নির্দেশনা', 'Special instructions')}</label>
@@ -975,92 +978,7 @@ export default function CheckoutPage() {
                 </div>
               </section>
 
-              <section className="overflow-hidden rounded-[2rem] border border-emerald-200/70 bg-card shadow-sm dark:border-emerald-900/50">
-                <div className="border-b border-emerald-200/60 bg-gradient-to-r from-emerald-50 to-white p-5 dark:from-emerald-950/30 dark:to-card sm:p-6">
-                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-400">{t('বিশেষ প্যাকেট অফার', 'SPECIAL PACKET OFFERS')}</p>
-                  <h2 className="mt-1 text-lg font-black text-foreground sm:text-xl">{t('পণ্য ও প্যাকেট নির্বাচন করুন', 'Select products & packet offers')}</h2>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('আপনার পছন্দের প্যাকেট অফার বেছে নিন এবং বেশি সাশ্রয় করুন।', 'Choose a packet offer to get the best value on your order.')}</p>
-                </div>
-                <div className="space-y-4 border-b border-border/60 p-5 sm:p-6">
-                  {cart.map((item) => (
-                    <div key={`${item.product_id}-${item.variant_id || ''}-${item.bundle_id || ''}`} className="flex flex-wrap items-start gap-3">
-                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-secondary/50">
-                        <img
-                          src={item.image || '/placeholder.svg'}
-                          alt=""
-                          className="h-full w-full object-cover"
-                          onError={(event) => {
-                            if (country === 'BD' && event.currentTarget.dataset.fallbackApplied !== '1') {
-                              event.currentTarget.dataset.fallbackApplied = '1';
-                              event.currentTarget.src = '/placeholder.svg';
-                            }
-                          }}
-                        />
 
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="line-clamp-2 text-xs font-black leading-5 text-foreground">{item.name}</p>
-                        {item.variant_name && <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{item.variant_name}</p>}
-                      </div>
-                      {item.bulk_tiers && item.bulk_tiers.filter((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0).length > 0 && (
-                          <div className="order-3 basis-full rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-3 sm:p-4">
-                            <div className="mb-3 flex items-center gap-2 text-xs font-black text-orange-900 sm:text-sm">
-                              <Tag className="h-4 w-4 shrink-0" />
-                              {t('🔥 বেশি কিনুন, বেশি সাশ্রয় করুন', '🔥 BUY MORE, SAVE MORE')}
-                            </div>
-                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                              {[...item.bulk_tiers]
-                                .filter((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0)
-                                .sort((a, b) => a.min_quantity - b.min_quantity)
-                                .map((tier) => {
-                                  const basePrice = Number(item.base_unit_price ?? item.regular_price ?? item.unit_price);
-                                  const savings = Math.max(0, (basePrice - tier.unit_price) * tier.min_quantity);
-                                  const active = item.quantity >= tier.min_quantity;
-                                  const canSelect = tier.min_quantity <= 99;
-                                  return (
-                                    <button
-                                      key={tier.id || tier.min_quantity}
-                                      type="button"
-                                      disabled={!canSelect}
-                                      aria-pressed={item.quantity === tier.min_quantity}
-                                      onClick={() => updateCartQuantity(item.product_id, tier.min_quantity, item.variant_id, item.bundle_id)}
-                                      className={`flex min-h-[92px] w-full flex-col justify-between rounded-xl border p-3 text-left shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 sm:min-h-[100px] sm:p-3.5 ${active ? 'border-emerald-400 bg-emerald-50 ring-1 ring-emerald-200' : 'border-emerald-100 bg-white hover:border-emerald-400 hover:bg-emerald-50/60'} ${!canSelect ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}` }
-                                    >
-                                      <div className="flex items-center justify-between gap-2">
-                                        <span className="text-sm font-extrabold text-foreground sm:text-base">
-                                          {tier.min_quantity}× {t('প্যাকেট', 'PACKETS')}
-                                          {active && <span className="ml-1 text-emerald-700">· {t('সক্রিয়', 'ACTIVE')}</span>}
-                                        </span>
-                                        <span className="text-sm font-black text-emerald-700 sm:text-base">{formatPrice(tier.unit_price)} <span className="text-[11px] font-semibold">{t('প্রতি প্যাকেট', 'per pack')}</span></span>
-                                      </div>
-                                      {tier.free_item_text && <p className="mt-2 text-xs font-bold text-emerald-800">🎁 {tier.free_item_text}</p>}
-                                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-black/5 pt-2">
-                                        <p className="text-xs font-medium text-muted-foreground">
-                                          {t('সাশ্রয়', 'You save')}: {formatPrice(savings)}
-                                        </p>
-                                        <span className="text-[10px] font-black tracking-wide text-emerald-800">
-                                          {item.quantity === tier.min_quantity ? t('নির্বাচিত', 'SELECTED') : t('এই অফার নিন', 'SELECT OFFER')}
-                                        </span>
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                            </div>
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                        <div className="mt-2 inline-flex items-center gap-1 rounded-xl border border-border/70 bg-background p-1" aria-label={`Quantity for ${item.name}`}>
-                          <button type="button" aria-label={`Decrease quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, -1)} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary"><Minus className="h-4 w-4" /></button>
-                          <span aria-live="polite" className="min-w-7 text-center text-sm font-black tabular-nums">{item.quantity}</span>
-                          <button type="button" aria-label={`Increase quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, 1)} disabled={item.quantity >= 99} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary"><Plus className="h-4 w-4" /></button>
-                        </div>
-
-                      </div>
-                      <span className="shrink-0 text-xs font-black text-foreground">{formatPrice(item.unit_price * item.quantity)}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
 
               {(country !== 'BD' || bdCouponsEnabled) && <section className="rounded-[2rem] border border-border/70 bg-card p-5 shadow-sm sm:p-7">
                 <div className="flex items-start justify-between gap-4">
@@ -1228,16 +1146,16 @@ export default function CheckoutPage() {
                   <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারি', 'Delivery')}</span><span className="font-bold">{!deliveryQuoteReady ? t('ডেলিভারি যাচাই হচ্ছে', 'Checking delivery') : deliveryCharge === 0 ? t('ফ্রি', 'Free') : formatPrice(deliveryCharge)}</span></div>
                   {country === 'IN' && paymentMethod === 'cod' && <><div className="flex justify-between gap-4 text-sm text-primary"><span>{t('COD অগ্রিম','COD advance')}</span><span className="font-bold">{formatPrice(codAdvance)}</span></div><div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারিতে বাকি','Due on delivery')}</span><span className="font-bold">{formatPrice(codDue)}</span></div></>}
                   {walletCredit > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('ওয়ালেট ক্রেডিট', 'Wallet credit')}</span><span className="font-bold">-{formatPrice(walletCredit)}</span></div>}
-                  <div className="mt-4 flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-primary/15 bg-primary/[0.05] p-4">
+                  <div hidden={!deliveryQuoteReady} className="mt-4 flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-primary/15 bg-primary/[0.05] p-4">
                     <div>
-                      <span className="block text-base font-black">{t('সর্বমোট', 'Total')}</span>
-                      <span className="mt-0.5 block text-[10px] font-semibold text-muted-foreground">{t('চূড়ান্ত পরিশোধযোগ্য', 'Final payable amount')}</span>
+                      <span className="block text-base font-black">{t('অর্ডারের মোট দাম', 'Full order total', 'ऑर्डर की कुल कीमत')}</span>
+                      <span className="mt-0.5 block text-xs font-semibold text-muted-foreground">{t('ডেলিভারিসহ পুরো অর্ডারের দাম', 'Includes delivery and discounts', 'डिलीवरी और छूट सहित')}</span>
                     </div>
-                    <span className="text-3xl font-black tracking-tight text-primary tabular-nums sm:text-4xl">{formatPrice(country === 'IN' && paymentMethod === 'cod' ? codAdvance : payableTotal)}</span>
+                    <span className="text-3xl font-black tracking-tight text-primary tabular-nums sm:text-4xl">{formatPrice(payableTotal)}</span>
                   </div>
 
                 {country === 'IN' && (
-                  <div className="border-b border-border/60 p-5 sm:p-6">
+                  <div hidden={!deliveryQuoteReady} className="border-b border-border/60 p-5 sm:p-6">
                     <div className="mb-3">
                       <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">{t('পেমেন্ট পদ্ধতি', 'Payment method')}</p>
                       <h3 className="mt-1 text-sm font-black text-foreground">{t('কীভাবে পেমেন্ট করবেন?', 'How would you like to pay?')}</h3>
@@ -1293,10 +1211,11 @@ export default function CheckoutPage() {
 
                   <button
                     type="submit"
+                    hidden={!deliveryQuoteReady}
                     disabled={loading || !deliveryQuoteReady}
                     className="mt-4 inline-flex min-h-[64px] w-full items-center justify-center gap-3 rounded-[18px] bg-primary px-4 py-4 text-base font-black sm:px-6 sm:text-lg tracking-tight text-primary-foreground shadow-xl shadow-primary/30 transition-all hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-2xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-15"
                   >
-                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম পরিশোধ করুন', 'Pay COD advance') : t('অনলাইনে পেমেন্ট করুন', 'Pay online')) : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
+                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t(`এখন ${formatPrice(codAdvance)} অগ্রিম দিন`, `Pay ${formatPrice(codAdvance)} COD advance now`) : t('অনলাইনে পেমেন্ট করুন', 'Pay online')) : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
                   </button>
 
                   <div className="grid grid-cols-3 gap-2 pt-1 text-center">
@@ -1306,6 +1225,96 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               </section>
+
+{cart.some((item) => item.bulk_tiers?.some((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0)) && (
+              <section className="overflow-hidden rounded-[2rem] border border-emerald-200/70 bg-card shadow-sm dark:border-emerald-900/50">
+                <div className="border-b border-emerald-200/60 bg-gradient-to-r from-emerald-50 to-white p-5 dark:from-emerald-950/30 dark:to-card sm:p-6">
+                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-400">{t('বিশেষ প্যাকেট অফার', 'SPECIAL PACKET OFFERS')}</p>
+                  <h2 className="mt-1 text-lg font-black text-foreground sm:text-xl">{t('পণ্য ও প্যাকেট নির্বাচন করুন', 'Select products & packet offers')}</h2>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('আপনার পছন্দের প্যাকেট অফার বেছে নিন এবং বেশি সাশ্রয় করুন।', 'Choose a packet offer to get the best value on your order.')}</p>
+                </div>
+                <div className="space-y-4 border-b border-border/60 p-5 sm:p-6">
+                  {cart.map((item) => (
+                    <div key={`${item.product_id}-${item.variant_id || ''}-${item.bundle_id || ''}`} className="flex flex-wrap items-start gap-3">
+                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-secondary/50">
+                        <img
+                          src={item.image || '/placeholder.svg'}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          onError={(event) => {
+                            if (country === 'BD' && event.currentTarget.dataset.fallbackApplied !== '1') {
+                              event.currentTarget.dataset.fallbackApplied = '1';
+                              event.currentTarget.src = '/placeholder.svg';
+                            }
+                          }}
+                        />
+
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-xs font-black leading-5 text-foreground">{item.name}</p>
+                        {item.variant_name && <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{item.variant_name}</p>}
+                      </div>
+                      {item.bulk_tiers && item.bulk_tiers.filter((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0).length > 0 && (
+                          <div className="order-3 basis-full rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-3 sm:p-4">
+                            <div className="mb-3 flex items-center gap-2 text-xs font-black text-orange-900 sm:text-sm">
+                              <Tag className="h-4 w-4 shrink-0" />
+                              {t('🔥 বেশি কিনুন, বেশি সাশ্রয় করুন', '🔥 BUY MORE, SAVE MORE')}
+                            </div>
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                              {[...item.bulk_tiers]
+                                .filter((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0)
+                                .sort((a, b) => a.min_quantity - b.min_quantity)
+                                .map((tier) => {
+                                  const basePrice = Number(item.base_unit_price ?? item.regular_price ?? item.unit_price);
+                                  const savings = Math.max(0, (basePrice - tier.unit_price) * tier.min_quantity);
+                                  const active = item.quantity >= tier.min_quantity;
+                                  const canSelect = tier.min_quantity <= 99;
+                                  return (
+                                    <button
+                                      key={tier.id || tier.min_quantity}
+                                      type="button"
+                                      disabled={!canSelect}
+                                      aria-pressed={item.quantity === tier.min_quantity}
+                                      onClick={() => updateCartQuantity(item.product_id, tier.min_quantity, item.variant_id, item.bundle_id)}
+                                      className={`flex min-h-[92px] w-full flex-col justify-between rounded-xl border p-3 text-left shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 sm:min-h-[100px] sm:p-3.5 ${active ? 'border-emerald-400 bg-emerald-50 ring-1 ring-emerald-200' : 'border-emerald-100 bg-white hover:border-emerald-400 hover:bg-emerald-50/60'} ${!canSelect ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}` }
+                                    >
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="text-sm font-extrabold text-foreground sm:text-base">
+                                          {tier.min_quantity}× {t('প্যাকেট', 'PACKETS')}
+                                          {active && <span className="ml-1 text-emerald-700">· {t('সক্রিয়', 'ACTIVE')}</span>}
+                                        </span>
+                                        <span className="text-sm font-black text-emerald-700 sm:text-base">{formatPrice(tier.unit_price)} <span className="text-[11px] font-semibold">{t('প্রতি প্যাকেট', 'per pack')}</span></span>
+                                      </div>
+                                      {tier.free_item_text && <p className="mt-2 text-xs font-bold text-emerald-800">🎁 {tier.free_item_text}</p>}
+                                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-black/5 pt-2">
+                                        <p className="text-xs font-medium text-muted-foreground">
+                                          {t('সাশ্রয়', 'You save')}: {formatPrice(savings)}
+                                        </p>
+                                        <span className="text-[10px] font-black tracking-wide text-emerald-800">
+                                          {item.quantity === tier.min_quantity ? t('নির্বাচিত', 'SELECTED') : t('এই অফার নিন', 'SELECT OFFER')}
+                                        </span>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                        <div className="mt-2 inline-flex items-center gap-1 rounded-xl border border-border/70 bg-background p-1" aria-label={`Quantity for ${item.name}`}>
+                          <button type="button" aria-label={`Decrease quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, -1)} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary"><Minus className="h-4 w-4" /></button>
+                          <span aria-live="polite" className="min-w-7 text-center text-sm font-black tabular-nums">{item.quantity}</span>
+                          <button type="button" aria-label={`Increase quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, 1)} disabled={item.quantity >= 99} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary"><Plus className="h-4 w-4" /></button>
+                        </div>
+
+                      </div>
+                      <span className="shrink-0 text-xs font-black text-foreground">{formatPrice(item.unit_price * item.quantity)}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+)}
+
 
               <section className="rounded-[2rem] border border-primary/20 bg-card p-5 shadow-sm sm:p-6">
                 <div className="mb-3 flex items-center justify-between gap-3">
@@ -1348,11 +1357,11 @@ export default function CheckoutPage() {
           </div>
         </form>
 
-        <div className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 md:hidden">
+        <div hidden={!deliveryQuoteReady} className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 md:hidden">
           <div className="flex items-center gap-3 rounded-[22px] border border-border/80 bg-background/95 p-3 shadow-2xl shadow-black/20 backdrop-blur-xl" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
             <div className="min-w-0 flex-1 pl-1">
               <p className="text-[10px] font-bold text-muted-foreground">{t('পরিশোধযোগ্য', 'Payable')}</p>
-              <p className="truncate text-lg font-black text-primary">{formatPrice(paymentMethod === 'cod' ? codAdvance : payableTotal)}</p>
+              <p className="truncate text-lg font-black text-primary">{formatPrice(payableTotal)}</p>
             </div>
             <button
               type="submit"
@@ -1360,7 +1369,7 @@ export default function CheckoutPage() {
               disabled={loading}
               className="inline-flex min-h-12 shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-primary px-5 text-xs font-black text-primary-foreground shadow-lg shadow-primary/25 transition active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:opacity-60"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t('COD অগ্রিম পরিশোধ করুন', 'Pay COD advance', 'COD अग्रिम भुगतान करें') : t('এখনই পেমেন্ট করুন', 'Pay Now', 'अभी भुगतान करें')) : t('অর্ডার কনফার্ম করুন', 'Confirm order', 'ऑर्डर की पुष्टि करें')} <ChevronRight className="h-4 w-4" /></>}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t(`এখন ${formatPrice(codAdvance)} দিন`, `Pay ${formatPrice(codAdvance)} now`, `अभी ${formatPrice(codAdvance)} दें`) : t('এখনই পেমেন্ট করুন', 'Pay Now', 'अभी भुगतान करें')) : t('অর্ডার কনফার্ম করুন', 'Confirm order', 'ऑर्डर की पुष्टि करें')} <ChevronRight className="h-4 w-4" /></>}
             </button>
           </div>
         </div>
