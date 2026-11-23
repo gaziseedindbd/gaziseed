@@ -535,7 +535,7 @@ export default function ProductDetailClient({
               const codAvailable = productCountry !== 'IN' || orderTotal + 0.01 >= advance;
               const due = Math.max(0, orderTotal - advance);
               return (
-                <p className={`rounded-xl border px-3.5 py-3 text-sm font-extrabold leading-6 ${codAvailable ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
+                <p className={`rounded-xl border px-4 py-4 text-base sm:text-lg font-black leading-7 shadow-sm ${codAvailable ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
                   {codAvailable
                     ? productCountry === 'IN'
                       ? t(`💵 COD: আগে ${formatProductPrice(advance)} অনলাইনে + হাতে পেয়ে ${formatProductPrice(due)} দেবেন`, `💵 COD: Pay ${formatProductPrice(advance)} online first + ${formatProductPrice(due)} when delivered`, `💵 COD: पहले ${formatProductPrice(advance)} ऑनलाइन + डिलीवरी पर ${formatProductPrice(due)} दें`)
