@@ -46,7 +46,7 @@ export default function ProductDetailClient({
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [bulkTiers, setBulkTiers] = useState<BulkPricing[]>([]);
-  const [deliveryQuote, setDeliveryQuote] = useState<{ charge: number; threshold: number | null; free: boolean } | null>(null);
+  const [deliveryQuote, setDeliveryQuote] = useState<{ charge: number; threshold: number | null; free: boolean; quantity: number; variantId: string | null } | null>(null);
   const [deliveryQuoteLoading, setDeliveryQuoteLoading] = useState(false);
   const [inWishlist, setInWishlist] = useState(false);
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'guide' | 'reviews' | 'faqs'>('desc');
@@ -172,6 +172,8 @@ export default function ProductDetailClient({
           charge: verifiedCharge,
           threshold: freeThreshold,
           free: hasFreeDelivery || verifiedCharge === 0,
+          quantity,
+          variantId: selectedVariant?.id || null,
         });
       }
       setDeliveryQuoteLoading(false);
@@ -323,12 +325,18 @@ export default function ProductDetailClient({
   const applicableBulk = selectedBulkTiers.filter((b) => b.min_quantity <= quantity).sort((a, b) => b.min_quantity - a.min_quantity)[0];
   const finalUnitPrice = applicableBulk ? applicableBulk.unit_price : effectivePrice;
   const totalPrice = finalUnitPrice * quantity;
-  const displayFreeDeliveryThreshold = deliveryQuote?.threshold == null
+  const deliveryQuoteIsCurrent = Boolean(
+    deliveryQuote &&
+    deliveryQuote.quantity === quantity &&
+    deliveryQuote.variantId === (selectedVariant?.id || null),
+  );
+  const currentDeliveryQuote = deliveryQuoteIsCurrent ? deliveryQuote : null;
+  const displayFreeDeliveryThreshold = currentDeliveryQuote?.threshold == null
     ? null
-    : Math.max(0, deliveryQuote.threshold - (productCountry === 'IN' ? 0.01 : 0));
+    : Math.max(0, currentDeliveryQuote.threshold - (productCountry === 'IN' ? 0.01 : 0));
   const currentProductInCart = cartItems.some((item) => item.product_id === product.id && (item.variant_id || '') === (selectedVariant?.id || ''));
   const freeDeliveryProgressSubtotal = currentProductInCart ? cartTotal : cartTotal + totalPrice;
-  const cartFreeDeliveryUnlocked = Boolean(deliveryQuote?.free || (displayFreeDeliveryThreshold !== null && freeDeliveryProgressSubtotal >= displayFreeDeliveryThreshold));
+  const cartFreeDeliveryUnlocked = Boolean(currentDeliveryQuote?.free || (displayFreeDeliveryThreshold !== null && freeDeliveryProgressSubtotal >= displayFreeDeliveryThreshold));
 
   const translated = product.translations?.[lang] || {};
   const hasCultivationInstructions = Boolean(product.cultivation_instructions?.trim()) || localizedGuideLanguages.length > 0;
@@ -491,13 +499,13 @@ export default function ProductDetailClient({
             </div>
             <div className="space-y-3 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4 shadow-sm sm:p-5" aria-live="polite">
               <p className="text-xs font-extrabold text-emerald-950">{t('মোট কত টাকা দিতে হবে?', 'How much will you pay?', 'कुल कितना देना होगा?')}</p>
-              {deliveryQuoteLoading ? (
+              {deliveryQuoteLoading || !currentDeliveryQuote ? (
                 <p className="text-base font-black text-emerald-900">{t('ডেলিভারি চার্জ দেখা হচ্ছে…', 'Checking delivery…', 'डिलीवरी शुल्क जाँचा जा रहा है…')}</p>
-              ) : deliveryQuote ? (
+              ) : currentDeliveryQuote ? (
                 <>
                   <p className="text-lg font-black text-emerald-950">
                     {currentProductInCart
-                      ? `${formatProductPrice(cartTotal)} + ${formatProductPrice(cartFreeDeliveryUnlocked ? 0 : deliveryQuote.charge)} = ${formatProductPrice(cartTotal + (cartFreeDeliveryUnlocked ? 0 : deliveryQuote.charge))}`
+                      ? `${formatProductPrice(cartTotal)} + ${formatProductPrice(cartFreeDeliveryUnlocked ? 0 : currentDeliveryQuote.charge)} = ${formatProductPrice(cartTotal + (cartFreeDeliveryUnlocked ? 0 : deliveryQuote.charge))}`
                       : deliveryQuote.charge === 0
                         ? `${formatProductPrice(totalPrice)} — ${t('ফ্রি ডেলিভারি', 'FREE delivery', 'मुफ्त डिलीवरी')} = ${formatProductPrice(totalPrice)}`
                         : `${formatProductPrice(totalPrice)} + ${formatProductPrice(deliveryQuote.charge)} = ${formatProductPrice(totalPrice + deliveryQuote.charge)}`}
@@ -519,7 +527,7 @@ export default function ProductDetailClient({
                 <p className="text-sm font-bold text-amber-800">{t('এখন ডেলিভারি চার্জ নিশ্চিত করা যাচ্ছে না।', 'Delivery charge could not be confirmed right now.', 'अभी डिलीवरी शुल्क की पुष्टि नहीं हो सकी।')}</p>
               )}
             </div>
-            {deliveryQuote && (() => {
+            {currentDeliveryQuote && (() => {
               const orderTotal = currentProductInCart
                 ? cartTotal + (cartFreeDeliveryUnlocked ? 0 : deliveryQuote.charge)
                 : totalPrice + deliveryQuote.charge;
