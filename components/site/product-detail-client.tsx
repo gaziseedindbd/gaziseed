@@ -521,7 +521,7 @@ export default function ProductDetailClient({
             </div>
             {deliveryQuote && (() => {
               const orderTotal = currentProductInCart ? cartTotal : totalPrice + deliveryQuote.charge;
-              const advance = deliveryQuote.charge > 0 ? deliveryQuote.charge : 120;
+              const advance = cartFreeDeliveryUnlocked ? 120 : deliveryQuote.charge > 0 ? deliveryQuote.charge : 120;
               const codAvailable = productCountry !== 'IN' || orderTotal + 0.01 >= advance;
               const due = Math.max(0, orderTotal - advance);
               return (
