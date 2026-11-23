@@ -32,7 +32,7 @@ function WhatsAppMark() {
 export function WhatsAppButton() {
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const pathname = usePathname();
-  const isProductPage = /(?:^|\\/)product\\//.test(pathname);
+  const isProductPage = /(?:^|\/)product\//.test(pathname);
   const isCheckoutPage = pathname === '/checkout';
   const isCartOrCheckoutPage = pathname === '/cart' || isCheckoutPage;
 
