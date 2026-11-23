@@ -397,12 +397,17 @@ export default function CheckoutPage() {
   const subtotal = cart.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
   const savingsTotal = Math.max(0, originalTotal - subtotal);
   const discountPercent = originalTotal > 0 ? Math.round((savingsTotal / originalTotal) * 100) : 0;
+  const deliveryProductIdsKey = useMemo(
+    () => Array.from(new Set(cart.map((item) => item.product_id).filter(Boolean))).sort().join(','),
+    [cart],
+  );
+
   useEffect(() => {
     let cancelled = false;
 
     const syncDeliveryCharge = async () => {
-    
-  if (cart.length === 0) {
+      const productIds = deliveryProductIdsKey ? deliveryProductIdsKey.split(',') : [];
+      if (productIds.length === 0) {
         setDeliveryRules([]);
         setDeliveryCharge(0);
         setDeliveryQuoteReady(false);
@@ -411,61 +416,61 @@ export default function CheckoutPage() {
       }
 
       setDeliveryQuoteReady(false);
-      const productIds = Array.from(new Set(cart.map((item) => item.product_id)));
-      const rulesPromise = supabase
-        .from('delivery_charge_rules')
-        .select('min_order, max_order, charge, is_free')
-        .eq('country_code', country)
-        .eq('is_active', true)
-        .order('min_order', { ascending: false });
+      try {
+        const [rulesResult, freeDeliveryResult] = await Promise.all([
+          supabase
+            .from('delivery_charge_rules')
+            .select('min_order, max_order, charge, is_free')
+            .eq('country_code', country)
+            .eq('is_active', true)
+            .order('min_order', { ascending: false }),
+          supabase
+            .from('products')
+            .select('id, free_delivery')
+            .in('id', productIds)
+            .eq('country_code', country),
+        ]);
 
-      const freeDeliveryPromise = supabase
-        .from('products')
-        .select('id, free_delivery')
-        .in('id', productIds)
-        .eq('country_code', country);
+        if (cancelled) return;
+        if (rulesResult.error) throw rulesResult.error;
+        if (freeDeliveryResult.error) throw freeDeliveryResult.error;
 
-      const [{ data: rulesData }, { data: freeDeliveryData }] = await Promise.all([
-        rulesPromise,
-        freeDeliveryPromise,
-      ]);
+        const freeDeliveryRows = (freeDeliveryResult.data || []) as Array<{ id: string; free_delivery: boolean }>;
+        const freeDeliveryIds = new Set(
+          freeDeliveryRows.filter((product) => product.free_delivery).map((product) => product.id),
+        );
+        setFreeDeliveryProductIds(freeDeliveryIds);
 
-      if (cancelled) return;
+        const { data: chargeData, error: chargeError } = await supabase.rpc('calculate_delivery_charge', {
+          p_order_value: subtotal,
+          p_free_delivery: freeDeliveryIds.size > 0,
+        });
 
-      const freeDeliveryRows = (freeDeliveryData || []) as Array<{ id: string; free_delivery: boolean }>;
-      const freeDeliveryIds = new Set(
-        freeDeliveryRows.filter((product) => product.free_delivery).map((product) => product.id),
-      );
-      const hasFreeDeliveryProduct = freeDeliveryIds.size > 0;
-      setFreeDeliveryProductIds(freeDeliveryIds);
+        if (cancelled) return;
+        const verifiedCharge = Number(chargeData);
+        if (chargeError || chargeData === null || !Number.isFinite(verifiedCharge) || verifiedCharge < 0) {
+          throw chargeError || new Error('Invalid delivery charge quote');
+        }
 
-      const { data: chargeData, error: chargeError } = await supabase.rpc('calculate_delivery_charge', {
-        p_order_value: subtotal,
-        p_free_delivery: hasFreeDeliveryProduct,
-      });
-
-      if (cancelled) return;
-
-      const verifiedCharge = Number(chargeData);
-      if (chargeError || chargeData === null || !Number.isFinite(verifiedCharge) || verifiedCharge < 0) {
-        console.error('Delivery charge calculation failed:', chargeError);
-        setDeliveryQuoteReady(false);
-      } else {
         setDeliveryCharge(verifiedCharge);
+        setDeliveryRules((rulesResult.data || []).map((rule) => ({
+          min_order: Number(rule.min_order || 0),
+          max_order: rule.max_order == null ? null : Number(rule.max_order),
+          charge: Number(rule.charge || 0),
+          is_free: Boolean(rule.is_free),
+        })));
         setDeliveryQuoteReady(true);
+      } catch (deliveryError) {
+        if (!cancelled) {
+          console.error('Delivery charge calculation failed:', deliveryError);
+          setDeliveryQuoteReady(false);
+        }
       }
-
-      setDeliveryRules((rulesData || []).map((rule) => ({
-        min_order: Number(rule.min_order || 0),
-        max_order: rule.max_order == null ? null : Number(rule.max_order),
-        charge: Number(rule.charge || 0),
-        is_free: Boolean(rule.is_free),
-      })));
     };
 
     void syncDeliveryCharge();
     return () => { cancelled = true; };
-  }, [cart.length, country, subtotal, deliveryQuoteRetry]);
+  }, [deliveryProductIdsKey, country, subtotal, deliveryQuoteRetry]);
   const couponDiscount = appliedCoupon
     ? appliedCoupon.type === 'percentage'
       ? Math.min(subtotal * (appliedCoupon.value / 100), appliedCoupon.max_discount || Infinity)
