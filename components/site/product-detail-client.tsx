@@ -474,7 +474,7 @@ export default function ProductDetailClient({
                   </span>
                   {product.sku && <span className="text-xs text-gray-400 font-medium">SKU: {product.sku}</span>}
                 </div>
-                <div className="flex items-center gap-2">{siteSettings?.whatsapp_enabled && siteSettings?.whatsapp && }<PageShare inline /><button onClick={handleWishlist} aria-label={inWishlist ? t('উইশলিস্ট থেকে সরান', 'Remove from wishlist') : t('উইশলিস্টে রাখুন', 'Add to wishlist')} aria-pressed={inWishlist} className={`rounded-full p-2.5 border transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${inWishlist ? 'border-red-200 bg-red-50 text-red-500' : 'border-gray-200 bg-white text-gray-400 hover:text-red-500'}`} title={t('উইশলিস্টে রাখুন', 'Add to wishlist', 'पसंदीदा में जोड़ें')}>
+                <div className="flex items-center gap-2"><PageShare inline /><button onClick={handleWishlist} aria-label={inWishlist ? t('উইশলিস্ট থেকে সরান', 'Remove from wishlist') : t('উইশলিস্টে রাখুন', 'Add to wishlist')} aria-pressed={inWishlist} className={`rounded-full p-2.5 border transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${inWishlist ? 'border-red-200 bg-red-50 text-red-500' : 'border-gray-200 bg-white text-gray-400 hover:text-red-500'}`} title={t('উইশলিস্টে রাখুন', 'Add to wishlist', 'पसंदीदा में जोड़ें')}>
                   <Heart className={`h-4 w-4 ${inWishlist ? 'fill-current' : ''}`} />
                 </button></div>
               </div>
