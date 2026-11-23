@@ -1015,6 +1015,54 @@ export default function CheckoutPage() {
                   <AddressSelector value={addrValue} onChange={setAddrValue} countryCode={country} postalCodeFirst />
                 </div>
 
+              {(country !== 'BD' || bdCouponsEnabled) && <section className="rounded-[2rem] border border-border/70 bg-card p-5 shadow-sm sm:p-7">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">{t('আরও সাশ্রয়', 'SAVE MORE', 'और बचत')}</p>
+                    <h2 className="mt-1 text-lg font-black">{t('কুপন কোড', 'Coupon code')}</h2>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('আপনার ডিসকাউন্ট কোড থাকলে এখানে ব্যবহার করুন।', 'Have a discount code? Apply it here.')}</p>
+                  </div>
+                  <Tag className="h-5 w-5 text-primary/70" />
+                </div>
+
+                <div className="mt-4 flex min-w-0 flex-col gap-3 sm:flex-row">
+                  <label htmlFor="coupon-code" className="sr-only">{t('কুপন কোড', 'Coupon code')}</label>
+                  <input
+                    id="coupon-code"
+                    name="coupon"
+                    type="text"
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyCoupon(); } }}
+                    placeholder={t('কুপন কোড লিখুন', 'Enter coupon code')}
+                    className="min-w-0 min-h-12 flex-1 rounded-2xl border border-border bg-background px-4 text-sm font-bold uppercase tracking-wide text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15"
+                  />
+                  <button
+                    type="button"
+                    onClick={applyCoupon}
+                    disabled={couponLoading || !couponCode.trim()}
+                    className="inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-black sm:w-auto text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('প্রয়োগ', 'Apply')}
+                  </button>
+                </div>
+
+                {couponError && <p role="alert" className="mt-3 text-xs font-bold text-rose-600">{couponError}</p>}
+                {appliedCoupon && (
+                  <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-500/10 px-4 py-3">
+                    <div className="flex min-w-0 items-center gap-2 text-xs">
+                      <Check className="h-4 w-4 shrink-0 text-emerald-600" />
+                      <span className="truncate font-black text-emerald-700 dark:text-emerald-300">{appliedCoupon.code}</span>
+                    </div>
+                    <button type="button" onClick={removeCoupon} className="inline-flex min-h-9 items-center gap-1 rounded-xl px-2 text-[11px] font-black text-rose-600 transition hover:bg-rose-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/40">
+                      <X className="h-3.5 w-3.5" /> {t('সরান', 'Remove')}
+                    </button>
+                  </div>
+                )}
+              </section>}
+
                 <button type="submit" style={{ display: deliveryQuoteReady ? undefined : 'none' }} disabled={loading || !deliveryQuoteReady} className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 text-base font-black text-primary-foreground shadow-lg shadow-primary/20 transition active:scale-[.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 md:hidden">{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t(`এখন ${formatPrice(codAdvance)} অগ্রিম দিন`, `Pay ${formatPrice(codAdvance)} COD advance now`, `अभी ${formatPrice(codAdvance)} COD अग्रिम दें`) : t('এখনই পেমেন্ট করুন', 'Pay Now', 'अभी भुगतान करें')) : t('অর্ডার কনফার্ম করুন', 'Confirm order', 'ऑर्डर की पुष्टि करें')} <ChevronRight className="h-4 w-4" /></>}</button>
 
                 <div className="mt-5 space-y-1.5">
@@ -1262,53 +1310,7 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
-              {(country !== 'BD' || bdCouponsEnabled) && <section className="rounded-[2rem] border border-border/70 bg-card p-5 shadow-sm sm:p-7">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">{t('আরও সাশ্রয়', 'SAVE MORE', 'और बचत')}</p>
-                    <h2 className="mt-1 text-lg font-black">{t('কুপন কোড', 'Coupon code')}</h2>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('আপনার ডিসকাউন্ট কোড থাকলে এখানে ব্যবহার করুন।', 'Have a discount code? Apply it here.')}</p>
-                  </div>
-                  <Tag className="h-5 w-5 text-primary/70" />
-                </div>
 
-                <div className="mt-4 flex min-w-0 flex-col gap-3 sm:flex-row">
-                  <label htmlFor="coupon-code" className="sr-only">{t('কুপন কোড', 'Coupon code')}</label>
-                  <input
-                    id="coupon-code"
-                    name="coupon"
-                    type="text"
-                    autoComplete="off"
-                    spellCheck={false}
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyCoupon(); } }}
-                    placeholder={t('কুপন কোড লিখুন', 'Enter coupon code')}
-                    className="min-w-0 min-h-12 flex-1 rounded-2xl border border-border bg-background px-4 text-sm font-bold uppercase tracking-wide text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15"
-                  />
-                  <button
-                    type="button"
-                    onClick={applyCoupon}
-                    disabled={couponLoading || !couponCode.trim()}
-                    className="inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-black sm:w-auto text-primary-foreground shadow-sm transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('প্রয়োগ', 'Apply')}
-                  </button>
-                </div>
-
-                {couponError && <p role="alert" className="mt-3 text-xs font-bold text-rose-600">{couponError}</p>}
-                {appliedCoupon && (
-                  <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-500/10 px-4 py-3">
-                    <div className="flex min-w-0 items-center gap-2 text-xs">
-                      <Check className="h-4 w-4 shrink-0 text-emerald-600" />
-                      <span className="truncate font-black text-emerald-700 dark:text-emerald-300">{appliedCoupon.code}</span>
-                    </div>
-                    <button type="button" onClick={removeCoupon} className="inline-flex min-h-9 items-center gap-1 rounded-xl px-2 text-[11px] font-black text-rose-600 transition hover:bg-rose-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/40">
-                      <X className="h-3.5 w-3.5" /> {t('সরান', 'Remove')}
-                    </button>
-                  </div>
-                )}
-              </section>}
 
                   <button
                     type="submit"
