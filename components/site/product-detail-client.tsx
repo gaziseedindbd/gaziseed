@@ -14,6 +14,7 @@ import ProductReviewShowcase from '@/components/site/product-review-showcase';
 import ProductOfferSpotlight from '@/components/site/product-offer-spotlight';
 import { supabase, getVisitorCountry } from '@/lib/supabase/client';
 import { useLang } from '@/components/site/language-provider';
+import { useCart } from '@/components/site/cart-provider';
 import type { Product, Review, ProductFaq, BundleOffer, Promotion, PromotionGift, ProductVariant, BulkPricing } from '@/lib/supabase/types';
 
 export default function ProductDetailClient({
@@ -49,6 +50,7 @@ export default function ProductDetailClient({
   const [inWishlist, setInWishlist] = useState(false);
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'guide' | 'reviews' | 'faqs'>('desc');
   const { lang, setLang, t, tDb } = useLang();
+  const { items: cartItems, total: cartTotal } = useCart();
 
   useEffect(() => {
     if (!product) {
@@ -319,6 +321,9 @@ export default function ProductDetailClient({
   const displayFreeDeliveryThreshold = deliveryQuote?.threshold == null
     ? null
     : Math.max(0, deliveryQuote.threshold - (productCountry === 'IN' ? 0.01 : 0));
+  const currentProductInCart = cartItems.some((item) => item.product_id === product.id && (item.variant_id || '') === (selectedVariant?.id || ''));
+  const freeDeliveryProgressSubtotal = currentProductInCart ? cartTotal : cartTotal + totalPrice;
+  const cartFreeDeliveryUnlocked = Boolean(deliveryQuote?.free || (displayFreeDeliveryThreshold !== null && freeDeliveryProgressSubtotal >= displayFreeDeliveryThreshold));
 
   const translated = product.translations?.[lang] || {};
   const hasCultivationInstructions = Boolean(product.cultivation_instructions?.trim()) || localizedGuideLanguages.length > 0;
@@ -493,11 +498,11 @@ export default function ProductDetailClient({
                     <><p className="flex items-center gap-2 text-sm font-black text-emerald-800"><Truck className="h-4 w-4" />{t(`${formatProductPrice(displayFreeDeliveryThreshold)}-এর বেশি অর্ডারে ফ্রি ডেলিভারি`, `FREE delivery on orders above ${formatProductPrice(displayFreeDeliveryThreshold)}`, `${formatProductPrice(displayFreeDeliveryThreshold)} से अधिक ऑर्डर पर FREE delivery`)}</p>
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between gap-2 text-xs font-bold text-emerald-900">
-                        <span>{deliveryQuote.free ? t('✓ ফ্রি ডেলিভারি পেয়েছেন', '✓ FREE delivery unlocked', '✓ मुफ्त डिलीवरी मिल गई') : t(`আর ${formatProductPrice(Math.max(0, displayFreeDeliveryThreshold - totalPrice))} যোগ করলে ডেলিভারি ফ্রি`, `Add ${formatProductPrice(Math.max(0, displayFreeDeliveryThreshold - totalPrice))} more for FREE delivery`, `मुफ्त डिलीवरी के लिए ${formatProductPrice(Math.max(0, displayFreeDeliveryThreshold - totalPrice))} और जोड़ें`)}</span>
-                        <span className="tabular-nums">{formatProductPrice(totalPrice)} / {formatProductPrice(displayFreeDeliveryThreshold)}</span>
+                        <span>{cartFreeDeliveryUnlocked ? t('✓ ফ্রি ডেলিভারি পেয়েছেন', '✓ FREE delivery unlocked', '✓ मुफ्त डिलीवरी मिल गई') : t(`আর ${formatProductPrice(Math.max(0, displayFreeDeliveryThreshold - freeDeliveryProgressSubtotal))} যোগ করলে ডেলিভারি ফ্রি`, `Add ${formatProductPrice(Math.max(0, displayFreeDeliveryThreshold - freeDeliveryProgressSubtotal))} more for FREE delivery`, `मुफ्त डिलीवरी के लिए ${formatProductPrice(Math.max(0, displayFreeDeliveryThreshold - freeDeliveryProgressSubtotal))} और जोड़ें`)}</span>
+                        <span className="tabular-nums">{formatProductPrice(freeDeliveryProgressSubtotal)} / {formatProductPrice(displayFreeDeliveryThreshold)}</span>
                       </div>
                       <div className="h-2.5 overflow-hidden rounded-full bg-emerald-200">
-                        <div className="h-full rounded-full bg-emerald-600 transition-[width]" style={{ width: `${deliveryQuote.free ? 100 : Math.min(100, (totalPrice / displayFreeDeliveryThreshold) * 100)}%` }} />
+                        <div className="h-full rounded-full bg-emerald-600 transition-[width]" style={{ width: `${cartFreeDeliveryUnlocked ? 100 : Math.min(100, (freeDeliveryProgressSubtotal / displayFreeDeliveryThreshold) * 100)}%` }} />
                       </div>
                     </div></>
                   )}
