@@ -146,9 +146,11 @@ export default function ProductDetailClient({
 
     let active = true;
     setDeliveryQuoteLoading(true);
+    setDeliveryQuote(null);
 
     const loadDeliveryQuote = async () => {
-      const [{ data: rules }, { data: productDelivery, error: productDeliveryError }] = await Promise.all([
+      const cartProductIds = Array.from(new Set([product.id, ...cartItems.map((item) => item.product_id)].filter(Boolean)));
+      const [{ data: rules }, { data: cartDeliveryProducts, error: cartDeliveryError }] = await Promise.all([
         supabase
           .from('delivery_charge_rules')
           .select('min_order, is_free')
@@ -156,14 +158,13 @@ export default function ProductDetailClient({
           .eq('is_active', true),
         supabase
           .from('products')
-          .select('free_delivery')
-          .eq('id', product.id)
-          .eq('country_code', productCountry)
-          .maybeSingle(),
+          .select('id, free_delivery')
+          .in('id', cartProductIds)
+          .eq('country_code', productCountry),
       ]);
 
       if (!active) return;
-      if (productDeliveryError || !productDelivery) {
+      if (cartDeliveryError || !cartDeliveryProducts) {
         setDeliveryQuote(null);
         setDeliveryQuoteLoading(false);
         return;
@@ -178,11 +179,15 @@ export default function ProductDetailClient({
         .filter((tier) => tier.is_active && (selectedVariant ? tier.variant_id === selectedVariant.id : tier.variant_id === null))
         .filter((tier) => tier.min_quantity <= quantity)
         .sort((a, b) => b.min_quantity - a.min_quantity)[0];
-      const orderValue = (applicableTier?.unit_price ?? selectedBasePrice) * quantity;
-      const hasFreeDelivery = Boolean(productDelivery?.free_delivery);
+      const currentProductAlreadyInCart = cartItems.some(
+        (item) => item.product_id === product.id && (item.variant_id || '') === (selectedVariant?.id || ''),
+      );
+      const currentProductValue = (applicableTier?.unit_price ?? selectedBasePrice) * quantity;
+      const projectedCartSubtotal = cartTotal + (currentProductAlreadyInCart ? 0 : currentProductValue);
+      const hasFreeDelivery = cartDeliveryProducts.some((item) => Boolean(item.free_delivery));
 
       const { data: charge, error } = await supabase.rpc('calculate_delivery_charge', {
-        p_order_value: orderValue,
+        p_order_value: projectedCartSubtotal,
         p_free_delivery: hasFreeDelivery,
       });
 
@@ -215,7 +220,7 @@ export default function ProductDetailClient({
     });
 
     return () => { active = false; };
-  }, [product, quantity, selectedVariant, bulkTiers, productCountry]);
+  }, [product, quantity, selectedVariant, bulkTiers, productCountry, cartItems, cartTotal]);
 
   useEffect(() => {
     let cancelled = false;
@@ -562,10 +567,9 @@ export default function ProductDetailClient({
               )}
             </div>
             {currentDeliveryQuote && (() => {
-              const orderTotal = currentProductInCart
-                ? cartTotal + (cartFreeDeliveryUnlocked ? 0 : currentDeliveryQuote.charge)
-                : totalPrice + currentDeliveryQuote.charge;
-              const advance = cartFreeDeliveryUnlocked ? 120 : currentDeliveryQuote.charge > 0 ? currentDeliveryQuote.charge : 120;
+              const projectedCartSubtotal = cartTotal + (currentProductInCart ? 0 : totalPrice);
+              const orderTotal = projectedCartSubtotal + currentDeliveryQuote.charge;
+              const advance = currentDeliveryQuote.charge > 0 ? currentDeliveryQuote.charge : 120;
               const codAvailable = productCountry !== 'IN' || orderTotal + 0.01 >= advance;
               const due = Math.max(0, orderTotal - advance);
               return (
@@ -662,7 +666,7 @@ export default function ProductDetailClient({
             </div>}
             <div>{inStock ? <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200"><Check className="h-3.5 w-3.5" /> {t('স্টকে আছে', 'Stock available', 'स्टॉक उपलब्ध है')}{product.show_low_stock && effectiveStock <= (product.low_stock_threshold || 5) && <span className="text-red-600"> ({t(`মাত্র ${effectiveStock} টি বাকি!`, `Only ${effectiveStock} left!`)})</span>}</div> : <div className="inline-flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">{t('স্টক শেষ হয়ে গেছে', 'Out of Stock')}</div>}</div>
             {productShortDesc && <div className="rounded-2xl bg-gray-50/90 border border-gray-200/80 p-4 text-xs sm:text-sm text-gray-700 leading-relaxed font-medium whitespace-pre-line space-y-2 shadow-2xs">{productShortDesc}</div>}
-            {inStock && <div className="flex items-center gap-4 pt-1 flex-wrap"><div className="flex items-center rounded-2xl border-2 border-gray-200 bg-white p-1 shadow-2xs"><button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="h-12 w-12 rounded-xl disabled:opacity-40 flex items-center justify-center hover:bg-gray-100 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label={t('কমান', 'Decrease quantity')}><Minus className="h-4 w-4" /></button><span className="w-10 text-center font-black text-sm" aria-live="polite">{quantity}</span><button type="button" disabled={quantity >= quantityLimit} onClick={() => setQuantity(Math.min(quantityLimit, quantity + 1))} className="flex h-12 w-12 items-center justify-center rounded-xl transition hover:bg-emerald-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-40" aria-label={t('বাড়ান', 'Increase quantity')}><Plus className="h-4 w-4" /></button></div><div className="text-xs"><span className="text-gray-400 block font-medium">{t('সর্বমোট মূল্য', 'Total Price')}</span><span className="text-lg font-black text-gray-900">{formatProductPrice(totalPrice)}</span></div></div>}
+            {inStock && <div className="flex items-center gap-4 pt-1 flex-wrap"><div className="space-y-1"><label className="block text-xs font-bold text-gray-700">{t('পরিমাণ', 'Quantity', 'मात्रा')}</label><div className="flex items-center rounded-2xl border-2 border-gray-200 bg-white p-1 shadow-2xs"><button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="h-12 w-12 rounded-xl disabled:opacity-40 flex items-center justify-center hover:bg-gray-100 transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label={t('কমান', 'Decrease quantity')}><Minus className="h-4 w-4" /></button><span className="w-10 text-center font-black text-sm" aria-live="polite">{quantity}</span><button type="button" disabled={quantity >= quantityLimit} onClick={() => setQuantity(Math.min(quantityLimit, quantity + 1))} className="flex h-12 w-12 items-center justify-center rounded-xl transition hover:bg-emerald-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-40" aria-label={t('বাড়ান', 'Increase quantity')}><Plus className="h-4 w-4" /></button></div></div><div className="text-xs"><span className="text-gray-400 block font-medium">{t('সর্বমোট মূল্য', 'Total Price')}</span><span className="text-lg font-black text-gray-900">{formatProductPrice(totalPrice)}</span></div></div>}
             {inStock ? <><div className="flex flex-col sm:flex-row gap-3 pt-2"><button type="button" onClick={handleAddToCart} className="min-h-12 flex-1 flex items-center justify-center gap-2 rounded-2xl border-2 border-emerald-600/30 bg-emerald-50/60 py-3.5 font-extrabold text-emerald-900 hover:bg-emerald-100 transition active:scale-[.98] cursor-pointer shadow-xs text-xs sm:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><ShoppingCart className="h-5 w-5 text-emerald-700" /> {t('কার্টে যোগ করুন', 'Add to Cart', 'कार्ट में जोड़ें')}</button><button type="button" onClick={handleBuyNow} className="min-h-12 flex-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-700 to-emerald-800 py-3.5 font-extrabold text-white shadow-lg shadow-emerald-700/25 hover:from-emerald-800 hover:to-emerald-900 transition active:scale-[.98] cursor-pointer text-xs sm:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><Zap className="h-5 w-5 fill-current text-amber-300" /> {t('এখনই অর্ডার করুন', 'Buy Now', 'अभी ऑर्डर करें')}</button></div><p className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3 py-2.5 text-xs font-bold leading-5 text-emerald-900">🌱 {t("বীজ না গজালে প্রমাণসহ যোগাযোগ করুন — আমরা সহায়তা করব", "Germination guarantee — contact us with proof if seeds do not germinate", "अंकुरण न होने पर प्रमाण के साथ संपर्क करें — हम मदद करेंगे")}</p></> : <div className="pt-2">{!notifySent ? <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 space-y-3"><p className="font-bold text-xs text-amber-800">{t('পণ্যটি আবার স্টকে এলে SMS পেতে আপনার মোবাইল নম্বর দিন।', 'Enter your mobile number for an SMS when this product is back in stock.', 'उत्पाद फिर से स्टॉक में आने पर SMS पाने के लिए अपना मोबाइल नंबर दें।')}</p>{!notifyOpen ? <button type="button" onClick={() => setNotifyOpen(true)} className="min-h-11 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2">{t('স্টকে এলে SMS দিন', 'Notify me when available', 'स्टॉक में आने पर सूचित करें')}</button> : <div className="space-y-2"><input value={notifyPhone} onChange={(e) => setNotifyPhone(e.target.value)} inputMode="tel" aria-label={t('মোবাইল নম্বর', 'Mobile number')} placeholder={productCountry === 'IN' ? t('১০ সংখ্যার মোবাইল নম্বর *', '10-digit mobile number *', '10 अंकों का मोबाइल नंबर *') : t('১১ সংখ্যার মোবাইল নম্বর *', '11-digit mobile number *', '11 अंकों का मोबाइल नंबर *')} className="input-bangla w-full text-xs" /><button type="button" onClick={handleNotifyMe} className="min-h-11 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2">{t('নোটিফিকেশন সক্রিয় করুন', 'Activate Notification')}</button></div>}</div> : <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-xs font-bold text-emerald-800 flex items-center gap-2"><Check className="h-4 w-4" /> {t('পণ্যটি আবার স্টকে এলে আপনাকে SMS পাঠানো হবে।', 'We will send you an SMS when this product is back in stock.', 'यह उत्पाद फिर से स्टॉक में आने पर हम आपको SMS भेजेंगे।')}</div>}</div>}
             <div className="grid grid-cols-3 gap-2 pt-2"><div className="p-3 rounded-2xl bg-white border border-gray-200/70 text-center shadow-2xs"><Truck className="h-5 w-5 text-emerald-700 mx-auto mb-1" /><span className="text-[11px] font-bold text-gray-800 block">{t('ডেলিভারি চার্জ উপরে দেখুন', 'Delivery charge shown above', 'डिलीवरी शुल्क ऊपर दिखाया गया है')}</span></div><div className="p-3 rounded-2xl bg-white border border-gray-200/70 text-center shadow-2xs"><ShieldCheck className="h-5 w-5 text-emerald-700 mx-auto mb-1" /><span className="text-[11px] font-bold text-gray-800 block">{t('COD-এর অগ্রিম ও বাকি টাকা উপরে দেখুন', 'COD advance and balance shown above', 'COD अग्रिम और बाकी रकम ऊपर दिखाई गई है')}</span></div><div className="p-3 rounded-2xl bg-white border border-gray-200/70 text-center shadow-2xs"><CheckCircle2 className="h-5 w-5 text-emerald-700 mx-auto mb-1" /><span className="text-[11px] font-bold text-gray-800 block">{t('বীজের স্পেসিফিকেশন', 'Seed specifications', 'बीज का विवरण')}</span></div></div>
           </div>
