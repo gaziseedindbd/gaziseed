@@ -12,20 +12,24 @@ export function normalizeProductSearch(value: string): string {
 }
 
 export function transliterateBengali(value: string): string {
-  let output = '';
   const chars = Array.from(value);
+  let output = '';
   for (let i = 0; i < chars.length; i += 1) {
     const char = chars[i];
-    if (char === '্') continue;
     const mapped = BENGALI_TO_LATIN[char];
-    if (mapped !== undefined) {
-      output += mapped;
-      if (char === '্') i += 1;
+    if (mapped === undefined) {
+      output += char;
       continue;
     }
-    if (/[\u09BE-\u09CC]/.test(char)) output += mapped || '';
-    else if (/[\u0980-\u09FF]/.test(char)) output += mapped || '';
-    else output += char;
+    if (char === '্') continue;
+    output += mapped;
+    const isConsonant = /[ক-হড়ঢ়য়]/.test(char);
+    const next = chars[i + 1];
+    if (isConsonant && next === '্') {
+      i += 1;
+    } else if (isConsonant && next && !/[া-ৌ]/.test(next)) {
+      output += 'o';
+    }
   }
   return normalizeProductSearch(output);
 }
