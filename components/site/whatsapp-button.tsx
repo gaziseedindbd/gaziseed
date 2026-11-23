@@ -34,12 +34,13 @@ export function WhatsAppButton() {
   const pathname = usePathname();
   const isProductPage = pathname.startsWith('/product/');
   const isCheckoutPage = pathname === '/checkout';
+  const isCartOrCheckoutPage = pathname === '/cart' || isCheckoutPage;
 
   useEffect(() => {
     getSiteSettings().then(setSettings);
   }, []);
 
-  if (!settings?.whatsapp_enabled || !settings?.whatsapp) return null;
+  if (isCartOrCheckoutPage || !settings?.whatsapp_enabled || !settings?.whatsapp) return null;
 
   const phoneNumber = settings.whatsapp.replace(/[^0-9]/g, '');
   const message = encodeURIComponent(settings.whatsapp_message || '');
