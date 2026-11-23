@@ -12,6 +12,7 @@ import { ProductCard } from '@/components/site/product-card';
 import { ReviewForm } from '@/components/site/review-form';
 import ProductReviewShowcase from '@/components/site/product-review-showcase';
 import ProductOfferSpotlight from '@/components/site/product-offer-spotlight';
+import IndiaPinCheck from '@/components/site/india-pin-check';
 import { supabase, getVisitorCountry } from '@/lib/supabase/client';
 import { useLang } from '@/components/site/language-provider';
 import { useCart } from '@/components/site/cart-provider';
@@ -529,6 +530,7 @@ export default function ProductDetailClient({
               <div className="min-w-0 flex-1"><span className="text-xs font-medium text-gray-500 block">{t('বর্তমান মূল্য', 'Current Price')}</span><div className="flex items-baseline gap-2.5 flex-wrap"><span className="text-2xl sm:text-3xl font-black text-emerald-800">{formatProductPrice(finalUnitPrice)}</span>{discount > 0 && !selectedVariant && <span className="text-sm sm:text-base text-gray-400 line-through font-semibold">{formatProductPrice(product.regular_price)}</span>}{selectedVariant && selectedVariant.sale_price && selectedVariant.sale_price > 0 && selectedVariant.sale_price < selectedVariant.regular_price && <span className="text-sm sm:text-base text-gray-400 line-through font-semibold">{formatProductPrice(selectedVariant.regular_price)}</span>}</div></div>
               {discount > 0 && <div className="rounded-full bg-red-500 text-white text-xs font-black px-3.5 py-1.5 shadow-xs shrink-0 whitespace-nowrap">{discount}% {t('ছাড়', 'OFF')}</div>}
             </div>
+            {productCountry === 'IN' && <IndiaPinCheck showInput />}
             <div className="space-y-3 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4 shadow-sm sm:p-5" aria-live="polite">
               <p className="text-xs font-extrabold text-emerald-950">{t('মোট কত টাকা দিতে হবে?', 'How much will you pay?', 'कुल कितना देना होगा?')}</p>
               {deliveryQuoteLoading || !currentDeliveryQuote ? (
