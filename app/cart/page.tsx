@@ -114,7 +114,7 @@ export default function CartPage() {
                 {savingsTotal > 0 && <div className="flex justify-between gap-3 text-sm text-emerald-700"><span className="font-bold">{t('আপনার ছাড়', 'Your discount')} ({discountPercent}%)</span><span className="font-black">-{formatPrice(savingsTotal)}</span></div>}
                 <div className="flex justify-between gap-3 text-sm"><span className="text-slate-500">{t('অফারসহ পণ্যের মোট', 'Offer / product total')}</span><span className="font-bold text-slate-900">{formatPrice(total)}</span></div>
                 <CartFreeDeliveryProgress items={items} subtotal={total} />
-                <div className="flex justify-between gap-3 text-xs"><span className="text-slate-500">{t('ডেলিভারি চার্জ', 'Delivery charge')}</span><span className="text-right font-semibold text-slate-500">{t('চেকআউটে নিশ্চিত হবে', 'Confirmed at checkout')}</span></div>
+                <div className="flex justify-between gap-3 text-xs"><span className="text-slate-500">{t('ডেলিভারি চার্জ', 'Delivery charge')}</span><span className="text-right font-semibold text-slate-500">{t('চেকআউটে হিসাব হবে', 'Calculated at checkout')}</span></div>
                 <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
                   <p className="text-[10px] font-black uppercase tracking-[.14em] text-emerald-800">{t('পণ্যের মোট', 'Product subtotal')}</p>
                   <div className="mt-1 flex items-end justify-between gap-3"><span className="text-sm font-bold text-slate-700">{items.length} {t('টি পণ্য', 'items')}</span><span className="text-2xl font-black tracking-tight text-emerald-900">{formatPrice(total)}</span></div>
