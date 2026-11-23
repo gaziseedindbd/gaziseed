@@ -477,7 +477,9 @@ export default function CheckoutPage() {
   const selectedWalletAmount = walletSummary?.unlocked ? Math.min(walletSummary.max_usable, grandTotal) : 0;
   const codAdvance = country === 'IN' ? (deliveryCharge > 0 ? deliveryCharge : 120) : 0;
   const codAvailable = country !== 'IN' || (deliveryQuoteReady && payableTotal + 0.01 >= codAdvance);
-  const codDue = country === 'IN' && paymentMethod === 'cod'
+  // Keep the COD delivery balance visible before the customer selects COD,
+  // so the option preview never shows a misleading zero due amount.
+  const codDue = country === 'IN'
     ? Math.max(0, payableTotal - codAdvance)
     : 0;
 
