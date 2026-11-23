@@ -127,7 +127,7 @@ export default function FloatingCartDrawer() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open]);
 
-  const remaining = Math.max(0, freeDeliveryTarget - total);
+  const remaining = Math.round(Math.max(0, freeDeliveryTarget - total));
   const progress = Math.min(100, Math.round((total / freeDeliveryTarget) * 100));
 
   const deliveryMessage = useMemo(() => {
