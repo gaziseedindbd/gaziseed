@@ -500,6 +500,10 @@ export default function CheckoutPage() {
   const freeDeliveryRemaining = freeDeliveryThreshold == null ? null : Math.round(Math.max(0, freeDeliveryThreshold - subtotal));
   const freeDeliveryPercent = freeDeliveryUnlocked ? 100 : freeDeliveryThreshold
     ? Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100)) : 0;
+  const waivedDeliveryCharge = deliveryRules
+    .filter((rule) => !rule.is_free && rule.charge > 0 && subtotal >= rule.min_order && (rule.max_order == null || subtotal <= rule.max_order))
+    .sort((a, b) => b.min_order - a.min_order)[0]?.charge
+    ?? deliveryRules.filter((rule) => !rule.is_free && rule.charge > 0).sort((a, b) => a.min_order - b.min_order)[0]?.charge;
 
   const freeDeliveryAddOn = useMemo(() => {
     if (!deliveryQuoteReady || freeDeliveryUnlocked || freeDeliveryThreshold == null || subtotal >= freeDeliveryThreshold) return null;
@@ -1106,6 +1110,7 @@ export default function CheckoutPage() {
                     <div className="h-2.5 w-full overflow-hidden rounded-full bg-primary/15" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={freeDeliveryPercent} aria-label="Free delivery progress">
                       <div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${freeDeliveryPercent}%` }} />
                     </div>
+                    {freeDeliveryUnlocked && waivedDeliveryCharge ? <p className="rounded-xl bg-emerald-100/70 px-3 py-2 text-xs font-black text-emerald-800">✅ {t('ফ্রি ডেলিভারি আনলক হয়েছে! আপনি সাশ্রয় করেছেন', 'FREE delivery unlocked!', 'मुफ्त डिलीवरी मिल गई!')} {t('আপনি সাশ্রয় করেছেন', 'You saved', 'आपने बचाए')} {formatPrice(waivedDeliveryCharge)}</p> : null}
                   </div>}
 
                   {cart.length > 0 && <div className="space-y-2 rounded-2xl border border-border/70 bg-background p-3.5">
