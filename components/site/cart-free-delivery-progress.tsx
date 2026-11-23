@@ -138,8 +138,6 @@ export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
       ? Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100))
       : 0;
 
-  if (freeDeliveryThreshold === null && !freeDeliveryUnlocked) return null;
-
   const progressTarget = country === 'IN'
     ? Math.max(0, Math.round((freeDeliveryThreshold ?? subtotal) * 100 - 1) / 100)
     : (freeDeliveryThreshold ?? subtotal);
@@ -163,6 +161,8 @@ export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
     }
     return best;
   }, [deliveryQuoteReady, freeDeliveryUnlocked, freeDeliveryThreshold, items, progressTarget, subtotal]);
+
+  if (freeDeliveryThreshold === null && !freeDeliveryUnlocked) return null;
 
   return (
     <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/[0.04] p-3.5" role="status" aria-live="polite">
