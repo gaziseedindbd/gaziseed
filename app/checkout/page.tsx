@@ -1122,7 +1122,7 @@ export default function CheckoutPage() {
                         <div className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-border/70 bg-card p-1">
                           <button type="button" aria-label={`Decrease quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, -1)} disabled={item.quantity <= 1} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-35 focus-visible:ring-2 focus-visible:ring-primary"><Minus className="h-4 w-4" /></button>
                           <span aria-live="polite" className="min-w-6 text-center text-xs font-black tabular-nums">{item.quantity}</span>
-                          <button type="button" aria-label={`Increase quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, 1)} disabled={item.quantity >= 99} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary"><Plus className="h-4 w-4" /></button>
+                          <button type="button" aria-label={`Increase quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, 1)} disabled={item.quantity >= 99} className="flex h-11 w-11 items-center justify-center rounded-lg text-lg hover:bg-secondary disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary"><Plus className="h-4 w-4" /></button>
                         </div>
                         <span className="shrink-0 text-xs font-black tabular-nums">{formatPrice(item.unit_price * item.quantity)}</span>
                       </div>
@@ -1301,8 +1301,8 @@ export default function CheckoutPage() {
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                        <div className="mt-2 inline-flex items-center gap-1 rounded-xl border border-border/70 bg-background p-1" aria-label={`Quantity for ${item.name}`}>
-                          <button type="button" aria-label={`Decrease quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, -1)} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary"><Minus className="h-4 w-4" /></button>
+                        <div className="checkout-qty-control mt-2 inline-flex min-h-12 items-center gap-1 rounded-xl border border-border/70 bg-background p-1.5" aria-label={`Quantity for ${item.name}`}>
+                          <button type="button" aria-label={`Decrease quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, -1)} className="flex h-11 w-11 items-center justify-center rounded-lg text-lg hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary"><Minus className="h-4 w-4" /></button>
                           <span aria-live="polite" className="min-w-7 text-center text-sm font-black tabular-nums">{item.quantity}</span>
                           <button type="button" aria-label={`Increase quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, 1)} disabled={item.quantity >= 99} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary"><Plus className="h-4 w-4" /></button>
                         </div>
