@@ -99,7 +99,7 @@ export default function IndiaPinCheck({ pin, showInput = false, initialPin = '' 
         {state === 'unconfirmed' && <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 dark:text-amber-300"><Info className="h-4 w-4" />{t('নিশ্চিত নয়', 'Not confirmed', 'पुष्टि नहीं हुई')}</span>}
       </div>
       {message && (
-        <p role="status" aria-live="polite" className={\`mt-2 text-xs leading-5 \${state === 'available' ? 'text-emerald-800 dark:text-emerald-200' : state === 'unconfirmed' ? 'text-amber-800 dark:text-amber-200' : state === 'error' ? 'text-rose-700 dark:text-rose-300' : 'text-slate-600'}\`}>
+        <p role="status" aria-live="polite" className={"mt-2 text-xs leading-5 " + (state === 'available' ? 'text-emerald-800 dark:text-emerald-200' : state === 'unconfirmed' ? 'text-amber-800 dark:text-amber-200' : state === 'error' ? 'text-rose-700 dark:text-rose-300' : 'text-slate-600')}>
           {message}
         </p>
       )}
