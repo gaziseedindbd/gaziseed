@@ -335,6 +335,7 @@ export default function ProductDetailClient({
 
 
 
+    window.dispatchEvent(new Event('gazi-cart-open'));
     toast(t('কার্টে যোগ করা হয়েছে', 'Added to cart'));
     return true;
   };
