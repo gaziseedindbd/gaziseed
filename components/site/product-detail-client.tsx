@@ -48,7 +48,7 @@ export default function ProductDetailClient({
   const [deliveryQuoteLoading, setDeliveryQuoteLoading] = useState(false);
   const [inWishlist, setInWishlist] = useState(false);
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'guide' | 'reviews' | 'faqs'>('desc');
-  const { lang, t, tDb } = useLang();
+  const { lang, setLang, t, tDb } = useLang();
 
   // Keep the dialog closed when a product route loads or changes.
   useEffect(() => {
@@ -386,6 +386,16 @@ export default function ProductDetailClient({
   return (
     <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(ellipse_at_top,_#e8f5ec_0%,_#f7faf7_42%,_#ffffff_100%)] pb-36 pt-4 text-gray-900 sm:py-10 sm:pb-12">
       <div className="mx-auto w-full max-w-7xl px-3 sm:px-5 lg:px-8">
+        <div className="mb-3 flex items-center justify-end gap-2" role="group" aria-label={t('ভাষা নির্বাচন', 'Choose language')}>
+          {([{ code: 'en', label: 'EN' }, { code: 'bn', label: 'বাংলা' }, { code: 'hi', label: 'हिन्दी' }] as const)
+            .filter((option) => option.code !== 'hi' || productCountry === 'IN')
+            .map((option) => (
+              <button key={option.code} type="button" onClick={() => setLang(option.code)} aria-pressed={lang === option.code}
+                className={`min-h-10 rounded-xl border px-3.5 py-2 text-xs font-black transition ${lang === option.code ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-emerald-200 bg-white text-emerald-900 hover:bg-emerald-50'}`}>
+                {option.label}
+              </button>
+            ))}
+        </div>
         <div className="mb-4 flex justify-end"><button type="button" onClick={() => setQuickViewOpen(true)} className="rounded-xl border border-emerald-700/25 bg-white px-4 py-2 text-xs font-bold text-emerald-800 shadow-sm transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t('কুইক ভিউ', 'Quick View', 'त्वरित दृश्य')}</button></div>
         <ProductOfferSpotlight
           enabled={product.promotional_offer_enabled}
@@ -749,7 +759,7 @@ export default function ProductDetailClient({
         </div>
       )}
 
-      {inStock && <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[60] border-t border-gray-200 bg-white/95 px-3.5 pt-2.5 pb-2 shadow-2xl backdrop-blur-md md:hidden"><div className="mx-auto flex max-w-md items-center justify-between gap-3"><div className="min-w-0"><span className="block text-[10px] font-semibold text-gray-600">{t('ডেলিভারিসহ মোট', 'Total with delivery', 'डिलीवरी सहित कुल')}</span><p className="truncate text-lg font-black text-emerald-800">{deliveryQuote ? formatProductPrice(totalPrice + deliveryQuote.charge) : deliveryQuoteLoading ? t('যাচাই হচ্ছে…', 'Checking…', 'जाँच हो रही है…') : formatProductPrice(totalPrice)}</p></div><button type="button" onClick={handleBuyNow} className="flex min-h-12 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-emerald-700 to-emerald-800 px-5 py-3 text-xs font-extrabold text-white shadow-md shadow-emerald-700/30 active:scale-95"><Zap className="h-4 w-4 fill-current text-amber-300" />{t('এখনই অর্ডার করুন', 'Order Now', 'अभी ऑर्डर करें')}</button></div></div>}
+      {inStock && <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[60] border-t border-emerald-100 bg-white/95 px-3 pt-2.5 pb-2 shadow-2xl backdrop-blur-md md:hidden"><div className="mx-auto flex max-w-md items-center gap-2"><div className="min-w-0 flex-1"><span className="block text-[10px] font-semibold text-gray-600">{t('ডেলিভারিসহ মোট', 'Total with delivery', 'डिलीवरी सहित कुल')}</span><p className="truncate text-lg font-black text-emerald-800">{deliveryQuote ? formatProductPrice(totalPrice + deliveryQuote.charge) : deliveryQuoteLoading ? t('যাচাই হচ্ছে…', 'Checking…', 'जाँच हो रही है…') : formatProductPrice(totalPrice)}</p></div><button type="button" onClick={handleAddToCart} className="flex min-h-12 shrink-0 items-center justify-center gap-1 rounded-xl border border-emerald-700 bg-white px-3 text-xs font-extrabold text-emerald-800"><ShoppingCart className="h-4 w-4" />{t('কার্টে যোগ', 'Add to Cart')}</button><button type="button" onClick={handleBuyNow} className="flex min-h-12 shrink-0 items-center justify-center gap-1 rounded-xl bg-emerald-800 px-3.5 text-xs font-extrabold text-white"><Zap className="h-4 w-4 fill-current text-amber-300" />{t('এখনই কিনুন', 'Buy Now')}</button></div></div>}
     </div>
   );
 }
