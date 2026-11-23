@@ -39,7 +39,7 @@ export default function CartPage() {
   const discountPercent = originalTotal > 0 ? Math.round((savingsTotal / originalTotal) * 100) : 0;
 
   return (
-    <main className="min-h-screen overflow-x-clip bg-[linear-gradient(180deg,#f1f8f3_0%,#fbfdfb_300px,#ffffff_100%)] pb-[calc(8rem+env(safe-area-inset-bottom))] sm:pb-14">
+    <main className="min-h-screen overflow-x-clip bg-[linear-gradient(180deg,#f1f8f3_0%,#fbfdfb_300px,#ffffff_100%)] pb-[calc(12rem+env(safe-area-inset-bottom))] sm:pb-14">
       <div className="mx-auto w-full max-w-7xl px-3 py-5 sm:px-5 sm:py-9 lg:px-8">
         <header className="mb-6 overflow-hidden rounded-[2rem] border border-emerald-100 bg-white shadow-[0_20px_60px_-42px_rgba(6,78,42,.4)]">
           <div className="relative px-5 py-6 sm:px-8 sm:py-8">
@@ -127,7 +127,7 @@ export default function CartPage() {
           </aside>
         </div>
       </div>
-      <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mt-4 lg:hidden">
+      <div className="sticky bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-30 mt-4 lg:hidden">
         <div className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-white/95 p-3 shadow-[0_18px_50px_-20px_rgba(6,78,42,.45)] backdrop-blur-xl">
           <div className="min-w-0 flex-1 pl-1"><p className="text-[10px] font-bold text-slate-500">{t('পণ্যের মোট', 'Product total')}</p><p className="truncate text-lg font-black text-emerald-900">{formatPrice(total)}</p></div>
           <Link href="/checkout" className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-800 px-4 text-xs font-black text-white">{t('চেকআউট', 'Checkout')}<ArrowRight className="h-4 w-4" /></Link>
