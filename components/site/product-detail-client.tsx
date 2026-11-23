@@ -465,7 +465,7 @@ export default function ProductDetailClient({
                   {displayFreeDeliveryThreshold !== null && (
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between gap-2 text-xs font-bold text-emerald-900">
-                        <span>{deliveryQuote.free ? t('✓ ফ্রি ডেলিভারি পেয়েছেন', '✓ FREE delivery unlocked', '✓ मुफ्त डिलीवरी मिल गई') : t(`আর ${formatProductPrice(Math.max(0, displayFreeDeliveryThreshold - totalPrice))} যোগ করলে ডেলিভারি ফ্রি`, `Add ${formatProductPrice(Math.max(0, deliveryQuote.threshold - totalPrice))} more for FREE delivery`, `मुफ्त डिलीवरी के लिए ${formatProductPrice(Math.max(0, deliveryQuote.threshold - totalPrice))} और जोड़ें`)}</span>
+                        <span>{deliveryQuote.free ? t('✓ ফ্রি ডেলিভারি পেয়েছেন', '✓ FREE delivery unlocked', '✓ मुफ्त डिलीवरी मिल गई') : t(`আর ${formatProductPrice(Math.max(0, displayFreeDeliveryThreshold - totalPrice))} যোগ করলে ডেলিভারি ফ্রি`, `Add ${formatProductPrice(Math.max(0, displayFreeDeliveryThreshold - totalPrice))} more for FREE delivery`, `मुफ्त डिलीवरी के लिए ${formatProductPrice(Math.max(0, displayFreeDeliveryThreshold - totalPrice))} और जोड़ें`)}</span>
                         <span className="tabular-nums">{formatProductPrice(totalPrice)} / {formatProductPrice(displayFreeDeliveryThreshold)}</span>
                       </div>
                       <div className="h-2.5 overflow-hidden rounded-full bg-emerald-200">
