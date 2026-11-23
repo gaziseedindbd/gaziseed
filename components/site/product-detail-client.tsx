@@ -424,7 +424,7 @@ export default function ProductDetailClient({
         />
         <div className="grid w-full grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,.95fr)] lg:gap-8">
           <div className="w-full min-w-0">
-            <div className="sticky top-24 w-full overflow-hidden rounded-[2rem] border border-emerald-100 bg-white p-2.5 shadow-[0_24px_70px_-38px_rgba(6,78,42,.35)] sm:p-4">
+            <div className="w-full overflow-hidden rounded-[2rem] border border-emerald-100 bg-white p-2.5 shadow-[0_24px_70px_-38px_rgba(6,78,42,.35)] sm:p-4 lg:sticky lg:top-24">
               <ProductGallery images={images} alt={productName} discount={discount} />
             </div>
           </div>
