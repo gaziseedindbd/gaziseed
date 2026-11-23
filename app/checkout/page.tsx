@@ -496,6 +496,29 @@ export default function CheckoutPage() {
   const freeDeliveryPercent = freeDeliveryUnlocked ? 100 : freeDeliveryThreshold
     ? Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100)) : 0;
 
+  const freeDeliveryAddOn = useMemo(() => {
+    if (!deliveryQuoteReady || freeDeliveryUnlocked || freeDeliveryThreshold == null || subtotal >= freeDeliveryThreshold) return null;
+    let best: { item: CartItemWithDiscount; extra: number; nextSubtotal: number; overage: number } | null = null;
+    for (const item of cart) {
+      const basePrice = Number(item.base_unit_price ?? item.regular_price ?? item.unit_price);
+      for (let extra = 1; extra <= Math.max(0, 99 - item.quantity); extra += 1) {
+        const nextQuantity = item.quantity + extra;
+        const tier = (item.bulk_tiers || [])
+          .filter((candidate) => candidate.is_active !== false && candidate.min_quantity <= nextQuantity && candidate.unit_price > 0)
+          .sort((a, b) => b.min_quantity - a.min_quantity)[0];
+        const unitPrice = Number(tier?.unit_price ?? basePrice);
+        const nextSubtotal = subtotal - item.unit_price * item.quantity + unitPrice * nextQuantity;
+        if (nextSubtotal < freeDeliveryThreshold) continue;
+        const overage = nextSubtotal - freeDeliveryThreshold;
+        if (!best || overage < best.overage || (overage === best.overage && extra < best.extra)) {
+          best = { item, extra, nextSubtotal, overage };
+        }
+        break;
+      }
+    }
+    return best;
+  }, [cart, deliveryQuoteReady, freeDeliveryThreshold, freeDeliveryUnlocked, subtotal]);
+
   const deliveryMessage = useMemo(() => {
     if (!deliveryQuoteReady) {
       return t('ডেলিভারি যাচাই হচ্ছে…', 'Checking delivery…', 'डिलीवरी की जाँच हो रही है…');
@@ -1098,6 +1121,48 @@ export default function CheckoutPage() {
                     ))}
                   </div>}
 
+                  {freeDeliveryAddOn && (
+                    <div className="space-y-2 rounded-2xl border border-emerald-300 bg-emerald-50 p-3.5">
+                      <p className="text-xs font-black text-emerald-900">{t('ফ্রি ডেলিভারি পেতে আরও পণ্য যোগ করুন', 'Add more to unlock FREE delivery')}</p>
+                      <p className="text-sm font-bold text-emerald-800">{t(`${freeDeliveryAddOn.extra}টি ${freeDeliveryAddOn.item.name} যোগ করুন`, `Add ${freeDeliveryAddOn.extra} more ${freeDeliveryAddOn.item.name}`)}</p>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-emerald-700">{t('নতুন পণ্যের মোট', 'New product subtotal')}</span>
+                        <strong className="text-base font-black text-emerald-900">{formatPrice(freeDeliveryAddOn.nextSubtotal)}</strong>
+                      </div>
+                      <button type="button" onClick={() => updateCartQuantity(freeDeliveryAddOn.item.product_id, freeDeliveryAddOn.item.quantity + freeDeliveryAddOn.extra, freeDeliveryAddOn.item.variant_id, freeDeliveryAddOn.item.bundle_id)} className="min-h-11 w-full rounded-xl bg-emerald-700 px-3 py-2 text-sm font-black text-white">+ {t('যোগ করুন', 'Add')}</button>
+                    </div>
+                  )}
+
+              <section className="rounded-[2rem] border border-primary/20 bg-card p-5 shadow-sm sm:p-6">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-black text-foreground">{t('আরও পণ্য যোগ করুন', 'Add another product', 'और उत्पाद जोड़ें')}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">{t('আপনার অর্ডারে আরও বীজ যোগ করুন', 'Add more seeds to your order')}</p>
+                  </div>
+                  <button type="button" onClick={() => setShowMoreProducts((value) => !value)} aria-expanded={showMoreProducts}
+                    className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground hover:bg-primary/90">
+                    <Plus className="h-4 w-4" /> {showMoreProducts ? t('বন্ধ করুন', 'Close') : t('পণ্য যোগ করুন', 'Add product', 'उत्पाद जोड़ें')}
+                  </button>
+                </div>
+                {showMoreProducts && <div className="space-y-3 rounded-2xl border border-border/70 bg-background p-3">
+                  <label className="block text-xs font-bold" htmlFor="checkout-add-product-search">{t('পণ্য খুঁজুন', 'Search products', 'उत्पाद खोजें')}</label>
+                  <input id="checkout-add-product-search" type="search" value={productSearch} onChange={(event) => setProductSearch(event.target.value)}
+                    placeholder={t('পণ্যের নাম লিখুন', 'Type a product name', 'उत्पाद का नाम लिखें')}
+                    className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" />
+                  {moreProductsLoading && <p className="text-xs text-muted-foreground">Loading products…</p>}
+                  {moreProductsError && <p role="alert" className="text-xs text-rose-600">{moreProductsError}</p>}
+                  {!moreProductsLoading && !moreProductsError && recommendedProducts.length === 0 && <p className="text-xs text-muted-foreground">No additional products found.</p>}
+                  <div className="max-h-72 space-y-2 overflow-y-auto">
+                    {!moreProductsLoading && recommendedProducts.map((product) => <div key={product.id} className="flex items-center gap-2 rounded-xl border border-border/60 p-2">
+                      <img src={product.image || '/placeholder.svg'} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
+                      <span className="min-w-0 flex-1"><span className="block line-clamp-2 text-xs font-bold">{product.name_en || product.name_bn}</span>
+                        <span className="text-xs text-muted-foreground">{formatPrice(product.sale_price && product.sale_price > 0 && product.sale_price < product.regular_price ? product.sale_price : product.regular_price)}</span></span>
+                      <button type="button" onClick={() => addCheckoutProduct(product)} className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">{t('যোগ করুন', 'Add', 'जोड़ें')}</button>
+                    </div>)}
+                  </div>
+                </div>}
+              </section>
+
                   {cart.length > 0 && <div className="space-y-2">
                     <button type="button" onClick={openMessengerWithCart} disabled={messengerLinkLoading}
                       className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-background px-3 py-2 text-sm font-bold text-primary transition hover:bg-primary/5 disabled:cursor-wait disabled:opacity-60">
@@ -1336,35 +1401,7 @@ export default function CheckoutPage() {
 )}
 
 
-              <section className="rounded-[2rem] border border-primary/20 bg-card p-5 shadow-sm sm:p-6">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-black text-foreground">{t('আরও পণ্য যোগ করুন', 'Add another product', 'और उत्पाद जोड़ें')}</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">{t('আপনার অর্ডারে আরও বীজ যোগ করুন', 'Add more seeds to your order')}</p>
-                  </div>
-                  <button type="button" onClick={() => setShowMoreProducts((value) => !value)} aria-expanded={showMoreProducts}
-                    className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-black text-primary-foreground hover:bg-primary/90">
-                    <Plus className="h-4 w-4" /> {showMoreProducts ? t('বন্ধ করুন', 'Close') : t('পণ্য যোগ করুন', 'Add product', 'उत्पाद जोड़ें')}
-                  </button>
-                </div>
-                {showMoreProducts && <div className="space-y-3 rounded-2xl border border-border/70 bg-background p-3">
-                  <label className="block text-xs font-bold" htmlFor="checkout-add-product-search">{t('পণ্য খুঁজুন', 'Search products', 'उत्पाद खोजें')}</label>
-                  <input id="checkout-add-product-search" type="search" value={productSearch} onChange={(event) => setProductSearch(event.target.value)}
-                    placeholder={t('পণ্যের নাম লিখুন', 'Type a product name', 'उत्पाद का नाम लिखें')}
-                    className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" />
-                  {moreProductsLoading && <p className="text-xs text-muted-foreground">Loading products…</p>}
-                  {moreProductsError && <p role="alert" className="text-xs text-rose-600">{moreProductsError}</p>}
-                  {!moreProductsLoading && !moreProductsError && recommendedProducts.length === 0 && <p className="text-xs text-muted-foreground">No additional products found.</p>}
-                  <div className="max-h-72 space-y-2 overflow-y-auto">
-                    {!moreProductsLoading && recommendedProducts.map((product) => <div key={product.id} className="flex items-center gap-2 rounded-xl border border-border/60 p-2">
-                      <img src={product.image || '/placeholder.svg'} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
-                      <span className="min-w-0 flex-1"><span className="block line-clamp-2 text-xs font-bold">{product.name_en || product.name_bn}</span>
-                        <span className="text-xs text-muted-foreground">{formatPrice(product.sale_price && product.sale_price > 0 && product.sale_price < product.regular_price ? product.sale_price : product.regular_price)}</span></span>
-                      <button type="button" onClick={() => addCheckoutProduct(product)} className="shrink-0 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">{t('যোগ করুন', 'Add', 'जोड़ें')}</button>
-                    </div>)}
-                  </div>
-                </div>}
-              </section>
+
 
               <div className="mt-4 hidden items-start gap-3 rounded-2xl border border-border/60 bg-card p-4 lg:flex">
                 <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
