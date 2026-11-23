@@ -77,6 +77,7 @@ export default function CheckoutPage() {
   const { t, lang } = useLang();
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
   const [cart, setCart] = useState<CartItemWithDiscount[]>([]);
+  const [cartInitialized, setCartInitialized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<CustomerAddress[]>([]);
   const [selectedAddrId, setSelectedAddrId] = useState('');
@@ -165,6 +166,7 @@ export default function CheckoutPage() {
     // Render the locally stored cart immediately; validate product activity/country in the background.
     const localCart = getCart();
     setCart(localCart as CartItemWithDiscount[]);
+    setCartInitialized(true);
 
     let active = true;
     const refreshCheckoutCart = async () => {
@@ -822,6 +824,17 @@ export default function CheckoutPage() {
   }
 
 
+  if (!cartInitialized) {
+    return (
+      <main className="flex min-h-[70vh] items-center justify-center bg-background px-4">
+        <div role="status" aria-live="polite" className="flex items-center gap-3 rounded-2xl border border-border bg-card px-5 py-4 text-sm font-semibold text-muted-foreground shadow-sm">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          {t('কার্ট লোড হচ্ছে…', 'Loading your cart…', 'आपका कार्ट लोड हो रहा है…')}
+        </div>
+      </main>
+    );
+  }
+
   if (cart.length === 0) {
     return (
       <main className="min-h-screen bg-background">
@@ -1190,6 +1203,9 @@ export default function CheckoutPage() {
                             <span className="min-w-0">
                               <span className="block text-base font-black">{t("Pay COD advance", "Pay COD advance")} {formatPrice(codAdvance)} {t("now +", "now +")} {formatPrice(codDue)} {t("on delivery — Total", "on delivery — Total")} {formatPrice(payableTotal)}</span>
                               <span className="mt-2 block text-sm leading-5 text-muted-foreground">{t("ডেলিভারিতে বাকি", "Due on delivery")}: <strong className="font-black text-foreground">{formatPrice(codDue)}</strong></span>
+                              <span className="mt-1 block text-xs leading-5 text-muted-foreground">{deliveryCharge > 0
+                                ? t('অগ্রিম = প্রযোজ্য ডেলিভারি চার্জ', 'Advance equals the applicable delivery charge')
+                                : t('ফ্রি ডেলিভারি অর্ডারে নির্দিষ্ট COD অগ্রিম ₹120', 'Free-delivery orders use the existing fixed ₹120 COD advance')}</span>
                             </span>
                           </span>
                         </button>
