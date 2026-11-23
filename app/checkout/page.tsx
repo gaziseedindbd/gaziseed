@@ -962,7 +962,7 @@ export default function CheckoutPage() {
                   <AddressSelector value={addrValue} onChange={setAddrValue} countryCode={country} />
                 </div>
 
-                <button type="submit" disabled={loading || !deliveryQuoteReady} className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 text-base font-black text-primary-foreground shadow-lg shadow-primary/20 transition active:scale-[.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 md:hidden">{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t(`এখন ${formatPrice(codAdvance)} অগ্রিম দিন`, `Pay ${formatPrice(codAdvance)} COD advance now`, `अभी ${formatPrice(codAdvance)} COD अग्रिम दें`) : t('এখনই পেমেন্ট করুন', 'Pay Now', 'अभी भुगतान करें')) : t('অর্ডার কনফার্ম করুন', 'Confirm order', 'ऑर्डर की पुष्टि करें')} <ChevronRight className="h-4 w-4" /></>}</button>
+                <button type="submit" hidden={!deliveryQuoteReady} disabled={loading || !deliveryQuoteReady} className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 text-base font-black text-primary-foreground shadow-lg shadow-primary/20 transition active:scale-[.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 md:hidden">{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t(`এখন ${formatPrice(codAdvance)} অগ্রিম দিন`, `Pay ${formatPrice(codAdvance)} COD advance now`, `अभी ${formatPrice(codAdvance)} COD अग्रिम दें`) : t('এখনই পেমেন্ট করুন', 'Pay Now', 'अभी भुगतान करें')) : t('অর্ডার কনফার্ম করুন', 'Confirm order', 'ऑर्डर की पुष्टि करें')} <ChevronRight className="h-4 w-4" /></>}</button>
 
                 <div className="mt-5 space-y-1.5">
                   <label htmlFor="checkout-instructions" className="text-sm font-extrabold text-foreground">{t('অতিরিক্ত নির্দেশনা', 'Special instructions')}</label>
@@ -1229,7 +1229,7 @@ export default function CheckoutPage() {
 {cart.some((item) => item.bulk_tiers?.some((tier) => tier.is_active !== false && tier.min_quantity > 0 && tier.unit_price > 0)) && (
               <section className="overflow-hidden rounded-[2rem] border border-emerald-200/70 bg-card shadow-sm dark:border-emerald-900/50">
                 <div className="border-b border-emerald-200/60 bg-gradient-to-r from-emerald-50 to-white p-5 dark:from-emerald-950/30 dark:to-card sm:p-6">
-                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-400">{t('বিশেষ প্যাকেট অফার', 'SPECIAL PACKET OFFERS')}</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-400">{t('🔥 বেশি কিনুন, বেশি সাশ্রয় করুন', '🔥 Buy more, save more', '🔥 ज्यादा खरीदें, ज्यादा बचाएँ')}</p>
                   <h2 className="mt-1 text-lg font-black text-foreground sm:text-xl">{t('পণ্য ও প্যাকেট নির্বাচন করুন', 'Select products & packet offers')}</h2>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('আপনার পছন্দের প্যাকেট অফার বেছে নিন এবং বেশি সাশ্রয় করুন।', 'Choose a packet offer to get the best value on your order.')}</p>
                 </div>
