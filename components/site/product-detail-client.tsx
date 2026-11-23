@@ -50,6 +50,22 @@ export default function ProductDetailClient({
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'guide' | 'reviews' | 'faqs'>('desc');
   const { lang, setLang, t, tDb } = useLang();
 
+  useEffect(() => {
+    if (!product) {
+      setBulkTiers([]);
+      return;
+    }
+    let active = true;
+    getBulkPricing(product.id, selectedVariant?.id)
+      .then((tiers) => {
+        if (active) setBulkTiers(tiers || []);
+      })
+      .catch(() => {
+        if (active) setBulkTiers([]);
+      });
+    return () => { active = false; };
+  }, [product?.id, selectedVariant?.id]);
+
   // Keep the dialog closed when a product route loads or changes.
   useEffect(() => {
     setQuickViewOpen(false);
