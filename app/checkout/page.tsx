@@ -843,9 +843,9 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="min-h-screen overflow-x-clip bg-slate-50/90 pb-28 dark:bg-slate-950 sm:pb-14">
-      <div className="container-custom mx-auto max-w-6xl min-w-0 px-3 py-4 sm:px-4 sm:py-8 lg:py-12">
-        <div className="mb-5 overflow-hidden rounded-[28px] border border-emerald-200/70 bg-gradient-to-br from-white via-white to-emerald-50/80 p-5 shadow-sm dark:border-emerald-900/50 dark:from-card dark:via-card dark:to-emerald-950/20 sm:mb-7 sm:p-7">
+    <main className="min-h-screen overflow-x-clip bg-[linear-gradient(180deg,#eff7f1_0%,#f8fbf8_280px,#ffffff_100%)] pb-28 dark:bg-slate-950 sm:pb-14">
+      <div className="container-custom mx-auto w-full max-w-7xl min-w-0 px-3 py-4 sm:px-5 sm:py-8 lg:px-8 lg:py-10">
+        <div className="mb-5 overflow-hidden rounded-[2rem] border border-emerald-100 bg-white p-5 shadow-[0_20px_60px_-42px_rgba(6,78,42,.4)] dark:border-emerald-900/50 dark:bg-card sm:mb-7 sm:p-7">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300">
@@ -873,8 +873,8 @@ export default function CheckoutPage() {
         </div>
 
         <form id="checkout-form" onSubmit={handleSubmit}>
-          <div className="mx-auto flex w-full max-w-4xl flex-col gap-5 sm:gap-6">
-            <div className="w-full space-y-5 sm:space-y-6">
+          <div className="grid w-full grid-cols-1 items-start gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(360px,.92fr)] lg:gap-7">
+            <div className="w-full min-w-0 space-y-4 sm:space-y-5">
               {savedAddresses.length > 0 && (
                 <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
                   <div className="mb-4 flex items-center justify-between gap-4">
@@ -1071,8 +1071,8 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            <aside className="w-full space-y-5">
-              <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-xl shadow-black/[0.06]">
+            <aside className="w-full min-w-0 space-y-4 lg:sticky lg:top-24">
+              <section className="overflow-hidden rounded-[1.75rem] border border-emerald-100 bg-card shadow-[0_20px_60px_-38px_rgba(6,78,42,.35)]">
                 <div className="border-b border-border/60 p-5 sm:p-6">
                   <div className="flex items-center justify-between gap-3">
                     <div>
@@ -1087,7 +1087,7 @@ export default function CheckoutPage() {
                     </div>
                     {country === 'BD' && (
                       <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5 text-[11px] font-black text-primary">
-                        <Banknote className="h-3.5 w-3.5" /> {t(`COD — এখন ${formatPrice(codAdvance)} + ডেলিভারিতে ${formatPrice(codDue)} · মোট ${formatPrice(payableTotal)}`, `COD — ${formatPrice(codAdvance)} now + ${formatPrice(codDue)} on delivery · Total ${formatPrice(payableTotal)}`)}
+                        <Banknote className="h-3.5 w-3.5" /> {t('ক্যাশ অন ডেলিভারি', 'Cash on Delivery')}
                       </div>
                     )}
                   </div>
@@ -1170,7 +1170,7 @@ export default function CheckoutPage() {
                         <span className="flex items-start gap-3">
                           <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><WalletCards className="h-4 w-4" /></span>
                           <span className="min-w-0">
-                            <span className="block text-base font-black">{t(`অনলাইন পেমেন্ট — ${formatPrice(payableTotal)}`, `Online payment — ${formatPrice(payableTotal)} — UPI / Card`)}</span>
+                            <span className="block text-base font-black">{t('অনলাইন পেমেন্ট', 'Online payment')}</span>
                             <span className="mt-2 block text-sm leading-5 text-muted-foreground">UPI / Card</span>
                           </span>
                         </span>
@@ -1213,7 +1213,7 @@ export default function CheckoutPage() {
                     type="submit"
                     hidden={!deliveryQuoteReady}
                     disabled={loading || !deliveryQuoteReady}
-                    className="mt-4 inline-flex min-h-[64px] w-full items-center justify-center gap-3 rounded-[18px] bg-primary px-4 py-4 text-base font-black sm:px-6 sm:text-lg tracking-tight text-primary-foreground shadow-xl shadow-primary/30 transition-all hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-2xl hover:shadow-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-15"
+                    className="mt-4 inline-flex min-h-[60px] w-full items-center justify-center gap-3 rounded-2xl bg-emerald-800 px-4 py-4 text-base font-black tracking-tight text-white shadow-lg shadow-emerald-900/20 transition-all hover:bg-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700/50 focus-visible:ring-offset-2 active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-60 sm:px-6 sm:text-lg"
                   >
                     {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t(`এখন ${formatPrice(codAdvance)} অগ্রিম দিন`, `Pay ${formatPrice(codAdvance)} COD advance now`) : t('অনলাইনে পেমেন্ট করুন', 'Pay online')) : t('অর্ডার কনফার্ম করুন', 'Confirm order')} <ChevronRight className="h-4 w-4" /></>}
                   </button>
