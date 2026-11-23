@@ -7,6 +7,7 @@ import { ProductCard } from '@/components/site/product-card';
 import { useLang } from './language-provider';
 import { ThemeWrapper } from '@/components/site/theme-wrapper';
 import { getVisitorCountry } from '@/lib/supabase/client';
+import { productMatchesSearch } from '@/lib/product-search';
 import type { Product, Category } from '@/lib/supabase/types';
 import { SlidersHorizontal, X, ChevronDown, Filter as FilterIcon } from 'lucide-react';
 
@@ -77,8 +78,7 @@ export function AllProductsPage() {
   const filteredProducts = useMemo(() => {
     let result = [...products];
     if (searchQuery) {
-      const needle = searchQuery.toLowerCase();
-      result = result.filter((p) => p.name_bn?.toLowerCase().includes(needle) || p.name_en?.toLowerCase().includes(needle) || p.sku?.toLowerCase().includes(needle));
+      result = result.filter((product) => productMatchesSearch(product, searchQuery));
     }
     if (selectedCategory) result = result.filter((p) => p.category_id === selectedCategory);
     result = result.filter((p) => { const price = p.sale_price && p.sale_price > 0 && p.sale_price < p.regular_price ? p.sale_price : p.regular_price; return price >= priceRange[0] && price <= priceRange[1]; });
