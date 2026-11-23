@@ -6,6 +6,7 @@ import { getPageBySlug } from '@/lib/data';
 import { getVisitorCountry } from '@/lib/supabase/client';
 import type { Page as PageType } from '@/lib/supabase/types';
 import { useParams } from 'next/navigation';
+import { useLang } from '@/components/site/language-provider';
 
 const POLICY_COPY = {
   BD: {
@@ -119,6 +120,7 @@ export default function PageDetail() {
   const [page, setPage] = useState<PageType | null>(null);
   const [loading, setLoading] = useState(true);
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
+  const { t } = useLang();
 
   useEffect(() => {
     setCountry(getVisitorCountry());
@@ -128,7 +130,7 @@ export default function PageDetail() {
   }, []);
 
   useEffect(() => {
-    if (slug === 'privacy-policy' || slug === 'terms-conditions' || slug === 'return-refund-policy') {
+    if (slug === 'privacy-policy' || slug === 'terms-conditions' || slug === 'return-refund-policy' || slug === 'shipping-policy') {
       setLoading(false);
       return;
     }
@@ -139,6 +141,7 @@ export default function PageDetail() {
     });
   }, [slug]);
 
+  if (slug === 'shipping-policy') return <ShippingPolicy country={country} />;
   if (slug === 'privacy-policy') return <PrivacyPolicy country={country} />;
   if (slug === 'terms-conditions') return <TermsConditions country={country} />;
   if (slug === 'return-refund-policy') return <ReturnRefundPolicy country={country} />;
@@ -182,4 +185,28 @@ function TermsConditions({ country }: { country: 'BD' | 'IN' }) {
   const c = copy[country];
   const lastUpdated = 'September 9, 2026';
   return <div className="container-custom py-8 sm:py-12"><article className="mx-auto max-w-4xl overflow-hidden rounded-3xl border bg-background shadow-sm"><div className="border-b bg-muted/40 px-5 py-7 sm:px-10 sm:py-9"><p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary">GAZI SEED • {c.market} Branch</p><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Terms & Conditions</h1><p className="mt-3 text-sm text-muted-foreground">Last updated: {lastUpdated}</p></div><div className="space-y-8 px-5 py-7 text-[15px] leading-7 text-muted-foreground sm:px-10 sm:py-10"><p>{c.intro}</p><section><h2 className="mb-3 text-xl font-semibold text-foreground">1. About GAZI SEED</h2><p>GAZI SEED provides seeds, plants, gardening, and agricultural products through its online services. Product information, photographs, prices, stock availability, and other details may be updated from time to time.</p></section><section><h2 className="mb-3 text-xl font-semibold text-foreground">2. Accounts</h2><p>You are responsible for providing accurate information and keeping your account credentials secure.</p></section><section><h2 className="mb-3 text-xl font-semibold text-foreground">3. Products and Availability</h2><p>We aim to keep product descriptions, images, specifications, prices, and stock information accurate. Availability can change without prior notice.</p></section><section><h2 className="mb-3 text-xl font-semibold text-foreground">4. Orders and Acceptance</h2><p>Submitting an order is a request to purchase. An order becomes accepted when GAZI SEED confirms it through the available order-processing system.</p></section><section><h2 className="mb-3 text-xl font-semibold text-foreground">5. Pricing and Payment</h2><p>Prices for the {c.market} branch are displayed in {c.currency}. Available payment methods may include {c.payment}.</p></section><section><h2 className="mb-3 text-xl font-semibold text-foreground">6. Delivery</h2><p>We arrange delivery to eligible addresses {c.delivery}. Delivery times are estimates and may be affected by courier capacity, weather, holidays, address issues, or other circumstances.</p></section><section><h2 className="mb-3 text-xl font-semibold text-foreground">7. Returns, Refunds and Cancellations</h2><p>Returns, refunds, exchanges, and cancellations are subject to the applicable GAZI SEED Return & Refund Policy for the relevant branch, product type, order status, and applicable law.</p></section><section><h2 className="mb-3 text-xl font-semibold text-foreground">8. Seeds, Plants and Growing Results</h2><p>Seed germination, plant growth, yield, color, size, harvest time, and other natural outcomes can vary due to climate, soil, cultivation practices, storage, season, and other conditions.</p></section><section><h2 className="mb-3 text-xl font-semibold text-foreground">9. Referral, Rewards and Promotions</h2><p>Referral programs, rewards, coupons, promotions, gifts, and special offers may have separate eligibility rules, limits, expiry dates, or anti-abuse conditions.</p></section><section><h2 className="mb-3 text-xl font-semibold text-foreground">10. Prohibited Use</h2><p>You must not use the website for unlawful activity, fraud, abuse, automated misuse, interference with site security, or unauthorized access.</p></section><section><h2 className="mb-3 text-xl font-semibold text-foreground">11. Intellectual Property</h2><p>Website content, branding, logos, designs, text, images, videos, software, and other materials are owned by or used with permission by GAZI SEED.</p></section><section><h2 className="mb-3 text-xl font-semibold text-foreground">12. Third-Party Services</h2><p>The website may rely on independent providers for payment, hosting, analytics, delivery, communication, authentication, or other services.</p></section><section><h2 className="mb-3 text-xl font-semibold text-foreground">13. Limitation of Liability</h2><p>To the extent permitted by applicable law, GAZI SEED is not responsible for indirect or consequential losses arising from website use, third-party service interruptions, courier delays, or natural variations in agricultural products.</p></section><section><h2 className="mb-3 text-xl font-semibold text-foreground">14. Changes to These Terms</h2><p>We may update these Terms & Conditions from time to time. The latest version will be published on this page with an updated date.</p></section><section><h2 className="mb-3 text-xl font-semibold text-foreground">15. Contact Us</h2><p>For questions about orders, accounts, delivery, cancellations, refunds, or these terms, please use the contact and support channels provided on the GAZI SEED website for the {c.market} branch.</p></section></div></article></div>;
+}
+
+
+function ShippingPolicy({ country }: { country: 'BD' | 'IN' }) {
+  const { t } = useLang();
+  const isIndia = country === 'IN';
+  return (
+    <div className="container-custom py-8 sm:py-12">
+      <article className="mx-auto max-w-4xl overflow-hidden rounded-3xl border bg-background shadow-sm">
+        <header className="border-b bg-muted/40 px-5 py-7 sm:px-10 sm:py-9">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-[.18em] text-primary">GAZI SEED • {isIndia ? 'India' : 'Bangladesh'} Branch</p>
+          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">{t('ডেলিভারি নীতি', 'Shipping Policy', 'डिलीवरी नीति')}</h1>
+          <p className="mt-3 text-sm text-muted-foreground">{t('সর্বশেষ আপডেট: ২৩ নভেম্বর ২০২৬', 'Last updated: 23 November 2026', 'अंतिम अपडेट: 23 नवंबर 2026')}</p>
+        </header>
+        <div className="space-y-6 px-5 py-7 text-sm leading-7 text-muted-foreground sm:px-10 sm:py-10">
+          <section><h2 className="mb-2 text-lg font-bold text-foreground">{t('ডেলিভারির সময়', 'Delivery time', 'डिलीवरी का समय')}</h2><p>{t('আপনার PIN কোড ও ঠিকানার ভিত্তিতে ডেলিভারির সম্ভাব্য সময় চেকআউটে দেখানো হবে। কুরিয়ার, আবহাওয়া ও এলাকার কারণে সময় বদলাতে পারে।', 'The estimated delivery window depends on your PIN code and address. Check the estimate shown during checkout. Courier capacity, weather and local conditions can affect delivery.', 'डिलीवरी का अनुमानित समय आपके PIN कोड और पते पर निर्भर करता है। चेकआउट में दिखाया गया अनुमान देखें। कूरियर और स्थानीय परिस्थितियों से समय बदल सकता है।')}</p></section>
+          <section><h2 className="mb-2 text-lg font-bold text-foreground">{t('ডেলিভারি চার্জ', 'Delivery charge', 'डिलीवरी शुल्क')}</h2><p>{isIndia ? t('সাধারণ ডেলিভারি চার্জ ₹80। ₹500-এর বেশি অর্ডারে ডেলিভারি ফ্রি। পণ্যে আলাদা Free Delivery সুবিধা থাকলে সেটিও প্রযোজ্য হতে পারে।', 'Standard delivery charge is ₹80. Delivery is FREE on orders above ₹500. Product-specific free-delivery offers may also apply.', 'सामान्य डिलीवरी शुल्क ₹80 है। ₹500 से अधिक के ऑर्डर पर डिलीवरी FREE है। उत्पाद के विशेष ऑफर भी लागू हो सकते हैं।') : t('বাংলাদেশের ডেলিভারি চার্জ অর্ডারের পরিমাণ ও ঠিকানা অনুযায়ী চেকআউটে দেখানো হবে। অর্ডার নিশ্চিত করার আগে চূড়ান্ত চার্জ দেখে নিন।', 'Bangladesh delivery charges depend on the order and address. The final charge is shown at checkout before you confirm the order.', 'बांग्लादेश में डिलीवरी शुल्क ऑर्डर और पते के अनुसार चेकआउट में दिखाया जाएगा। ऑर्डर की पुष्टि से पहले अंतिम शुल्क देखें।')}</p></section>
+          <section><h2 className="mb-2 text-lg font-bold text-foreground">{t('পেমেন্ট ও ক্যাশ অন ডেলিভারি', 'Payment and Cash on Delivery', 'भुगतान और कैश ऑन डिलीवरी')}</h2><p>{isIndia ? t('India COD অর্ডারে প্রযোজ্য অগ্রিম পেমেন্ট চেকআউটে স্পষ্টভাবে দেখানো হবে। বাকি টাকা পণ্য হাতে পাওয়ার সময় দিতে হবে। UPI বা কার্ডে অনলাইন পেমেন্টও করা যায়।', 'For India COD orders, any required advance is shown clearly at checkout before you place the order. The remaining amount is paid when the parcel is delivered. You may also pay online by UPI or card.', 'भारत के COD ऑर्डर में आवश्यक अग्रिम राशि ऑर्डर से पहले चेकआउट में दिखाई जाएगी। बाकी राशि पार्सल मिलने पर दें। UPI या कार्ड से ऑनलाइन भुगतान भी कर सकते हैं।') : t('বাংলাদেশে COD ও উপলব্ধ অনলাইন পেমেন্ট পদ্ধতি চেকআউটে দেখানো হবে। অর্ডার নিশ্চিত করার আগে কত টাকা দিতে হবে দেখে নিন।', 'Available payment methods and any amount due at delivery are shown at checkout before you confirm your Bangladesh order.', 'बांग्लादेश के लिए उपलब्ध भुगतान तरीके और डिलीवरी पर देय राशि चेकआउट में दिखाई जाएगी।')}</p></section>
+          <section><h2 className="mb-2 text-lg font-bold text-foreground">{t('রিটার্ন ও রিপ্লেসমেন্ট', 'Returns and replacement', 'रिटर्न और रिप्लेसमेंट')}</h2><p>{t('ভুল, ক্ষতিগ্রস্ত বা ত্রুটিপূর্ণ পণ্য পেলে অর্ডার নম্বর ও ছবি সহ দ্রুত আমাদের সাথে যোগাযোগ করুন। বীজের প্যাকেট খোলা বা ব্যবহার করা হলে রিটার্নের যোগ্যতা পণ্যের ধরন ও প্রযোজ্য নিয়ম অনুযায়ী যাচাই করা হবে।', 'If an item is incorrect, damaged or defective, contact GAZI SEED promptly with your order number and photos. Return eligibility for opened or used seed packets is reviewed based on product type and applicable rules.', 'गलत, खराब या क्षतिग्रस्त उत्पाद मिलने पर ऑर्डर नंबर और फोटो के साथ जल्द संपर्क करें। खुले या इस्तेमाल किए गए बीज पैकेट की वापसी उत्पाद और लागू नियमों के अनुसार जाँची जाएगी।')}</p><p className="mt-2"><Link href="/page/return-refund-policy" className="font-bold text-primary underline">{t('সম্পূর্ণ Return & Refund Policy দেখুন', 'Read the full Return & Refund Policy', 'पूरी Return & Refund Policy पढ़ें')}</Link></p></section>
+          <p className="border-t pt-4 text-xs">{t('ঠিকানা সঠিকভাবে দিন এবং অর্ডার নিশ্চিত করার আগে চেকআউটে দেখানো ডেলিভারি ও পেমেন্টের তথ্য মিলিয়ে নিন।', 'Enter a complete address and review the delivery and payment details shown at checkout before confirming your order.', 'पूरा पता दें और ऑर्डर की पुष्टि से पहले चेकआउट में डिलीवरी और भुगतान विवरण जाँचें।')}</p>
+        </div>
+      </article>
+    </div>
+  );
 }
