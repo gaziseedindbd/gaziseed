@@ -131,16 +131,16 @@ export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
     && (deliveryCharge === 0 || freeDeliveryProductIds.size > 0);
   const freeDeliveryRemaining = freeDeliveryThreshold == null
     ? null
-    : Math.round(Math.max(0, freeDeliveryThreshold - subtotal));
+    : country === 'IN'
+      ? Math.ceil(Math.max(0, freeDeliveryThreshold - subtotal))
+      : Math.round(Math.max(0, freeDeliveryThreshold - subtotal));
   const freeDeliveryPercent = freeDeliveryUnlocked
     ? 100
     : freeDeliveryThreshold
       ? Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100))
       : 0;
 
-  const progressTarget = country === 'IN'
-    ? Math.max(0, Math.round((freeDeliveryThreshold ?? subtotal) * 100 - 1) / 100)
-    : (freeDeliveryThreshold ?? subtotal);
+  const progressTarget = freeDeliveryThreshold ?? subtotal;
 
   const addOn = useMemo(() => {
     if (!deliveryQuoteReady || freeDeliveryUnlocked || freeDeliveryThreshold == null || subtotal >= progressTarget) return null;
