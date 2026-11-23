@@ -7,7 +7,7 @@ import { Check, ChevronRight, Minus, Plus, ShoppingCart, Trash2, Truck, X } from
 import { useCart } from '@/components/site/cart-provider';
 import { removeFromCart, updateCartQuantity, type CartItem } from '@/lib/cart';
 import { formatPrice } from '@/lib/data';
-import { getVisitorCountry } from '@/lib/supabase/client';
+import { getVisitorCountry, supabase } from '@/lib/supabase/client';
 import { useLang } from '@/components/site/language-provider';
 
 type CartFlyEvent = CustomEvent<{
@@ -24,11 +24,18 @@ export default function FloatingCartDrawer() {
   const { t } = useLang();
   const [open, setOpen] = useState(false);
   const [country, setCountry] = useState<'BD' | 'IN'>('BD');
+  const [freeDeliveryTarget, setFreeDeliveryTarget] = useState(600);
   const [cartBump, setCartBump] = useState(false);
   const cartButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    setCountry(getVisitorCountry());
+    const visitorCountry = getVisitorCountry();
+    setCountry(visitorCountry);
+    setFreeDeliveryTarget(visitorCountry === 'IN' ? 500 : 600);
+    let active = true;
+    void supabase.from('delivery_charge_rules').select('min_order').eq('country_code', visitorCountry).eq('is_active', true).eq('is_free', true).order('min_order', { ascending: false }).limit(1).maybeSingle().then(({ data, error }) => {
+      if (active && !error && data?.min_order != null) setFreeDeliveryTarget(Number(data.min_order));
+    });
 
     const openCart = () => setOpen(true);
     const closeCart = () => setOpen(false);
@@ -104,6 +111,7 @@ export default function FloatingCartDrawer() {
     window.addEventListener('gazi-cart-fly', flyToCart);
 
     return () => {
+      active = false;
       window.removeEventListener('gazi-cart-open', openCart);
       window.removeEventListener('gazi-cart-close', closeCart);
       window.removeEventListener('gazi-cart-fly', flyToCart);
@@ -119,7 +127,6 @@ export default function FloatingCartDrawer() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open]);
 
-  const freeDeliveryTarget = country === 'IN' ? 999 : 600;
   const remaining = Math.max(0, freeDeliveryTarget - total);
   const progress = Math.min(100, Math.round((total / freeDeliveryTarget) * 100));
 
