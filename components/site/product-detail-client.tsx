@@ -496,9 +496,11 @@ export default function ProductDetailClient({
               ) : deliveryQuote ? (
                 <>
                   <p className="text-lg font-black text-emerald-950">
-                    {deliveryQuote.charge === 0
-                      ? `${formatProductPrice(totalPrice)} — ${t('ফ্রি ডেলিভারি', 'FREE delivery', 'मुफ्त डिलीवरी')} = ${formatProductPrice(totalPrice)}`
-                      : `${formatProductPrice(totalPrice)} + ${formatProductPrice(deliveryQuote.charge)} = ${formatProductPrice(totalPrice + deliveryQuote.charge)}`}
+                    {currentProductInCart
+                      ? formatProductPrice(cartTotal)
+                      : deliveryQuote.charge === 0
+                        ? `${formatProductPrice(totalPrice)} — ${t('ফ্রি ডেলিভারি', 'FREE delivery', 'मुफ्त डिलीवरी')} = ${formatProductPrice(totalPrice)}`
+                        : `${formatProductPrice(totalPrice)} + ${formatProductPrice(deliveryQuote.charge)} = ${formatProductPrice(totalPrice + deliveryQuote.charge)}`}
                   </p>
                   {displayFreeDeliveryThreshold !== null && (
                     <><p className="flex items-center gap-2 text-sm font-black text-emerald-800"><Truck className="h-4 w-4" />{t(`${formatProductPrice(displayFreeDeliveryThreshold)}-এর বেশি অর্ডারে ফ্রি ডেলিভারি`, `FREE delivery on orders above ${formatProductPrice(displayFreeDeliveryThreshold)}`, `${formatProductPrice(displayFreeDeliveryThreshold)} से अधिक ऑर्डर पर FREE delivery`)}</p>
@@ -518,7 +520,7 @@ export default function ProductDetailClient({
               )}
             </div>
             {deliveryQuote && (() => {
-              const orderTotal = totalPrice + deliveryQuote.charge;
+              const orderTotal = currentProductInCart ? cartTotal : totalPrice + deliveryQuote.charge;
               const advance = deliveryQuote.charge > 0 ? deliveryQuote.charge : 120;
               const codAvailable = productCountry !== 'IN' || orderTotal + 0.01 >= advance;
               const due = Math.max(0, orderTotal - advance);
