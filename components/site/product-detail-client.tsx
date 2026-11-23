@@ -497,7 +497,7 @@ export default function ProductDetailClient({
                 <>
                   <p className="text-lg font-black text-emerald-950">
                     {currentProductInCart
-                      ? formatProductPrice(cartTotal)
+                      ? `${formatProductPrice(cartTotal)} + ${formatProductPrice(cartFreeDeliveryUnlocked ? 0 : deliveryQuote.charge)} = ${formatProductPrice(cartTotal + (cartFreeDeliveryUnlocked ? 0 : deliveryQuote.charge))}`
                       : deliveryQuote.charge === 0
                         ? `${formatProductPrice(totalPrice)} — ${t('ফ্রি ডেলিভারি', 'FREE delivery', 'मुफ्त डिलीवरी')} = ${formatProductPrice(totalPrice)}`
                         : `${formatProductPrice(totalPrice)} + ${formatProductPrice(deliveryQuote.charge)} = ${formatProductPrice(totalPrice + deliveryQuote.charge)}`}
@@ -520,7 +520,9 @@ export default function ProductDetailClient({
               )}
             </div>
             {deliveryQuote && (() => {
-              const orderTotal = currentProductInCart ? cartTotal : totalPrice + deliveryQuote.charge;
+              const orderTotal = currentProductInCart
+                ? cartTotal + (cartFreeDeliveryUnlocked ? 0 : deliveryQuote.charge)
+                : totalPrice + deliveryQuote.charge;
               const advance = cartFreeDeliveryUnlocked ? 120 : deliveryQuote.charge > 0 ? deliveryQuote.charge : 120;
               const codAvailable = productCountry !== 'IN' || orderTotal + 0.01 >= advance;
               const due = Math.max(0, orderTotal - advance);
@@ -791,7 +793,7 @@ export default function ProductDetailClient({
       )}
 
       {siteSettings?.whatsapp_enabled && siteSettings?.whatsapp && <a href={`https://wa.me/${siteSettings.whatsapp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(siteSettings.whatsapp_message || '')}`} target="_blank" rel="noopener noreferrer" aria-label={t('WhatsApp-এ যোগাযোগ করুন', 'Contact on WhatsApp', 'WhatsApp पर बात करें')} title={t('WhatsApp-এ যোগাযোগ করুন', 'Contact on WhatsApp', 'WhatsApp पर बात करें')} className="fixed right-4 bottom-[calc(9rem+env(safe-area-inset-bottom)+12px)] z-[59] inline-flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-white bg-green-600 px-5 py-3 text-sm font-extrabold tracking-wide text-white shadow-[0_8px_24px_rgba(22,101,52,.35)] transition hover:bg-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 md:hidden"><MessageCircle className="h-5 w-5" /><span>WhatsApp</span></a>}
-      {inStock && <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[60] border-t border-emerald-100 bg-white/95 px-3 pt-2.5 pb-2 shadow-2xl backdrop-blur-md md:hidden"><div className="mx-auto flex max-w-md items-center gap-2"><div className="min-w-0 flex-1"><span className="block text-[10px] font-semibold text-gray-600">{t('ডেলিভারিসহ মোট', 'Total with delivery', 'डिलीवरी सहित कुल')}</span><p className="truncate text-lg font-black text-emerald-800">{currentProductInCart ? formatProductPrice(cartTotal) : deliveryQuote ? formatProductPrice(totalPrice + deliveryQuote.charge) : deliveryQuoteLoading ? t('যাচাই হচ্ছে…', 'Checking…', 'जाँच हो रही है…') : formatProductPrice(totalPrice)}</p></div><button type="button" onClick={handleAddToCart} className="flex min-h-12 shrink-0 items-center justify-center gap-1 rounded-xl border border-emerald-700 bg-white px-3 text-xs font-extrabold text-emerald-800"><ShoppingCart className="h-4 w-4" />{t('কার্টে যোগ', 'Add to Cart')}</button><button type="button" onClick={handleBuyNow} className="flex min-h-12 shrink-0 items-center justify-center gap-1 rounded-xl bg-emerald-800 px-3.5 text-xs font-extrabold text-white"><Zap className="h-4 w-4 fill-current text-amber-300" />{t('এখনই কিনুন', 'Buy Now')}</button></div></div>}
+      {inStock && <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[60] border-t border-emerald-100 bg-white/95 px-3 pt-2.5 pb-2 shadow-2xl backdrop-blur-md md:hidden"><div className="mx-auto flex max-w-md items-center gap-2"><div className="min-w-0 flex-1"><span className="block text-[10px] font-semibold text-gray-600">{t('ডেলিভারিসহ মোট', 'Total with delivery', 'डिलीवरी सहित कुल')}</span><p className="truncate text-lg font-black text-emerald-800">{currentProductInCart ? formatProductPrice(cartTotal + (cartFreeDeliveryUnlocked ? 0 : deliveryQuote.charge)) : deliveryQuote ? formatProductPrice(totalPrice + deliveryQuote.charge) : deliveryQuoteLoading ? t('যাচাই হচ্ছে…', 'Checking…', 'जाँच हो रही है…') : formatProductPrice(totalPrice)}</p></div><button type="button" onClick={handleAddToCart} className="flex min-h-12 shrink-0 items-center justify-center gap-1 rounded-xl border border-emerald-700 bg-white px-3 text-xs font-extrabold text-emerald-800"><ShoppingCart className="h-4 w-4" />{t('কার্টে যোগ', 'Add to Cart')}</button><button type="button" onClick={handleBuyNow} className="flex min-h-12 shrink-0 items-center justify-center gap-1 rounded-xl bg-emerald-800 px-3.5 text-xs font-extrabold text-white"><Zap className="h-4 w-4 fill-current text-amber-300" />{t('এখনই কিনুন', 'Buy Now')}</button></div></div>}
     </div>
   );
 }
