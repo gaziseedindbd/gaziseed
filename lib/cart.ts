@@ -41,21 +41,11 @@ export function getCart(): CartItem[] {
   }
 }
 
-export async function getValidatedCart(country: 'BD' | 'IN'): Promise<CartItem[]> {
-  const cart = getCart();
-  if (cart.length === 0) return [];
-  const productIds = Array.from(new Set(cart.map((item) => item.product_id).filter(Boolean)));
-  const { data, error } = await supabase
-    .from('products')
-    .select('id')
-    .eq('country_code', country)
-    .eq('is_active', true)
-    .in('id', productIds);
-  if (error) return cart;
-  const activeIds = new Set((data || []).map((row) => row.id));
-  const validCart = cart.filter((item) => activeIds.has(item.product_id));
-  if (validCart.length !== cart.length) saveCart(validCart);
-  return validCart;
+export async function getValidatedCart(_country: 'BD' | 'IN'): Promise<CartItem[]> {
+  // Never prune a customer's cart during background validation. A missing row can
+  // mean a transient Supabase/RLS/country mismatch, not that the customer removed it.
+  // Inventory and product availability are checked explicitly before order creation.
+  return getCart();
 }
 
 // Read fresh inventory before creating an order. The order API remains authoritative.
