@@ -567,6 +567,7 @@ export default function ProductDetailClient({
                       <div className="flex items-center gap-2">
                         <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-orange-100 px-2 text-xs font-black text-orange-900 ring-1 ring-orange-200">{b.min_quantity}×</span>
                         <span className="text-xs sm:text-sm font-black text-gray-950">{t('প্যাকেট', 'PACKETS')}</span>
+                        {b.min_quantity === 5 && <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white">BEST VALUE</span>}
                         {discountPct > 0 && <span className="ml-auto rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black text-emerald-800">-{discountPct}%</span>}
                       </div>
                       {b.free_item_text && (
