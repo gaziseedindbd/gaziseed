@@ -40,7 +40,7 @@ export function WhatsAppButton() {
     getSiteSettings().then(setSettings);
   }, []);
 
-  if (!settings?.whatsapp_enabled || !settings?.whatsapp) return null;
+  if (!settings?.whatsapp_enabled || !settings?.whatsapp || isProductPage) return null;
 
   const phoneNumber = settings.whatsapp.replace(/[^0-9]/g, '');
   const message = encodeURIComponent(settings.whatsapp_message || '');
