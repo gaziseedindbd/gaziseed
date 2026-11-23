@@ -64,6 +64,12 @@ export function AddressSelector({ value, onChange, lang: preferredLang, countryC
 
   return (
     <div className="space-y-3">
+      {postalCodeFirst && (
+        <div>
+          <label className="mb-1 block text-sm font-medium">{label.postal}</label>
+          <input type="text" inputMode="numeric" aria-label={label.postal} value={postalCode} onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, '').slice(0, 10))} className="input-bangla" placeholder={isIndia ? '700001' : 'Postal code'} required={isIndia} />
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
           <label className="mb-1 block text-sm font-medium">{label.division} *</label>
@@ -91,10 +97,12 @@ export function AddressSelector({ value, onChange, lang: preferredLang, countryC
         <label className="mb-1 block text-sm font-medium">{label.detail} *</label>
         <textarea aria-label={label.detail} value={detail} onChange={(e) => setDetail(e.target.value)} className="input-bangla min-h-[70px]" placeholder={tr('বাড়ি নম্বর, রোড, এলাকা...', 'House, road, area...', 'मकान, सड़क, इलाका...')} required />
       </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium">{label.postal}</label>
-        <input type="text" aria-label={label.postal} value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className="input-bangla" />
-      </div>
+      {!postalCodeFirst && (
+        <div>
+          <label className="mb-1 block text-sm font-medium">{label.postal}</label>
+          <input type="text" aria-label={label.postal} value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className="input-bangla" />
+        </div>
+      )}
     </div>
   );
 }
