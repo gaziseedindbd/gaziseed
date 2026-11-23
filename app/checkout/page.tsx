@@ -977,7 +977,7 @@ export default function CheckoutPage() {
                   <AddressSelector value={addrValue} onChange={setAddrValue} countryCode={country} />
                 </div>
 
-                <button type="submit" hidden={!deliveryQuoteReady} disabled={loading || !deliveryQuoteReady} className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 text-base font-black text-primary-foreground shadow-lg shadow-primary/20 transition active:scale-[.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 md:hidden">{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t(`এখন ${formatPrice(codAdvance)} অগ্রিম দিন`, `Pay ${formatPrice(codAdvance)} COD advance now`, `अभी ${formatPrice(codAdvance)} COD अग्रिम दें`) : t('এখনই পেমেন্ট করুন', 'Pay Now', 'अभी भुगतान करें')) : t('অর্ডার কনফার্ম করুন', 'Confirm order', 'ऑर्डर की पुष्टि करें')} <ChevronRight className="h-4 w-4" /></>}</button>
+                <button type="submit" style={{ display: deliveryQuoteReady ? undefined : 'none' }} disabled={loading || !deliveryQuoteReady} className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 text-base font-black text-primary-foreground shadow-lg shadow-primary/20 transition active:scale-[.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 md:hidden">{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <>{country === 'IN' ? (paymentMethod === 'cod' ? t(`এখন ${formatPrice(codAdvance)} অগ্রিম দিন`, `Pay ${formatPrice(codAdvance)} COD advance now`, `अभी ${formatPrice(codAdvance)} COD अग्रिम दें`) : t('এখনই পেমেন্ট করুন', 'Pay Now', 'अभी भुगतान करें')) : t('অর্ডার কনফার্ম করুন', 'Confirm order', 'ऑर्डर की पुष्टि करें')} <ChevronRight className="h-4 w-4" /></>}</button>
 
                 <div className="mt-5 space-y-1.5">
                   <label htmlFor="checkout-instructions" className="text-sm font-extrabold text-foreground">{t('অতিরিক্ত নির্দেশনা', 'Special instructions')}</label>
@@ -1161,7 +1161,7 @@ export default function CheckoutPage() {
                   <div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারি', 'Delivery')}</span><span className="font-bold">{!deliveryQuoteReady ? t('ডেলিভারি যাচাই হচ্ছে', 'Checking delivery') : deliveryCharge === 0 ? t('ফ্রি', 'Free') : formatPrice(deliveryCharge)}</span></div>
                   {country === 'IN' && paymentMethod === 'cod' && <><div className="flex justify-between gap-4 text-sm text-primary"><span>{t('COD অগ্রিম','COD advance')}</span><span className="font-bold">{formatPrice(codAdvance)}</span></div><div className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{t('ডেলিভারিতে বাকি','Due on delivery')}</span><span className="font-bold">{formatPrice(codDue)}</span></div></>}
                   {walletCredit > 0 && <div className="flex justify-between gap-4 text-sm text-emerald-600"><span>{t('ওয়ালেট ক্রেডিট', 'Wallet credit')}</span><span className="font-bold">-{formatPrice(walletCredit)}</span></div>}
-                  <div hidden={!deliveryQuoteReady} className="mt-4 flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-primary/15 bg-primary/[0.05] p-4">
+                  <div style={{ display: deliveryQuoteReady ? undefined : 'none' }} className="mt-4 flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-primary/15 bg-primary/[0.05] p-4">
                     <div>
                       <span className="block text-base font-black">{t('অর্ডারের মোট দাম', 'Full order total', 'ऑर्डर की कुल कीमत')}</span>
                       <span className="mt-0.5 block text-xs font-semibold text-muted-foreground">{t('ডেলিভারিসহ পুরো অর্ডারের দাম', 'Includes delivery and discounts', 'डिलीवरी और छूट सहित')}</span>
@@ -1170,7 +1170,7 @@ export default function CheckoutPage() {
                   </div>
 
                 {country === 'IN' && (
-                  <div hidden={!deliveryQuoteReady} className="border-b border-border/60 p-5 sm:p-6">
+                  <div style={{ display: deliveryQuoteReady ? undefined : 'none' }} className="border-b border-border/60 p-5 sm:p-6">
                     <div className="mb-3">
                       <p className="text-[11px] font-black uppercase tracking-[0.16em] text-primary">{t('পেমেন্ট পদ্ধতি', 'Payment method')}</p>
                       <h3 className="mt-1 text-sm font-black text-foreground">{t('কীভাবে পেমেন্ট করবেন?', 'How would you like to pay?')}</h3>
@@ -1229,7 +1229,7 @@ export default function CheckoutPage() {
 
                   <button
                     type="submit"
-                    hidden={!deliveryQuoteReady}
+                    style={{ display: deliveryQuoteReady ? undefined : 'none' }}
                     disabled={loading || !deliveryQuoteReady}
                     className="mt-4 inline-flex min-h-[60px] w-full items-center justify-center gap-3 rounded-2xl bg-emerald-800 px-4 py-4 text-base font-black tracking-tight text-white shadow-lg shadow-emerald-900/20 transition-all hover:bg-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700/50 focus-visible:ring-offset-2 active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-60 sm:px-6 sm:text-lg"
                   >
@@ -1375,7 +1375,7 @@ export default function CheckoutPage() {
           </div>
         </form>
 
-        <div hidden={!deliveryQuoteReady} className="sticky bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-40 mt-4 md:hidden">
+        <div style={{ display: deliveryQuoteReady ? undefined : 'none' }} className="sticky bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-40 mt-4 md:hidden">
           <div className="flex items-center gap-3 rounded-[22px] border border-border/80 bg-background/95 p-3 shadow-2xl shadow-black/20 backdrop-blur-xl" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
             <div className="min-w-0 flex-1 pl-1">
               <p className="text-[10px] font-bold text-muted-foreground">{t('পরিশোধযোগ্য', 'Payable')}</p>
