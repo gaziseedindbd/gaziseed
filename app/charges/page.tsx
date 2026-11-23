@@ -15,7 +15,7 @@ const FALLBACK_SETTINGS: Record<Country, CountrySettings> = {
 };
 
 export default function ChargesPage() {
-  const { t, tDb } = useLang();
+  const { lang, t, tDb } = useLang();
   const [country, setCountry] = useState<Country>('BD');
   const [settings, setSettings] = useState<CountrySettings | null>(null);
   const [rules, setRules] = useState<ChargeRule[]>([]);
@@ -60,7 +60,7 @@ export default function ChargesPage() {
   ];
   const visibleRules = rules.length ? rules : fallbackRules;
   const visibleNotes = current.notes.filter((note) => !(/[₹৳]/.test(note) && /(ফ্রি|free|মুক্ত)/i.test(note)));
-  const money = (value: number) => value === 0 ? t('ফ্রি', 'Free', 'निःशुल्क') : `${currencySign}${value.toLocaleString(current.currency === 'INR' ? 'en-IN' : 'bn-BD')}`;
+  const money = (value: number) => value === 0 ? t('ফ্রি', 'Free', 'निःशुल्क') : `${currencySign}${value.toLocaleString(current.currency === 'INR' ? 'en-IN' : lang === 'en' ? 'en-BD' : lang === 'hi' ? 'hi-IN' : 'bn-BD')}`;
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-primary/[0.05] via-background to-background">
