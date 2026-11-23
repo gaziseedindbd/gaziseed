@@ -503,7 +503,11 @@ export default function CheckoutPage() {
       candidates[candidates.length - 1]?.min_order ?? null;
   }, [deliveryRules, subtotal]);
   const freeDeliveryUnlocked = deliveryQuoteReady && (deliveryCharge === 0 || freeDeliveryProductIds.size > 0);
-  const freeDeliveryRemaining = freeDeliveryThreshold == null ? null : Math.round(Math.max(0, freeDeliveryThreshold - subtotal));
+  const freeDeliveryRemaining = freeDeliveryThreshold == null
+    ? null
+    : country === 'IN'
+      ? Math.ceil(Math.max(0, freeDeliveryThreshold - subtotal))
+      : Math.round(Math.max(0, freeDeliveryThreshold - subtotal));
   const freeDeliveryPercent = freeDeliveryUnlocked ? 100 : freeDeliveryThreshold
     ? Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100)) : 0;
   const waivedDeliveryCharge = deliveryRules
@@ -548,10 +552,10 @@ export default function CheckoutPage() {
 
     if (nextFreeRule) {
       const sign = country === 'IN' ? '₹' : '৳';
-      const formatted = (country === 'IN' ? Math.round((nextFreeRule.min_order - 0.01) * 100) / 100 : nextFreeRule.min_order).toLocaleString(country === 'IN' ? 'en-IN' : 'bn-BD');
+      const formatted = nextFreeRule.min_order.toLocaleString(country === 'IN' ? 'en-IN' : 'bn-BD');
       return t(
-        country === 'IN' ? `₹${formatted}-এর বেশি অর্ডারে ফ্রি ডেলিভারি` : `${sign}${formatted}+ অর্ডারে ফ্রি ডেলিভারি`,
-        country === 'IN' ? `Free delivery on orders above ₹${formatted}` : `Free delivery on ${sign}${formatted}+`,
+        country === 'IN' ? `₹${formatted} বা তার বেশি অর্ডারে ফ্রি ডেলিভারি` : `${sign}${formatted}+ অর্ডারে ফ্রি ডেলিভারি`,
+        country === 'IN' ? `Free delivery on orders ₹${formatted}+` : `Free delivery on ${sign}${formatted}+`,
       );
     }
 
