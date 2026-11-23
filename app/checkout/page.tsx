@@ -1122,7 +1122,7 @@ export default function CheckoutPage() {
                         <div className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-border/70 bg-card p-1">
                           <button type="button" aria-label={`Decrease quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, -1)} disabled={item.quantity <= 1} className="flex h-12 w-12 items-center justify-center rounded-xl hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-35 focus-visible:ring-2 focus-visible:ring-primary"><Minus className="h-4 w-4" /></button>
                           <span aria-live="polite" className="min-w-6 text-center text-xs font-black tabular-nums">{item.quantity}</span>
-                          <button type="button" aria-label={`Increase quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, 1)} disabled={item.quantity >= 99} className="flex h-11 w-11 items-center justify-center rounded-lg text-lg hover:bg-secondary disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary"><Plus className="h-4 w-4" /></button>
+                          <button type="button" aria-label={`Increase quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, 1)} disabled={item.quantity >= 99} className="flex h-12 w-12 items-center justify-center rounded-xl text-xl font-black hover:bg-secondary disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary"><Plus className="h-5 w-5" /></button>
                         </div>
                         <span className="shrink-0 text-xs font-black tabular-nums">{formatPrice(item.unit_price * item.quantity)}</span>
                       </div>
@@ -1170,8 +1170,8 @@ export default function CheckoutPage() {
                         <span className="flex items-start gap-3">
                           <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><WalletCards className="h-4 w-4" /></span>
                           <span className="min-w-0">
-                            <span className="block text-base font-black">{t('অনলাইন পেমেন্ট', 'Online payment')}</span>
-                            <span className="mt-2 block text-sm leading-5 text-muted-foreground">UPI / Card</span>
+                            <span className="block text-base font-black">{t('অনলাইন পেমেন্ট', 'Pay Online')} — {formatPrice(payableTotal)} — UPI / Card</span>
+                            <span className="mt-2 block text-sm leading-5 text-muted-foreground">{t('নিরাপদ অনলাইন পেমেন্ট', 'Secure online payment')}</span>
                           </span>
                         </span>
                       </button>
@@ -1186,8 +1186,8 @@ export default function CheckoutPage() {
                           <span className="flex items-start gap-3">
                             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Banknote className="h-4 w-4" /></span>
                             <span className="min-w-0">
-                              <span className="block text-base font-black">{t('ক্যাশ অন ডেলিভারি', 'Cash on Delivery')}</span>
-                              <span className="mt-2 block space-y-1 text-sm leading-5 text-muted-foreground"><span className="block">{t("এখন অগ্রিম", "Advance now", "अभी अग्रिम")} <strong className="font-black text-foreground">{formatPrice(codAdvance)}</strong></span><span className="block">{t("ডেলিভারির সময় বাকি", "Due on delivery", "डिलीवरी पर शेष")} <strong className="font-black text-foreground">{formatPrice(codDue)}</strong></span></span>
+                              <span className="block text-base font-black">{t("Pay COD advance", "Pay COD advance")} {formatPrice(codAdvance)} {t("now +", "now +")} {formatPrice(codDue)} {t("on delivery — Total", "on delivery — Total")} {formatPrice(payableTotal)}</span>
+                              <span className="mt-2 block text-sm leading-5 text-muted-foreground">{t("ডেলিভারিতে বাকি", "Due on delivery")}: <strong className="font-black text-foreground">{formatPrice(codDue)}</strong></span>
                             </span>
                           </span>
                         </button>
@@ -1304,7 +1304,7 @@ export default function CheckoutPage() {
                         <div className="checkout-qty-control mt-2 inline-flex min-h-12 items-center gap-1 rounded-xl border border-border/70 bg-background p-1.5" aria-label={`Quantity for ${item.name}`}>
                           <button type="button" aria-label={`Decrease quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, -1)} className="flex h-11 w-11 items-center justify-center rounded-lg text-lg hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary"><Minus className="h-4 w-4" /></button>
                           <span aria-live="polite" className="min-w-7 text-center text-sm font-black tabular-nums">{item.quantity}</span>
-                          <button type="button" aria-label={`Increase quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, 1)} disabled={item.quantity >= 99} className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-secondary disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary"><Plus className="h-4 w-4" /></button>
+                          <button type="button" aria-label={`Increase quantity of ${item.name}`} onClick={() => changeCheckoutQuantity(item, 1)} disabled={item.quantity >= 99} className="flex h-12 w-12 items-center justify-center rounded-xl text-xl font-black hover:bg-secondary disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-primary"><Plus className="h-5 w-5" /></button>
                         </div>
 
                       </div>
