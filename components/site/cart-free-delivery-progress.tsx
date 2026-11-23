@@ -181,6 +181,18 @@ export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
           style={{ width: `${freeDeliveryPercent}%` }}
         />
       </div>
+      {deliveryQuoteReady && deliveryCharge !== null && (
+        <div className="flex items-center justify-between gap-3 border-t border-primary/15 pt-2 text-sm">
+          <span className="font-semibold text-muted-foreground">{t('ডেলিভারি চার্জ', 'Delivery')}</span>
+          <span className="font-bold text-foreground">{deliveryCharge === 0 ? t('ফ্রি', 'FREE') : formatPrice(deliveryCharge, country)}</span>
+        </div>
+      )}
+      {deliveryQuoteReady && deliveryCharge !== null && (
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-emerald-100/70 px-3 py-2">
+          <span className="font-black text-emerald-950">{t('সর্বমোট', 'Total including delivery')}</span>
+          <span className="text-lg font-black tabular-nums text-emerald-900">{formatPrice(subtotal + deliveryCharge, country)}</span>
+        </div>
+      )}
     </div>
   );
 }
