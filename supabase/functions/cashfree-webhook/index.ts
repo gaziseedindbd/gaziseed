@@ -149,6 +149,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (type === "PAYMENT_FAILED_WEBHOOK" || paymentStatus === "FAILED") {
+      // A FAILED webhook can describe one failed attempt, not a terminal Cashfree order. Keep the audit status; a later SUCCESS can still complete after gateway verification.
       const { error: updateError } = await admin.from("cashfree_payment_intents").update({
         status: "failed",
         updated_at: new Date().toISOString(),
