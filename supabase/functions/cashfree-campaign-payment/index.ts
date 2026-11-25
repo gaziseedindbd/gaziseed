@@ -115,7 +115,11 @@ async function createSession(request: Request, body: Record<string, unknown>) {
   }
   const total = Number(quote.total);
   const delivery = Number(quote.delivery_charge || 0);
-  const advance = method === "cod" ? (delivery > 0 ? delivery : 120) : total;
+  const subtotal = Number(quote.subtotal);
+  if (method === "cod" && (!Number.isFinite(subtotal) || subtotal < 500)) {
+    return json({ ok: false, error: "COD is available only when the product subtotal is ₹500 or more" }, 400);
+  }
+  const advance = method === "cod" ? 80 : total;
   if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(advance) || advance <= 0 || advance > total + 0.01) {
     return json({ ok: false, error: "COD advance is higher than the payable order total. Please choose online payment." }, 400);
   }
