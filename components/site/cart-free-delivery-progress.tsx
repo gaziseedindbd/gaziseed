@@ -188,6 +188,13 @@ export default function CartFreeDeliveryProgress({ items, subtotal }: Props) {
         )}
         {freeDeliveryUnlocked && <Check className="h-4 w-4 text-primary" />}
       </div>
+      {country === 'IN' && (
+        <p className="rounded-xl border border-primary/15 bg-background px-3 py-2 text-xs font-bold text-foreground">
+          {subtotal >= 500
+            ? t('₹80 অগ্রিম দিয়ে Cash on Delivery পাওয়া যাবে', 'Cash on Delivery available with ₹80 advance')
+            : t(`COD পেতে আরও ${formatPrice(Math.max(0, 500 - subtotal), country)} পণ্যের অর্ডার যোগ করুন`, `Add ${formatPrice(Math.max(0, 500 - subtotal), country)} more in products to unlock COD (₹80 advance)`)}
+        </p>
+      )}
       <div
         className="h-2.5 w-full overflow-hidden rounded-full bg-primary/15"
         role="progressbar"
