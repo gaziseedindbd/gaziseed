@@ -1299,7 +1299,7 @@ export default function CheckoutPage() {
                       )}
                     </div>
                     {!codAvailable && (
-                      <p className="mt-3 rounded-xl border border-amber-200/80 bg-amber-500/10 px-3 py-2 text-[10px] font-bold leading-4 text-amber-700 dark:border-amber-900/60 dark:text-amber-300">
+                      <p className="mt-3 rounded-xl border border-amber-300 bg-amber-500/10 px-4 py-3 text-sm font-extrabold leading-6 text-amber-800 shadow-sm sm:text-base dark:border-amber-800 dark:text-amber-200">
                         {t('পণ্যের সাবটোটাল ₹500 বা বেশি হলে COD পাওয়া যাবে।', 'COD is available when the product subtotal is ₹500 or more.')}
                       </p>
                     )}
