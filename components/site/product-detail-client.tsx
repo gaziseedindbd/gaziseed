@@ -569,8 +569,8 @@ export default function ProductDetailClient({
             {currentDeliveryQuote && (() => {
               const projectedCartSubtotal = cartTotal + (currentProductInCart ? 0 : totalPrice);
               const orderTotal = projectedCartSubtotal + currentDeliveryQuote.charge;
-              const advance = currentDeliveryQuote.charge > 0 ? currentDeliveryQuote.charge : 120;
-              const codAvailable = productCountry !== 'IN' || orderTotal + 0.01 >= advance;
+              const advance = 80;
+              const codAvailable = productCountry !== 'IN' || (projectedCartSubtotal >= 500 && orderTotal + 0.01 >= advance);
               const due = Math.max(0, orderTotal - advance);
               return (
                 <p className={`rounded-xl border px-4 py-4 text-base sm:text-lg font-black leading-7 shadow-sm ${codAvailable ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
