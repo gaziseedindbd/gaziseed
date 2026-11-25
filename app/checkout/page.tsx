@@ -704,7 +704,7 @@ export default function CheckoutPage() {
       return;
     }
     if (country === 'IN' && paymentMethod === 'cod' && !codAvailable) {
-      setError(t('এই অর্ডারের জন্য COD অগ্রিমের পরিমাণ যথেষ্ট নয়।', 'The payable amount is below the required COD advance.'));
+      setError(t('₹500 বা বেশি পণ্যের সাবটোটাল হলে COD পাওয়া যাবে এবং ₹80 অগ্রিম দিতে হবে।', 'COD is available on product subtotal ₹500 or more, with a fixed ₹80 advance.'));
       return;
     }
 
