@@ -24,10 +24,10 @@ export function IndiaPaymentMethodSelector({
   language?: 'bn' | 'en' | 'hi';
 }) {
   const copy = language === 'hi'
-    ? { title: 'भुगतान का तरीका चुनें', online: 'ऑनलाइन भुगतान', cod: 'कैश ऑन डिलीवरी', onlineDetail: 'UPI / कार्ड से Cashfree पर सुरक्षित भुगतान', codDetail: `अभी ${inr(advanceAmount)} अग्रिम · डिलीवरी पर ${inr(dueAmount)} बाकी` }
+    ? { title: 'भुगतान का तरीका चुनें', online: 'ऑनलाइन भुगतान', cod: 'कैश ऑन डिलीवरी', onlineDetail: 'UPI / कार्ड से Cashfree पर सुरक्षित भुगतान', codDetail: codAvailable ? `अभी ${inr(advanceAmount)} अग्रिम · डिलीवरी पर ${inr(dueAmount)} बाकी` : '₹500 या अधिक के product subtotal पर COD उपलब्ध · ₹80 अग्रिम' }
     : language === 'en'
-      ? { title: 'Choose a payment method', online: 'Online payment', cod: 'Cash on Delivery', onlineDetail: 'Pay securely with UPI / Card via Cashfree', codDetail: `${inr(advanceAmount)} advance now · ${inr(dueAmount)} due on delivery` }
-      : { title: 'পেমেন্ট পদ্ধতি বেছে নিন', online: 'অনলাইন পেমেন্ট', cod: 'ক্যাশ অন ডেলিভারি', onlineDetail: 'Cashfree দিয়ে UPI / Card-এ নিরাপদ পেমেন্ট', codDetail: `এখন ${inr(advanceAmount)} অগ্রিম · ডেলিভারিতে ${inr(dueAmount)} বাকি` };
+      ? { title: 'Choose a payment method', online: 'Online payment', cod: 'Cash on Delivery', onlineDetail: 'Pay securely with UPI / Card via Cashfree', codDetail: codAvailable ? `${inr(advanceAmount)} advance now · ${inr(dueAmount)} due on delivery` : 'COD available on product subtotal ₹500 or more · ₹80 advance' }
+      : { title: 'পেমেন্ট পদ্ধতি বেছে নিন', online: 'অনলাইন পেমেন্ট', cod: 'ক্যাশ অন ডেলিভারি', onlineDetail: 'Cashfree দিয়ে UPI / Card-এ নিরাপদ পেমেন্ট', codDetail: codAvailable ? `এখন ${inr(advanceAmount)} অগ্রিম · ডেলিভারিতে ${inr(dueAmount)} বাকি` : 'পণ্যের সাবটোটাল ₹500 বা বেশি হলে COD পাওয়া যাবে · অগ্রিম ₹80' };
 
   const options: Array<{ id: IndiaPaymentMethod; title: string; detail: string; icon: typeof WalletCards }> = [
     { id: 'online', title: copy.online, detail: copy.onlineDetail, icon: WalletCards },
