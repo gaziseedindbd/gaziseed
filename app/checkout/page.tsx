@@ -482,8 +482,8 @@ export default function CheckoutPage() {
     : 0;
   const payableTotal = Math.max(0, grandTotal - walletCredit);
   const selectedWalletAmount = walletSummary?.unlocked ? Math.min(walletSummary.max_usable, grandTotal) : 0;
-  const codAdvance = country === 'IN' ? (deliveryCharge > 0 ? deliveryCharge : 120) : 0;
-  const codAvailable = country !== 'IN' || (deliveryQuoteReady && payableTotal + 0.01 >= codAdvance);
+  const codAdvance = country === 'IN' ? 80 : 0;
+  const codAvailable = country !== 'IN' || (deliveryQuoteReady && subtotal >= 500 && payableTotal + 0.01 >= codAdvance);
 
   useEffect(() => {
     if (country === 'IN' && deliveryQuoteReady && !codAvailable && paymentMethod === 'cod') {
@@ -1292,9 +1292,7 @@ export default function CheckoutPage() {
                             <span className="min-w-0">
                               <span className="block text-base font-black">{t("Pay COD advance", "Pay COD advance")} {formatPrice(codAdvance)} {t("now +", "now +")} {formatPrice(codDue)} {t("on delivery — Total", "on delivery — Total")} {formatPrice(payableTotal)}</span>
                               <span className="mt-2 block text-sm leading-5 text-muted-foreground">{t("ডেলিভারিতে বাকি", "Due on delivery")}: <strong className="font-black text-foreground">{formatPrice(codDue)}</strong></span>
-                              <span className="mt-1 block text-xs leading-5 text-muted-foreground">{deliveryCharge > 0
-                                ? t('অগ্রিম = প্রযোজ্য ডেলিভারি চার্জ', 'Advance equals the applicable delivery charge')
-                                : t('ফ্রি ডেলিভারি অর্ডারে নির্দিষ্ট COD অগ্রিম ₹120', 'Free-delivery orders use the existing fixed ₹120 COD advance')}</span>
+                              <span className="mt-1 block text-xs leading-5 text-muted-foreground">{t('₹500 বা বেশি পণ্যের সাবটোটালে COD; অগ্রিম নির্দিষ্ট ₹80', 'COD on product subtotal ₹500 or more; fixed ₹80 advance')}</span>
                             </span>
                           </span>
                         </button>
