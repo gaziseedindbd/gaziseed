@@ -69,7 +69,8 @@ export default function OfferLandingPage() {
   const isFreeDelivery = !!(product?.free_delivery || selectedTier?.free_delivery || selectedTier?.is_free_delivery || selectedBundle?.free_delivery);
   const indiaDelivery = isFreeDelivery ? 0 : Number(deliveryCharge || 0);
   const indiaGrandTotal = offerPrice + indiaDelivery;
-  const indiaCodAdvance = indiaDelivery > 0 ? indiaDelivery : 120;
+  const indiaCodAdvance = 80;
+  const indiaCodAvailable = offerPrice >= 500 && indiaGrandTotal + 0.01 >= indiaCodAdvance;
   const indiaCodDue = Math.max(0, indiaGrandTotal - indiaCodAdvance);
 
   const utm = useMemo(() => ({
@@ -289,8 +290,8 @@ export default function OfferLandingPage() {
     try {
       const fullAddress = formatAddressToString(addrValue);
       if (countryCode === 'IN') {
-        if (paymentMethod === 'cod' && indiaCodAdvance > indiaGrandTotal) {
-          setError(tr('এই অর্ডারের মোটের চেয়ে COD অগ্রিম বেশি হচ্ছে। Online payment বেছে নিন।', 'The COD advance is greater than the order total. Choose online payment.', 'COD अग्रिम राशि ऑर्डर की कुल राशि से अधिक है। ऑनलाइन भुगतान चुनें।'));
+        if (paymentMethod === 'cod' && !indiaCodAvailable) {
+          setError(tr('₹500 বা বেশি পণ্যের সাবটোটাল হলে COD পাওয়া যাবে।', 'COD is available only when the product subtotal is ₹500 or more.', 'COD केवल ₹500 या उससे अधिक के product subtotal पर उपलब्ध है।'));
           return;
         }
         await startIndiaCampaignPayment({
@@ -685,7 +686,7 @@ export default function OfferLandingPage() {
                   onChange={setPaymentMethod}
                   advanceAmount={indiaCodAdvance}
                   dueAmount={indiaCodDue}
-                  codAvailable={!deliveryQuoteLoading && !deliveryQuoteError && (isFreeDelivery || deliveryCharge !== null) && indiaCodAdvance <= indiaGrandTotal}
+                  codAvailable={!deliveryQuoteLoading && !deliveryQuoteError && (isFreeDelivery || deliveryCharge !== null) && indiaCodAvailable}
                   language={lang === 'hi' ? 'hi' : lang === 'en' ? 'en' : 'bn'}
                 />}
 

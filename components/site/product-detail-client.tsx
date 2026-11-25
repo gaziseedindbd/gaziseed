@@ -569,8 +569,8 @@ export default function ProductDetailClient({
             {currentDeliveryQuote && (() => {
               const projectedCartSubtotal = cartTotal + (currentProductInCart ? 0 : totalPrice);
               const orderTotal = projectedCartSubtotal + currentDeliveryQuote.charge;
-              const advance = currentDeliveryQuote.charge > 0 ? currentDeliveryQuote.charge : 120;
-              const codAvailable = productCountry !== 'IN' || orderTotal + 0.01 >= advance;
+              const advance = 80;
+              const codAvailable = productCountry !== 'IN' || (projectedCartSubtotal >= 500 && orderTotal + 0.01 >= advance);
               const due = Math.max(0, orderTotal - advance);
               return (
                 <p className={`rounded-xl border px-4 py-4 text-base sm:text-lg font-black leading-7 shadow-sm ${codAvailable ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
@@ -578,7 +578,7 @@ export default function ProductDetailClient({
                     ? productCountry === 'IN'
                       ? t(`💵 COD: আগে ${formatProductPrice(advance)} অনলাইনে + হাতে পেয়ে ${formatProductPrice(due)} দেবেন`, `💵 COD: Pay ${formatProductPrice(advance)} online first + ${formatProductPrice(due)} when delivered`, `💵 COD: पहले ${formatProductPrice(advance)} ऑनलाइन + डिलीवरी पर ${formatProductPrice(due)} दें`)
                       : t(`💵 ক্যাশ অন ডেলিভারি — ${formatProductPrice(orderTotal)} হাতে পেয়ে দেবেন, আগে টাকা দিতে হবে না`, `💵 Cash on Delivery — Pay ${formatProductPrice(orderTotal)} when it arrives. Nothing to pay now.`, `💵 कैश ऑन डिलीवरी — ${formatProductPrice(orderTotal)} सामान मिलने पर दें। अभी कुछ नहीं देना है।`)
-                    : t('এই অর্ডারের জন্য COD পাওয়া যাবে না।', 'COD is not available for this order.', 'इस ऑर्डर पर COD उपलब्ध नहीं है।')}
+                    : t('₹500 বা বেশি পণ্যের সাবটোটাল হলে COD পাওয়া যাবে।', 'COD is available on product subtotal ₹500 or more.', 'COD ₹500 या उससे अधिक के product subtotal पर उपलब्ध है।')}
                 </p>
               );
             })()}

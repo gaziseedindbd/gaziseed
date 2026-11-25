@@ -482,8 +482,8 @@ export default function CheckoutPage() {
     : 0;
   const payableTotal = Math.max(0, grandTotal - walletCredit);
   const selectedWalletAmount = walletSummary?.unlocked ? Math.min(walletSummary.max_usable, grandTotal) : 0;
-  const codAdvance = country === 'IN' ? (deliveryCharge > 0 ? deliveryCharge : 120) : 0;
-  const codAvailable = country !== 'IN' || (deliveryQuoteReady && payableTotal + 0.01 >= codAdvance);
+  const codAdvance = country === 'IN' ? 80 : 0;
+  const codAvailable = country !== 'IN' || (deliveryQuoteReady && subtotal >= 500 && payableTotal + 0.01 >= codAdvance);
 
   useEffect(() => {
     if (country === 'IN' && deliveryQuoteReady && !codAvailable && paymentMethod === 'cod') {
@@ -704,7 +704,7 @@ export default function CheckoutPage() {
       return;
     }
     if (country === 'IN' && paymentMethod === 'cod' && !codAvailable) {
-      setError(t('এই অর্ডারের জন্য COD অগ্রিমের পরিমাণ যথেষ্ট নয়।', 'The payable amount is below the required COD advance.'));
+      setError(t('₹500 বা বেশি পণ্যের সাবটোটাল হলে COD পাওয়া যাবে এবং ₹80 অগ্রিম দিতে হবে।', 'COD is available on product subtotal ₹500 or more, with a fixed ₹80 advance.'));
       return;
     }
 
@@ -1292,17 +1292,15 @@ export default function CheckoutPage() {
                             <span className="min-w-0">
                               <span className="block text-base font-black">{t("Pay COD advance", "Pay COD advance")} {formatPrice(codAdvance)} {t("now +", "now +")} {formatPrice(codDue)} {t("on delivery — Total", "on delivery — Total")} {formatPrice(payableTotal)}</span>
                               <span className="mt-2 block text-sm leading-5 text-muted-foreground">{t("ডেলিভারিতে বাকি", "Due on delivery")}: <strong className="font-black text-foreground">{formatPrice(codDue)}</strong></span>
-                              <span className="mt-1 block text-xs leading-5 text-muted-foreground">{deliveryCharge > 0
-                                ? t('অগ্রিম = প্রযোজ্য ডেলিভারি চার্জ', 'Advance equals the applicable delivery charge')
-                                : t('ফ্রি ডেলিভারি অর্ডারে নির্দিষ্ট COD অগ্রিম ₹120', 'Free-delivery orders use the existing fixed ₹120 COD advance')}</span>
+                              <span className="mt-1 block text-xs leading-5 text-muted-foreground">{t('₹500 বা বেশি পণ্যের সাবটোটালে COD; অগ্রিম নির্দিষ্ট ₹80', 'COD on product subtotal ₹500 or more; fixed ₹80 advance')}</span>
                             </span>
                           </span>
                         </button>
                       )}
                     </div>
                     {!codAvailable && (
-                      <p className="mt-3 rounded-xl border border-amber-200/80 bg-amber-500/10 px-3 py-2 text-[10px] font-bold leading-4 text-amber-700 dark:border-amber-900/60 dark:text-amber-300">
-                        {t('এই অর্ডারের জন্য COD উপলভ্য নয়।', 'COD is not available for this order.')}
+                      <p className="mt-3 rounded-xl border border-amber-300 bg-amber-500/10 px-4 py-3 text-sm font-extrabold leading-6 text-amber-800 shadow-sm sm:text-base dark:border-amber-800 dark:text-amber-200">
+                        {t('পণ্যের সাবটোটাল ₹500 বা বেশি হলে COD পাওয়া যাবে।', 'COD is available when the product subtotal is ₹500 or more.')}
                       </p>
                     )}
                   </div>
