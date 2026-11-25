@@ -1300,7 +1300,7 @@ export default function CheckoutPage() {
                     </div>
                     {!codAvailable && (
                       <p className="mt-3 rounded-xl border border-amber-200/80 bg-amber-500/10 px-3 py-2 text-[10px] font-bold leading-4 text-amber-700 dark:border-amber-900/60 dark:text-amber-300">
-                        {t('এই অর্ডারের জন্য COD উপলভ্য নয়।', 'COD is not available for this order.')}
+                        {t('পণ্যের সাবটোটাল ₹500 বা বেশি হলে COD পাওয়া যাবে।', 'COD is available when the product subtotal is ₹500 or more.')}
                       </p>
                     )}
                   </div>
