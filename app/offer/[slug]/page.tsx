@@ -291,7 +291,7 @@ export default function OfferLandingPage() {
       const fullAddress = formatAddressToString(addrValue);
       if (countryCode === 'IN') {
         if (paymentMethod === 'cod' && !indiaCodAvailable) {
-          setError(tr('এই অর্ডারের মোটের চেয়ে COD অগ্রিম বেশি হচ্ছে। Online payment বেছে নিন।', 'The COD advance is greater than the order total. Choose online payment.', 'COD अग्रिम राशि ऑर्डर की कुल राशि से अधिक है। ऑनलाइन भुगतान चुनें।'));
+          setError(tr('₹500 বা বেশি পণ্যের সাবটোটাল হলে COD পাওয়া যাবে।', 'COD is available only when the product subtotal is ₹500 or more.', 'COD केवल ₹500 या उससे अधिक के product subtotal पर उपलब्ध है।'));
           return;
         }
         await startIndiaCampaignPayment({
