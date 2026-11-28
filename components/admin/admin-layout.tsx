@@ -5,7 +5,6 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { Loader2, LayoutDashboard, Package, FolderTree, ShoppingCart, Users, Tag, Star, Wrench, FileText, Image, Settings, FileBarChart, Menu, X, LogOut, Truck, Megaphone, Layers, BarChart3, Home, ShieldCheck, UserCog, Gift, Bell, Boxes, LifeBuoy, TrendingUp, Sun, Moon, Bot, MessageCircle, Sparkles, Globe2, ChevronDown, Video, Clock3 } from 'lucide-react';
 import Link from 'next/link';
-import { NotificationCenter } from './notification-center';
 
 type NavGroup = { label: string; items: { href: string; label: string; icon: any; masterOnly?: boolean; indiaOnly?: boolean }[] };
 type Branch = 'BD' | 'IN';
@@ -195,7 +194,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           <span className="hidden rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold sm:inline">{selectedBranch === 'IN' ? '🇮🇳 India' : '🇧🇩 Bangladesh'}</span>
         </div>
         <div className="flex shrink-0 items-center gap-1 lg:contents">
-          <NotificationCenter />
           <button onClick={toggleTheme} className="rounded-lg border border-border p-2 hover:bg-secondary lg:hidden">{theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}</button>
           <button onClick={handleLogout} className="p-1 text-destructive lg:hidden"><LogOut className="h-5 w-5" /></button>
         </div>
